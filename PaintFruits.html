@@ -1,0 +1,1892 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Paint Fruits Game - Segmented</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .header {
+            background: rgba(255, 255, 255, 0.95);
+            padding: 15px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            z-index: 100;
+        }
+
+        .header h1 {
+            color: #764ba2;
+            font-size: 24px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .level-info {
+            display: flex;
+            gap: 20px;
+            align-items: center;
+        }
+
+        .level-display {
+            font-size: 18px;
+            font-weight: bold;
+            color: #333;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .fruit-name {
+            color: #667eea;
+            font-size: 20px;
+        }
+
+        .btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.3s;
+            font-weight: 600;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        }
+
+        .btn-primary {
+            background: #667eea;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #5a67d8;
+        }
+
+        .btn-secondary {
+            background: #48bb78;
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background: #38a169;
+        }
+
+        .btn-danger {
+            background: #f56565;
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background: #e53e3e;
+        }
+
+        .game-container {
+            flex: 1;
+            display: flex;
+            padding: 20px;
+            gap: 20px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .sidebar {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 10px;
+            padding: 20px;
+            width: 220px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            max-height: calc(100vh - 120px);
+            overflow-y: auto;
+        }
+
+        .sidebar::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .sidebar::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 3px;
+        }
+
+        .sidebar::-webkit-scrollbar-thumb {
+            background: #667eea;
+            border-radius: 3px;
+        }
+
+        .color-palette {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+        }
+
+        .color-btn {
+            width: 80px;
+            height: 80px;
+            border: 4px solid transparent;
+            border-radius: 15px;
+            cursor: pointer;
+            transition: all 0.3s;
+            position: relative;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+
+        .color-btn:hover {
+            transform: scale(1.1) rotate(5deg);
+        }
+
+        .color-btn.active {
+            border-color: #333;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.4);
+            transform: scale(1.1);
+        }
+
+        .color-btn.active::after {
+            content: '✓';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 35px;
+            color: white;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8);
+            font-weight: bold;
+        }
+
+        .zoom-controls {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .zoom-controls h3,
+        .controls-group h3 {
+            color: #333;
+            margin-bottom: 5px;
+            font-size: 16px;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .zoom-btn-group {
+            display: flex;
+            gap: 10px;
+        }
+
+        .zoom-btn {
+            flex: 1;
+            padding: 12px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 20px;
+            font-weight: bold;
+            transition: all 0.3s;
+        }
+
+        .zoom-btn:hover {
+            background: #5a67d8;
+            transform: scale(1.05);
+        }
+
+        .zoom-value {
+            text-align: center;
+            color: #666;
+            font-size: 14px;
+            margin-top: 5px;
+        }
+
+        .canvas-container {
+            flex: 1;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .canvas-wrapper {
+            position: relative;
+            transform-origin: center center;
+            transition: transform 0.3s ease;
+        }
+
+        canvas {
+            display: block;
+            cursor: pointer;
+        }
+
+        /* Styled Dialog Windows */
+        .dialog-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 500;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .dialog-overlay.active {
+            display: flex;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .dialog-window {
+            background: linear-gradient(135deg, #fff 0%, #f8f9fa 100%);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            min-width: 400px;
+            max-width: 500px;
+            animation: slideInBounce 0.5s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        @keyframes slideInBounce {
+            0% {
+                opacity: 0;
+                transform: scale(0.3);
+            }
+            50% {
+                transform: scale(1.05);
+            }
+            100% {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+
+        .dialog-header {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #e2e8f0;
+        }
+
+        .dialog-icon {
+            font-size: 40px;
+        }
+
+        .dialog-title {
+            color: #333;
+            font-size: 24px;
+            font-weight: bold;
+            flex: 1;
+        }
+
+        .dialog-content {
+            color: #666;
+            font-size: 16px;
+            line-height: 1.6;
+            margin-bottom: 25px;
+        }
+
+        .dialog-buttons {
+            display: flex;
+            gap: 15px;
+            justify-content: flex-end;
+        }
+
+        .dialog-btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+
+        .dialog-btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .dialog-btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .dialog-btn-secondary {
+            background: #e2e8f0;
+            color: #333;
+        }
+
+        .dialog-btn-secondary:hover {
+            background: #cbd5e0;
+        }
+
+        .dialog-btn-danger {
+            background: #f56565;
+            color: white;
+        }
+
+        .dialog-btn-danger:hover {
+            background: #e53e3e;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(245, 101, 101, 0.4);
+        }
+
+        /* Level Complete Window */
+        .level-complete-window {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: linear-gradient(135deg, #fff 0%, #f8f9fa 100%);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            z-index: 600;
+            text-align: center;
+            min-width: 400px;
+            animation: slideInBounce 0.6s ease;
+        }
+
+        .level-complete-window.active {
+            display: block;
+        }
+
+        .star-rating {
+            display: flex;
+            gap: 5px;
+            font-size: 30px;
+            justify-content: center;
+            margin-bottom: 15px;
+        }
+
+        .star {
+            color: #ffd700;
+            animation: starPop 0.4s ease;
+            animation-fill-mode: both;
+        }
+
+        .star:nth-child(1) { animation-delay: 0.1s; }
+        .star:nth-child(2) { animation-delay: 0.2s; }
+        .star:nth-child(3) { animation-delay: 0.3s; }
+
+        @keyframes starPop {
+            0% {
+                transform: scale(0) rotate(0deg);
+            }
+            50% {
+                transform: scale(1.3) rotate(180deg);
+            }
+            100% {
+                transform: scale(1) rotate(360deg);
+            }
+        }
+
+        .level-complete-title {
+            color: #667eea;
+            font-size: 28px;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+
+        .level-complete-message {
+            color: #666;
+            font-size: 16px;
+            margin-bottom: 20px;
+            line-height: 1.5;
+        }
+
+        .level-complete-stats {
+            background: rgba(102, 126, 234, 0.1);
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 20px;
+        }
+
+        .complete-stat-row {
+            display: flex;
+            justify-content: space-between;
+            margin: 8px 0;
+            color: #333;
+        }
+
+        .complete-stat-label {
+            font-weight: normal;
+        }
+
+        .complete-stat-value {
+            font-weight: bold;
+            color: #667eea;
+        }
+
+        .level-complete-buttons {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+        }
+
+        .complete-btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+
+        .complete-btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            flex: 1;
+        }
+
+        .complete-btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .complete-btn-secondary {
+            background: #e2e8f0;
+            color: #333;
+        }
+
+        .complete-btn-secondary:hover {
+            background: #cbd5e0;
+        }
+
+        .fruit-celebration {
+            font-size: 60px;
+            margin-bottom: 15px;
+            animation: celebrateBounce 1s ease infinite;
+        }
+
+        @keyframes celebrateBounce {
+            0%, 100% {
+                transform: translateY(0) scale(1);
+            }
+            50% {
+                transform: translateY(-10px) scale(1.1);
+            }
+        }
+
+        /* Success Message */
+        .success-message {
+            display: none;
+            position: fixed;
+            top: 100px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: linear-gradient(135deg, #48bb78 0%, #38a169 100%);
+            color: white;
+            padding: 15px 30px;
+            border-radius: 10px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            z-index: 700;
+            font-size: 16px;
+            font-weight: 600;
+            animation: slideDown 0.5s ease;
+        }
+
+        .success-message.active {
+            display: block;
+        }
+
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                transform: translateX(-50%) translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(-50%) translateY(0);
+            }
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal.active {
+            display: flex;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .modal-content {
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            text-align: center;
+            max-width: 500px;
+            animation: slideIn 0.5s ease;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateY(-100px) scale(0.8);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0) scale(1);
+                opacity: 1;
+            }
+        }
+
+        .modal h2 {
+            color: #667eea;
+            font-size: 36px;
+            margin-bottom: 20px;
+        }
+
+        .modal p {
+            color: #666;
+            font-size: 18px;
+            margin-bottom: 30px;
+            line-height: 1.6;
+        }
+
+        .trophy {
+            font-size: 100px;
+            margin-bottom: 20px;
+            animation: bounce 1s infinite;
+        }
+
+        @keyframes bounce {
+            0%, 100% {
+                transform: translateY(0) rotate(0deg);
+            }
+            25% {
+                transform: translateY(-10px) rotate(-5deg);
+            }
+            50% {
+                transform: translateY(-20px) rotate(0deg);
+            }
+            75% {
+                transform: translateY(-10px) rotate(5deg);
+            }
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 35px;
+            background: #e2e8f0;
+            border-radius: 20px;
+            overflow: hidden;
+            margin: 20px 0;
+            box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea, #764ba2);
+            transition: width 0.5s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            font-size: 16px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
+
+        .controls-group {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .stats {
+            background: rgba(102, 126, 234, 0.1);
+            border-radius: 10px;
+            padding: 15px;
+        }
+
+        .stat-item {
+            display: flex;
+            justify-content: space-between;
+            margin: 8px 0;
+            color: #333;
+            font-size: 14px;
+        }
+
+        .stat-value {
+            font-weight: bold;
+            color: #667eea;
+        }
+
+        .fullscreen-btn {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            width: 55px;
+            height: 55px;
+            border-radius: 50%;
+            background: #667eea;
+            color: white;
+            border: none;
+            cursor: pointer;
+            font-size: 28px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+            z-index: 100;
+            transition: all 0.3s;
+        }
+
+        .fullscreen-btn:hover {
+            background: #5a67d8;
+            transform: scale(1.1) rotate(180deg);
+        }
+
+        .level-navigation {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .level-dots {
+            display: flex;
+            gap: 8px;
+            margin: 0 10px;
+        }
+
+        .level-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #e2e8f0;
+            transition: all 0.3s;
+            cursor: pointer;
+        }
+
+        .level-dot.active {
+            background: #667eea;
+            transform: scale(1.3);
+        }
+
+        .level-dot.completed {
+            background: #48bb78;
+        }
+
+        .instructions {
+            background: rgba(102, 126, 234, 0.1);
+            border-radius: 10px;
+            padding: 15px;
+            color: #333;
+            font-size: 14px;
+            line-height: 1.6;
+        }
+
+        .instructions h4 {
+            color: #667eea;
+            margin-bottom: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🎨 Paint Fruits Game <span class="fruit-name" id="fruitName"></span></h1>
+        <div class="level-info">
+            <div class="level-display">
+                Level: <span id="currentLevel">1</span>/10
+            </div>
+            <div class="level-dots" id="levelDots"></div>
+            <div class="progress-bar" style="width: 250px;">
+                <div class="progress-fill" id="progressBar" style="width: 0%">0%</div>
+            </div>
+            <div class="level-navigation">
+                <button class="btn btn-primary" onclick="game.previousLevel()">◀ Previous</button>
+                <button class="btn btn-primary" onclick="game.nextLevel()">Next ▶</button>
+                <button class="btn btn-danger" onclick="game.showResetDialog()">🔄 Reset</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="game-container">
+        <div class="sidebar">
+            <div class="controls-group">
+                <h3>🎨 Color Palette</h3>
+                <div class="color-palette" id="colorPalette"></div>
+            </div>
+            
+            <div class="zoom-controls">
+                <h3>🔍 Zoom Control</h3>
+                <div class="zoom-btn-group">
+                    <button class="zoom-btn" onclick="game.zoomIn()">+</button>
+                    <button class="zoom-btn" onclick="game.zoomOut()">−</button>
+                    <button class="zoom-btn" onclick="game.resetZoom()">⟲</button>
+                </div>
+                <div class="zoom-value">Zoom: <span id="zoomValue">100%</span></div>
+            </div>
+
+            <div class="stats">
+                <h3>📊 Statistics</h3>
+                <div class="stat-item">
+                    <span>Segments Filled:</span>
+                    <span class="stat-value" id="segmentsFilled">0/0</span>
+                </div>
+                <div class="stat-item">
+                    <span>Completion:</span>
+                    <span class="stat-value" id="levelCompletion">0%</span>
+                </div>
+                <div class="stat-item">
+                    <span>Total Progress:</span>
+                    <span class="stat-value" id="totalProgress">0/10</span>
+                </div>
+            </div>
+
+            <div class="controls-group">
+                <button class="btn btn-secondary" onclick="game.saveProgress()">💾 Save Progress</button>
+                <button class="btn btn-danger" onclick="game.showClearAllDialog()">🗑️ Clear All Data</button>
+            </div>
+
+            <div class="instructions">
+                <h4>📖 How to Play:</h4>
+                1. Select a color from palette<br>
+                2. Click on fruit segments to paint<br>
+                3. Complete all segments<br>
+                4. Unlock next level!
+            </div>
+        </div>
+
+        <div class="canvas-container">
+            <div class="canvas-wrapper" id="canvasWrapper">
+                <canvas id="gameCanvas"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <button class="fullscreen-btn" onclick="game.toggleFullscreen()">⛶</button>
+
+    <!-- Success Message -->
+    <div class="success-message" id="successMessage"></div>
+
+    <!-- Dialog Overlays -->
+    <div class="dialog-overlay" id="resetDialog">
+        <div class="dialog-window">
+            <div class="dialog-header">
+                <span class="dialog-icon">🔄</span>
+                <span class="dialog-title">Reset Level</span>
+            </div>
+            <div class="dialog-content">
+                Are you sure you want to reset this level? All your progress on this fruit will be lost.
+            </div>
+            <div class="dialog-buttons">
+                <button class="dialog-btn dialog-btn-secondary" onclick="game.closeDialog('resetDialog')">Cancel</button>
+                <button class="dialog-btn dialog-btn-danger" onclick="game.confirmReset()">Reset Level</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="dialog-overlay" id="clearAllDialog">
+        <div class="dialog-window">
+            <div class="dialog-header">
+                <span class="dialog-icon">⚠️</span>
+                <span class="dialog-title">Clear All Data</span>
+            </div>
+            <div class="dialog-content">
+                <strong>Warning!</strong> This will delete all your progress, including completed levels and saved paintings. This action cannot be undone!
+            </div>
+            <div class="dialog-buttons">
+                <button class="dialog-btn dialog-btn-secondary" onclick="game.closeDialog('clearAllDialog')">Cancel</button>
+                <button class="dialog-btn dialog-btn-danger" onclick="game.confirmClearAll()">Clear Everything</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Level Complete Window -->
+    <div class="level-complete-window" id="levelCompleteWindow">
+        <div class="fruit-celebration" id="celebrationEmoji">🎉</div>
+        <div class="star-rating">
+            <span class="star">⭐</span>
+            <span class="star">⭐</span>
+            <span class="star">⭐</span>
+        </div>
+        <div class="level-complete-title">Level Complete!</div>
+        <div class="level-complete-message" id="completeMessage">
+            Excellent work! You've painted the fruit perfectly!
+        </div>
+        <div class="level-complete-stats">
+            <div class="complete-stat-row">
+                <span class="complete-stat-label">Fruit:</span>
+                <span class="complete-stat-value" id="completeFruit">Apple</span>
+            </div>
+            <div class="complete-stat-row">
+                <span class="complete-stat-label">Level:</span>
+                <span class="complete-stat-value" id="completeLevel">1/10</span>
+            </div>
+            <div class="complete-stat-row">
+                <span class="complete-stat-label">Progress:</span>
+                <span class="complete-stat-value" id="completeProgress">10%</span>
+            </div>
+        </div>
+        <div class="level-complete-buttons">
+            <button class="complete-btn complete-btn-secondary" onclick="game.stayOnLevel()">Stay Here</button>
+            <button class="complete-btn complete-btn-primary" onclick="game.goToNextLevel()">Next Level →</button>
+        </div>
+    </div>
+
+    <!-- Final Congratulations Modal -->
+    <div class="modal" id="congratsModal">
+        <div class="modal-content">
+            <div class="trophy">🏆</div>
+            <h2>Congratulations!</h2>
+            <p id="congratsMessage">
+                🎉 Amazing Achievement! 🎉<br>
+                You've successfully painted all 10 fruits!<br>
+                You're a true fruit painting master! 🎨🍎🍊🍉
+            </p>
+            <button class="btn btn-primary" onclick="game.closeModal()" style="font-size: 18px; padding: 12px 30px;">Continue Playing</button>
+        </div>
+    </div>
+
+    <script>
+        class PaintFruitsGame {
+            constructor() {
+                this.canvas = document.getElementById('gameCanvas');
+                this.ctx = this.canvas.getContext('2d');
+                this.canvasWrapper = document.getElementById('canvasWrapper');
+                this.currentLevel = 1;
+                this.totalLevels = 10;
+                this.currentColor = '#FF6B6B';
+                this.zoomLevel = 1;
+                this.segments = [];
+                this.completedLevels = new Set();
+                this.hoveredSegment = null;
+                this.yOffset = -80; // Move images up
+                this.requiredSegments = {}; // Track which segments are required for completion
+                
+                this.colors = [
+                    '#FF6B6B', // Red
+                    '#4ECDC4', // Teal
+                    '#45B7D1', // Blue
+                    '#96CEB4', // Green
+                    '#FFEAA7', // Yellow
+                    '#DDA0DD', // Plum
+                    '#FFA500', // Orange
+                    '#FF69B4'  // Pink
+                ];
+
+                this.fruits = [
+                    { name: 'Apple', emoji: '🍎', createSegments: () => this.createAppleSegments() },
+                    { name: 'Orange', emoji: '🍊', createSegments: () => this.createOrangeSegments() },
+                    { name: 'Watermelon', emoji: '🍉', createSegments: () => this.createWatermelonSegments() },
+                    { name: 'Grapes', emoji: '🍇', createSegments: () => this.createGrapesSegments() },
+                    { name: 'Strawberry', emoji: '🍓', createSegments: () => this.createStrawberrySegments() },
+                    { name: 'Pineapple', emoji: '🍍', createSegments: () => this.createPineappleSegments() },
+                    { name: 'Banana', emoji: '🍌', createSegments: () => this.createBananaSegments() },
+                    { name: 'Cherry', emoji: '🍒', createSegments: () => this.createCherrySegments() },
+                    { name: 'Lemon', emoji: '🍋', createSegments: () => this.createLemonSegments() },
+                    { name: 'Peach', emoji: '🍑', createSegments: () => this.createPeachSegments() }
+                ];
+
+                this.init();
+            }
+
+            init() {
+                this.setupCanvas();
+                this.createColorPalette();
+                this.createLevelDots();
+                this.loadProgress();
+                this.loadLevel(this.currentLevel);
+                this.setupEventListeners();
+                this.updateProgressBar();
+                this.updateStats();
+            }
+
+            setupCanvas() {
+                this.canvas.width = 700;
+                this.canvas.height = 700;
+            }
+
+            createLevelDots() {
+                const container = document.getElementById('levelDots');
+                container.innerHTML = ''; // Clear existing dots
+                for (let i = 1; i <= this.totalLevels; i++) {
+                    const dot = document.createElement('div');
+                    dot.className = 'level-dot';
+                    dot.onclick = () => {
+                        this.currentLevel = i;
+                        this.loadLevel(i);
+                    };
+                    container.appendChild(dot);
+                }
+                this.updateLevelDots();
+            }
+
+            updateLevelDots() {
+                const dots = document.querySelectorAll('.level-dot');
+                dots.forEach((dot, index) => {
+                    dot.classList.remove('active', 'completed');
+                    if (index + 1 === this.currentLevel) {
+                        dot.classList.add('active');
+                    }
+                    if (this.completedLevels.has(index + 1)) {
+                        dot.classList.add('completed');
+                    }
+                });
+            }
+
+            createColorPalette() {
+                const palette = document.getElementById('colorPalette');
+                palette.innerHTML = ''; // Clear existing palette
+                this.colors.forEach((color, index) => {
+                    const btn = document.createElement('div');
+                    btn.className = 'color-btn';
+                    btn.style.backgroundColor = color;
+                    if (index === 0) btn.classList.add('active');
+                    btn.onclick = () => this.selectColor(color, btn);
+                    palette.appendChild(btn);
+                });
+            }
+
+            selectColor(color, btn) {
+                this.currentColor = color;
+                document.querySelectorAll('.color-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+            }
+
+            // Dialog functions
+            showDialog(dialogId) {
+                document.getElementById(dialogId).classList.add('active');
+            }
+
+            closeDialog(dialogId) {
+                document.getElementById(dialogId).classList.remove('active');
+            }
+
+            showResetDialog() {
+                this.showDialog('resetDialog');
+            }
+
+            confirmReset() {
+                this.closeDialog('resetDialog');
+                this.resetLevel();
+            }
+
+            showClearAllDialog() {
+                this.showDialog('clearAllDialog');
+            }
+
+            confirmClearAll() {
+                this.closeDialog('clearAllDialog');
+                this.clearAll();
+            }
+
+            showSuccessMessage(message) {
+                const successDiv = document.getElementById('successMessage');
+                successDiv.textContent = message;
+                successDiv.classList.add('active');
+                setTimeout(() => {
+                    successDiv.classList.remove('active');
+                }, 3000);
+            }
+
+            createAppleSegments() {
+                const cx = 350, cy = 350 + this.yOffset;
+                const segments = [];
+                
+                // Main body segments
+                segments.push({
+                    path: this.createPath([
+                        {x: cx, y: cy - 120},
+                        {x: cx - 100, y: cy - 80},
+                        {x: cx - 120, y: cy},
+                        {x: cx - 100, y: cy + 80},
+                        {x: cx - 40, y: cy + 120},
+                        {x: cx, y: cy + 100}
+                    ], true),
+                    color: null,
+                    id: 'apple-left',
+                    required: true
+                });
+
+                segments.push({
+                    path: this.createPath([
+                        {x: cx, y: cy - 120},
+                        {x: cx + 100, y: cy - 80},
+                        {x: cx + 120, y: cy},
+                        {x: cx + 100, y: cy + 80},
+                        {x: cx + 40, y: cy + 120},
+                        {x: cx, y: cy + 100}
+                    ], true),
+                    color: null,
+                    id: 'apple-right',
+                    required: true
+                });
+
+                // Leaf
+                segments.push({
+                    path: this.createPath([
+                        {x: cx, y: cy - 120},
+                        {x: cx + 20, y: cy - 150},
+                        {x: cx + 40, y: cy - 140},
+                        {x: cx + 20, y: cy - 130}
+                    ], true),
+                    color: null,
+                    id: 'apple-leaf',
+                    required: true
+                });
+
+                // Stem
+                segments.push({
+                    path: this.createPath([
+                        {x: cx - 5, y: cy - 120},
+                        {x: cx - 5, y: cy - 150},
+                        {x: cx + 5, y: cy - 150},
+                        {x: cx + 5, y: cy - 120}
+                    ], true),
+                    color: null,
+                    id: 'apple-stem',
+                    required: true
+                });
+
+                return segments;
+            }
+
+            createOrangeSegments() {
+                const cx = 350, cy = 350 + this.yOffset, r = 120;
+                const segments = [];
+                const slices = 8;
+                
+                // Orange slices - all required
+                for (let i = 0; i < slices; i++) {
+                    const angle1 = (i * 2 * Math.PI) / slices - Math.PI / 2;
+                    const angle2 = ((i + 1) * 2 * Math.PI) / slices - Math.PI / 2;
+                    
+                    segments.push({
+                        path: this.createWedgePath(cx, cy, r, angle1, angle2),
+                        color: null,
+                        id: `orange-slice-${i}`,
+                        required: true
+                    });
+                }
+
+                // Center - optional decorative element
+                segments.push({
+                    path: this.createCirclePath(cx, cy, 30),
+                    color: null,
+                    id: 'orange-center',
+                    required: false
+                });
+
+                return segments;
+            }
+
+            createWatermelonSegments() {
+                const cx = 350, cy = 350 + this.yOffset, r = 140;
+                const segments = [];
+                
+                // Rind (outer green) - required
+                segments.push({
+                    path: this.createArcPath(cx, cy, r, r - 20, 0, Math.PI),
+                    color: null,
+                    id: 'watermelon-rind',
+                    required: true
+                });
+
+                // White part - required
+                segments.push({
+                    path: this.createArcPath(cx, cy, r - 20, r - 35, 0, Math.PI),
+                    color: null,
+                    id: 'watermelon-white',
+                    required: true
+                });
+
+                // Red flesh segments - all required
+                const fleshRadius = r - 35;
+                const slices = 5;
+                for (let i = 0; i < slices; i++) {
+                    const angle1 = (i * Math.PI) / slices;
+                    const angle2 = ((i + 1) * Math.PI) / slices;
+                    
+                    segments.push({
+                        path: this.createWedgePath(cx, cy, fleshRadius, angle1, angle2),
+                        color: null,
+                        id: `watermelon-flesh-${i}`,
+                        required: true
+                    });
+                }
+
+                // Seeds - optional decorative elements
+                for (let i = 0; i < 5; i++) {
+                    const seedX = cx - 60 + i * 30;
+                    const seedY = cy + 20;
+                    segments.push({
+                        path: this.createOvalPath(seedX, seedY, 8, 12),
+                        color: null,
+                        id: `watermelon-seed-${i}`,
+                        required: false
+                    });
+                }
+
+                return segments;
+            }
+
+            createGrapesSegments() {
+                const cx = 350, cy = 280 + this.yOffset;
+                const segments = [];
+                const grapeRadius = 35;
+                
+                // Create grape bunch pattern - all required
+                const grapePositions = [
+                    {x: cx, y: cy, id: 'grape-0'},
+                    {x: cx - 40, y: cy + 60, id: 'grape-1'},
+                    {x: cx + 40, y: cy + 60, id: 'grape-2'},
+                    {x: cx - 80, y: cy + 120, id: 'grape-3'},
+                    {x: cx, y: cy + 120, id: 'grape-4'},
+                    {x: cx + 80, y: cy + 120, id: 'grape-5'},
+                    {x: cx - 40, y: cy + 180, id: 'grape-6'},
+                    {x: cx + 40, y: cy + 180, id: 'grape-7'},
+                    {x: cx, y: cy + 240, id: 'grape-8'}
+                ];
+
+                grapePositions.forEach(pos => {
+                    segments.push({
+                        path: this.createCirclePath(pos.x, pos.y, grapeRadius),
+                        color: null,
+                        id: pos.id,
+                        required: true
+                    });
+                });
+
+                return segments;
+            }
+
+            createStrawberrySegments() {
+                const cx = 350, cy = 350 + this.yOffset;
+                const segments = [];
+                
+                // Main body - required
+                segments.push({
+                    path: this.createPath([
+                        {x: cx, y: cy - 100},
+                        {x: cx - 80, y: cy - 40},
+                        {x: cx - 90, y: cy + 20},
+                        {x: cx - 70, y: cy + 80},
+                        {x: cx - 30, y: cy + 120},
+                        {x: cx, y: cy + 130},
+                        {x: cx + 30, y: cy + 120},
+                        {x: cx + 70, y: cy + 80},
+                        {x: cx + 90, y: cy + 20},
+                        {x: cx + 80, y: cy - 40}
+                    ], true),
+                    color: null,
+                    id: 'strawberry-body',
+                    required: true
+                });
+
+                // Leaves - all required
+                const leafPositions = [
+                    {x: cx - 30, y: cy - 100},
+                    {x: cx, y: cy - 110},
+                    {x: cx + 30, y: cy - 100}
+                ];
+
+                leafPositions.forEach((pos, i) => {
+                    segments.push({
+                        path: this.createPath([
+                            {x: pos.x, y: pos.y},
+                            {x: pos.x - 15, y: pos.y - 25},
+                            {x: pos.x, y: pos.y - 20},
+                            {x: pos.x + 15, y: pos.y - 25}
+                        ], true),
+                        color: null,
+                        id: `strawberry-leaf-${i}`,
+                        required: true
+                    });
+                });
+
+                // Seeds (dots) - optional decorative
+                const seedPositions = [
+                    {x: cx - 30, y: cy - 20},
+                    {x: cx + 30, y: cy - 20},
+                    {x: cx, y: cy + 10},
+                    {x: cx - 40, y: cy + 40},
+                    {x: cx + 40, y: cy + 40},
+                    {x: cx, y: cy + 70}
+                ];
+
+                seedPositions.forEach((pos, i) => {
+                    segments.push({
+                        path: this.createCirclePath(pos.x, pos.y, 6),
+                        color: null,
+                        id: `strawberry-seed-${i}`,
+                        required: false
+                    });
+                });
+
+                return segments;
+            }
+
+            createPineappleSegments() {
+                const cx = 350, cy = 340 + this.yOffset;
+                const segments = [];
+                
+                // Diamond pattern for pineapple body - all required
+                const rows = 5;
+                const cols = 3;
+                const diamondSize = 40;
+                
+                for (let row = 0; row < rows; row++) {
+                    for (let col = 0; col < cols; col++) {
+                        const x = cx + (col - 1) * diamondSize;
+                        const y = cy - 80 + row * diamondSize;
+                        
+                        segments.push({
+                            path: this.createPath([
+                                {x: x, y: y - diamondSize/2},
+                                {x: x + diamondSize/2, y: y},
+                                {x: x, y: y + diamondSize/2},
+                                {x: x - diamondSize/2, y: y}
+                            ], true),
+                            color: null,
+                            id: `pineapple-diamond-${row}-${col}`,
+                            required: true
+                        });
+                    }
+                }
+
+                // Crown leaves - all required
+                for (let i = 0; i < 7; i++) {
+                    const angle = (i - 3) * 0.3;
+                    const x = cx + Math.sin(angle) * 40;
+                    const y = cy - 160;
+                    
+                    segments.push({
+                        path: this.createPath([
+                            {x: x, y: y},
+                            {x: x - 10, y: y - 60},
+                            {x: x, y: y - 50},
+                            {x: x + 10, y: y - 60}
+                        ], true),
+                        color: null,
+                        id: `pineapple-crown-${i}`,
+                        required: true
+                    });
+                }
+
+                return segments;
+            }
+
+            createBananaSegments() {
+                const cx = 350, cy = 350 + this.yOffset;
+                const segments = [];
+                
+                // Banana body segments - all required
+                segments.push({
+                    path: this.createPath([
+                        {x: cx - 150, y: cy - 50},
+                        {x: cx - 100, y: cy - 80},
+                        {x: cx, y: cy - 90},
+                        {x: cx + 100, y: cy - 70},
+                        {x: cx + 150, y: cy - 30},
+                        {x: cx + 140, y: cy + 10},
+                        {x: cx + 80, y: cy - 20},
+                        {x: cx, y: cy - 40},
+                        {x: cx - 80, y: cy - 30},
+                        {x: cx - 140, y: cy - 10}
+                    ], true),
+                    color: null,
+                    id: 'banana-top',
+                    required: true
+                });
+
+                segments.push({
+                    path: this.createPath([
+                        {x: cx - 140, y: cy - 10},
+                        {x: cx - 80, y: cy - 30},
+                        {x: cx, y: cy - 40},
+                        {x: cx + 80, y: cy - 20},
+                        {x: cx + 140, y: cy + 10},
+                        {x: cx + 130, y: cy + 50},
+                        {x: cx + 70, y: cy + 30},
+                        {x: cx, y: cy + 20},
+                        {x: cx - 70, y: cy + 30},
+                        {x: cx - 130, y: cy + 30}
+                    ], true),
+                    color: null,
+                    id: 'banana-middle',
+                    required: true
+                });
+
+                segments.push({
+                    path: this.createPath([
+                        {x: cx - 130, y: cy + 30},
+                        {x: cx - 70, y: cy + 30},
+                        {x: cx, y: cy + 20},
+                        {x: cx + 70, y: cy + 30},
+                        {x: cx + 130, y: cy + 50},
+                        {x: cx + 100, y: cy + 80},
+                        {x: cx + 40, y: cy + 70},
+                        {x: cx - 40, y: cy + 70},
+                        {x: cx - 100, y: cy + 60}
+                    ], true),
+                    color: null,
+                    id: 'banana-bottom',
+                    required: true
+                });
+
+                // Stem - required
+                segments.push({
+                    path: this.createPath([
+                        {x: cx - 150, y: cy - 50},
+                        {x: cx - 170, y: cy - 60},
+                        {x: cx - 165, y: cy - 40},
+                        {x: cx - 145, y: cy - 35}
+                    ], true),
+                    color: null,
+                    id: 'banana-stem',
+                    required: true
+                });
+
+                return segments;
+            }
+
+            createCherrySegments() {
+                const cx = 350, cy = 340 + this.yOffset;
+                const segments = [];
+                const cherryRadius = 60;
+                
+                // All cherry parts are required
+                segments.push({
+                    path: this.createCirclePath(cx - 80, cy, cherryRadius),
+                    color: null,
+                    id: 'cherry-left',
+                    required: true
+                });
+
+                segments.push({
+                    path: this.createCirclePath(cx + 80, cy, cherryRadius),
+                    color: null,
+                    id: 'cherry-right',
+                    required: true
+                });
+
+                segments.push({
+                    path: this.createPath([
+                        {x: cx - 80, y: cy - cherryRadius},
+                        {x: cx - 75, y: cy - cherryRadius - 10},
+                        {x: cx - 20, y: cy - 180},
+                        {x: cx - 10, y: cy - 185},
+                        {x: cx - 15, y: cy - 175},
+                        {x: cx - 70, y: cy - cherryRadius - 5}
+                    ], true),
+                    color: null,
+                    id: 'cherry-stem-left',
+                    required: true
+                });
+
+                segments.push({
+                    path: this.createPath([
+                        {x: cx + 80, y: cy - cherryRadius},
+                        {x: cx + 75, y: cy - cherryRadius - 10},
+                        {x: cx + 20, y: cy - 180},
+                        {x: cx + 10, y: cy - 185},
+                        {x: cx + 15, y: cy - 175},
+                        {x: cx + 70, y: cy - cherryRadius - 5}
+                    ], true),
+                    color: null,
+                    id: 'cherry-stem-right',
+                    required: true
+                });
+
+                segments.push({
+                    path: this.createPath([
+                        {x: cx, y: cy - 180},
+                        {x: cx - 20, y: cy - 200},
+                        {x: cx - 15, y: cy - 210},
+                        {x: cx + 5, y: cy - 195},
+                        {x: cx + 25, y: cy - 200},
+                        {x: cx + 20, y: cy - 185}
+                    ], true),
+                    color: null,
+                    id: 'cherry-leaf',
+                    required: true
+                });
+
+                return segments;
+            }
+
+            createLemonSegments() {
+                const cx = 350, cy = 350 + this.yOffset;
+                const segments = [];
+                
+                // All lemon parts are required
+                segments.push({
+                    path: this.createOvalPath(cx, cy, 150, 100),
+                    color: null,
+                    id: 'lemon-body',
+                    required: true
+                });
+
+                segments.push({
+                    path: this.createPath([
+                        {x: cx - 150, y: cy},
+                        {x: cx - 180, y: cy - 10},
+                        {x: cx - 185, y: cy},
+                        {x: cx - 180, y: cy + 10}
+                    ], true),
+                    color: null,
+                    id: 'lemon-tip-left',
+                    required: true
+                });
+
+                segments.push({
+                    path: this.createPath([
+                        {x: cx + 150, y: cy},
+                        {x: cx + 180, y: cy - 10},
+                        {x: cx + 185, y: cy},
+                        {x: cx + 180, y: cy + 10}
+                    ], true),
+                    color: null,
+                    id: 'lemon-tip-right',
+                    required: true
+                });
+
+                return segments;
+            }
+
+            createPeachSegments() {
+                const cx = 350, cy = 350 + this.yOffset;
+                const segments = [];
+                
+                // Main peach halves - required
+                segments.push({
+                    path: this.createPath([
+                        {x: cx, y: cy - 100},
+                        {x: cx - 100, y: cy - 70},
+                        {x: cx - 120, y: cy},
+                        {x: cx - 100, y: cy + 70},
+                        {x: cx, y: cy + 100}
+                    ], true),
+                    color: null,
+                    id: 'peach-left',
+                    required: true
+                });
+
+                segments.push({
+                    path: this.createPath([
+                        {x: cx, y: cy - 100},
+                        {x: cx + 100, y: cy - 70},
+                        {x: cx + 120, y: cy},
+                        {x: cx + 100, y: cy + 70},
+                        {x: cx, y: cy + 100}
+                    ], true),
+                    color: null,
+                    id: 'peach-right',
+                    required: true
+                });
+
+                // Crease line - optional decorative
+                segments.push({
+                    path: this.createPath([
+                        {x: cx - 5, y: cy - 95},
+                        {x: cx - 3, y: cy},
+                        {x: cx - 5, y: cy + 95},
+                        {x: cx + 5, y: cy + 95},
+                        {x: cx + 3, y: cy},
+                        {x: cx + 5, y: cy - 95}
+                    ], true),
+                    color: null,
+                    id: 'peach-crease',
+                    required: false
+                });
+
+                // Leaf - required
+                segments.push({
+                    path: this.createPath([
+                        {x: cx + 20, y: cy - 100},
+                        {x: cx + 40, y: cy - 120},
+                        {x: cx + 60, y: cy - 110},
+                        {x: cx + 45, y: cy - 105}
+                    ], true),
+                    color: null,
+                    id: 'peach-leaf',
+                    required: true
+                });
+
+                return segments;
+            }
+
+            createPath(points, closed = false) {
+                const path = new Path2D();
+                path.moveTo(points[0].x, points[0].y);
+                for (let i = 1; i < points.length; i++) {
+                    path.lineTo(points[i].x, points[i].y);
+                }
+                if (closed) path.closePath();
+                return path;
+            }
+
+            createCirclePath(x, y, radius) {
+                const path = new Path2D();
+                path.arc(x, y, radius, 0, Math.PI * 2);
+                return path;
+            }
+
+            createOvalPath(cx, cy, rx, ry) {
+                const path = new Path2D();
+                path.ellipse(cx, cy, rx, ry, 0, 0, Math.PI * 2);
+                return path;
+            }
+
+            createWedgePath(cx, cy, radius, startAngle, endAngle) {
+                const path = new Path2D();
+                path.moveTo(cx, cy);
+                path.arc(cx, cy, radius, startAngle, endAngle);
+                path.closePath();
+                return path;
+            }
+
+            createArcPath(cx, cy, outerRadius, innerRadius, startAngle, endAngle) {
+                const path = new Path2D();
+                path.arc(cx, cy, outerRadius, startAngle, endAngle);
+                path.arc(cx, cy, innerRadius, endAngle, startAngle, true);
+                path.closePath();
+                return path;
+            }
+
+            loadLevel(level) {
+                this.currentLevel = level;
+                const fruit = this.fruits[level - 1];
+                
+                // Create fresh segments with Path2D objects
+                this.segments = fruit.createSegments();
+                
+                // Load saved colors
+                const savedColors = this.getSavedColors(level);
+                if (savedColors) {
+                    this.segments.forEach((segment, index) => {
+                        if (savedColors[index]) {
+                            segment.color = savedColors[index];
+                        }
+                    });
+                }
+                
+                document.getElementById('currentLevel').textContent = level;
+                document.getElementById('fruitName').textContent = `${fruit.emoji} ${fruit.name}`;
+                
+                this.updateLevelDots();
+                this.render();
+                this.updateStats();
+            }
+
+            render() {
+                this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+                
+                // Draw segments
+                this.segments.forEach(segment => {
+                    // Fill
+                    if (segment.color) {
+                        this.ctx.fillStyle = segment.color;
+                        this.ctx.fill(segment.path);
+                    }
+                    
+                    // Stroke
+                    this.ctx.strokeStyle = '#333';
+                    this.ctx.lineWidth = 2;
+                    this.ctx.stroke(segment.path);
+                    
+                    // Hover effect
+                    if (this.hoveredSegment === segment) {
+                        this.ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
+                        this.ctx.fill(segment.path);
+                    }
+                });
+            }
+
+            setupEventListeners() {
+                this.canvas.addEventListener('click', (e) => this.handleClick(e));
+                this.canvas.addEventListener('mousemove', (e) => this.handleMouseMove(e));
+                this.canvas.addEventListener('mouseleave', () => {
+                    this.hoveredSegment = null;
+                    this.canvas.style.cursor = 'default';
+                    this.render();
+                });
+            }
+
+            handleClick(e) {
+                const rect = this.canvas.getBoundingClientRect();
+                const scaleX = this.canvas.width / rect.width;
+                const scaleY = this.canvas.height / rect.height;
+                
+                // Calculate the center of the canvas in screen coordinates
+                const centerX = rect.width / 2;
+                const centerY = rect.height / 2;
+                
+                // Get mouse position relative to canvas center
+                const mouseX = e.clientX - rect.left - centerX;
+                const mouseY = e.clientY - rect.top - centerY;
+                
+                // Apply inverse zoom transformation
+                const x = (mouseX / this.zoomLevel + centerX) * scaleX;
+                const y = (mouseY / this.zoomLevel + centerY) * scaleY;
+                
+                for (let segment of this.segments) {
+                    if (this.ctx.isPointInPath(segment.path, x, y)) {
+                        segment.color = this.currentColor;
+                        this.render();
+                        this.saveColors();
+                        this.updateStats();
+                        this.checkCompletion();
+                        break;
+                    }
+                }
+            }
+
+            handleMouseMove(e) {
+                const rect = this.canvas.getBoundingClientRect();
+                const scaleX = this.canvas.width / rect.width;
+                const scaleY = this.canvas.height / rect.height;
+                
+                // Calculate the center of the canvas in screen coordinates
+                const centerX = rect.width / 2;
+                const centerY = rect.height / 2;
+                
+                // Get mouse position relative to canvas center
+                const mouseX = e.clientX - rect.left - centerX;
+                const mouseY = e.clientY - rect.top - centerY;
+                
+                // Apply inverse zoom transformation
+                const x = (mouseX / this.zoomLevel + centerX) * scaleX;
+                const y = (mouseY / this.zoomLevel + centerY) * scaleY;
+                
+                let foundSegment = null;
+                for (let segment of this.segments) {
+                    if (this.ctx.isPointInPath(segment.path, x, y)) {
+                        foundSegment = segment;
+                        break;
+                    }
+                }
+                
+                if (foundSegment !== this.hoveredSegment) {
+                    this.hoveredSegment = foundSegment;
+                    this.canvas.style.cursor = foundSegment ? 'pointer' : 'default';
+                    this.render();
+                }
+            }
+
+            updateStats() {
+                // Count only required segments for statistics
+                const requiredSegments = this.segments.filter(s => s.required !== false);
+                const filled = requiredSegments.filter(s => s.color).length;
+                const total = requiredSegments.length;
+                const percentage = total > 0 ? Math.round((filled / total) * 100) : 0;
+                
+                document.getElementById('segmentsFilled').textContent = `${filled}/${total}`;
+                document.getElementById('levelCompletion').textContent = `${percentage}%`;
+                document.getElementById('totalProgress').textContent = `${this.completedLevels.size}/${this.totalLevels}`;
+            }
+
+            checkCompletion() {
+                // Check only required segments for completion
+                const requiredSegments = this.segments.filter(s => s.required !== false);
+                const filled = requiredSegments.filter(s => s.color).length;
+                const total = requiredSegments.length;
+                
+                if (filled === total && total > 0) {
+                    this.completedLevels.add(this.currentLevel);
+                    this.updateProgressBar();
+                    this.updateLevelDots();
+                    this.saveProgress();
+                    
+                    if (this.completedLevels.size === this.totalLevels) {
+                        setTimeout(() => this.showCongratulations(), 500);
+                    } else {
+                        setTimeout(() => this.showLevelComplete(), 300);
+                    }
+                }
+            }
+
+            showLevelComplete() {
+                const window = document.getElementById('levelCompleteWindow');
+                const fruit = this.fruits[this.currentLevel - 1];
+                
+                // Update content
+                document.getElementById('celebrationEmoji').textContent = fruit.emoji;
+                document.getElementById('completeFruit').textContent = fruit.name;
+                document.getElementById('completeLevel').textContent = `${this.currentLevel}/${this.totalLevels}`;
+                document.getElementById('completeProgress').textContent = `${Math.round((this.completedLevels.size / this.totalLevels) * 100)}%`;
+                
+                // Show window
+                window.classList.add('active');
+            }
+
+            stayOnLevel() {
+                document.getElementById('levelCompleteWindow').classList.remove('active');
+            }
+
+            goToNextLevel() {
+                document.getElementById('levelCompleteWindow').classList.remove('active');
+                if (this.currentLevel < this.totalLevels) {
+                    this.nextLevel();
+                }
+            }
+
+            zoomIn() {
+                if (this.zoomLevel < 2) {
+                    this.zoomLevel += 0.25;
+                    this.updateZoom();
+                }
+            }
+
+            zoomOut() {
+                if (this.zoomLevel > 0.5) {
+                    this.zoomLevel -= 0.25;
+                    this.updateZoom();
+                }
+            }
+
+            resetZoom() {
+                this.zoomLevel = 1;
+                this.updateZoom();
+            }
+
+            updateZoom() {
+                this.canvasWrapper.style.transform = `scale(${this.zoomLevel})`;
+                document.getElementById('zoomValue').textContent = `${Math.round(this.zoomLevel * 100)}%`;
+            }
+
+            nextLevel() {
+                if (this.currentLevel < this.totalLevels) {
+                    this.currentLevel++;
+                    this.loadLevel(this.currentLevel);
+                }
+            }
+
+            previousLevel() {
+                if (this.currentLevel > 1) {
+                    this.currentLevel--;
+                    this.loadLevel(this.currentLevel);
+                }
+            }
+
+            resetLevel() {
+                this.segments.forEach(segment => segment.color = null);
+                this.render();
+                this.saveColors();
+                this.completedLevels.delete(this.currentLevel);
+                this.updateProgressBar();
+                this.updateStats();
+                this.updateLevelDots();
+                this.saveProgress();
+                this.showSuccessMessage('Level has been reset!');
+            }
+
+            clearAll() {
+                localStorage.clear();
+                this.completedLevels.clear();
+                this.currentLevel = 1;
+                
+                // Reinitialize everything
+                this.init();
+                this.showSuccessMessage('All data has been cleared!');
+            }
+
+            saveColors() {
+                const colors = this.segments.map(s => s.color);
+                localStorage.setItem(`level_${this.currentLevel}_colors`, JSON.stringify(colors));
+            }
+
+            getSavedColors(level) {
+                const saved = localStorage.getItem(`level_${level}_colors`);
+                return saved ? JSON.parse(saved) : null;
+            }
+
+            saveProgress() {
+                const progress = {
+                    currentLevel: this.currentLevel,
+                    completedLevels: Array.from(this.completedLevels)
+                };
+                localStorage.setItem('gameProgress', JSON.stringify(progress));
+                
+                // Show save confirmation if manually saved
+                if (event && event.target) {
+                    this.showSuccessMessage('✅ Progress saved successfully!');
+                }
+            }
+
+            loadProgress() {
+                const saved = localStorage.getItem('gameProgress');
+                if (saved) {
+                    const progress = JSON.parse(saved);
+                    this.currentLevel = progress.currentLevel || 1;
+                    this.completedLevels = new Set(progress.completedLevels || []);
+                }
+            }
+
+            updateProgressBar() {
+                const progress = (this.completedLevels.size / this.totalLevels) * 100;
+                const progressBar = document.getElementById('progressBar');
+                progressBar.style.width = `${progress}%`;
+                progressBar.textContent = `${Math.round(progress)}%`;
+            }
+
+            showCongratulations() {
+                const modal = document.getElementById('congratsModal');
+                modal.classList.add('active');
+            }
+
+            closeModal() {
+                document.getElementById('congratsModal').classList.remove('active');
+            }
+
+            toggleFullscreen() {
+                if (!document.fullscreenElement) {
+                    document.documentElement.requestFullscreen();
+                } else {
+                    if (document.exitFullscreen) {
+                        document.exitFullscreen();
+                    }
+                }
+            }
+        }
+
+        // Initialize the game
+        const game = new PaintFruitsGame();
+    </script>
+</body>
+</html>
