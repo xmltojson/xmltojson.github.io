@@ -3,7 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Paint Fruits Game - Segmented</title>
+    <meta name="description" content="Paint Fruits Game">
+    <link rel="icon" type="image/x-icon" href="PaintFruits.ico"/>
+    <title>Paint Fruits Game</title>
     <style>
         * {
             margin: 0;
@@ -791,7 +793,7 @@
             </div>
         </div>
 
-        <div class="canvas-container">
+        <div class="canvas-container" id="canvasContainer">
             <div class="canvas-wrapper" id="canvasWrapper">
                 <canvas id="gameCanvas"></canvas>
             </div>
@@ -888,6 +890,7 @@
                 this.canvas = document.getElementById('gameCanvas');
                 this.ctx = this.canvas.getContext('2d');
                 this.canvasWrapper = document.getElementById('canvasWrapper');
+                this.canvasContainer = document.getElementById('canvasContainer');
                 this.currentLevel = 1;
                 this.totalLevels = 10;
                 this.currentColor = '#FF6B6B';
@@ -1648,25 +1651,38 @@
                 });
             }
 
-            handleClick(e) {
+            getCanvasCoordinates(e) {
                 const rect = this.canvas.getBoundingClientRect();
-                const scaleX = this.canvas.width / rect.width;
-                const scaleY = this.canvas.height / rect.height;
+                const containerRect = this.canvasContainer.getBoundingClientRect();
                 
-                // Calculate the center of the canvas in screen coordinates
-                const centerX = rect.width / 2;
-                const centerY = rect.height / 2;
+                // Get the actual displayed size of the canvas (affected by zoom)
+                const displayWidth = rect.width;
+                const displayHeight = rect.height;
                 
-                // Get mouse position relative to canvas center
-                const mouseX = e.clientX - rect.left - centerX;
-                const mouseY = e.clientY - rect.top - centerY;
+                // Get the internal canvas size
+                const canvasWidth = this.canvas.width;
+                const canvasHeight = this.canvas.height;
                 
-                // Apply inverse zoom transformation
-                const x = (mouseX / this.zoomLevel + centerX) * scaleX;
-                const y = (mouseY / this.zoomLevel + centerY) * scaleY;
+                // Calculate the offset of the canvas within the container due to centering
+                const offsetX = (containerRect.width - displayWidth) / 2;
+                const offsetY = (containerRect.height - displayHeight) / 2;
+                
+                // Get mouse position relative to the canvas element
+                const mouseX = e.clientX - containerRect.left - offsetX;
+                const mouseY = e.clientY - containerRect.top - offsetY;
+                
+                // Convert to canvas coordinates
+                const x = (mouseX / displayWidth) * canvasWidth;
+                const y = (mouseY / displayHeight) * canvasHeight;
+                
+                return { x, y };
+            }
+
+            handleClick(e) {
+                const coords = this.getCanvasCoordinates(e);
                 
                 for (let segment of this.segments) {
-                    if (this.ctx.isPointInPath(segment.path, x, y)) {
+                    if (this.ctx.isPointInPath(segment.path, coords.x, coords.y)) {
                         segment.color = this.currentColor;
                         this.render();
                         this.saveColors();
@@ -1678,25 +1694,11 @@
             }
 
             handleMouseMove(e) {
-                const rect = this.canvas.getBoundingClientRect();
-                const scaleX = this.canvas.width / rect.width;
-                const scaleY = this.canvas.height / rect.height;
-                
-                // Calculate the center of the canvas in screen coordinates
-                const centerX = rect.width / 2;
-                const centerY = rect.height / 2;
-                
-                // Get mouse position relative to canvas center
-                const mouseX = e.clientX - rect.left - centerX;
-                const mouseY = e.clientY - rect.top - centerY;
-                
-                // Apply inverse zoom transformation
-                const x = (mouseX / this.zoomLevel + centerX) * scaleX;
-                const y = (mouseY / this.zoomLevel + centerY) * scaleY;
+                const coords = this.getCanvasCoordinates(e);
                 
                 let foundSegment = null;
                 for (let segment of this.segments) {
-                    if (this.ctx.isPointInPath(segment.path, x, y)) {
+                    if (this.ctx.isPointInPath(segment.path, coords.x, coords.y)) {
                         foundSegment = segment;
                         break;
                     }
