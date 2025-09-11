@@ -1,8 +1,13 @@
 <!DOCTYPE html>
+<!-- MIT License
+Copyright (c) 2025 Valentyn Kolesnikov <0009-0003-9608-3364@orcid.org>
+-->
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, maximum-scale=1.0">
+    <meta name="description" content="Paint Fruits Game">
+    <link rel="icon" type="image/x-icon" href="PacMan.ico"/>
     <title>3D Pac-Man Deluxe</title>
     <style>
         * {
@@ -244,28 +249,51 @@
         .touch-left { top: 50px; left: 0; }
         .touch-right { top: 50px; right: 0; }
 
+        /* Mobile Controls Container */
+        .mobile-controls-container {
+            display: none;
+            flex-direction: row;
+            gap: 20px;
+            align-items: center;
+            justify-content: space-between;
+            width: 100%;
+            max-width: 625px;
+            margin-top: 20px;
+        }
+
         @media (max-width: 968px) {
+            body {
+                padding: 10px;
+            }
+
             .game-wrapper {
                 flex-direction: column;
                 align-items: center;
             }
 
             .side-controls {
-                flex-direction: row;
-                flex-wrap: wrap;
-                width: 100%;
-                max-width: 625px;
-                justify-content: center;
+                display: none !important;
             }
 
-            .side-controls .btn {
-                width: auto;
+            .mobile-controls-container {
+                display: flex;
+            }
+
+            .mobile-menu-controls {
+                display: flex;
+                flex-direction: column;
+                gap: 10px;
+            }
+
+            .mobile-menu-controls .btn {
                 min-width: 120px;
-                flex: 1;
+                padding: 10px 15px;
+                font-size: 12px;
             }
 
             .touch-controls {
                 display: block;
+                margin: 0;
             }
             
             .game-header {
@@ -274,6 +302,14 @@
             
             .score-value {
                 font-size: 20px;
+            }
+
+            .game-container {
+                padding: 15px;
+            }
+
+            .skin-selector {
+                display: none;
             }
         }
 
@@ -667,11 +703,18 @@
 
             <canvas id="gameCanvas"></canvas>
 
-            <div class="touch-controls" id="touchControls">
-                <div class="touch-btn touch-up" data-direction="up">↑</div>
-                <div class="touch-btn touch-down" data-direction="down">↓</div>
-                <div class="touch-btn touch-left" data-direction="left">←</div>
-                <div class="touch-btn touch-right" data-direction="right">→</div>
+            <!-- Mobile controls container -->
+            <div class="mobile-controls-container">
+                <div class="mobile-menu-controls">
+                    <button class="btn btn-primary" id="mobileMenuBtn">Menu</button>
+                    <button class="btn btn-secondary" id="mobilePauseBtn">Pause</button>
+                </div>
+                <div class="touch-controls" id="touchControls">
+                    <div class="touch-btn touch-up" data-direction="up">↑</div>
+                    <div class="touch-btn touch-down" data-direction="down">↓</div>
+                    <div class="touch-btn touch-left" data-direction="left">←</div>
+                    <div class="touch-btn touch-right" data-direction="right">→</div>
+                </div>
             </div>
 
             <div class="skin-selector">
@@ -764,6 +807,12 @@
         let savedGameState = JSON.parse(localStorage.getItem('pacmanSavedGame')) || null;
         let animationFrame = 0;
         let gameLoopId = null;
+        let lastFrameTime = 0;
+        const targetFPS = 60;
+        const frameDelay = 1000 / targetFPS;
+
+        // Mobile detection
+        const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
 
         // Skins configuration
         const skins = [
@@ -779,18 +828,18 @@
 
         let currentSkin = skins[0];
 
-        // Level configurations
+        // Level configurations - Adjusted speeds for mobile
         const levels = [
-            { ghostSpeed: 1.5, ghostCount: 2, powerUpDuration: 10000, playerSpeed: 2.5 },
-            { ghostSpeed: 1.6, ghostCount: 3, powerUpDuration: 9000, playerSpeed: 2.5 },
-            { ghostSpeed: 1.7, ghostCount: 3, powerUpDuration: 8500, playerSpeed: 2.6 },
-            { ghostSpeed: 1.8, ghostCount: 4, powerUpDuration: 8000, playerSpeed: 2.6 },
-            { ghostSpeed: 1.9, ghostCount: 4, powerUpDuration: 7500, playerSpeed: 2.7 },
-            { ghostSpeed: 2.0, ghostCount: 4, powerUpDuration: 7000, playerSpeed: 2.7 },
-            { ghostSpeed: 2.1, ghostCount: 5, powerUpDuration: 6500, playerSpeed: 2.8 },
-            { ghostSpeed: 2.2, ghostCount: 5, powerUpDuration: 6000, playerSpeed: 2.8 },
-            { ghostSpeed: 2.3, ghostCount: 5, powerUpDuration: 5500, playerSpeed: 2.9 },
-            { ghostSpeed: 2.5, ghostCount: 6, powerUpDuration: 5000, playerSpeed: 3.0 }
+            { ghostSpeed: isMobile ? 1.2 : 1.5, ghostCount: 2, powerUpDuration: 10000, playerSpeed: isMobile ? 2.0 : 2.5 },
+            { ghostSpeed: isMobile ? 1.3 : 1.6, ghostCount: 3, powerUpDuration: 9000, playerSpeed: isMobile ? 2.0 : 2.5 },
+            { ghostSpeed: isMobile ? 1.4 : 1.7, ghostCount: 3, powerUpDuration: 8500, playerSpeed: isMobile ? 2.1 : 2.6 },
+            { ghostSpeed: isMobile ? 1.5 : 1.8, ghostCount: 4, powerUpDuration: 8000, playerSpeed: isMobile ? 2.1 : 2.6 },
+            { ghostSpeed: isMobile ? 1.6 : 1.9, ghostCount: 4, powerUpDuration: 7500, playerSpeed: isMobile ? 2.2 : 2.7 },
+            { ghostSpeed: isMobile ? 1.7 : 2.0, ghostCount: 4, powerUpDuration: 7000, playerSpeed: isMobile ? 2.2 : 2.7 },
+            { ghostSpeed: isMobile ? 1.8 : 2.1, ghostCount: 5, powerUpDuration: 6500, playerSpeed: isMobile ? 2.3 : 2.8 },
+            { ghostSpeed: isMobile ? 1.9 : 2.2, ghostCount: 5, powerUpDuration: 6000, playerSpeed: isMobile ? 2.3 : 2.8 },
+            { ghostSpeed: isMobile ? 2.0 : 2.3, ghostCount: 5, powerUpDuration: 5500, playerSpeed: isMobile ? 2.4 : 2.9 },
+            { ghostSpeed: isMobile ? 2.1 : 2.5, ghostCount: 6, powerUpDuration: 5000, playerSpeed: isMobile ? 2.5 : 3.0 }
         ];
 
         // Maze layout
@@ -827,7 +876,7 @@
             pixelY: 15 * CELL_SIZE + CELL_SIZE / 2,
             direction: null,
             nextDirection: null,
-            speed: 2.5,
+            speed: isMobile ? 2.0 : 2.5,
             mouthAnimation: 0
         };
 
@@ -843,6 +892,15 @@
         let totalPellets = 0;
         let pelletsEaten = 0;
 
+        // Mobile menu button
+        document.getElementById('mobileMenuBtn')?.addEventListener('click', () => {
+            showLevelSelect();
+        });
+
+        document.getElementById('mobilePauseBtn')?.addEventListener('click', () => {
+            togglePause();
+        });
+
         // Instructions modal
         document.getElementById('instructionsBtn').addEventListener('click', () => {
             document.getElementById('instructionsModal').style.display = 'block';
@@ -855,16 +913,32 @@
             document.getElementById('instructionsModal').style.display = 'none';
         }
 
-        // Fullscreen functionality
+        // Fullscreen functionality - Fixed for mobile
         function toggleFullscreen() {
-            if (!document.fullscreenElement) {
-                document.documentElement.requestFullscreen().catch(err => {
-                    console.log(`Error attempting to enable fullscreen: ${err.message}`);
-                });
+            const elem = document.documentElement;
+            
+            if (!document.fullscreenElement && !document.webkitFullscreenElement && 
+                !document.mozFullScreenElement && !document.msFullscreenElement) {
+                
+                if (elem.requestFullscreen) {
+                    elem.requestFullscreen();
+                } else if (elem.webkitRequestFullscreen) {
+                    elem.webkitRequestFullscreen();
+                } else if (elem.mozRequestFullScreen) {
+                    elem.mozRequestFullScreen();
+                } else if (elem.msRequestFullscreen) {
+                    elem.msRequestFullscreen();
+                }
                 document.getElementById('fullscreenBtn').innerHTML = '◱';
             } else {
                 if (document.exitFullscreen) {
                     document.exitFullscreen();
+                } else if (document.webkitExitFullscreen) {
+                    document.webkitExitFullscreen();
+                } else if (document.mozCancelFullScreen) {
+                    document.mozCancelFullScreen();
+                } else if (document.msExitFullscreen) {
+                    document.msExitFullscreen();
                 }
                 document.getElementById('fullscreenBtn').innerHTML = '⛶';
             }
@@ -873,14 +947,20 @@
         document.getElementById('fullscreenBtn').addEventListener('click', toggleFullscreen);
 
         // Listen for fullscreen changes
-        document.addEventListener('fullscreenchange', () => {
+        document.addEventListener('fullscreenchange', updateFullscreenButton);
+        document.addEventListener('webkitfullscreenchange', updateFullscreenButton);
+        document.addEventListener('mozfullscreenchange', updateFullscreenButton);
+        document.addEventListener('MSFullscreenChange', updateFullscreenButton);
+
+        function updateFullscreenButton() {
             const btn = document.getElementById('fullscreenBtn');
-            if (document.fullscreenElement) {
+            if (document.fullscreenElement || document.webkitFullscreenElement || 
+                document.mozFullScreenElement || document.msFullscreenElement) {
                 btn.innerHTML = '◱';
             } else {
                 btn.innerHTML = '⛶';
             }
-        });
+        }
 
         class Ghost {
             constructor(x, y, color, speed) {
@@ -1282,7 +1362,8 @@
             gameRunning = true;
             gamePaused = false;
             document.getElementById('pauseBtn').textContent = 'Pause';
-            gameLoop();
+            document.getElementById('mobilePauseBtn').textContent = 'Pause';
+            gameLoop(performance.now());
         }
 
         function closeLevelSelect() {
@@ -1296,6 +1377,7 @@
             if (gameRunning) {
                 gamePaused = true;
                 document.getElementById('pauseBtn').textContent = 'Resume';
+                document.getElementById('mobilePauseBtn').textContent = 'Resume';
             }
             showLevelSelect();
         });
@@ -1467,15 +1549,19 @@
             gameRunning = true;
             gamePaused = false;
             document.getElementById('pauseBtn').textContent = 'Pause';
-            gameLoop();
+            document.getElementById('mobilePauseBtn').textContent = 'Pause';
+            lastFrameTime = performance.now();
+            gameLoop(lastFrameTime);
         }
 
         function togglePause() {
             if (!gameRunning) return;
             gamePaused = !gamePaused;
             document.getElementById('pauseBtn').textContent = gamePaused ? 'Resume' : 'Pause';
+            document.getElementById('mobilePauseBtn').textContent = gamePaused ? 'Resume' : 'Pause';
             if (!gamePaused) {
-                gameLoop();
+                lastFrameTime = performance.now();
+                gameLoop(lastFrameTime);
             } else {
                 saveGame();
             }
@@ -1505,6 +1591,7 @@
             document.getElementById('gameOverModal').style.display = 'none';
             document.getElementById('levelCompleteModal').style.display = 'none';
             document.getElementById('pauseBtn').textContent = 'Pause';
+            document.getElementById('mobilePauseBtn').textContent = 'Pause';
             
             init();
             draw();
@@ -1559,7 +1646,8 @@
             updateDisplay();
             saveGame();
             gameRunning = true;
-            gameLoop();
+            lastFrameTime = performance.now();
+            gameLoop(lastFrameTime);
         }
 
         function gameOver(completed = false) {
@@ -1859,19 +1947,26 @@
             ctx.restore();
         }
 
-        function gameLoop() {
+        function gameLoop(currentTime) {
             if (!gameRunning || gamePaused) {
                 gameLoopId = null;
                 return;
             }
             
-            animationFrame++;
+            // Frame rate limiting for consistent speed
+            const deltaTime = currentTime - lastFrameTime;
             
-            movePlayer();
-            ghosts.forEach(ghost => ghost.move());
-            checkCollisions();
-            
-            draw();
+            if (deltaTime >= frameDelay) {
+                animationFrame++;
+                
+                movePlayer();
+                ghosts.forEach(ghost => ghost.move());
+                checkCollisions();
+                
+                draw();
+                
+                lastFrameTime = currentTime - (deltaTime % frameDelay);
+            }
             
             gameLoopId = requestAnimationFrame(gameLoop);
         }
