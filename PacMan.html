@@ -946,12 +946,10 @@ Copyright (c) 2025 Valentyn Kolesnikov <0009-0003-9608-3364@orcid.org>
             height: 170px;
           }
 
-          /* Keep skin selector optional on tablets; hide if vertical space is tight */
           @media (orientation: portrait) {
             .skin-selector { display: none; }
           }
 
-          /* Fullscreen on tablets: use dynamic viewport and safe areas */
           body.fullscreen-mode .game-container {
             width: 100vw;
             height: 100dvh;
@@ -968,7 +966,7 @@ Copyright (c) 2025 Valentyn Kolesnikov <0009-0003-9608-3364@orcid.org>
           }
         }
 
-        /* Tablet touch landscape refinements */
+        /* Tablet touch landscape refinements (previous) */
         @media (hover: none) and (pointer: coarse) and (orientation: landscape) {
           .game-container {
             padding: 12px;
@@ -992,6 +990,79 @@ Copyright (c) 2025 Valentyn Kolesnikov <0009-0003-9608-3364@orcid.org>
           }
           body.fullscreen-mode canvas {
             max-height: calc(100dvh - 160px);
+          }
+        }
+
+        /* Tablet landscape horizontal layout: place canvas and controls side-by-side */
+        @media (hover: none) and (pointer: coarse) and (orientation: landscape) and (min-width: 768px) {
+          .side-controls { display: none !important; }
+
+          .game-container {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) 260px;
+            grid-template-rows: auto 1fr;
+            grid-template-areas:
+              "header header"
+              "stage  controls";
+            column-gap: 16px;
+            row-gap: 12px;
+            align-items: start;
+          }
+
+          .game-header {
+            grid-area: header;
+            margin-bottom: 0;
+          }
+
+          #gameCanvas {
+            grid-area: stage;
+            width: 100%;
+            height: auto;
+            aspect-ratio: 25 / 20;
+            max-height: calc(100dvh - 160px);
+            justify-self: stretch;
+            align-self: start;
+          }
+
+          .mobile-controls-container {
+            grid-area: controls;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-start;
+            align-items: center;
+            gap: 14px;
+            width: 100%;
+            max-width: 260px;
+            margin-top: 0;
+          }
+
+          .mobile-menu-controls {
+            width: 100%;
+            flex-direction: column;
+            gap: 10px;
+          }
+
+          .mobile-menu-controls .btn {
+            width: 100%;
+            min-width: 0;
+            padding: 12px 14px;
+            font-size: 13px;
+          }
+
+          .touch-controls {
+            width: 220px;
+            height: 220px;
+            margin: 0;
+          }
+
+          .skin-selector { display: none; }
+
+          body.fullscreen-mode .game-container {
+            height: 100dvh;
+          }
+
+          body.fullscreen-mode #gameCanvas {
+            max-height: calc(100dvh - 140px);
           }
         }
     </style>
@@ -1263,7 +1334,6 @@ Copyright (c) 2025 Valentyn Kolesnikov <0009-0003-9608-3364@orcid.org>
                     fullscreenPromise.then(() => {
                         document.body.classList.add('fullscreen-mode');
                         document.getElementById('fullscreenBtn').innerHTML = '◱';
-                        // Do not lock orientation; keep current device orientation
                     }).catch(() => {
                         if (isIOS) {
                             document.body.classList.add('fullscreen-mode');
@@ -2028,7 +2098,6 @@ Copyright (c) 2025 Valentyn Kolesnikov <0009-0003-9608-3364@orcid.org>
         function nextLevel() {
             level++;
             
-            // Always hide Level Complete popup first
             const levelCompleteModal = document.getElementById('levelCompleteModal');
             if (levelCompleteModal) levelCompleteModal.style.display = 'none';
 
@@ -2081,7 +2150,6 @@ Copyright (c) 2025 Valentyn Kolesnikov <0009-0003-9608-3364@orcid.org>
         function gameOver(completed = false) {
             gameRunning = false;
             
-            // Ensure Level Complete popup is hidden before showing Game Over / Congratulations
             const lcm = document.getElementById('levelCompleteModal');
             if (lcm) lcm.style.display = 'none';
 
