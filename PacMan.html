@@ -998,7 +998,7 @@ Copyright (c) 2025 Valentyn Kolesnikov <0009-0003-9608-3364@orcid.org>
         let score = 0;
         let level = 1;
         let lives = 3;
-        let currentLevelScore = 0; // Score at the start of current level
+        let currentLevelScore = 0;
         let highScore = localStorage.getItem('pacmanHighScore') || 0;
         let completedLevels = JSON.parse(localStorage.getItem('pacmanCompletedLevels')) || [];
         let levelBestScores = JSON.parse(localStorage.getItem('pacmanLevelBestScores')) || {};
@@ -1112,28 +1112,24 @@ Copyright (c) 2025 Valentyn Kolesnikov <0009-0003-9608-3364@orcid.org>
             document.getElementById('instructionsModal').style.display = 'none';
         }
 
-        // Enhanced Fullscreen functionality for mobile
+        // Fullscreen toggle without forcing orientation change on mobile
         function toggleFullscreen() {
             const elem = document.documentElement;
-            const gameWrapper = document.querySelector('.game-wrapper');
             
             if (!document.fullscreenElement && !document.webkitFullscreenElement && 
                 !document.mozFullScreenElement && !document.msFullscreenElement) {
                 
-                // Request fullscreen
                 let fullscreenPromise;
                 
                 if (elem.requestFullscreen) {
                     fullscreenPromise = elem.requestFullscreen();
                 } else if (elem.webkitRequestFullscreen) {
-                    // iOS Safari
                     fullscreenPromise = elem.webkitRequestFullscreen();
                 } else if (elem.mozRequestFullScreen) {
                     fullscreenPromise = elem.mozRequestFullScreen();
                 } else if (elem.msRequestFullscreen) {
                     fullscreenPromise = elem.msRequestFullscreen();
                 } else if (elem.webkitEnterFullscreen) {
-                    // iOS video element fallback
                     fullscreenPromise = elem.webkitEnterFullscreen();
                 }
                 
@@ -1141,15 +1137,8 @@ Copyright (c) 2025 Valentyn Kolesnikov <0009-0003-9608-3364@orcid.org>
                     fullscreenPromise.then(() => {
                         document.body.classList.add('fullscreen-mode');
                         document.getElementById('fullscreenBtn').innerHTML = '◱';
-                        
-                        // Lock orientation to landscape on mobile if possible
-                        if (screen.orientation && screen.orientation.lock && isMobile) {
-                            screen.orientation.lock('landscape').catch(() => {
-                                // Orientation lock not supported
-                            });
-                        }
-                    }).catch((err) => {
-                        // Fullscreen failed, try alternative for iOS
+                        // Do not lock orientation; keep current device orientation
+                    }).catch(() => {
                         if (isIOS) {
                             document.body.classList.add('fullscreen-mode');
                             document.getElementById('fullscreenBtn').innerHTML = '◱';
@@ -1157,13 +1146,11 @@ Copyright (c) 2025 Valentyn Kolesnikov <0009-0003-9608-3364@orcid.org>
                         }
                     });
                 } else if (isIOS) {
-                    // iOS doesn't support fullscreen API, simulate it
                     document.body.classList.add('fullscreen-mode');
                     document.getElementById('fullscreenBtn').innerHTML = '◱';
                     window.scrollTo(0, 1);
                 }
             } else {
-                // Exit fullscreen
                 if (document.exitFullscreen) {
                     document.exitFullscreen();
                 } else if (document.webkitExitFullscreen) {
@@ -1178,11 +1165,6 @@ Copyright (c) 2025 Valentyn Kolesnikov <0009-0003-9608-3364@orcid.org>
                 
                 document.body.classList.remove('fullscreen-mode');
                 document.getElementById('fullscreenBtn').innerHTML = '⛶';
-                
-                // Unlock orientation
-                if (screen.orientation && screen.orientation.unlock) {
-                    screen.orientation.unlock();
-                }
             }
         }
 
@@ -2293,7 +2275,6 @@ Copyright (c) 2025 Valentyn Kolesnikov <0009-0003-9608-3364@orcid.org>
             setupTouchControls();
             updateLives();
             
-            // Check if there's a saved game
             if (savedGameState) {
                 const continueBtn = document.getElementById('continueBtn');
                 if (continueBtn) {
