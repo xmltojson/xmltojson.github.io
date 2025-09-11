@@ -8,7 +8,7 @@ Copyright (c) 2025 Valentyn Kolesnikov <0009-0003-9608-3364@orcid.org>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, maximum-scale=1.0, minimal-ui">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="mobile-web-app-capable" content="yes">
-    <meta name="description" content="Paint Fruits Game">
+    <meta name="description" content="3D Pac-Man Deluxe">
     <link rel="icon" type="image/x-icon" href="PacMan.ico"/>
     <title>3D Pac-Man Deluxe</title>
     <style>
@@ -229,11 +229,6 @@ Copyright (c) 2025 Valentyn Kolesnikov <0009-0003-9608-3364@orcid.org>
             box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
         }
 
-        .btn-info:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.6);
-        }
-
         .touch-controls {
             display: none;
             position: relative;
@@ -269,7 +264,6 @@ Copyright (c) 2025 Valentyn Kolesnikov <0009-0003-9608-3364@orcid.org>
         .touch-left { top: 50px; left: 0; }
         .touch-right { top: 50px; right: 0; }
 
-        /* Mobile Controls Container */
         .mobile-controls-container {
             display: none;
             flex-direction: row;
@@ -732,6 +726,147 @@ Copyright (c) 2025 Valentyn Kolesnikov <0009-0003-9608-3364@orcid.org>
             letter-spacing: 1px;
             text-align: center;
             margin-bottom: 10px;
+        }
+
+        /* Mobile-only layout fixes */
+        @media (max-width: 968px) {
+          /* Respect safe areas (iOS notch etc.) */
+          @supports (padding: max(0px)) {
+            body {
+              padding-left: max(10px, env(safe-area-inset-left));
+              padding-right: max(10px, env(safe-area-inset-right));
+              padding-top: max(10px, env(safe-area-inset-top));
+              padding-bottom: max(10px, env(safe-area-inset-bottom));
+            }
+            body.fullscreen-mode {
+              padding: 0;
+            }
+          }
+
+          html, body {
+            min-height: 100dvh;
+          }
+
+          .game-wrapper {
+            width: 100%;
+          }
+
+          .game-container {
+            width: 100%;
+            max-width: 100%;
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+          }
+
+          /* Make the canvas responsive while preserving aspect ratio (25x20 cells) */
+          canvas {
+            width: 100%;
+            max-width: 100%;
+            height: auto;
+            aspect-ratio: 25 / 20;
+          }
+
+          /* Keep header compact */
+          .game-header {
+            gap: 8px;
+            padding: 8px;
+          }
+
+          .score-value {
+            font-size: 18px;
+          }
+
+          /* Slightly smaller life icons on mobile */
+          .life-icon {
+            width: 20px;
+            height: 20px;
+          }
+
+          /* Mobile controls: allow wrapping so they don’t overflow */
+          .mobile-controls-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            justify-content: center;
+            align-items: center;
+            width: 100%;
+            margin-top: 12px;
+          }
+
+          /* Buttons side-by-side by default; they’ll wrap if needed */
+          .mobile-menu-controls {
+            display: flex;
+            flex-direction: row;
+            gap: 10px;
+          }
+
+          .mobile-menu-controls .btn {
+            min-width: 110px;
+            padding: 10px 14px;
+            font-size: 12px;
+          }
+
+          /* Ensure fullscreen on mobile uses the full dynamic viewport */
+          body.fullscreen-mode .game-container {
+            width: 100vw;
+            height: 100dvh;
+            max-width: 100vw;
+            border-radius: 0;
+            padding: 10px;
+          }
+
+          body.fullscreen-mode canvas {
+            width: auto;
+            height: auto;
+            max-width: 100%;
+            /* Leave room for header + controls */
+            max-height: calc(100dvh - 180px);
+          }
+        }
+
+        /* Extra-narrow phones: stack controls vertically */
+        @media (max-width: 420px) {
+          .mobile-controls-container {
+            flex-direction: column;
+            align-items: center;
+          }
+          .mobile-menu-controls {
+            width: 100%;
+            justify-content: center;
+          }
+        }
+
+        /* Landscape on small devices: cap canvas height so controls fit */
+        @media (max-width: 968px) and (orientation: landscape) {
+          .game-container {
+            padding: 10px;
+          }
+
+          /* Prefer height cap in landscape to avoid clipping with overflow:hidden */
+          canvas {
+            width: auto;
+            height: auto;
+            max-height: 55dvh;
+            max-width: 100%;
+          }
+
+          .game-header {
+            padding: 6px;
+            margin-bottom: 6px;
+          }
+
+          .mobile-controls-container {
+            margin-top: 8px;
+          }
+
+          .score-value {
+            font-size: 16px;
+          }
+
+          body.fullscreen-mode canvas {
+            max-height: calc(100dvh - 150px);
+          }
         }
     </style>
 </head>
@@ -1380,8 +1515,7 @@ Copyright (c) 2025 Valentyn Kolesnikov <0009-0003-9608-3364@orcid.org>
         function retryLevel() {
             document.getElementById('gameOverModal').style.display = 'none';
             
-            // Reset to the beginning of the current level
-            score = currentLevelScore; // Restore score to what it was at level start
+            score = currentLevelScore;
             lives = 3;
             pelletsEaten = 0;
             powerUpActive = false;
@@ -1391,11 +1525,9 @@ Copyright (c) 2025 Valentyn Kolesnikov <0009-0003-9608-3364@orcid.org>
                 powerUpTimer = null;
             }
             
-            // Reset the maze and game state for current level
             resetMaze();
             countPellets();
             
-            // Initialize player position
             const levelConfig = levels[Math.min(level - 1, levels.length - 1)];
             player.x = 12;
             player.y = 15;
@@ -1405,17 +1537,13 @@ Copyright (c) 2025 Valentyn Kolesnikov <0009-0003-9608-3364@orcid.org>
             player.nextDirection = null;
             player.speed = levelConfig.playerSpeed;
             
-            // Initialize ghosts for the current level
             initializeGhosts();
             
-            // Update display
             updateDisplay();
             updateLives();
             
-            // Save the game state
             saveGame();
             
-            // Start the game
             gameRunning = true;
             gamePaused = false;
             document.getElementById('pauseBtn').textContent = 'Pause';
@@ -1428,7 +1556,6 @@ Copyright (c) 2025 Valentyn Kolesnikov <0009-0003-9608-3364@orcid.org>
             document.getElementById('gameOverModal').style.display = 'none';
             document.getElementById('startScreen').style.display = 'block';
             
-            // Reset game but keep progress
             gameRunning = false;
             gamePaused = false;
             
@@ -1437,7 +1564,6 @@ Copyright (c) 2025 Valentyn Kolesnikov <0009-0003-9608-3364@orcid.org>
                 gameLoopId = null;
             }
             
-            // Check if there's a saved game
             savedGameState = JSON.parse(localStorage.getItem('pacmanSavedGame'));
             if (savedGameState) {
                 const continueBtn = document.getElementById('continueBtn');
@@ -1522,11 +1648,9 @@ Copyright (c) 2025 Valentyn Kolesnikov <0009-0003-9608-3364@orcid.org>
             
             document.getElementById('levelSelectModal').style.display = 'none';
             
-            // Reset the maze and game state
             resetMaze();
             countPellets();
             
-            // Initialize player position
             const levelConfig = levels[Math.min(level - 1, levels.length - 1)];
             player.x = 12;
             player.y = 15;
@@ -1536,21 +1660,17 @@ Copyright (c) 2025 Valentyn Kolesnikov <0009-0003-9608-3364@orcid.org>
             player.nextDirection = null;
             player.speed = levelConfig.playerSpeed;
             
-            // Initialize ghosts for the selected level
             initializeGhosts();
             
-            // Update display
             updateDisplay();
             updateLives();
             
-            // Mark game as initialized if not already
             if (!gameInitialized) {
                 gameInitialized = true;
                 createSkinSelector();
                 setupTouchControls();
             }
             
-            // Start the game
             gameRunning = true;
             gamePaused = false;
             document.getElementById('pauseBtn').textContent = 'Pause';
@@ -1800,7 +1920,6 @@ Copyright (c) 2025 Valentyn Kolesnikov <0009-0003-9608-3364@orcid.org>
         function nextLevel() {
             level++;
             
-            // Save best score for completed level
             const completedLevel = level - 1;
             if (!levelBestScores[completedLevel] || score > levelBestScores[completedLevel]) {
                 levelBestScores[completedLevel] = score;
@@ -1817,7 +1936,6 @@ Copyright (c) 2025 Valentyn Kolesnikov <0009-0003-9608-3364@orcid.org>
                 return;
             }
             
-            // Save current score as the starting score for the new level
             currentLevelScore = score;
             
             const levelConfig = levels[Math.min(level - 1, levels.length - 1)];
@@ -2151,7 +2269,6 @@ Copyright (c) 2025 Valentyn Kolesnikov <0009-0003-9608-3364@orcid.org>
                 return;
             }
             
-            // Frame rate limiting for consistent speed
             const deltaTime = currentTime - lastFrameTime;
             
             if (deltaTime >= frameDelay) {
