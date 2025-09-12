@@ -50,7 +50,6 @@ Copyright (c) 2025 Valentyn Kolesnikov <0009-0003-9608-3364@orcid.org>
             height: 100vh;
             max-width: 100vw;
             padding: 10px;
-            /* Center the content in fullscreen so it doesn't hug the left edge */
             justify-content: center;
         }
 
@@ -730,9 +729,7 @@ Copyright (c) 2025 Valentyn Kolesnikov <0009-0003-9608-3364@orcid.org>
             margin-bottom: 10px;
         }
 
-        /* Mobile-only layout fixes */
         @media (max-width: 968px) {
-          /* Respect safe areas (iOS notch etc.) */
           @supports (padding: max(0px)) {
             body {
               padding-left: max(10px, env(safe-area-inset-left));
@@ -761,7 +758,6 @@ Copyright (c) 2025 Valentyn Kolesnikov <0009-0003-9608-3364@orcid.org>
             flex-direction: column;
           }
 
-          /* Make the canvas responsive while preserving aspect ratio (25x20 cells) */
           canvas {
             width: 100%;
             max-width: 100%;
@@ -769,7 +765,6 @@ Copyright (c) 2025 Valentyn Kolesnikov <0009-0003-9608-3364@orcid.org>
             aspect-ratio: 25 / 20;
           }
 
-          /* Keep header compact */
           .game-header {
             gap: 8px;
             padding: 8px;
@@ -779,13 +774,11 @@ Copyright (c) 2025 Valentyn Kolesnikov <0009-0003-9608-3364@orcid.org>
             font-size: 18px;
           }
 
-          /* Slightly smaller life icons on mobile */
           .life-icon {
             width: 20px;
             height: 20px;
           }
 
-          /* Mobile controls: allow wrapping so they don’t overflow */
           .mobile-controls-container {
             display: flex;
             flex-wrap: wrap;
@@ -796,7 +789,6 @@ Copyright (c) 2025 Valentyn Kolesnikov <0009-0003-9608-3364@orcid.org>
             margin-top: 12px;
           }
 
-          /* Buttons side-by-side by default; they’ll wrap if needed */
           .mobile-menu-controls {
             display: flex;
             flex-direction: row;
@@ -809,7 +801,6 @@ Copyright (c) 2025 Valentyn Kolesnikov <0009-0003-9608-3364@orcid.org>
             font-size: 12px;
           }
 
-          /* Ensure fullscreen on mobile uses the full dynamic viewport */
           body.fullscreen-mode .game-container {
             width: 100vw;
             height: 100dvh;
@@ -822,12 +813,10 @@ Copyright (c) 2025 Valentyn Kolesnikov <0009-0003-9608-3364@orcid.org>
             width: auto;
             height: auto;
             max-width: 100%;
-            /* Leave room for header + controls */
             max-height: calc(100dvh - 180px);
           }
         }
 
-        /* Extra-narrow phones: stack controls vertically */
         @media (max-width: 420px) {
           .mobile-controls-container {
             flex-direction: column;
@@ -839,13 +828,11 @@ Copyright (c) 2025 Valentyn Kolesnikov <0009-0003-9608-3364@orcid.org>
           }
         }
 
-        /* Landscape on small devices: cap canvas height so controls fit */
         @media (max-width: 968px) and (orientation: landscape) {
           .game-container {
             padding: 10px;
           }
 
-          /* Prefer height cap in landscape to avoid clipping with overflow:hidden */
           canvas {
             width: auto;
             height: auto;
@@ -898,7 +885,6 @@ Copyright (c) 2025 Valentyn Kolesnikov <0009-0003-9608-3364@orcid.org>
 
             <canvas id="gameCanvas"></canvas>
 
-            <!-- Mobile controls container -->
             <div class="mobile-controls-container">
                 <div class="mobile-menu-controls">
                     <button class="btn btn-primary" id="mobileMenuBtn">Menu</button>
@@ -986,14 +972,12 @@ Copyright (c) 2025 Valentyn Kolesnikov <0009-0003-9608-3364@orcid.org>
         const canvas = document.getElementById('gameCanvas');
         const ctx = canvas.getContext('2d');
         
-        // Game settings
         const CELL_SIZE = 25;
         const ROWS = 20;
         const COLS = 25;
         canvas.width = COLS * CELL_SIZE;
         canvas.height = ROWS * CELL_SIZE;
 
-        // Game state
         let gameRunning = false;
         let gamePaused = false;
         let gameInitialized = false;
@@ -1011,11 +995,9 @@ Copyright (c) 2025 Valentyn Kolesnikov <0009-0003-9608-3364@orcid.org>
         const targetFPS = 60;
         const frameDelay = 1000 / targetFPS;
 
-        // Mobile detection
         const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
         const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
 
-        // Skins configuration
         const skins = [
             { name: 'Classic', color: '#FFD700', eyeColor: '#000' },
             { name: 'Neon', color: '#00FFFF', eyeColor: '#FF00FF' },
@@ -1029,7 +1011,6 @@ Copyright (c) 2025 Valentyn Kolesnikov <0009-0003-9608-3364@orcid.org>
 
         let currentSkin = skins[0];
 
-        // Level configurations - Adjusted speeds for mobile
         const levels = [
             { ghostSpeed: isMobile ? 1.2 : 1.5, ghostCount: 2, powerUpDuration: 10000, playerSpeed: isMobile ? 2.0 : 2.5 },
             { ghostSpeed: isMobile ? 1.3 : 1.6, ghostCount: 3, powerUpDuration: 9000, playerSpeed: isMobile ? 2.0 : 2.5 },
@@ -1043,7 +1024,6 @@ Copyright (c) 2025 Valentyn Kolesnikov <0009-0003-9608-3364@orcid.org>
             { ghostSpeed: isMobile ? 1.8 : 2.1, ghostCount: 6, powerUpDuration: 6300, playerSpeed: isMobile ? 2.3 : 2.8 }
         ];
 
-        // Maze layout
         const originalMaze = [
             [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
             [0,1,1,1,1,1,1,1,1,1,1,1,0,1,1,1,1,1,1,1,1,1,1,1,0],
@@ -1069,7 +1049,6 @@ Copyright (c) 2025 Valentyn Kolesnikov <0009-0003-9608-3364@orcid.org>
         
         let maze = originalMaze.map(row => [...row]);
 
-        // Player object
         const player = {
             x: 12,
             y: 15,
@@ -1081,19 +1060,15 @@ Copyright (c) 2025 Valentyn Kolesnikov <0009-0003-9608-3364@orcid.org>
             mouthAnimation: 0
         };
 
-        // Ghosts array
         let ghosts = [];
         const ghostColors = ['#FF0000', '#00FFFF', '#FFB6C1', '#FFA500', '#00FF00', '#FF00FF'];
 
-        // Power-up state
         let powerUpActive = false;
         let powerUpTimer = null;
 
-        // Pellet count
         let totalPellets = 0;
         let pelletsEaten = 0;
 
-        // Mobile menu button
         document.getElementById('mobileMenuBtn')?.addEventListener('click', () => {
             showLevelSelect();
         });
@@ -1102,7 +1077,6 @@ Copyright (c) 2025 Valentyn Kolesnikov <0009-0003-9608-3364@orcid.org>
             togglePause();
         });
 
-        // Instructions modal
         document.getElementById('instructionsBtn').addEventListener('click', () => {
             document.getElementById('instructionsModal').style.display = 'block';
             if (gameRunning && !gamePaused) {
@@ -1114,7 +1088,6 @@ Copyright (c) 2025 Valentyn Kolesnikov <0009-0003-9608-3364@orcid.org>
             document.getElementById('instructionsModal').style.display = 'none';
         }
 
-        // Fullscreen toggle without forcing orientation change on mobile
         function toggleFullscreen() {
             const elem = document.documentElement;
             
@@ -1139,7 +1112,6 @@ Copyright (c) 2025 Valentyn Kolesnikov <0009-0003-9608-3364@orcid.org>
                     fullscreenPromise.then(() => {
                         document.body.classList.add('fullscreen-mode');
                         document.getElementById('fullscreenBtn').innerHTML = '◱';
-                        // Do not lock orientation; keep current device orientation
                     }).catch(() => {
                         if (isIOS) {
                             document.body.classList.add('fullscreen-mode');
@@ -1172,7 +1144,6 @@ Copyright (c) 2025 Valentyn Kolesnikov <0009-0003-9608-3364@orcid.org>
 
         document.getElementById('fullscreenBtn').addEventListener('click', toggleFullscreen);
 
-        // Listen for fullscreen changes
         document.addEventListener('fullscreenchange', updateFullscreenButton);
         document.addEventListener('webkitfullscreenchange', updateFullscreenButton);
         document.addEventListener('mozfullscreenchange', updateFullscreenButton);
@@ -1190,7 +1161,6 @@ Copyright (c) 2025 Valentyn Kolesnikov <0009-0003-9608-3364@orcid.org>
             }
         }
 
-        // Prevent zoom on double tap for iOS
         let lastTouchEnd = 0;
         document.addEventListener('touchend', function (event) {
             const now = Date.now();
@@ -1403,7 +1373,6 @@ Copyright (c) 2025 Valentyn Kolesnikov <0009-0003-9608-3364@orcid.org>
             }
         }
 
-        // Touch controls
         function setupTouchControls() {
             const touchButtons = document.querySelectorAll('.touch-btn');
             touchButtons.forEach(btn => {
@@ -1420,7 +1389,6 @@ Copyright (c) 2025 Valentyn Kolesnikov <0009-0003-9608-3364@orcid.org>
                 });
             });
 
-            // Swipe controls
             let touchStartX = 0;
             let touchStartY = 0;
 
@@ -1460,6 +1428,8 @@ Copyright (c) 2025 Valentyn Kolesnikov <0009-0003-9608-3364@orcid.org>
                 currentLevelScore: currentLevelScore
             };
             localStorage.setItem('pacmanSavedGame', JSON.stringify(gameState));
+            // Keep in-memory copy in sync for UI/continue flows
+            savedGameState = gameState;
         }
 
         function loadSavedGame() {
@@ -1482,14 +1452,38 @@ Copyright (c) 2025 Valentyn Kolesnikov <0009-0003-9608-3364@orcid.org>
             return true;
         }
 
+        // FIX: Ensure Continue uses the saved level's configuration (not level 1)
         function continueGame() {
+            // Refresh savedGameState from storage to be safe
+            savedGameState = JSON.parse(localStorage.getItem('pacmanSavedGame'));
             if (savedGameState) {
                 document.getElementById('startScreen').style.display = 'none';
-                init();
+
+                // Load saved game first so 'level' is correct
                 loadSavedGame();
+
+                // Apply per-level runtime settings for the saved level
+                const levelConfig = levels[Math.min(level - 1, levels.length - 1)];
+                player.speed = levelConfig.playerSpeed;
+
+                // Recreate ghosts for the saved level (ghosts are not persisted)
+                initializeGhosts();
+
+                // Ensure helpers exist
+                if (!gameInitialized) {
+                    createSkinSelector();
+                    setupTouchControls();
+                }
                 gameInitialized = true;
+
                 updateDisplay();
                 updateLives();
+
+                // Start without re-initializing/overwriting saved state
+                gameRunning = false;
+                gamePaused = false;
+                document.getElementById('pauseBtn').textContent = 'Pause';
+                document.getElementById('mobilePauseBtn').textContent = 'Pause';
                 startGame();
             } else {
                 startFirstGame();
@@ -1554,6 +1548,11 @@ Copyright (c) 2025 Valentyn Kolesnikov <0009-0003-9608-3364@orcid.org>
                 if (continueBtn) {
                     continueBtn.style.display = 'inline-block';
                 }
+            } else {
+                const continueBtn = document.getElementById('continueBtn');
+                if (continueBtn) {
+                    continueBtn.style.display = 'none';
+                }
             }
         }
 
@@ -1561,7 +1560,7 @@ Copyright (c) 2025 Valentyn Kolesnikov <0009-0003-9608-3364@orcid.org>
             const modal = document.getElementById('levelSelectModal');
             const grid = document.getElementById('levelGrid');
             grid.innerHTML = '';
-            
+
             for (let i = 1; i <= 10; i++) {
                 const levelItem = document.createElement('div');
                 levelItem.className = 'level-item';
@@ -1569,11 +1568,11 @@ Copyright (c) 2025 Valentyn Kolesnikov <0009-0003-9608-3364@orcid.org>
                 const isCompleted = completedLevels.includes(i);
                 const isCurrent = i === level && savedGameState;
                 const isLocked = i > Math.max(...completedLevels, 0) + 1 && !isCompleted && !isCurrent;
-                
+
                 if (isCompleted) {
                     levelItem.classList.add('completed');
                 } else if (isCurrent) {
-                    levelItem.classList.add('current');
+                     levelItem.classList.add('current');
                 } else if (isLocked) {
                     levelItem.classList.add('locked');
                 }
@@ -1885,6 +1884,7 @@ Copyright (c) 2025 Valentyn Kolesnikov <0009-0003-9608-3364@orcid.org>
             }
             
             localStorage.removeItem('pacmanSavedGame');
+            savedGameState = null;
             
             document.getElementById('gameOverModal').style.display = 'none';
             document.getElementById('levelCompleteModal').style.display = 'none';
@@ -1904,7 +1904,6 @@ Copyright (c) 2025 Valentyn Kolesnikov <0009-0003-9608-3364@orcid.org>
         function nextLevel() {
             level++;
             
-            // Always hide Level Complete popup first
             const levelCompleteModal = document.getElementById('levelCompleteModal');
             if (levelCompleteModal) levelCompleteModal.style.display = 'none';
 
@@ -1957,7 +1956,6 @@ Copyright (c) 2025 Valentyn Kolesnikov <0009-0003-9608-3364@orcid.org>
         function gameOver(completed = false) {
             gameRunning = false;
             
-            // Ensure Level Complete popup is hidden before showing Game Over / Congratulations
             const lcm = document.getElementById('levelCompleteModal');
             if (lcm) lcm.style.display = 'none';
 
@@ -1967,6 +1965,7 @@ Copyright (c) 2025 Valentyn Kolesnikov <0009-0003-9608-3364@orcid.org>
             }
             
             localStorage.removeItem('pacmanSavedGame');
+            savedGameState = null;
             
             if (score > highScore) {
                 highScore = score;
@@ -2279,7 +2278,6 @@ Copyright (c) 2025 Valentyn Kolesnikov <0009-0003-9608-3364@orcid.org>
             gameLoopId = requestAnimationFrame(gameLoop);
         }
 
-        // Initialize on load
         window.addEventListener('load', () => {
             document.getElementById('highScore').textContent = highScore;
             createSkinSelector();
