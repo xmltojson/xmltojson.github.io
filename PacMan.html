@@ -1006,7 +1006,7 @@ Copyright (c) 2025 Valentyn Kolesnikov <0009-0003-9608-3364@orcid.org>
         let levelBestScores = JSON.parse(localStorage.getItem('pacmanLevelBestScores')) || {};
         let savedGameState = JSON.parse(localStorage.getItem('pacmanSavedGame')) || null;
         let animationFrame = 0;
-        let gameLoopId = null; // setTimeout id now
+        let gameLoopId = null;
         let lastFrameTime = 0;
         const targetFPS = 60;
         const frameDelay = 1000 / targetFPS;
@@ -1533,7 +1533,7 @@ Copyright (c) 2025 Valentyn Kolesnikov <0009-0003-9608-3364@orcid.org>
             document.getElementById('pauseBtn').textContent = 'Pause';
             document.getElementById('mobilePauseBtn').textContent = 'Pause';
             lastFrameTime = performance.now();
-            gameLoop();
+            gameLoop(lastFrameTime);
         }
 
         function backToMenu() {
@@ -1544,7 +1544,7 @@ Copyright (c) 2025 Valentyn Kolesnikov <0009-0003-9608-3364@orcid.org>
             gamePaused = false;
             
             if (gameLoopId) {
-                clearTimeout(gameLoopId);
+                cancelAnimationFrame(gameLoopId);
                 gameLoopId = null;
             }
             
@@ -1659,7 +1659,7 @@ Copyright (c) 2025 Valentyn Kolesnikov <0009-0003-9608-3364@orcid.org>
             gamePaused = false;
             document.getElementById('pauseBtn').textContent = 'Pause';
             document.getElementById('mobilePauseBtn').textContent = 'Pause';
-            gameLoop();
+            gameLoop(performance.now());
         }
 
         function closeLevelSelect() {
@@ -1848,7 +1848,7 @@ Copyright (c) 2025 Valentyn Kolesnikov <0009-0003-9608-3364@orcid.org>
             document.getElementById('pauseBtn').textContent = 'Pause';
             document.getElementById('mobilePauseBtn').textContent = 'Pause';
             lastFrameTime = performance.now();
-            gameLoop();
+            gameLoop(lastFrameTime);
         }
 
         function togglePause() {
@@ -1858,19 +1858,15 @@ Copyright (c) 2025 Valentyn Kolesnikov <0009-0003-9608-3364@orcid.org>
             document.getElementById('mobilePauseBtn').textContent = gamePaused ? 'Resume' : 'Pause';
             if (!gamePaused) {
                 lastFrameTime = performance.now();
-                gameLoop();
+                gameLoop(lastFrameTime);
             } else {
-                if (gameLoopId) {
-                    clearTimeout(gameLoopId);
-                    gameLoopId = null;
-                }
                 saveGame();
             }
         }
 
         function resetGame() {
             if (gameLoopId) {
-                clearTimeout(gameLoopId);
+                cancelAnimationFrame(gameLoopId);
                 gameLoopId = null;
             }
             
@@ -1955,7 +1951,7 @@ Copyright (c) 2025 Valentyn Kolesnikov <0009-0003-9608-3364@orcid.org>
             saveGame();
             gameRunning = true;
             lastFrameTime = performance.now();
-            gameLoop();
+            gameLoop(lastFrameTime);
         }
 
         function gameOver(completed = false) {
@@ -1966,7 +1962,7 @@ Copyright (c) 2025 Valentyn Kolesnikov <0009-0003-9608-3364@orcid.org>
             if (lcm) lcm.style.display = 'none';
 
             if (gameLoopId) {
-                clearTimeout(gameLoopId);
+                cancelAnimationFrame(gameLoopId);
                 gameLoopId = null;
             }
             
@@ -1990,7 +1986,7 @@ Copyright (c) 2025 Valentyn Kolesnikov <0009-0003-9608-3364@orcid.org>
             if (pelletsEaten >= totalPellets) {
                 gameRunning = false;
                 if (gameLoopId) {
-                    clearTimeout(gameLoopId);
+                    cancelAnimationFrame(gameLoopId);
                     gameLoopId = null;
                 }
                 document.getElementById('levelScore').textContent = score;
@@ -2260,28 +2256,27 @@ Copyright (c) 2025 Valentyn Kolesnikov <0009-0003-9608-3364@orcid.org>
             ctx.restore();
         }
 
-        function gameLoop() {
+        function gameLoop(currentTime) {
             if (!gameRunning || gamePaused) {
                 gameLoopId = null;
                 return;
             }
-
-            const currentTime = performance.now();
+            
             const deltaTime = currentTime - lastFrameTime;
-
+            
             if (deltaTime >= frameDelay) {
                 animationFrame++;
-
+                
                 movePlayer();
                 ghosts.forEach(ghost => ghost.move());
                 checkCollisions();
+                
                 draw();
-
+                
                 lastFrameTime = currentTime - (deltaTime % frameDelay);
             }
-
-            const nextDelay = Math.max(0, frameDelay - (performance.now() - lastFrameTime));
-            gameLoopId = setTimeout(gameLoop, nextDelay);
+            
+            gameLoopId = requestAnimationFrame(gameLoop);
         }
 
         // Initialize on load
