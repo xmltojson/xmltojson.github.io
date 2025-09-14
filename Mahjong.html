@@ -138,17 +138,16 @@
         }
 
         .pause-overlay {
-            position: absolute;
+            position: fixed;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
-            background: rgba(0, 0, 0, 0.8);
+            background: rgba(0, 0, 0, 0.85);
             display: none;
             justify-content: center;
             align-items: center;
             z-index: 1500;
-            border-radius: 15px;
         }
 
         .pause-overlay.active {
@@ -156,22 +155,39 @@
         }
 
         .pause-message {
-            background: white;
-            padding: 30px;
-            border-radius: 15px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 40px;
+            border-radius: 20px;
             text-align: center;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            box-shadow: 0 15px 50px rgba(0, 0, 0, 0.5);
+            max-width: 400px;
+            width: 90%;
         }
 
         .pause-message h2 {
-            color: #764ba2;
+            color: white;
             margin-bottom: 20px;
-            font-size: 2em;
+            font-size: 2.5em;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
         }
 
         .pause-message p {
-            margin-bottom: 20px;
-            color: #666;
+            margin-bottom: 30px;
+            color: white;
+            font-size: 1.2em;
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.2);
+        }
+
+        .pause-message button {
+            background: white;
+            color: #764ba2;
+            padding: 12px 30px;
+            font-size: 18px;
+            font-weight: bold;
+        }
+
+        .pause-message button:hover {
+            background: #f0f0f0;
         }
 
         .tile {
@@ -249,17 +265,20 @@
             background: rgba(0, 0, 0, 0.7);
             justify-content: center;
             align-items: center;
-            z-index: 5000; /* Base modal z-index */
+            z-index: 5000;
         }
 
-        /* Level select modal */
         #levelModal {
             z-index: 5000;
         }
 
-        /* Leaderboard modal - highest priority */
         #leaderboardModal {
             z-index: 6000;
+        }
+
+        /* Alert modal - highest priority */
+        #alertModal {
+            z-index: 7000;
         }
 
         .modal-content {
@@ -273,6 +292,43 @@
             animation: slideIn 0.3s;
             position: relative;
             box-shadow: 0 15px 50px rgba(0, 0, 0, 0.5);
+        }
+
+        .alert-content {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            max-width: 400px;
+            width: 90%;
+            animation: slideIn 0.3s;
+            text-align: center;
+            box-shadow: 0 15px 50px rgba(0, 0, 0, 0.5);
+        }
+
+        .alert-content h3 {
+            color: #764ba2;
+            margin-bottom: 20px;
+            font-size: 1.8em;
+        }
+
+        .alert-content.warning h3 {
+            color: #ff6b6b;
+        }
+
+        .alert-content.success h3 {
+            color: #4CAF50;
+        }
+
+        .alert-content p {
+            margin-bottom: 25px;
+            color: #666;
+            font-size: 1.1em;
+            line-height: 1.5;
+        }
+
+        .alert-content button {
+            min-width: 100px;
+            padding: 10px 20px;
         }
 
         @keyframes slideIn {
@@ -384,7 +440,6 @@
             }
         }
 
-        /* Victory modal with medium priority */
         .victory-message {
             position: fixed;
             top: 50%;
@@ -396,7 +451,7 @@
             color: white;
             border-radius: 20px;
             box-shadow: 0 15px 50px rgba(0, 0, 0, 0.5);
-            z-index: 4000; /* Below other modals */
+            z-index: 4000;
             max-width: 500px;
             width: 90%;
             animation: victoryPop 0.5s ease-out;
@@ -457,7 +512,6 @@
             background: #f0f0f0;
         }
 
-        /* Game over modal */
         .game-over-message {
             position: fixed;
             top: 50%;
@@ -510,6 +564,14 @@
             .level-grid {
                 grid-template-columns: repeat(4, 1fr);
             }
+
+            .pause-message {
+                padding: 30px 20px;
+            }
+
+            .pause-message h2 {
+                font-size: 2em;
+            }
         }
     </style>
 </head>
@@ -551,16 +613,17 @@
 
         <div class="game-board-container">
             <div id="boardWrapper" class="board-wrapper">
-                <div id="gameBoard">
-                    <div id="pauseOverlay" class="pause-overlay">
-                        <div class="pause-message">
-                            <h2>⏸️ Game Paused</h2>
-                            <p>Take a break! Your game is safely paused.</p>
-                            <button onclick="game.togglePause()">Resume Game</button>
-                        </div>
-                    </div>
-                </div>
+                <div id="gameBoard"></div>
             </div>
+        </div>
+    </div>
+
+    <!-- Pause Overlay (separate from game board) -->
+    <div id="pauseOverlay" class="pause-overlay">
+        <div class="pause-message">
+            <h2>⏸️ Game Paused</h2>
+            <p>Take a break! Your game is safely paused.</p>
+            <button onclick="game.togglePause()">Resume Game</button>
         </div>
     </div>
 
@@ -601,13 +664,22 @@
         </div>
     </div>
 
-    <!-- Leaderboard Modal (highest z-index) -->
+    <!-- Leaderboard Modal -->
     <div id="leaderboardModal" class="modal">
         <div class="modal-content">
             <button class="modal-close-btn" onclick="game.closeLeaderboard()">×</button>
             <h2>🏆 Leaderboard - Level <span id="leaderboardLevel">1</span></h2>
             <div class="leaderboard" id="leaderboardList"></div>
             <button onclick="game.closeLeaderboard()">Close</button>
+        </div>
+    </div>
+
+    <!-- Alert Modal (replaces all alert() calls) -->
+    <div id="alertModal" class="modal">
+        <div class="alert-content" id="alertContent">
+            <h3 id="alertTitle">Notice</h3>
+            <p id="alertMessage">Message</p>
+            <button onclick="game.closeAlert()">OK</button>
         </div>
     </div>
 
@@ -646,6 +718,32 @@
                 window.addEventListener('orientationchange', () => {
                     setTimeout(() => this.refit(), 50);
                 });
+            }
+
+            showAlert(title, message, type = 'info') {
+                const modal = document.getElementById('alertModal');
+                const alertTitle = document.getElementById('alertTitle');
+                const alertMessage = document.getElementById('alertMessage');
+                const alertContent = document.getElementById('alertContent');
+                
+                alertTitle.textContent = title;
+                alertMessage.textContent = message;
+                
+                // Remove all type classes
+                alertContent.classList.remove('warning', 'success');
+                
+                // Add appropriate class based on type
+                if (type === 'warning') {
+                    alertContent.classList.add('warning');
+                } else if (type === 'success') {
+                    alertContent.classList.add('success');
+                }
+                
+                modal.style.display = 'flex';
+            }
+
+            closeAlert() {
+                document.getElementById('alertModal').style.display = 'none';
             }
 
             generateLayouts() {
@@ -816,6 +914,11 @@
                 this.selectedTile = null;
                 this.gameActive = true;
                 this.isPaused = false;
+                this.startTime = null; // Reset timer
+                
+                // Clear any existing timer
+                clearInterval(this.timerInterval);
+                document.getElementById('timer').textContent = '00:00';
                 
                 // Reset pause button
                 const pauseBtn = document.getElementById('pauseBtn');
@@ -835,20 +938,6 @@
 
             createBoard() {
                 this.gameBoard.innerHTML = '';
-                
-                // Re-add pause overlay
-                const pauseOverlay = document.createElement('div');
-                pauseOverlay.id = 'pauseOverlay';
-                pauseOverlay.className = 'pause-overlay';
-                pauseOverlay.innerHTML = `
-                    <div class="pause-message">
-                        <h2>⏸️ Game Paused</h2>
-                        <p>Take a break! Your game is safely paused.</p>
-                        <button onclick="game.togglePause()">Resume Game</button>
-                    </div>
-                `;
-                this.gameBoard.appendChild(pauseOverlay);
-                
                 this.tiles = [];
                 
                 const layout = this.layouts[this.currentLevel - 1];
@@ -1115,7 +1204,7 @@
                     }
                 }
                 
-                alert('No valid moves available! Try shuffling.');
+                this.showAlert('No Moves', 'No valid moves available! Try shuffling the tiles.', 'warning');
             }
 
             shuffle() {
@@ -1147,8 +1236,11 @@
                 if (!this.hasValidMoves()) {
                     setTimeout(() => {
                         if (this.shuffles > 0) {
-                            alert('No valid moves after shuffle. Shuffling again...');
-                            this.shuffle();
+                            this.showAlert('Auto Shuffle', 'No valid moves after shuffle. Shuffling again...', 'warning');
+                            setTimeout(() => {
+                                this.closeAlert();
+                                this.shuffle();
+                            }, 2000);
                         } else {
                             this.gameOver();
                         }
@@ -1231,8 +1323,11 @@
                     this.currentLevel++;
                     this.newGame();
                 } else {
-                    alert('🏆 Congratulations! You have completed all 20 levels! 🏆');
-                    this.showLevelSelect();
+                    this.showAlert('Congratulations!', '🏆 You have completed all 20 levels! You are a Mahjong Master! 🏆', 'success');
+                    setTimeout(() => {
+                        this.closeAlert();
+                        this.showLevelSelect();
+                    }, 3000);
                 }
             }
 
@@ -1258,7 +1353,6 @@
             }
 
             showLeaderboardFromVictory() {
-                // Ensure leaderboard appears on top of victory modal
                 this.showLeaderboard();
             }
 
