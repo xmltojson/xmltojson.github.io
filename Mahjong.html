@@ -21,7 +21,7 @@
             flex-direction: column;
             align-items: center;
             padding: 10px;
-            overflow-x: auto;
+            overflow-x: hidden;
         }
 
         .game-container {
@@ -30,8 +30,7 @@
             display: flex;
             flex-direction: column;
             align-items: center;
-            /* Background moved to the game board so it only fills the board */
-            background: transparent;
+            background: transparent; /* background moved to board */
             border-radius: 20px;
             padding: 20px;
             box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
@@ -105,25 +104,28 @@
         }
 
         .game-board-container {
-            /* Make container neutral; the board itself carries the background */
             background: transparent;
             border-radius: 15px;
             padding: 20px;
-            min-height: 600px;
             width: 100%;
             display: flex;
             justify-content: center;
-            align-items: center;
+            align-items: flex-start;
             position: relative;
+        }
+
+        /* Wrapper reserves the visual space for a scaled board */
+        .board-wrapper {
+            position: relative;
+            display: inline-block;
+            line-height: 0; /* avoid inline gaps */
+            /* width/height set dynamically to match scaled size */
         }
 
         #gameBoard {
             position: relative;
-            /* Width and height will be set dynamically to fit the layout */
-            width: 900px;
-            height: 600px;
-            transform-origin: center;
-            /* Background now fills the game board only */
+            /* width/height set dynamically to fit tiles */
+            transform-origin: top left; /* for precise scaling */
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             border-radius: 15px;
             box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
@@ -340,13 +342,9 @@
                 height: 52px;
                 font-size: 16px;
             }
-            
-            #gameBoard {
-                transform: scale(0.8);
-            }
-            
-            .level-grid {
-                grid-template-columns: repeat(4, 1fr);
+
+            .game-board-container {
+                padding: 10px;
             }
         }
     </style>
@@ -387,7 +385,9 @@
         </div>
 
         <div class="game-board-container">
-            <div id="gameBoard"></div>
+            <div id="boardWrapper" class="board-wrapper">
+                <div id="gameBoard"></div>
+            </div>
         </div>
     </div>
 
@@ -418,11 +418,13 @@
                 this.tiles = [];
                 this.selectedTile = null;
                 this.gameBoard = document.getElementById('gameBoard');
+                this.boardWrapper = document.getElementById('boardWrapper');
+                this.boardContainer = document.querySelector('.game-board-container');
+                this.header = document.querySelector('.game-header');
                 this.startTime = null;
                 this.timerInterval = null;
                 this.gameActive = false;
                 
-                // Tile symbols - mix of emojis and characters
                 this.symbols = [
                     '🀄', '🎋', '🎍', '🌸', '🌺', '🌻', '🌷', '🌹',
                     '🦋', '🐉', '🦅', '🐢', '🎯', '⭐', '💎', '🔮',
@@ -433,42 +435,40 @@
                 this.layouts = this.generateLayouts();
                 this.loadGameData();
                 this.init();
+
+                window.addEventListener('resize', () => this.refit());
+                window.addEventListener('orientationchange', () => {
+                    setTimeout(() => this.refit(), 50);
+                });
             }
 
             generateLayouts() {
                 const layouts = [];
-                
-                // 20 predefined layouts with increasing complexity
                 const layoutPatterns = [
                     { rows: 4, cols: 8, layers: 1, pattern: 'rectangle' },
                     { rows: 5, cols: 8, layers: 1, pattern: 'rectangle' },
                     { rows: 4, cols: 10, layers: 1, pattern: 'rectangle' },
                     { rows: 5, cols: 10, layers: 1, pattern: 'diamond' },
                     { rows: 6, cols: 10, layers: 1, pattern: 'diamond' },
-                    
                     { rows: 6, cols: 12, layers: 2, pattern: 'pyramid' },
                     { rows: 6, cols: 12, layers: 2, pattern: 'pyramid' },
                     { rows: 7, cols: 12, layers: 2, pattern: 'butterfly' },
                     { rows: 7, cols: 14, layers: 2, pattern: 'butterfly' },
                     { rows: 8, cols: 14, layers: 2, pattern: 'cross' },
-                    
                     { rows: 8, cols: 14, layers: 3, pattern: 'fortress' },
                     { rows: 8, cols: 16, layers: 3, pattern: 'fortress' },
                     { rows: 9, cols: 16, layers: 3, pattern: 'dragon' },
                     { rows: 9, cols: 16, layers: 3, pattern: 'dragon' },
                     { rows: 9, cols: 18, layers: 3, pattern: 'temple' },
-                    
                     { rows: 10, cols: 18, layers: 4, pattern: 'temple' },
                     { rows: 10, cols: 18, layers: 4, pattern: 'arena' },
                     { rows: 10, cols: 20, layers: 4, pattern: 'arena' },
                     { rows: 11, cols: 20, layers: 4, pattern: 'turtle' },
                     { rows: 11, cols: 20, layers: 5, pattern: 'turtle' }
                 ];
-                
                 layoutPatterns.forEach((config, index) => {
                     layouts.push(this.createLayout(index + 1, config));
                 });
-                
                 return layouts;
             }
 
@@ -496,11 +496,7 @@
                     }
                 }
                 
-                // Ensure even number of tiles
-                if (positions.length % 2 !== 0) {
-                    positions.pop();
-                }
-                
+                if (positions.length % 2 !== 0) positions.pop();
                 return positions;
             }
 
@@ -511,45 +507,38 @@
                 switch(pattern) {
                     case 'rectangle':
                         return true;
-                        
                     case 'diamond':
-                        const distFromCenter = Math.abs(row - centerRow) + Math.abs(col - centerCol);
-                        return distFromCenter <= (rows + cols) / 4;
-                        
+                        return Math.abs(row - centerRow) + Math.abs(col - centerCol) <= (rows + cols) / 4;
                     case 'pyramid':
                         return row >= Math.abs(col - centerCol) / 3;
-                        
                     case 'butterfly':
-                        const wingDist = Math.abs(col - centerCol);
-                        return wingDist > 1 || Math.abs(row - centerRow) < 2;
-                        
+                        return Math.abs(col - centerCol) > 1 || Math.abs(row - centerRow) < 2;
                     case 'cross':
                         return Math.abs(row - centerRow) < 2 || Math.abs(col - centerCol) < 2;
-                        
-                    case 'fortress':
+                    case 'fortress': {
                         const edge = row === 0 || row === rows - 1 || col === 0 || col === cols - 1;
                         const center = Math.abs(row - centerRow) < 2 && Math.abs(col - centerCol) < 2;
                         return edge || center || (layer > 0 && Math.random() > 0.3);
-                        
-                    case 'dragon':
+                    }
+                    case 'dragon': {
                         const wave = Math.sin(col / 2) * 2;
                         return Math.abs(row - centerRow - wave) < 3;
-                        
-                    case 'temple':
+                    }
+                    case 'temple': {
                         const templeShape = row < rows / 3 || 
-                                          (row < 2 * rows / 3 && Math.abs(col - centerCol) < cols / 3) ||
-                                          Math.abs(col - centerCol) < 2;
+                          (row < 2 * rows / 3 && Math.abs(col - centerCol) < cols / 3) ||
+                          Math.abs(col - centerCol) < 2;
                         return templeShape || (layer > 0 && Math.random() > 0.4);
-                        
-                    case 'arena':
+                    }
+                    case 'arena': {
                         const ring = Math.abs(row - centerRow) > 1 || Math.abs(col - centerCol) > 1;
                         const filled = layer > 0 && Math.abs(row - centerRow) < 3 && Math.abs(col - centerCol) < 3;
                         return ring || filled;
-                        
-                    case 'turtle':
+                    }
+                    case 'turtle': {
                         const dist = Math.sqrt(Math.pow(row - centerRow, 2) + Math.pow(col - centerCol, 2));
                         return dist <= Math.min(rows, cols) / 2 || (layer > 0 && dist <= Math.min(rows, cols) / 3);
-                        
+                    }
                     default:
                         return true;
                 }
@@ -611,24 +600,17 @@
                 const layout = this.layouts[this.currentLevel - 1];
                 const numPairs = Math.floor(layout.length / 2);
                 
-                // Create pairs of tiles
                 const tileValues = [];
                 for (let i = 0; i < numPairs; i++) {
                     const symbol = this.symbols[i % this.symbols.length];
                     tileValues.push(symbol, symbol);
                 }
                 
-                // Shuffle tile values
                 for (let i = tileValues.length - 1; i > 0; i--) {
                     const j = Math.floor(Math.random() * (i + 1));
                     [tileValues[i], tileValues[j]] = [tileValues[j], tileValues[i]];
                 }
-
-                // Reset board size; will be recalculated to fit tiles
-                this.gameBoard.style.width = '900px';
-                this.gameBoard.style.height = '600px';
                 
-                // Create tile elements at initial positions
                 layout.forEach((pos, index) => {
                     const tile = document.createElement('div');
                     tile.className = 'tile';
@@ -649,51 +631,104 @@
                     this.tiles.push(tile);
                 });
 
-                // After tiles are in the DOM, compute actual extents and resize the board to fit
                 this.fitBoardToTiles();
-
+                this.scaleBoardToContainer();
                 this.updateTileStates();
                 document.getElementById('tilesLeft').textContent = this.tiles.length;
             }
 
+            // Computes tight background size (with responsive padding) based on actual tile size and positions.
             fitBoardToTiles() {
-                if (this.tiles.length === 0) return;
-                const padding = 20; // inner padding within the board background
+                if (!this.tiles.length) {
+                    this.gameBoard.style.width = '900px';
+                    this.gameBoard.style.height = '600px';
+                    return;
+                }
 
-                // Use actual rendered tile size (handles media queries)
                 const sampleTile = this.tiles[0];
                 const tileW = sampleTile.offsetWidth || 50;
                 const tileH = sampleTile.offsetHeight || 65;
 
-                let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+                // Adaptive padding for mobile/desktop
+                const isMobile = window.innerWidth <= 768;
+                const padding = Math.max(10, Math.round(tileW * (isMobile ? 0.6 : 0.4)));
 
-                // Compute extents based on dataset positions
+                // Compute extents based on current layout positions (dataset on first run, style on refit)
+                let useStyle = !!this.tiles[0].style.left;
+                let minX = Infinity, minY = Infinity;
+
                 this.tiles.forEach(t => {
-                    const x = parseInt(t.dataset.x);
-                    const y = parseInt(t.dataset.y);
+                    const x = useStyle ? parseFloat(t.style.left) : parseFloat(t.dataset.x);
+                    const y = useStyle ? parseFloat(t.style.top) : parseFloat(t.dataset.y);
                     if (x < minX) minX = x;
                     if (y < minY) minY = y;
-                    if (x > maxX) maxX = x;
-                    if (y > maxY) maxY = y;
                 });
 
-                const boardWidth = (maxX - minX) + tileW + padding * 2;
-                const boardHeight = (maxY - minY) + tileH + padding * 2;
+                // Reposition tiles so the minimum starts at "padding"
+                this.tiles.forEach(t => {
+                    const x0 = useStyle ? parseFloat(t.style.left) : parseFloat(t.dataset.x);
+                    const y0 = useStyle ? parseFloat(t.style.top) : parseFloat(t.dataset.y);
+                    const nx = x0 - minX + padding;
+                    const ny = y0 - minY + padding;
+                    t.style.left = nx + 'px';
+                    t.style.top = ny + 'px';
+                    const z = parseInt(t.dataset.z);
+                    t.style.zIndex = z * 100 + Math.floor(ny / 10);
+                });
+
+                // Now measure final extents from styled positions
+                let maxRight = 0, maxBottom = 0;
+                this.tiles.forEach(t => {
+                    const left = parseFloat(t.style.left);
+                    const top = parseFloat(t.style.top);
+                    const right = left + (t.offsetWidth || tileW);
+                    const bottom = top + (t.offsetHeight || tileH);
+                    if (right > maxRight) maxRight = right;
+                    if (bottom > maxBottom) maxBottom = bottom;
+                });
+
+                const boardWidth = Math.ceil(maxRight + padding);
+                const boardHeight = Math.ceil(maxBottom + padding);
 
                 this.gameBoard.style.width = boardWidth + 'px';
                 this.gameBoard.style.height = boardHeight + 'px';
 
-                // Reposition tiles relative to new board origin and update z-index with new Y
-                this.tiles.forEach(t => {
-                    const x = parseInt(t.dataset.x);
-                    const y = parseInt(t.dataset.y);
-                    const newX = x - minX + padding;
-                    const newY = y - minY + padding;
-                    t.style.left = newX + 'px';
-                    t.style.top = newY + 'px';
-                    const z = parseInt(t.dataset.z);
-                    t.style.zIndex = z * 100 + Math.floor(newY / 10);
-                });
+                // Cache for scaling step
+                this._boardNaturalSize = { width: boardWidth, height: boardHeight };
+            }
+
+            // Scales the entire board to fit the visible container on mobile while keeping background tight.
+            scaleBoardToContainer() {
+                if (!this._boardNaturalSize) return;
+
+                const boardWidth = this._boardNaturalSize.width;
+                const boardHeight = this._boardNaturalSize.height;
+
+                // Compute inner width of the container (minus paddings)
+                const cs = getComputedStyle(this.boardContainer);
+                const padX = parseFloat(cs.paddingLeft) + parseFloat(cs.paddingRight);
+                const padY = parseFloat(cs.paddingTop) + parseFloat(cs.paddingBottom);
+                const availableWidth = Math.max(100, this.boardContainer.clientWidth - padX);
+
+                // Try to respect viewport height too (under header)
+                const headerH = this.header ? this.header.offsetHeight : 0;
+                const availableHeight = Math.max(150, window.innerHeight - headerH - 40);
+
+                const scale = Math.min(1, availableWidth / boardWidth, availableHeight / boardHeight);
+
+                // Apply scaling to the board and reserve the space with the wrapper
+                this.gameBoard.style.transform = `scale(${scale})`;
+                this.boardWrapper.style.width = (boardWidth * scale) + 'px';
+                this.boardWrapper.style.height = (boardHeight * scale) + 'px';
+            }
+
+            refit() {
+                if (!this.tiles.length) return;
+                // Recalculate tight background and rescale for new viewport/tile size
+                this.fitBoardToTiles();
+                this.scaleBoardToContainer();
+                // Update blocked states using current positions and sizes
+                this.updateTileStates();
             }
 
             updateTileStates() {
@@ -711,45 +746,34 @@
             isTileBlocked(tile) {
                 if (tile.classList.contains('matched')) return true;
                 
-                const x = parseInt(tile.style.left);
-                const y = parseInt(tile.style.top);
+                const x = parseFloat(tile.style.left);
+                const y = parseFloat(tile.style.top);
                 const z = parseInt(tile.dataset.z);
 
-                // Use actual tile dimensions
                 const tileW = tile.offsetWidth || 50;
                 const tileH = tile.offsetHeight || 65;
                 
-                // Check if tile has tiles on top
                 const hasTopTile = this.tiles.some(t => {
                     if (t === tile || t.classList.contains('matched')) return false;
-                    const tx = parseInt(t.style.left);
-                    const ty = parseInt(t.style.top);
+                    const tx = parseFloat(t.style.left);
+                    const ty = parseFloat(t.style.top);
                     const tz = parseInt(t.dataset.z);
-                    
-                    return tz > z && 
-                           Math.abs(tx - x) < (tileW - 10) && 
-                           Math.abs(ty - y) < (tileH - 10);
+                    return tz > z && Math.abs(tx - x) < (tileW - 10) && Math.abs(ty - y) < (tileH - 10);
                 });
-                
                 if (hasTopTile) return true;
                 
-                // Check if tile is blocked on both sides (only for same layer)
                 let leftBlocked = false;
                 let rightBlocked = false;
                 
                 this.tiles.forEach(t => {
                     if (t === tile || t.classList.contains('matched')) return;
-                    const tx = parseInt(t.style.left);
-                    const ty = parseInt(t.style.top);
+                    const tx = parseFloat(t.style.left);
+                    const ty = parseFloat(t.style.top);
                     const tz = parseInt(t.dataset.z);
                     
                     if (tz === z && Math.abs(ty - y) < Math.floor(tileH / 2)) {
-                        if (tx < x && x - tx < tileW + 2) {
-                            leftBlocked = true;
-                        }
-                        if (tx > x && tx - x < tileW + 2) {
-                            rightBlocked = true;
-                        }
+                        if (tx < x && x - tx < tileW + 2) leftBlocked = true;
+                        if (tx > x && tx - x < tileW + 2) rightBlocked = true;
                     }
                 });
                 
@@ -769,10 +793,8 @@
                 
                 if (this.selectedTile) {
                     if (this.selectedTile.dataset.value === tile.dataset.value) {
-                        // Match found!
                         this.matchTiles(this.selectedTile, tile);
                     } else {
-                        // No match
                         this.selectedTile.classList.remove('selected');
                         this.selectedTile = tile;
                         tile.classList.add('selected');
@@ -860,13 +882,11 @@
                 const activeTiles = this.tiles.filter(t => !t.classList.contains('matched'));
                 const values = activeTiles.map(t => t.dataset.value);
                 
-                // Shuffle values
                 for (let i = values.length - 1; i > 0; i--) {
                     const j = Math.floor(Math.random() * (i + 1));
                     [values[i], values[j]] = [values[j], values[i]];
                 }
                 
-                // Apply shuffled values
                 activeTiles.forEach((tile, index) => {
                     tile.dataset.value = values[index];
                     tile.textContent = values[index];
@@ -879,6 +899,9 @@
                 this.updateTileStates();
                 this.updateStats();
                 this.updateButtons();
+
+                // Refit after shuffle just in case
+                this.refit();
                 
                 if (!this.hasValidMoves()) {
                     setTimeout(() => {
@@ -925,6 +948,11 @@
             victory() {
                 this.gameActive = false;
                 clearInterval(this.timerInterval);
+
+                // Reset scaling so the message is readable
+                this.gameBoard.style.transform = 'none';
+                this.boardWrapper.style.width = '100%';
+                this.boardWrapper.style.height = 'auto';
                 
                 const timeElapsed = Math.floor((Date.now() - this.startTime) / 1000);
                 const timeBonus = Math.max(0, 3000 - timeElapsed * 10);
@@ -953,6 +981,11 @@
             gameOver() {
                 this.gameActive = false;
                 clearInterval(this.timerInterval);
+
+                // Reset scaling for readability
+                this.gameBoard.style.transform = 'none';
+                this.boardWrapper.style.width = '100%';
+                this.boardWrapper.style.height = 'auto';
                 
                 const gameOverDiv = document.createElement('div');
                 gameOverDiv.className = 'victory-message';
@@ -1081,7 +1114,6 @@
                     date: Date.now()
                 });
                 
-                // Keep only top 10 scores
                 this.gameData.leaderboards[level].sort((a, b) => b.score - a.score);
                 this.gameData.leaderboards[level] = this.gameData.leaderboards[level].slice(0, 10);
                 
@@ -1095,13 +1127,6 @@
 
         // Initialize game
         const game = new MahjongGame();
-
-        // Optional: refit board if window resized and tile size changes due to media queries
-        window.addEventListener('resize', () => {
-            if (game && game.tiles && game.tiles.length) {
-                game.fitBoardToTiles();
-            }
-        });
     </script>
 </body>
 </html>
