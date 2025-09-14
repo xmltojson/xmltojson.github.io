@@ -1,0 +1,1041 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Mahjong Solitaire">
+    <title>Mahjong Solitaire</title>
+    <link rel="icon" type="image/x-icon" href="Mahjong.ico"/>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 10px;
+            overflow-x: auto;
+        }
+
+        .game-container {
+            width: 100%;
+            max-width: 1200px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .game-header {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 15px;
+            padding: 15px;
+            margin-bottom: 15px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            text-align: center;
+            width: 100%;
+        }
+
+        h1 {
+            color: #764ba2;
+            margin-bottom: 10px;
+            font-size: 2em;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .controls {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-bottom: 10px;
+        }
+
+        button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: transform 0.2s, box-shadow 0.2s;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+            white-space: nowrap;
+        }
+
+        button:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+        }
+
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .stats {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            font-size: 16px;
+            color: #333;
+            flex-wrap: wrap;
+        }
+
+        .stat-item {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .stat-label {
+            font-weight: bold;
+        }
+
+        .game-board-container {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            padding: 20px;
+            min-height: 600px;
+            width: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+        }
+
+        #gameBoard {
+            position: relative;
+            width: 900px;
+            height: 600px;
+            transform-origin: center;
+        }
+
+        .tile {
+            position: absolute;
+            width: 50px;
+            height: 65px;
+            background: linear-gradient(145deg, #ffffff, #e6e6e6);
+            border: 2px solid #999;
+            border-radius: 6px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            transition: all 0.2s;
+            box-shadow: 
+                2px 2px 5px rgba(0, 0, 0, 0.3),
+                inset 1px 1px 2px rgba(255, 255, 255, 0.5);
+            user-select: none;
+            transform-style: preserve-3d;
+        }
+
+        .tile:hover:not(.blocked):not(.matched) {
+            transform: translateY(-2px) scale(1.05);
+            box-shadow: 
+                4px 4px 10px rgba(0, 0, 0, 0.4),
+                inset 1px 1px 2px rgba(255, 255, 255, 0.5);
+            background: linear-gradient(145deg, #f5f5f5, #ddd);
+            z-index: 999 !important;
+        }
+
+        .tile.selected {
+            background: linear-gradient(145deg, #ffd700, #ffed4e);
+            border-color: #ffa500;
+            transform: translateY(-2px) scale(1.05);
+            box-shadow: 
+                0 0 15px rgba(255, 215, 0, 0.6),
+                4px 4px 10px rgba(0, 0, 0, 0.4);
+            z-index: 998 !important;
+        }
+
+        .tile.blocked {
+            opacity: 0.7;
+            cursor: not-allowed;
+            filter: brightness(0.8);
+        }
+
+        .tile.matched {
+            animation: matchAnimation 0.5s forwards;
+            pointer-events: none;
+        }
+
+        @keyframes matchAnimation {
+            0% {
+                transform: scale(1) rotate(0deg);
+            }
+            50% {
+                transform: scale(1.3) rotate(180deg);
+                opacity: 0.8;
+            }
+            100% {
+                transform: scale(0) rotate(360deg);
+                opacity: 0;
+            }
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            justify-content: center;
+            align-items: center;
+            z-index: 2000;
+        }
+
+        .modal-content {
+            background: white;
+            padding: 25px;
+            border-radius: 15px;
+            max-width: 600px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+            animation: slideIn 0.3s;
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateY(-50px);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        .modal h2 {
+            color: #764ba2;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .level-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 10px;
+            margin: 20px 0;
+        }
+
+        .level-btn {
+            padding: 15px;
+            font-size: 16px;
+            position: relative;
+            min-height: 60px;
+        }
+
+        .level-btn.completed {
+            background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%);
+        }
+
+        .level-btn .stars {
+            position: absolute;
+            bottom: 2px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 10px;
+            color: gold;
+        }
+
+        .leaderboard {
+            margin-top: 20px;
+        }
+
+        .leaderboard-entry {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px;
+            background: #f5f5f5;
+            margin: 5px 0;
+            border-radius: 5px;
+            align-items: center;
+        }
+
+        .leaderboard-entry:nth-child(1) {
+            background: linear-gradient(135deg, #ffd700, #ffed4e);
+            font-weight: bold;
+        }
+
+        .leaderboard-entry:nth-child(2) {
+            background: linear-gradient(135deg, #c0c0c0, #d8d8d8);
+        }
+
+        .leaderboard-entry:nth-child(3) {
+            background: linear-gradient(135deg, #cd7f32, #e4a853);
+        }
+
+        .hint-animation {
+            animation: pulse 1s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% {
+                transform: scale(1);
+                box-shadow: 0 0 10px rgba(255, 215, 0, 0.5);
+            }
+            50% {
+                transform: scale(1.1);
+                box-shadow: 0 0 20px rgba(255, 215, 0, 0.8);
+            }
+        }
+
+        .victory-message {
+            text-align: center;
+            padding: 30px;
+            background: linear-gradient(135deg, #4CAF50, #45a049);
+            color: white;
+            border-radius: 10px;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.3);
+        }
+
+        .victory-message h2 {
+            margin-bottom: 15px;
+            font-size: 2em;
+        }
+
+        .victory-message p {
+            margin: 10px 0;
+            font-size: 1.2em;
+        }
+
+        .victory-message button {
+            margin: 5px;
+            background: white;
+            color: #4CAF50;
+        }
+
+        #timer {
+            font-weight: bold;
+            color: #764ba2;
+        }
+
+        @media (max-width: 768px) {
+            .tile {
+                width: 40px;
+                height: 52px;
+                font-size: 16px;
+            }
+            
+            #gameBoard {
+                transform: scale(0.8);
+            }
+            
+            .level-grid {
+                grid-template-columns: repeat(4, 1fr);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <div class="game-header">
+            <h1>🀄 Mahjong Solitaire 🀄</h1>
+            <div class="controls">
+                <button onclick="game.newGame()">New Game</button>
+                <button onclick="game.showLevelSelect()">Select Level</button>
+                <button onclick="game.showHint()" id="hintBtn">Hint (3)</button>
+                <button onclick="game.shuffle()" id="shuffleBtn">Shuffle (2)</button>
+                <button onclick="game.showLeaderboard()">Leaderboard</button>
+            </div>
+            <div class="stats">
+                <div class="stat-item">
+                    <span class="stat-label">Level:</span>
+                    <span id="currentLevel">1</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">Score:</span>
+                    <span id="score">0</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">Moves:</span>
+                    <span id="moves">0</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">Time:</span>
+                    <span id="timer">00:00</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">Tiles:</span>
+                    <span id="tilesLeft">0</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="game-board-container">
+            <div id="gameBoard"></div>
+        </div>
+    </div>
+
+    <div id="levelModal" class="modal">
+        <div class="modal-content">
+            <h2>Select Level</h2>
+            <div class="level-grid" id="levelGrid"></div>
+            <button onclick="game.closeLevelSelect()">Close</button>
+        </div>
+    </div>
+
+    <div id="leaderboardModal" class="modal">
+        <div class="modal-content">
+            <h2>🏆 Leaderboard - Level <span id="leaderboardLevel">1</span></h2>
+            <div class="leaderboard" id="leaderboardList"></div>
+            <button onclick="game.closeLeaderboard()">Close</button>
+        </div>
+    </div>
+
+    <script>
+        class MahjongGame {
+            constructor() {
+                this.currentLevel = 1;
+                this.score = 0;
+                this.moves = 0;
+                this.hints = 3;
+                this.shuffles = 2;
+                this.tiles = [];
+                this.selectedTile = null;
+                this.gameBoard = document.getElementById('gameBoard');
+                this.startTime = null;
+                this.timerInterval = null;
+                this.gameActive = false;
+                
+                // Tile symbols - mix of emojis and characters
+                this.symbols = [
+                    '🀄', '🎋', '🎍', '🌸', '🌺', '🌻', '🌷', '🌹',
+                    '🦋', '🐉', '🦅', '🐢', '🎯', '⭐', '💎', '🔮',
+                    '🎨', '🎭', '🎪', '🎰', '♠', '♥', '♦', '♣',
+                    '🔵', '🔴', '🟢', '🟡', '🟣', '🟠', '⚫', '⚪'
+                ];
+                
+                this.layouts = this.generateLayouts();
+                this.loadGameData();
+                this.init();
+            }
+
+            generateLayouts() {
+                const layouts = [];
+                
+                // 20 predefined layouts with increasing complexity
+                const layoutPatterns = [
+                    // Level 1-5: Simple layouts
+                    { rows: 4, cols: 8, layers: 1, pattern: 'rectangle' },
+                    { rows: 5, cols: 8, layers: 1, pattern: 'rectangle' },
+                    { rows: 4, cols: 10, layers: 1, pattern: 'rectangle' },
+                    { rows: 5, cols: 10, layers: 1, pattern: 'diamond' },
+                    { rows: 6, cols: 10, layers: 1, pattern: 'diamond' },
+                    
+                    // Level 6-10: Medium layouts
+                    { rows: 6, cols: 12, layers: 2, pattern: 'pyramid' },
+                    { rows: 6, cols: 12, layers: 2, pattern: 'pyramid' },
+                    { rows: 7, cols: 12, layers: 2, pattern: 'butterfly' },
+                    { rows: 7, cols: 14, layers: 2, pattern: 'butterfly' },
+                    { rows: 8, cols: 14, layers: 2, pattern: 'cross' },
+                    
+                    // Level 11-15: Complex layouts
+                    { rows: 8, cols: 14, layers: 3, pattern: 'fortress' },
+                    { rows: 8, cols: 16, layers: 3, pattern: 'fortress' },
+                    { rows: 9, cols: 16, layers: 3, pattern: 'dragon' },
+                    { rows: 9, cols: 16, layers: 3, pattern: 'dragon' },
+                    { rows: 9, cols: 18, layers: 3, pattern: 'temple' },
+                    
+                    // Level 16-20: Expert layouts
+                    { rows: 10, cols: 18, layers: 4, pattern: 'temple' },
+                    { rows: 10, cols: 18, layers: 4, pattern: 'arena' },
+                    { rows: 10, cols: 20, layers: 4, pattern: 'arena' },
+                    { rows: 11, cols: 20, layers: 4, pattern: 'turtle' },
+                    { rows: 11, cols: 20, layers: 5, pattern: 'turtle' }
+                ];
+                
+                layoutPatterns.forEach((config, index) => {
+                    layouts.push(this.createLayout(index + 1, config));
+                });
+                
+                return layouts;
+            }
+
+            createLayout(level, config) {
+                const positions = [];
+                const { rows, cols, layers, pattern } = config;
+                
+                for (let layer = 0; layer < layers; layer++) {
+                    const layerReduction = layer * 2;
+                    const layerRows = Math.max(2, rows - layerReduction);
+                    const layerCols = Math.max(4, cols - layerReduction);
+                    const offsetX = layer * 25;
+                    const offsetY = layer * 20;
+                    
+                    for (let row = 0; row < layerRows; row++) {
+                        for (let col = 0; col < layerCols; col++) {
+                            if (this.shouldPlaceTile(pattern, row, col, layerRows, layerCols, layer)) {
+                                positions.push({
+                                    x: col * 52 + offsetX + 50,
+                                    y: row * 67 + offsetY + 50,
+                                    z: layer
+                                });
+                            }
+                        }
+                    }
+                }
+                
+                // Ensure even number of tiles
+                if (positions.length % 2 !== 0) {
+                    positions.pop();
+                }
+                
+                return positions;
+            }
+
+            shouldPlaceTile(pattern, row, col, rows, cols, layer) {
+                const centerRow = rows / 2;
+                const centerCol = cols / 2;
+                
+                switch(pattern) {
+                    case 'rectangle':
+                        return true;
+                        
+                    case 'diamond':
+                        const distFromCenter = Math.abs(row - centerRow) + Math.abs(col - centerCol);
+                        return distFromCenter <= (rows + cols) / 4;
+                        
+                    case 'pyramid':
+                        return row >= Math.abs(col - centerCol) / 3;
+                        
+                    case 'butterfly':
+                        const wingDist = Math.abs(col - centerCol);
+                        return wingDist > 1 || Math.abs(row - centerRow) < 2;
+                        
+                    case 'cross':
+                        return Math.abs(row - centerRow) < 2 || Math.abs(col - centerCol) < 2;
+                        
+                    case 'fortress':
+                        const edge = row === 0 || row === rows - 1 || col === 0 || col === cols - 1;
+                        const center = Math.abs(row - centerRow) < 2 && Math.abs(col - centerCol) < 2;
+                        return edge || center || (layer > 0 && Math.random() > 0.3);
+                        
+                    case 'dragon':
+                        const wave = Math.sin(col / 2) * 2;
+                        return Math.abs(row - centerRow - wave) < 3;
+                        
+                    case 'temple':
+                        const templeShape = row < rows / 3 || 
+                                          (row < 2 * rows / 3 && Math.abs(col - centerCol) < cols / 3) ||
+                                          Math.abs(col - centerCol) < 2;
+                        return templeShape || (layer > 0 && Math.random() > 0.4);
+                        
+                    case 'arena':
+                        const ring = Math.abs(row - centerRow) > 1 || Math.abs(col - centerCol) > 1;
+                        const filled = layer > 0 && Math.abs(row - centerRow) < 3 && Math.abs(col - centerCol) < 3;
+                        return ring || filled;
+                        
+                    case 'turtle':
+                        const dist = Math.sqrt(Math.pow(row - centerRow, 2) + Math.pow(col - centerCol, 2));
+                        return dist <= Math.min(rows, cols) / 2 || (layer > 0 && dist <= Math.min(rows, cols) / 3);
+                        
+                    default:
+                        return true;
+                }
+            }
+
+            init() {
+                this.createLevelGrid();
+                this.newGame();
+            }
+
+            createLevelGrid() {
+                const grid = document.getElementById('levelGrid');
+                grid.innerHTML = '';
+                
+                for (let i = 1; i <= 20; i++) {
+                    const btn = document.createElement('button');
+                    btn.className = 'level-btn';
+                    btn.innerHTML = `<span>${i}</span>`;
+                    
+                    const levelData = this.getLevelData(i);
+                    if (levelData && levelData.completed) {
+                        btn.classList.add('completed');
+                        const stars = document.createElement('div');
+                        stars.className = 'stars';
+                        stars.textContent = '⭐'.repeat(this.getStars(levelData.bestScore));
+                        btn.appendChild(stars);
+                    }
+                    
+                    btn.onclick = () => this.selectLevel(i);
+                    grid.appendChild(btn);
+                }
+            }
+
+            getStars(score) {
+                if (score >= 10000) return 3;
+                if (score >= 5000) return 2;
+                if (score > 0) return 1;
+                return 0;
+            }
+
+            newGame() {
+                this.score = 0;
+                this.moves = 0;
+                this.hints = 3;
+                this.shuffles = 2;
+                this.selectedTile = null;
+                this.gameActive = true;
+                
+                this.updateStats();
+                this.createBoard();
+                this.startTimer();
+                this.updateButtons();
+            }
+
+            createBoard() {
+                this.gameBoard.innerHTML = '';
+                this.tiles = [];
+                
+                const layout = this.layouts[this.currentLevel - 1];
+                const numPairs = Math.floor(layout.length / 2);
+                
+                // Create pairs of tiles
+                const tileValues = [];
+                for (let i = 0; i < numPairs; i++) {
+                    const symbol = this.symbols[i % this.symbols.length];
+                    tileValues.push(symbol, symbol);
+                }
+                
+                // Shuffle tile values
+                for (let i = tileValues.length - 1; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    [tileValues[i], tileValues[j]] = [tileValues[j], tileValues[i]];
+                }
+                
+                // Create tile elements
+                layout.forEach((pos, index) => {
+                    const tile = document.createElement('div');
+                    tile.className = 'tile';
+                    tile.textContent = tileValues[index];
+                    tile.style.left = pos.x + 'px';
+                    tile.style.top = pos.y + 'px';
+                    tile.style.zIndex = pos.z * 100 + Math.floor(pos.y / 10);
+                    
+                    tile.dataset.id = index;
+                    tile.dataset.value = tileValues[index];
+                    tile.dataset.x = pos.x;
+                    tile.dataset.y = pos.y;
+                    tile.dataset.z = pos.z;
+                    
+                    tile.onclick = () => this.selectTile(tile);
+                    
+                    this.gameBoard.appendChild(tile);
+                    this.tiles.push(tile);
+                });
+                
+                this.updateTileStates();
+                document.getElementById('tilesLeft').textContent = this.tiles.length;
+            }
+
+            updateTileStates() {
+                this.tiles.forEach(tile => {
+                    if (!tile.classList.contains('matched')) {
+                        if (this.isTileBlocked(tile)) {
+                            tile.classList.add('blocked');
+                        } else {
+                            tile.classList.remove('blocked');
+                        }
+                    }
+                });
+            }
+
+            isTileBlocked(tile) {
+                if (tile.classList.contains('matched')) return true;
+                
+                const x = parseInt(tile.dataset.x);
+                const y = parseInt(tile.dataset.y);
+                const z = parseInt(tile.dataset.z);
+                
+                // Check if tile has tiles on top
+                const hasTopTile = this.tiles.some(t => {
+                    if (t === tile || t.classList.contains('matched')) return false;
+                    const tx = parseInt(t.dataset.x);
+                    const ty = parseInt(t.dataset.y);
+                    const tz = parseInt(t.dataset.z);
+                    
+                    return tz > z && 
+                           Math.abs(tx - x) < 40 && 
+                           Math.abs(ty - y) < 55;
+                });
+                
+                if (hasTopTile) return true;
+                
+                // Check if tile is blocked on both sides (only for same layer)
+                let leftBlocked = false;
+                let rightBlocked = false;
+                
+                this.tiles.forEach(t => {
+                    if (t === tile || t.classList.contains('matched')) return;
+                    const tx = parseInt(t.dataset.x);
+                    const ty = parseInt(t.dataset.y);
+                    const tz = parseInt(t.dataset.z);
+                    
+                    if (tz === z && Math.abs(ty - y) < 35) {
+                        if (tx < x && x - tx < 52) {
+                            leftBlocked = true;
+                        }
+                        if (tx > x && tx - x < 52) {
+                            rightBlocked = true;
+                        }
+                    }
+                });
+                
+                return leftBlocked && rightBlocked;
+            }
+
+            selectTile(tile) {
+                if (!this.gameActive || tile.classList.contains('blocked') || tile.classList.contains('matched')) {
+                    return;
+                }
+                
+                if (this.selectedTile === tile) {
+                    tile.classList.remove('selected');
+                    this.selectedTile = null;
+                    return;
+                }
+                
+                if (this.selectedTile) {
+                    if (this.selectedTile.dataset.value === tile.dataset.value) {
+                        // Match found!
+                        this.matchTiles(this.selectedTile, tile);
+                    } else {
+                        // No match
+                        this.selectedTile.classList.remove('selected');
+                        this.selectedTile = tile;
+                        tile.classList.add('selected');
+                    }
+                } else {
+                    this.selectedTile = tile;
+                    tile.classList.add('selected');
+                }
+            }
+
+            matchTiles(tile1, tile2) {
+                tile1.classList.add('matched');
+                tile2.classList.add('matched');
+                tile1.classList.remove('selected');
+                tile2.classList.remove('selected');
+                
+                this.score += 100 + (this.hints * 10) + (this.shuffles * 20);
+                this.moves++;
+                this.selectedTile = null;
+                
+                setTimeout(() => {
+                    tile1.style.display = 'none';
+                    tile2.style.display = 'none';
+                    
+                    this.tiles = this.tiles.filter(t => t !== tile1 && t !== tile2);
+                    this.updateTileStates();
+                    this.updateStats();
+                    
+                    if (this.tiles.length === 0) {
+                        this.victory();
+                    } else if (!this.hasValidMoves()) {
+                        this.gameOver();
+                    }
+                }, 500);
+            }
+
+            hasValidMoves() {
+                const availableTiles = this.tiles.filter(t => 
+                    !t.classList.contains('blocked') && !t.classList.contains('matched')
+                );
+                
+                for (let i = 0; i < availableTiles.length; i++) {
+                    for (let j = i + 1; j < availableTiles.length; j++) {
+                        if (availableTiles[i].dataset.value === availableTiles[j].dataset.value) {
+                            return true;
+                        }
+                    }
+                }
+                return false;
+            }
+
+            showHint() {
+                if (this.hints <= 0 || !this.gameActive) return;
+                
+                const availableTiles = this.tiles.filter(t => 
+                    !t.classList.contains('blocked') && !t.classList.contains('matched')
+                );
+                
+                for (let i = 0; i < availableTiles.length; i++) {
+                    for (let j = i + 1; j < availableTiles.length; j++) {
+                        if (availableTiles[i].dataset.value === availableTiles[j].dataset.value) {
+                            availableTiles[i].classList.add('hint-animation');
+                            availableTiles[j].classList.add('hint-animation');
+                            
+                            setTimeout(() => {
+                                availableTiles[i].classList.remove('hint-animation');
+                                availableTiles[j].classList.remove('hint-animation');
+                            }, 2000);
+                            
+                            this.hints--;
+                            this.score = Math.max(0, this.score - 50);
+                            this.updateStats();
+                            this.updateButtons();
+                            return;
+                        }
+                    }
+                }
+                
+                alert('No valid moves available! Try shuffling.');
+            }
+
+            shuffle() {
+                if (this.shuffles <= 0 || !this.gameActive) return;
+                
+                const activeTiles = this.tiles.filter(t => !t.classList.contains('matched'));
+                const values = activeTiles.map(t => t.dataset.value);
+                
+                // Shuffle values
+                for (let i = values.length - 1; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    [values[i], values[j]] = [values[j], values[i]];
+                }
+                
+                // Apply shuffled values
+                activeTiles.forEach((tile, index) => {
+                    tile.dataset.value = values[index];
+                    tile.textContent = values[index];
+                    tile.classList.remove('selected');
+                });
+                
+                this.selectedTile = null;
+                this.shuffles--;
+                this.score = Math.max(0, this.score - 100);
+                this.updateTileStates();
+                this.updateStats();
+                this.updateButtons();
+                
+                if (!this.hasValidMoves()) {
+                    setTimeout(() => {
+                        if (this.shuffles > 0) {
+                            alert('No valid moves after shuffle. Shuffling again...');
+                            this.shuffle();
+                        } else {
+                            this.gameOver();
+                        }
+                    }, 500);
+                }
+            }
+
+            updateButtons() {
+                document.getElementById('hintBtn').textContent = `Hint (${this.hints})`;
+                document.getElementById('hintBtn').disabled = this.hints <= 0;
+                
+                document.getElementById('shuffleBtn').textContent = `Shuffle (${this.shuffles})`;
+                document.getElementById('shuffleBtn').disabled = this.shuffles <= 0;
+            }
+
+            startTimer() {
+                this.startTime = Date.now();
+                clearInterval(this.timerInterval);
+                
+                this.timerInterval = setInterval(() => {
+                    if (this.gameActive) {
+                        const elapsed = Math.floor((Date.now() - this.startTime) / 1000);
+                        const minutes = Math.floor(elapsed / 60);
+                        const seconds = elapsed % 60;
+                        document.getElementById('timer').textContent = 
+                            `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+                    }
+                }, 1000);
+            }
+
+            updateStats() {
+                document.getElementById('currentLevel').textContent = this.currentLevel;
+                document.getElementById('score').textContent = this.score;
+                document.getElementById('moves').textContent = this.moves;
+                document.getElementById('tilesLeft').textContent = this.tiles.filter(t => !t.classList.contains('matched')).length;
+            }
+
+            victory() {
+                this.gameActive = false;
+                clearInterval(this.timerInterval);
+                
+                const timeElapsed = Math.floor((Date.now() - this.startTime) / 1000);
+                const timeBonus = Math.max(0, 3000 - timeElapsed * 10);
+                const finalScore = Math.floor(this.score + timeBonus);
+                
+                this.saveLevelData(this.currentLevel, finalScore);
+                this.updateLeaderboard(this.currentLevel, finalScore);
+                
+                const victoryDiv = document.createElement('div');
+                victoryDiv.className = 'victory-message';
+                victoryDiv.innerHTML = `
+                    <h2>🎉 Victory! 🎉</h2>
+                    <p>Level ${this.currentLevel} Complete!</p>
+                    <p>Final Score: ${finalScore}</p>
+                    <p>Time Bonus: ${Math.floor(timeBonus)}</p>
+                    <p>Moves: ${this.moves}</p>
+                    <p>Time: ${document.getElementById('timer').textContent}</p>
+                    <button onclick="game.nextLevel()">Next Level</button>
+                    <button onclick="game.showLeaderboard()">View Leaderboard</button>
+                `;
+                
+                this.gameBoard.innerHTML = '';
+                this.gameBoard.appendChild(victoryDiv);
+            }
+
+            gameOver() {
+                this.gameActive = false;
+                clearInterval(this.timerInterval);
+                
+                const gameOverDiv = document.createElement('div');
+                gameOverDiv.className = 'victory-message';
+                gameOverDiv.style.background = 'linear-gradient(135deg, #f44336, #d32f2f)';
+                gameOverDiv.innerHTML = `
+                    <h2>😔 Game Over 😔</h2>
+                    <p>No more valid moves!</p>
+                    <p>Score: ${this.score}</p>
+                    <p>Moves: ${this.moves}</p>
+                    <button onclick="game.newGame()">Try Again</button>
+                    <button onclick="game.showLevelSelect()">Select Level</button>
+                `;
+                
+                this.gameBoard.innerHTML = '';
+                this.gameBoard.appendChild(gameOverDiv);
+            }
+
+            nextLevel() {
+                if (this.currentLevel < 20) {
+                    this.currentLevel++;
+                    this.newGame();
+                } else {
+                    alert('🏆 Congratulations! You have completed all 20 levels! 🏆');
+                    this.showLevelSelect();
+                }
+            }
+
+            selectLevel(level) {
+                this.currentLevel = level;
+                this.closeLevelSelect();
+                this.newGame();
+            }
+
+            showLevelSelect() {
+                document.getElementById('levelModal').style.display = 'flex';
+                this.createLevelGrid();
+            }
+
+            closeLevelSelect() {
+                document.getElementById('levelModal').style.display = 'none';
+            }
+
+            showLeaderboard() {
+                document.getElementById('leaderboardModal').style.display = 'flex';
+                document.getElementById('leaderboardLevel').textContent = this.currentLevel;
+                this.displayLeaderboard(this.currentLevel);
+            }
+
+            closeLeaderboard() {
+                document.getElementById('leaderboardModal').style.display = 'none';
+            }
+
+            displayLeaderboard(level) {
+                const leaderboard = this.getLeaderboard(level);
+                const list = document.getElementById('leaderboardList');
+                list.innerHTML = '';
+                
+                if (leaderboard.length === 0) {
+                    list.innerHTML = '<p style="text-align: center; padding: 20px;">No scores yet for this level!</p>';
+                    return;
+                }
+                
+                leaderboard.forEach((entry, index) => {
+                    const div = document.createElement('div');
+                    div.className = 'leaderboard-entry';
+                    const medal = index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : `${index + 1}.`;
+                    div.innerHTML = `
+                        <span>${medal} Score: ${entry.score}</span>
+                        <span>${new Date(entry.date).toLocaleDateString()}</span>
+                    `;
+                    list.appendChild(div);
+                });
+            }
+
+            // Local Storage Methods
+            loadGameData() {
+                const saved = localStorage.getItem('mahjongGameData');
+                if (saved) {
+                    try {
+                        this.gameData = JSON.parse(saved);
+                    } catch (e) {
+                        this.gameData = { levels: {}, leaderboards: {} };
+                    }
+                } else {
+                    this.gameData = { levels: {}, leaderboards: {} };
+                }
+            }
+
+            saveGameData() {
+                try {
+                    localStorage.setItem('mahjongGameData', JSON.stringify(this.gameData));
+                } catch (e) {
+                    console.error('Failed to save game data:', e);
+                }
+            }
+
+            saveLevelData(level, score) {
+                if (!this.gameData.levels[level]) {
+                    this.gameData.levels[level] = {
+                        completed: false,
+                        bestScore: 0,
+                        attempts: 0
+                    };
+                }
+                
+                this.gameData.levels[level].completed = true;
+                this.gameData.levels[level].attempts++;
+                if (score > this.gameData.levels[level].bestScore) {
+                    this.gameData.levels[level].bestScore = score;
+                }
+                
+                this.saveGameData();
+            }
+
+            getLevelData(level) {
+                return this.gameData.levels[level] || null;
+            }
+
+            updateLeaderboard(level, score) {
+                if (!this.gameData.leaderboards[level]) {
+                    this.gameData.leaderboards[level] = [];
+                }
+                
+                this.gameData.leaderboards[level].push({
+                    score: score,
+                    date: Date.now()
+                });
+                
+                // Keep only top 10 scores
+                this.gameData.leaderboards[level].sort((a, b) => b.score - a.score);
+                this.gameData.leaderboards[level] = this.gameData.leaderboards[level].slice(0, 10);
+                
+                this.saveGameData();
+            }
+
+            getLeaderboard(level) {
+                return this.gameData.leaderboards[level] || [];
+            }
+        }
+
+        // Initialize game
+        const game = new MahjongGame();
+    </script>
+</body>
+</html>
