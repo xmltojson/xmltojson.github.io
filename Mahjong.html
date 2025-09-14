@@ -30,7 +30,7 @@
             display: flex;
             flex-direction: column;
             align-items: center;
-            background: transparent; /* background moved to board */
+            background: transparent;
             border-radius: 20px;
             padding: 20px;
             box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
@@ -84,6 +84,14 @@
             cursor: not-allowed;
         }
 
+        button.pause-btn {
+            background: linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%);
+        }
+
+        button.pause-btn.paused {
+            background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%);
+        }
+
         .stats {
             display: flex;
             justify-content: center;
@@ -114,22 +122,56 @@
             position: relative;
         }
 
-        /* Wrapper reserves the visual space for a scaled board */
         .board-wrapper {
             position: relative;
             display: inline-block;
-            line-height: 0; /* avoid inline gaps */
-            /* width/height set dynamically to match scaled size */
+            line-height: 0;
         }
 
         #gameBoard {
             position: relative;
-            /* width/height set dynamically to fit tiles */
-            transform-origin: top left; /* for precise scaling */
+            transform-origin: top left;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             border-radius: 15px;
             box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
             overflow: visible;
+        }
+
+        .pause-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1500;
+            border-radius: 15px;
+        }
+
+        .pause-overlay.active {
+            display: flex;
+        }
+
+        .pause-message {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            text-align: center;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+        }
+
+        .pause-message h2 {
+            color: #764ba2;
+            margin-bottom: 20px;
+            font-size: 2em;
+        }
+
+        .pause-message p {
+            margin-bottom: 20px;
+            color: #666;
         }
 
         .tile {
@@ -307,28 +349,75 @@
         }
 
         .victory-message {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
             text-align: center;
-            padding: 30px;
+            padding: 40px;
             background: linear-gradient(135deg, #4CAF50, #45a049);
             color: white;
-            border-radius: 10px;
-            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.3);
+            border-radius: 20px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.4);
+            z-index: 3000;
+            max-width: 500px;
+            width: 90%;
+            animation: victoryPop 0.5s ease-out;
+        }
+
+        @keyframes victoryPop {
+            0% {
+                transform: translate(-50%, -50%) scale(0);
+                opacity: 0;
+            }
+            50% {
+                transform: translate(-50%, -50%) scale(1.1);
+            }
+            100% {
+                transform: translate(-50%, -50%) scale(1);
+                opacity: 1;
+            }
         }
 
         .victory-message h2 {
-            margin-bottom: 15px;
-            font-size: 2em;
+            margin-bottom: 20px;
+            font-size: 2.5em;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+            color: white;
         }
 
         .victory-message p {
-            margin: 10px 0;
-            font-size: 1.2em;
+            margin: 15px 0;
+            font-size: 1.3em;
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.2);
+        }
+
+        .victory-message .score-highlight {
+            font-size: 1.8em;
+            font-weight: bold;
+            color: #ffeb3b;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.4);
+        }
+
+        .victory-message .button-group {
+            margin-top: 30px;
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            flex-wrap: wrap;
         }
 
         .victory-message button {
             margin: 5px;
             background: white;
             color: #4CAF50;
+            padding: 12px 24px;
+            font-size: 16px;
+            font-weight: bold;
+        }
+
+        .victory-message button:hover {
+            background: #f0f0f0;
         }
 
         #timer {
@@ -346,6 +435,10 @@
             .game-board-container {
                 padding: 10px;
             }
+
+            .level-grid {
+                grid-template-columns: repeat(4, 1fr);
+            }
         }
     </style>
 </head>
@@ -355,6 +448,7 @@
             <h1>🀄 Mahjong Solitaire 🀄</h1>
             <div class="controls">
                 <button onclick="game.newGame()">New Game</button>
+                <button onclick="game.togglePause()" id="pauseBtn" class="pause-btn">Pause</button>
                 <button onclick="game.showLevelSelect()">Select Level</button>
                 <button onclick="game.showHint()" id="hintBtn">Hint (3)</button>
                 <button onclick="game.shuffle()" id="shuffleBtn">Shuffle (2)</button>
@@ -386,8 +480,30 @@
 
         <div class="game-board-container">
             <div id="boardWrapper" class="board-wrapper">
-                <div id="gameBoard"></div>
+                <div id="gameBoard">
+                    <div id="pauseOverlay" class="pause-overlay">
+                        <div class="pause-message">
+                            <h2>⏸️ Game Paused</h2>
+                            <p>Take a break! Your game is safely paused.</p>
+                            <button onclick="game.togglePause()">Resume Game</button>
+                        </div>
+                    </div>
+                </div>
             </div>
+        </div>
+    </div>
+
+    <div id="victoryModal" class="victory-message" style="display: none;">
+        <h2>🎉 Victory! 🎉</h2>
+        <p>Level <span id="victoryLevel">1</span> Complete!</p>
+        <p class="score-highlight">Score: <span id="victoryScore">0</span></p>
+        <p>Time Bonus: <span id="victoryTimeBonus">0</span></p>
+        <p>Moves: <span id="victoryMoves">0</span></p>
+        <p>Time: <span id="victoryTime">00:00</span></p>
+        <div class="button-group">
+            <button onclick="game.nextLevel()">Next Level</button>
+            <button onclick="game.newGame()">Replay Level</button>
+            <button onclick="game.showLeaderboard()">View Leaderboard</button>
         </div>
     </div>
 
@@ -424,6 +540,8 @@
                 this.startTime = null;
                 this.timerInterval = null;
                 this.gameActive = false;
+                this.isPaused = false;
+                this.pausedTime = 0;
                 
                 this.symbols = [
                     '🀄', '🎋', '🎍', '🌸', '🌺', '🌻', '🌷', '🌹',
@@ -579,6 +697,29 @@
                 return 0;
             }
 
+            togglePause() {
+                if (!this.gameActive || this.tiles.length === 0) return;
+                
+                this.isPaused = !this.isPaused;
+                const pauseBtn = document.getElementById('pauseBtn');
+                const pauseOverlay = document.getElementById('pauseOverlay');
+                
+                if (this.isPaused) {
+                    this.pausedTime = Date.now();
+                    pauseBtn.textContent = 'Resume';
+                    pauseBtn.classList.add('paused');
+                    pauseOverlay.classList.add('active');
+                    clearInterval(this.timerInterval);
+                } else {
+                    const pauseDuration = Date.now() - this.pausedTime;
+                    this.startTime += pauseDuration;
+                    pauseBtn.textContent = 'Pause';
+                    pauseBtn.classList.remove('paused');
+                    pauseOverlay.classList.remove('active');
+                    this.startTimer();
+                }
+            }
+
             newGame() {
                 this.score = 0;
                 this.moves = 0;
@@ -586,6 +727,16 @@
                 this.shuffles = 2;
                 this.selectedTile = null;
                 this.gameActive = true;
+                this.isPaused = false;
+                
+                // Reset pause button
+                const pauseBtn = document.getElementById('pauseBtn');
+                pauseBtn.textContent = 'Pause';
+                pauseBtn.classList.remove('paused');
+                document.getElementById('pauseOverlay').classList.remove('active');
+                
+                // Hide victory modal
+                document.getElementById('victoryModal').style.display = 'none';
                 
                 this.updateStats();
                 this.createBoard();
@@ -595,6 +746,20 @@
 
             createBoard() {
                 this.gameBoard.innerHTML = '';
+                
+                // Re-add pause overlay
+                const pauseOverlay = document.createElement('div');
+                pauseOverlay.id = 'pauseOverlay';
+                pauseOverlay.className = 'pause-overlay';
+                pauseOverlay.innerHTML = `
+                    <div class="pause-message">
+                        <h2>⏸️ Game Paused</h2>
+                        <p>Take a break! Your game is safely paused.</p>
+                        <button onclick="game.togglePause()">Resume Game</button>
+                    </div>
+                `;
+                this.gameBoard.appendChild(pauseOverlay);
+                
                 this.tiles = [];
                 
                 const layout = this.layouts[this.currentLevel - 1];
@@ -637,7 +802,6 @@
                 document.getElementById('tilesLeft').textContent = this.tiles.length;
             }
 
-            // Computes tight background size (with responsive padding) based on actual tile size and positions.
             fitBoardToTiles() {
                 if (!this.tiles.length) {
                     this.gameBoard.style.width = '900px';
@@ -649,11 +813,9 @@
                 const tileW = sampleTile.offsetWidth || 50;
                 const tileH = sampleTile.offsetHeight || 65;
 
-                // Adaptive padding for mobile/desktop
                 const isMobile = window.innerWidth <= 768;
                 const padding = Math.max(10, Math.round(tileW * (isMobile ? 0.6 : 0.4)));
 
-                // Compute extents based on current layout positions (dataset on first run, style on refit)
                 let useStyle = !!this.tiles[0].style.left;
                 let minX = Infinity, minY = Infinity;
 
@@ -664,7 +826,6 @@
                     if (y < minY) minY = y;
                 });
 
-                // Reposition tiles so the minimum starts at "padding"
                 this.tiles.forEach(t => {
                     const x0 = useStyle ? parseFloat(t.style.left) : parseFloat(t.dataset.x);
                     const y0 = useStyle ? parseFloat(t.style.top) : parseFloat(t.dataset.y);
@@ -676,7 +837,6 @@
                     t.style.zIndex = z * 100 + Math.floor(ny / 10);
                 });
 
-                // Now measure final extents from styled positions
                 let maxRight = 0, maxBottom = 0;
                 this.tiles.forEach(t => {
                     const left = parseFloat(t.style.left);
@@ -693,30 +853,25 @@
                 this.gameBoard.style.width = boardWidth + 'px';
                 this.gameBoard.style.height = boardHeight + 'px';
 
-                // Cache for scaling step
                 this._boardNaturalSize = { width: boardWidth, height: boardHeight };
             }
 
-            // Scales the entire board to fit the visible container on mobile while keeping background tight.
             scaleBoardToContainer() {
                 if (!this._boardNaturalSize) return;
 
                 const boardWidth = this._boardNaturalSize.width;
                 const boardHeight = this._boardNaturalSize.height;
 
-                // Compute inner width of the container (minus paddings)
                 const cs = getComputedStyle(this.boardContainer);
                 const padX = parseFloat(cs.paddingLeft) + parseFloat(cs.paddingRight);
                 const padY = parseFloat(cs.paddingTop) + parseFloat(cs.paddingBottom);
                 const availableWidth = Math.max(100, this.boardContainer.clientWidth - padX);
 
-                // Try to respect viewport height too (under header)
                 const headerH = this.header ? this.header.offsetHeight : 0;
                 const availableHeight = Math.max(150, window.innerHeight - headerH - 40);
 
                 const scale = Math.min(1, availableWidth / boardWidth, availableHeight / boardHeight);
 
-                // Apply scaling to the board and reserve the space with the wrapper
                 this.gameBoard.style.transform = `scale(${scale})`;
                 this.boardWrapper.style.width = (boardWidth * scale) + 'px';
                 this.boardWrapper.style.height = (boardHeight * scale) + 'px';
@@ -724,10 +879,8 @@
 
             refit() {
                 if (!this.tiles.length) return;
-                // Recalculate tight background and rescale for new viewport/tile size
                 this.fitBoardToTiles();
                 this.scaleBoardToContainer();
-                // Update blocked states using current positions and sizes
                 this.updateTileStates();
             }
 
@@ -781,7 +934,7 @@
             }
 
             selectTile(tile) {
-                if (!this.gameActive || tile.classList.contains('blocked') || tile.classList.contains('matched')) {
+                if (!this.gameActive || this.isPaused || tile.classList.contains('blocked') || tile.classList.contains('matched')) {
                     return;
                 }
                 
@@ -847,7 +1000,7 @@
             }
 
             showHint() {
-                if (this.hints <= 0 || !this.gameActive) return;
+                if (this.hints <= 0 || !this.gameActive || this.isPaused) return;
                 
                 const availableTiles = this.tiles.filter(t => 
                     !t.classList.contains('blocked') && !t.classList.contains('matched')
@@ -877,7 +1030,7 @@
             }
 
             shuffle() {
-                if (this.shuffles <= 0 || !this.gameActive) return;
+                if (this.shuffles <= 0 || !this.gameActive || this.isPaused) return;
                 
                 const activeTiles = this.tiles.filter(t => !t.classList.contains('matched'));
                 const values = activeTiles.map(t => t.dataset.value);
@@ -900,7 +1053,6 @@
                 this.updateStats();
                 this.updateButtons();
 
-                // Refit after shuffle just in case
                 this.refit();
                 
                 if (!this.hasValidMoves()) {
@@ -924,11 +1076,16 @@
             }
 
             startTimer() {
-                this.startTime = Date.now();
+                if (!this.gameActive) return;
+                
+                if (!this.startTime) {
+                    this.startTime = Date.now();
+                }
+                
                 clearInterval(this.timerInterval);
                 
                 this.timerInterval = setInterval(() => {
-                    if (this.gameActive) {
+                    if (this.gameActive && !this.isPaused) {
                         const elapsed = Math.floor((Date.now() - this.startTime) / 1000);
                         const minutes = Math.floor(elapsed / 60);
                         const seconds = elapsed % 60;
@@ -948,11 +1105,6 @@
             victory() {
                 this.gameActive = false;
                 clearInterval(this.timerInterval);
-
-                // Reset scaling so the message is readable
-                this.gameBoard.style.transform = 'none';
-                this.boardWrapper.style.width = '100%';
-                this.boardWrapper.style.height = 'auto';
                 
                 const timeElapsed = Math.floor((Date.now() - this.startTime) / 1000);
                 const timeBonus = Math.max(0, 3000 - timeElapsed * 10);
@@ -961,42 +1113,38 @@
                 this.saveLevelData(this.currentLevel, finalScore);
                 this.updateLeaderboard(this.currentLevel, finalScore);
                 
-                const victoryDiv = document.createElement('div');
-                victoryDiv.className = 'victory-message';
-                victoryDiv.innerHTML = `
-                    <h2>🎉 Victory! 🎉</h2>
-                    <p>Level ${this.currentLevel} Complete!</p>
-                    <p>Final Score: ${finalScore}</p>
-                    <p>Time Bonus: ${Math.floor(timeBonus)}</p>
-                    <p>Moves: ${this.moves}</p>
-                    <p>Time: ${document.getElementById('timer').textContent}</p>
-                    <button onclick="game.nextLevel()">Next Level</button>
-                    <button onclick="game.showLeaderboard()">View Leaderboard</button>
-                `;
+                // Update victory modal content
+                document.getElementById('victoryLevel').textContent = this.currentLevel;
+                document.getElementById('victoryScore').textContent = finalScore;
+                document.getElementById('victoryTimeBonus').textContent = Math.floor(timeBonus);
+                document.getElementById('victoryMoves').textContent = this.moves;
+                document.getElementById('victoryTime').textContent = document.getElementById('timer').textContent;
                 
-                this.gameBoard.innerHTML = '';
-                this.gameBoard.appendChild(victoryDiv);
+                // Show victory modal
+                document.getElementById('victoryModal').style.display = 'block';
             }
 
             gameOver() {
                 this.gameActive = false;
                 clearInterval(this.timerInterval);
 
-                // Reset scaling for readability
                 this.gameBoard.style.transform = 'none';
                 this.boardWrapper.style.width = '100%';
                 this.boardWrapper.style.height = 'auto';
                 
                 const gameOverDiv = document.createElement('div');
                 gameOverDiv.className = 'victory-message';
+                gameOverDiv.style.position = 'relative';
                 gameOverDiv.style.background = 'linear-gradient(135deg, #f44336, #d32f2f)';
                 gameOverDiv.innerHTML = `
                     <h2>😔 Game Over 😔</h2>
                     <p>No more valid moves!</p>
-                    <p>Score: ${this.score}</p>
+                    <p class="score-highlight">Score: ${this.score}</p>
                     <p>Moves: ${this.moves}</p>
-                    <button onclick="game.newGame()">Try Again</button>
-                    <button onclick="game.showLevelSelect()">Select Level</button>
+                    <div class="button-group">
+                        <button onclick="game.newGame()">Try Again</button>
+                        <button onclick="game.showLevelSelect()">Select Level</button>
+                    </div>
                 `;
                 
                 this.gameBoard.innerHTML = '';
@@ -1004,6 +1152,7 @@
             }
 
             nextLevel() {
+                document.getElementById('victoryModal').style.display = 'none';
                 if (this.currentLevel < 20) {
                     this.currentLevel++;
                     this.newGame();
@@ -1060,7 +1209,6 @@
                 });
             }
 
-            // Local Storage Methods
             loadGameData() {
                 const saved = localStorage.getItem('mahjongGameData');
                 if (saved) {
@@ -1125,7 +1273,6 @@
             }
         }
 
-        // Initialize game
         const game = new MahjongGame();
     </script>
 </body>
