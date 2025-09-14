@@ -238,6 +238,7 @@
             }
         }
 
+        /* Modal base styles with proper z-index hierarchy */
         .modal {
             display: none;
             position: fixed;
@@ -248,7 +249,17 @@
             background: rgba(0, 0, 0, 0.7);
             justify-content: center;
             align-items: center;
-            z-index: 2000;
+            z-index: 5000; /* Base modal z-index */
+        }
+
+        /* Level select modal */
+        #levelModal {
+            z-index: 5000;
+        }
+
+        /* Leaderboard modal - highest priority */
+        #leaderboardModal {
+            z-index: 6000;
         }
 
         .modal-content {
@@ -260,6 +271,8 @@
             max-height: 80vh;
             overflow-y: auto;
             animation: slideIn 0.3s;
+            position: relative;
+            box-shadow: 0 15px 50px rgba(0, 0, 0, 0.5);
         }
 
         @keyframes slideIn {
@@ -277,6 +290,29 @@
             color: #764ba2;
             margin-bottom: 20px;
             text-align: center;
+        }
+
+        .modal-close-btn {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            background: #f44336;
+            color: white;
+            border: none;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 18px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s;
+        }
+
+        .modal-close-btn:hover {
+            background: #d32f2f;
+            transform: rotate(90deg);
         }
 
         .level-grid {
@@ -348,6 +384,7 @@
             }
         }
 
+        /* Victory modal with medium priority */
         .victory-message {
             position: fixed;
             top: 50%;
@@ -358,8 +395,8 @@
             background: linear-gradient(135deg, #4CAF50, #45a049);
             color: white;
             border-radius: 20px;
-            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.4);
-            z-index: 3000;
+            box-shadow: 0 15px 50px rgba(0, 0, 0, 0.5);
+            z-index: 4000; /* Below other modals */
             max-width: 500px;
             width: 90%;
             animation: victoryPop 0.5s ease-out;
@@ -417,6 +454,40 @@
         }
 
         .victory-message button:hover {
+            background: #f0f0f0;
+        }
+
+        /* Game over modal */
+        .game-over-message {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+            padding: 40px;
+            background: linear-gradient(135deg, #f44336, #d32f2f);
+            color: white;
+            border-radius: 20px;
+            box-shadow: 0 15px 50px rgba(0, 0, 0, 0.5);
+            z-index: 4000;
+            max-width: 500px;
+            width: 90%;
+            animation: victoryPop 0.5s ease-out;
+        }
+
+        .game-over-message h2 {
+            margin-bottom: 20px;
+            font-size: 2.5em;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+            color: white;
+        }
+
+        .game-over-message button {
+            background: white;
+            color: #f44336;
+        }
+
+        .game-over-message button:hover {
             background: #f0f0f0;
         }
 
@@ -493,6 +564,7 @@
         </div>
     </div>
 
+    <!-- Victory Modal -->
     <div id="victoryModal" class="victory-message" style="display: none;">
         <h2>🎉 Victory! 🎉</h2>
         <p>Level <span id="victoryLevel">1</span> Complete!</p>
@@ -503,20 +575,36 @@
         <div class="button-group">
             <button onclick="game.nextLevel()">Next Level</button>
             <button onclick="game.newGame()">Replay Level</button>
-            <button onclick="game.showLeaderboard()">View Leaderboard</button>
+            <button onclick="game.showLeaderboardFromVictory()">View Leaderboard</button>
         </div>
     </div>
 
+    <!-- Game Over Modal -->
+    <div id="gameOverModal" class="game-over-message" style="display: none;">
+        <h2>😔 Game Over 😔</h2>
+        <p>No more valid moves!</p>
+        <p class="score-highlight">Score: <span id="gameOverScore">0</span></p>
+        <p>Moves: <span id="gameOverMoves">0</span></p>
+        <div class="button-group">
+            <button onclick="game.newGame()">Try Again</button>
+            <button onclick="game.showLevelSelect()">Select Level</button>
+        </div>
+    </div>
+
+    <!-- Level Select Modal -->
     <div id="levelModal" class="modal">
         <div class="modal-content">
+            <button class="modal-close-btn" onclick="game.closeLevelSelect()">×</button>
             <h2>Select Level</h2>
             <div class="level-grid" id="levelGrid"></div>
             <button onclick="game.closeLevelSelect()">Close</button>
         </div>
     </div>
 
+    <!-- Leaderboard Modal (highest z-index) -->
     <div id="leaderboardModal" class="modal">
         <div class="modal-content">
+            <button class="modal-close-btn" onclick="game.closeLeaderboard()">×</button>
             <h2>🏆 Leaderboard - Level <span id="leaderboardLevel">1</span></h2>
             <div class="leaderboard" id="leaderboardList"></div>
             <button onclick="game.closeLeaderboard()">Close</button>
@@ -735,8 +823,9 @@
                 pauseBtn.classList.remove('paused');
                 document.getElementById('pauseOverlay').classList.remove('active');
                 
-                // Hide victory modal
+                // Hide all modals
                 document.getElementById('victoryModal').style.display = 'none';
+                document.getElementById('gameOverModal').style.display = 'none';
                 
                 this.updateStats();
                 this.createBoard();
@@ -1127,28 +1216,13 @@
             gameOver() {
                 this.gameActive = false;
                 clearInterval(this.timerInterval);
-
-                this.gameBoard.style.transform = 'none';
-                this.boardWrapper.style.width = '100%';
-                this.boardWrapper.style.height = 'auto';
                 
-                const gameOverDiv = document.createElement('div');
-                gameOverDiv.className = 'victory-message';
-                gameOverDiv.style.position = 'relative';
-                gameOverDiv.style.background = 'linear-gradient(135deg, #f44336, #d32f2f)';
-                gameOverDiv.innerHTML = `
-                    <h2>😔 Game Over 😔</h2>
-                    <p>No more valid moves!</p>
-                    <p class="score-highlight">Score: ${this.score}</p>
-                    <p>Moves: ${this.moves}</p>
-                    <div class="button-group">
-                        <button onclick="game.newGame()">Try Again</button>
-                        <button onclick="game.showLevelSelect()">Select Level</button>
-                    </div>
-                `;
+                // Update game over modal content
+                document.getElementById('gameOverScore').textContent = this.score;
+                document.getElementById('gameOverMoves').textContent = this.moves;
                 
-                this.gameBoard.innerHTML = '';
-                this.gameBoard.appendChild(gameOverDiv);
+                // Show game over modal
+                document.getElementById('gameOverModal').style.display = 'block';
             }
 
             nextLevel() {
@@ -1181,6 +1255,11 @@
                 document.getElementById('leaderboardModal').style.display = 'flex';
                 document.getElementById('leaderboardLevel').textContent = this.currentLevel;
                 this.displayLeaderboard(this.currentLevel);
+            }
+
+            showLeaderboardFromVictory() {
+                // Ensure leaderboard appears on top of victory modal
+                this.showLeaderboard();
             }
 
             closeLeaderboard() {
