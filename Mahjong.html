@@ -280,6 +280,10 @@
             z-index: 7000;
         }
 
+        #resumeModal {
+            z-index: 8000;
+        }
+
         .modal-content {
             background: white;
             padding: 25px;
@@ -328,6 +332,60 @@
         .alert-content button {
             min-width: 100px;
             padding: 10px 20px;
+            margin: 0 5px;
+        }
+
+        .resume-content {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 30px;
+            border-radius: 15px;
+            max-width: 450px;
+            width: 90%;
+            animation: slideIn 0.3s;
+            text-align: center;
+            box-shadow: 0 15px 50px rgba(0, 0, 0, 0.5);
+        }
+
+        .resume-content h3 {
+            color: white;
+            margin-bottom: 20px;
+            font-size: 1.8em;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+        }
+
+        .resume-content p {
+            color: white;
+            margin-bottom: 10px;
+            font-size: 1.1em;
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.2);
+        }
+
+        .resume-content .game-info {
+            background: rgba(255, 255, 255, 0.2);
+            padding: 15px;
+            border-radius: 10px;
+            margin: 20px 0;
+        }
+
+        .resume-content button {
+            background: white;
+            color: #764ba2;
+            margin: 5px;
+            padding: 10px 20px;
+            font-weight: bold;
+        }
+
+        .resume-content button:hover {
+            background: #f0f0f0;
+        }
+
+        .resume-content button.new-game-btn {
+            background: #ff6b6b;
+            color: white;
+        }
+
+        .resume-content button.new-game-btn:hover {
+            background: #ee5a24;
         }
 
         @keyframes slideIn {
@@ -671,6 +729,22 @@
         </div>
     </div>
 
+    <!-- Resume Game Modal -->
+    <div id="resumeModal" class="modal">
+        <div class="resume-content">
+            <h3>🎮 Continue Your Game?</h3>
+            <p>You have an unfinished game!</p>
+            <div class="game-info">
+                <p><strong>Level:</strong> <span id="resumeLevel">1</span></p>
+                <p><strong>Score:</strong> <span id="resumeScore">0</span></p>
+                <p><strong>Time:</strong> <span id="resumeTime">00:00</span></p>
+                <p><strong>Tiles Left:</strong> <span id="resumeTiles">0</span></p>
+            </div>
+            <button onclick="game.resumeSavedGame()">Continue Game</button>
+            <button onclick="game.startFreshGame()" class="new-game-btn">Start New Game</button>
+        </div>
+    </div>
+
     <!-- Victory Modal -->
     <div id="victoryModal" class="victory-message" style="display: none;">
         <h2>🎉 Victory! 🎉</h2>
@@ -746,6 +820,8 @@
                 this.gameActive = false;
                 this.isPaused = false;
                 this.pausedTime = 0;
+                this.elapsedTime = 0;
+                this.autoSaveInterval = null;
                 
                 this.symbols = [
                     '🀄', '🎋', '🎍', '🌸', '🌺', '🌻', '🌷', '🌹',
@@ -762,6 +838,182 @@
                 window.addEventListener('orientationchange', () => {
                     setTimeout(() => this.refit(), 50);
                 });
+
+                // Auto-save every 5 seconds when game is active
+                this.startAutoSave();
+
+                // Save game state before page unload
+                window.addEventListener('beforeunload', () => {
+                    if (this.gameActive && this.tiles.length > 0) {
+                        this.saveGameState();
+                    }
+                });
+            }
+
+            startAutoSave() {
+                this.autoSaveInterval = setInterval(() => {
+                    if (this.gameActive && !this.isPaused && this.tiles.length > 0) {
+                        this.saveGameState();
+                    }
+                }, 5000); // Save every 5 seconds
+            }
+
+            saveGameState() {
+                if (!this.gameActive || this.tiles.length === 0) return;
+
+                const gameState = {
+                    level: this.currentLevel,
+                    score: this.score,
+                    moves: this.moves,
+                    hints: this.hints,
+                    shuffles: this.shuffles,
+                    elapsedTime: this.getElapsedTime(),
+                    tiles: [],
+                    timestamp: Date.now()
+                };
+
+                // Save tile positions and states
+                this.tiles.forEach(tile => {
+                    if (!tile.classList.contains('matched')) {
+                        gameState.tiles.push({
+                            id: tile.dataset.id,
+                            value: tile.dataset.value,
+                            x: tile.style.left,
+                            y: tile.style.top,
+                            z: tile.dataset.z,
+                            originalX: tile.dataset.x,
+                            originalY: tile.dataset.y,
+                            selected: tile.classList.contains('selected')
+                        });
+                    }
+                });
+
+                try {
+                    localStorage.setItem('mahjongCurrentGame', JSON.stringify(gameState));
+                } catch (e) {
+                    console.error('Failed to save game state:', e);
+                }
+            }
+
+            loadSavedGame() {
+                try {
+                    const saved = localStorage.getItem('mahjongCurrentGame');
+                    if (saved) {
+                        return JSON.parse(saved);
+                    }
+                } catch (e) {
+                    console.error('Failed to load saved game:', e);
+                }
+                return null;
+            }
+
+            clearSavedGame() {
+                try {
+                    localStorage.removeItem('mahjongCurrentGame');
+                } catch (e) {
+                    console.error('Failed to clear saved game:', e);
+                }
+            }
+
+            checkForSavedGame() {
+                const savedGame = this.loadSavedGame();
+                if (savedGame && savedGame.tiles && savedGame.tiles.length > 0) {
+                    // Check if saved game is not too old (24 hours)
+                    const hoursSinceLastSave = (Date.now() - savedGame.timestamp) / (1000 * 60 * 60);
+                    if (hoursSinceLastSave < 24) {
+                        this.showResumeModal(savedGame);
+                        return true;
+                    } else {
+                        this.clearSavedGame();
+                    }
+                }
+                return false;
+            }
+
+            showResumeModal(savedGame) {
+                document.getElementById('resumeLevel').textContent = savedGame.level;
+                document.getElementById('resumeScore').textContent = savedGame.score.toLocaleString();
+                document.getElementById('resumeTime').textContent = this.formatTime(savedGame.elapsedTime);
+                document.getElementById('resumeTiles').textContent = savedGame.tiles.length;
+                document.getElementById('resumeModal').style.display = 'flex';
+            }
+
+            resumeSavedGame() {
+                const savedGame = this.loadSavedGame();
+                if (!savedGame) {
+                    this.startFreshGame();
+                    return;
+                }
+
+                // Restore game state
+                this.currentLevel = savedGame.level;
+                this.score = savedGame.score;
+                this.moves = savedGame.moves;
+                this.hints = savedGame.hints;
+                this.shuffles = savedGame.shuffles;
+                this.elapsedTime = savedGame.elapsedTime;
+                this.gameActive = true;
+                this.isPaused = false;
+                this.selectedTile = null;
+
+                // Clear board and restore tiles
+                this.gameBoard.innerHTML = '';
+                this.tiles = [];
+
+                savedGame.tiles.forEach(tileData => {
+                    const tile = document.createElement('div');
+                    tile.className = 'tile';
+                    if (tileData.selected) {
+                        tile.classList.add('selected');
+                    }
+                    tile.textContent = tileData.value;
+                    tile.style.left = tileData.x;
+                    tile.style.top = tileData.y;
+                    tile.style.zIndex = tileData.z * 100 + Math.floor(parseFloat(tileData.y) / 10);
+                    
+                    tile.dataset.id = tileData.id;
+                    tile.dataset.value = tileData.value;
+                    tile.dataset.x = tileData.originalX;
+                    tile.dataset.y = tileData.originalY;
+                    tile.dataset.z = tileData.z;
+                    
+                    tile.onclick = () => this.selectTile(tile);
+                    
+                    this.gameBoard.appendChild(tile);
+                    this.tiles.push(tile);
+
+                    if (tileData.selected) {
+                        this.selectedTile = tile;
+                    }
+                });
+
+                // Update UI
+                this.updateStats();
+                this.updateButtons();
+                this.fitBoardToTiles();
+                this.scaleBoardToContainer();
+                this.updateTileStates();
+
+                // Resume timer
+                this.startTime = Date.now() - (this.elapsedTime * 1000);
+                this.startTimer();
+
+                // Close modal
+                document.getElementById('resumeModal').style.display = 'none';
+
+                // Clear saved game after loading
+                this.clearSavedGame();
+            }
+
+            startFreshGame() {
+                this.clearSavedGame();
+                document.getElementById('resumeModal').style.display = 'none';
+                this.newGame();
+            }
+
+            getElapsedTime() {
+                if (!this.startTime) return 0;
+                return Math.floor((Date.now() - this.startTime) / 1000);
             }
 
             formatDate(timestamp) {
@@ -926,7 +1178,11 @@
 
             init() {
                 this.createLevelGrid();
-                this.newGame();
+                
+                // Check for saved game on init
+                if (!this.checkForSavedGame()) {
+                    this.newGame();
+                }
             }
 
             createLevelGrid() {
@@ -969,6 +1225,7 @@
                     pauseBtn.classList.add('paused');
                     pauseOverlay.classList.add('active');
                     clearInterval(this.timerInterval);
+                    this.saveGameState(); // Save when pausing
                 } else {
                     const pauseDuration = Date.now() - this.pausedTime;
                     this.startTime += pauseDuration;
@@ -980,6 +1237,9 @@
             }
 
             newGame() {
+                // Clear any saved game when starting a new game
+                this.clearSavedGame();
+                
                 this.score = 0;
                 this.moves = 0;
                 this.hints = 3;
@@ -988,6 +1248,7 @@
                 this.gameActive = true;
                 this.isPaused = false;
                 this.startTime = null;
+                this.elapsedTime = 0;
                 
                 clearInterval(this.timerInterval);
                 document.getElementById('timer').textContent = '00:00';
@@ -1330,7 +1591,7 @@
                 if (!this.gameActive) return;
                 
                 if (!this.startTime) {
-                    this.startTime = Date.now();
+                    this.startTime = Date.now() - (this.elapsedTime * 1000);
                 }
                 
                 clearInterval(this.timerInterval);
@@ -1356,6 +1617,7 @@
             victory() {
                 this.gameActive = false;
                 clearInterval(this.timerInterval);
+                this.clearSavedGame(); // Clear saved game on victory
                 
                 const timeElapsed = Math.floor((Date.now() - this.startTime) / 1000);
                 const timeBonus = Math.max(0, 3000 - timeElapsed * 10);
@@ -1381,6 +1643,7 @@
             gameOver() {
                 this.gameActive = false;
                 clearInterval(this.timerInterval);
+                this.clearSavedGame(); // Clear saved game on game over
                 
                 document.getElementById('gameOverScore').textContent = this.score;
                 document.getElementById('gameOverMoves').textContent = this.moves;
