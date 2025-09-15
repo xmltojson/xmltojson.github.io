@@ -284,7 +284,7 @@
             background: white;
             padding: 25px;
             border-radius: 15px;
-            max-width: 600px;
+            max-width: 700px;
             width: 90%;
             max-height: 80vh;
             overflow-y: auto;
@@ -378,23 +378,30 @@
         }
 
         .level-btn {
-            padding: 15px;
+            padding: 15px 10px;
             font-size: 16px;
             position: relative;
-            min-height: 60px;
+            min-height: 70px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
         }
 
         .level-btn.completed {
             background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%);
         }
 
-        .level-btn .stars {
-            position: absolute;
-            bottom: 2px;
-            left: 50%;
-            transform: translateX(-50%);
-            font-size: 10px;
-            color: gold;
+        .level-btn .level-number {
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 4px;
+        }
+
+        .level-btn .best-score {
+            font-size: 11px;
+            opacity: 0.9;
+            white-space: nowrap;
         }
 
         .leaderboard {
@@ -402,13 +409,15 @@
         }
 
         .leaderboard-entry {
-            display: flex;
-            justify-content: space-between;
-            padding: 10px;
+            display: grid;
+            grid-template-columns: 40px 1fr auto;
+            gap: 15px;
+            padding: 12px;
             background: #f5f5f5;
-            margin: 5px 0;
-            border-radius: 5px;
+            margin: 8px 0;
+            border-radius: 8px;
             align-items: center;
+            font-size: 14px;
         }
 
         .leaderboard-entry:nth-child(1) {
@@ -422,6 +431,34 @@
 
         .leaderboard-entry:nth-child(3) {
             background: linear-gradient(135deg, #cd7f32, #e4a853);
+        }
+
+        .leaderboard-rank {
+            font-weight: bold;
+            text-align: center;
+        }
+
+        .leaderboard-stats {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+
+        .leaderboard-score {
+            font-weight: bold;
+            color: #764ba2;
+        }
+
+        .leaderboard-details {
+            font-size: 12px;
+            color: #666;
+        }
+
+        .leaderboard-date {
+            text-align: right;
+            font-size: 12px;
+            color: #666;
+            white-space: nowrap;
         }
 
         .hint-animation {
@@ -488,26 +525,6 @@
             font-weight: bold;
             color: #ffeb3b;
             text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.4);
-        }
-
-        .victory-stars {
-            font-size: 3em;
-            margin: 20px 0;
-            animation: starPop 0.5s ease-out 0.3s both;
-        }
-
-        @keyframes starPop {
-            0% {
-                transform: scale(0);
-                opacity: 0;
-            }
-            50% {
-                transform: scale(1.2);
-            }
-            100% {
-                transform: scale(1);
-                opacity: 1;
-            }
         }
 
         .victory-message .button-group {
@@ -592,8 +609,12 @@
                 font-size: 2em;
             }
 
-            .victory-stars {
-                font-size: 2.5em;
+            .leaderboard-entry {
+                font-size: 12px;
+            }
+
+            .leaderboard-details {
+                font-size: 11px;
             }
         }
     </style>
@@ -654,7 +675,6 @@
     <div id="victoryModal" class="victory-message" style="display: none;">
         <h2>🎉 Victory! 🎉</h2>
         <p>Level <span id="victoryLevel">1</span> Complete!</p>
-        <div class="victory-stars" id="victoryStars"></div>
         <p class="score-highlight">Score: <span id="victoryScore">0</span></p>
         <p>Time Bonus: <span id="victoryTimeBonus">0</span></p>
         <p>Moves: <span id="victoryMoves">0</span></p>
@@ -742,6 +762,40 @@
                 window.addEventListener('orientationchange', () => {
                     setTimeout(() => this.refit(), 50);
                 });
+            }
+
+            formatDate(timestamp) {
+                const date = new Date(timestamp);
+                const now = new Date();
+                const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+                const yesterday = new Date(today);
+                yesterday.setDate(yesterday.getDate() - 1);
+                
+                const dateToCheck = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+                
+                if (dateToCheck.getTime() === today.getTime()) {
+                    return 'Today';
+                } else if (dateToCheck.getTime() === yesterday.getTime()) {
+                    return 'Yesterday';
+                } else {
+                    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 
+                                  'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+                    const dayDiff = Math.floor((now - date) / (1000 * 60 * 60 * 24));
+                    
+                    if (dayDiff < 7) {
+                        return `${dayDiff} days ago`;
+                    } else if (date.getFullYear() === now.getFullYear()) {
+                        return `${months[date.getMonth()]} ${date.getDate()}`;
+                    } else {
+                        return `${months[date.getMonth()]} ${date.getDate()}, ${date.getFullYear()}`;
+                    }
+                }
+            }
+
+            formatTime(seconds) {
+                const minutes = Math.floor(seconds / 60);
+                const secs = seconds % 60;
+                return `${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
             }
 
             showAlert(title, message, type = 'info') {
@@ -882,34 +936,24 @@
                 for (let i = 1; i <= 20; i++) {
                     const btn = document.createElement('button');
                     btn.className = 'level-btn';
-                    btn.innerHTML = `<span>${i}</span>`;
+                    
+                    const levelNumber = document.createElement('div');
+                    levelNumber.className = 'level-number';
+                    levelNumber.textContent = i;
+                    btn.appendChild(levelNumber);
                     
                     const levelData = this.getLevelData(i);
                     if (levelData && levelData.completed) {
                         btn.classList.add('completed');
-                        const stars = document.createElement('div');
-                        stars.className = 'stars';
-                        stars.textContent = '⭐'.repeat(this.getStarsForScore(levelData.bestScore, i));
-                        btn.appendChild(stars);
+                        const scoreDiv = document.createElement('div');
+                        scoreDiv.className = 'best-score';
+                        scoreDiv.textContent = `Best: ${levelData.bestScore.toLocaleString()}`;
+                        btn.appendChild(scoreDiv);
                     }
                     
                     btn.onclick = () => this.selectLevel(i);
                     grid.appendChild(btn);
                 }
-            }
-
-            getStarsForScore(score, level) {
-                // Calculate star thresholds based on level difficulty
-                // Higher levels have higher base scores for stars
-                const baseScore = 500 + (level - 1) * 200;
-                const threeStarScore = baseScore * 3;  // 3 stars for excellent performance
-                const twoStarScore = baseScore * 2;    // 2 stars for good performance
-                const oneStarScore = baseScore;        // 1 star for completion
-                
-                if (score >= threeStarScore) return 3;
-                if (score >= twoStarScore) return 2;
-                if (score >= oneStarScore) return 1;
-                return 0;
             }
 
             togglePause() {
@@ -1317,16 +1361,11 @@
                 const timeBonus = Math.max(0, 3000 - timeElapsed * 10);
                 const finalScore = Math.floor(this.score + timeBonus);
                 
-                this.saveLevelData(this.currentLevel, finalScore);
-                this.updateLeaderboard(this.currentLevel, finalScore);
-                
-                // Calculate stars for this score
-                const stars = this.getStarsForScore(finalScore, this.currentLevel);
-                const starsDisplay = '⭐'.repeat(stars);
+                this.saveLevelData(this.currentLevel, finalScore, timeElapsed, this.moves);
+                this.updateLeaderboard(this.currentLevel, finalScore, timeElapsed, this.moves);
                 
                 // Update victory modal content
                 document.getElementById('victoryLevel').textContent = this.currentLevel;
-                document.getElementById('victoryStars').textContent = starsDisplay;
                 document.getElementById('victoryScore').textContent = finalScore;
                 document.getElementById('victoryTimeBonus').textContent = Math.floor(timeBonus);
                 document.getElementById('victoryMoves').textContent = this.moves;
@@ -1335,7 +1374,7 @@
                 // Show victory modal
                 document.getElementById('victoryModal').style.display = 'block';
                 
-                // Refresh level grid to show updated stars
+                // Refresh level grid to show updated scores
                 this.createLevelGrid();
             }
 
@@ -1405,11 +1444,26 @@
                 leaderboard.forEach((entry, index) => {
                     const div = document.createElement('div');
                     div.className = 'leaderboard-entry';
-                    const medal = index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : `${index + 1}.`;
-                    div.innerHTML = `
-                        <span>${medal} Score: ${entry.score}</span>
-                        <span>${new Date(entry.date).toLocaleDateString()}</span>
+                    
+                    const rankDiv = document.createElement('div');
+                    rankDiv.className = 'leaderboard-rank';
+                    rankDiv.innerHTML = index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : `${index + 1}`;
+                    
+                    const statsDiv = document.createElement('div');
+                    statsDiv.className = 'leaderboard-stats';
+                    statsDiv.innerHTML = `
+                        <div class="leaderboard-score">Score: ${entry.score.toLocaleString()}</div>
+                        <div class="leaderboard-details">Time: ${this.formatTime(entry.time || 0)} | Moves: ${entry.moves || 0}</div>
                     `;
+                    
+                    const dateDiv = document.createElement('div');
+                    dateDiv.className = 'leaderboard-date';
+                    dateDiv.textContent = this.formatDate(entry.date);
+                    
+                    div.appendChild(rankDiv);
+                    div.appendChild(statsDiv);
+                    div.appendChild(dateDiv);
+                    
                     list.appendChild(div);
                 });
             }
@@ -1435,11 +1489,13 @@
                 }
             }
 
-            saveLevelData(level, score) {
+            saveLevelData(level, score, time, moves) {
                 if (!this.gameData.levels[level]) {
                     this.gameData.levels[level] = {
                         completed: false,
                         bestScore: 0,
+                        bestTime: null,
+                        bestMoves: null,
                         attempts: 0
                     };
                 }
@@ -1448,6 +1504,8 @@
                 this.gameData.levels[level].attempts++;
                 if (score > this.gameData.levels[level].bestScore) {
                     this.gameData.levels[level].bestScore = score;
+                    this.gameData.levels[level].bestTime = time;
+                    this.gameData.levels[level].bestMoves = moves;
                 }
                 
                 this.saveGameData();
@@ -1457,13 +1515,15 @@
                 return this.gameData.levels[level] || null;
             }
 
-            updateLeaderboard(level, score) {
+            updateLeaderboard(level, score, time, moves) {
                 if (!this.gameData.leaderboards[level]) {
                     this.gameData.leaderboards[level] = [];
                 }
                 
                 this.gameData.leaderboards[level].push({
                     score: score,
+                    time: time,
+                    moves: moves,
                     date: Date.now()
                 });
                 
