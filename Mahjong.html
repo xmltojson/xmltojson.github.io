@@ -820,7 +820,7 @@
                 this.gameActive = false;
                 this.isPaused = false;
                 this.pausedTime = 0;
-                this.elapsedTime = 0;
+                this.totalPausedDuration = 0; // Track total time spent paused
                 this.autoSaveInterval = null;
                 
                 this.symbols = [
@@ -852,7 +852,7 @@
 
             startAutoSave() {
                 this.autoSaveInterval = setInterval(() => {
-                    if (this.gameActive && !this.isPaused && this.tiles.length > 0) {
+                    if (this.gameActive && this.tiles.length > 0) {
                         this.saveGameState();
                     }
                 }, 5000); // Save every 5 seconds
@@ -861,13 +861,17 @@
             saveGameState() {
                 if (!this.gameActive || this.tiles.length === 0) return;
 
+                // Calculate actual elapsed time excluding pauses
+                const actualElapsedTime = this.getActualElapsedTime();
+
                 const gameState = {
                     level: this.currentLevel,
                     score: this.score,
                     moves: this.moves,
                     hints: this.hints,
                     shuffles: this.shuffles,
-                    elapsedTime: this.getElapsedTime(),
+                    elapsedTime: actualElapsedTime, // Save the actual game time
+                    isPaused: this.isPaused,
                     tiles: [],
                     timestamp: Date.now()
                 };
@@ -893,6 +897,21 @@
                 } catch (e) {
                     console.error('Failed to save game state:', e);
                 }
+            }
+
+            getActualElapsedTime() {
+                if (!this.startTime) return 0;
+                
+                let elapsed;
+                if (this.isPaused) {
+                    // If currently paused, use the time when pause started
+                    elapsed = this.pausedTime - this.startTime - this.totalPausedDuration;
+                } else {
+                    // If not paused, calculate current elapsed time minus total paused duration
+                    elapsed = Date.now() - this.startTime - this.totalPausedDuration;
+                }
+                
+                return Math.floor(elapsed / 1000); // Return in seconds
             }
 
             loadSavedGame() {
@@ -951,10 +970,29 @@
                 this.moves = savedGame.moves;
                 this.hints = savedGame.hints;
                 this.shuffles = savedGame.shuffles;
-                this.elapsedTime = savedGame.elapsedTime;
                 this.gameActive = true;
-                this.isPaused = false;
                 this.selectedTile = null;
+                this.totalPausedDuration = 0;
+
+                // Set up timer with saved elapsed time
+                const savedElapsedMs = savedGame.elapsedTime * 1000;
+                this.startTime = Date.now() - savedElapsedMs;
+
+                // If the game was saved while paused, start in paused state
+                if (savedGame.isPaused) {
+                    this.isPaused = true;
+                    this.pausedTime = Date.now();
+                    const pauseBtn = document.getElementById('pauseBtn');
+                    pauseBtn.textContent = 'Resume';
+                    pauseBtn.classList.add('paused');
+                    document.getElementById('pauseOverlay').classList.add('active');
+                } else {
+                    this.isPaused = false;
+                    const pauseBtn = document.getElementById('pauseBtn');
+                    pauseBtn.textContent = 'Pause';
+                    pauseBtn.classList.remove('paused');
+                    document.getElementById('pauseOverlay').classList.remove('active');
+                }
 
                 // Clear board and restore tiles
                 this.gameBoard.innerHTML = '';
@@ -994,9 +1032,13 @@
                 this.scaleBoardToContainer();
                 this.updateTileStates();
 
-                // Resume timer
-                this.startTime = Date.now() - (this.elapsedTime * 1000);
-                this.startTimer();
+                // Update timer display
+                document.getElementById('timer').textContent = this.formatTime(savedGame.elapsedTime);
+
+                // Start timer if not paused
+                if (!this.isPaused) {
+                    this.startTimer();
+                }
 
                 // Close modal
                 document.getElementById('resumeModal').style.display = 'none';
@@ -1009,11 +1051,6 @@
                 this.clearSavedGame();
                 document.getElementById('resumeModal').style.display = 'none';
                 this.newGame();
-            }
-
-            getElapsedTime() {
-                if (!this.startTime) return 0;
-                return Math.floor((Date.now() - this.startTime) / 1000);
             }
 
             formatDate(timestamp) {
@@ -1220,6 +1257,7 @@
                 const pauseOverlay = document.getElementById('pauseOverlay');
                 
                 if (this.isPaused) {
+                    // Record when pause started
                     this.pausedTime = Date.now();
                     pauseBtn.textContent = 'Resume';
                     pauseBtn.classList.add('paused');
@@ -1227,8 +1265,10 @@
                     clearInterval(this.timerInterval);
                     this.saveGameState(); // Save when pausing
                 } else {
+                    // Calculate how long the game was paused and add to total
                     const pauseDuration = Date.now() - this.pausedTime;
-                    this.startTime += pauseDuration;
+                    this.totalPausedDuration += pauseDuration;
+                    
                     pauseBtn.textContent = 'Pause';
                     pauseBtn.classList.remove('paused');
                     pauseOverlay.classList.remove('active');
@@ -1248,7 +1288,8 @@
                 this.gameActive = true;
                 this.isPaused = false;
                 this.startTime = null;
-                this.elapsedTime = 0;
+                this.pausedTime = 0;
+                this.totalPausedDuration = 0;
                 
                 clearInterval(this.timerInterval);
                 document.getElementById('timer').textContent = '00:00';
@@ -1591,18 +1632,15 @@
                 if (!this.gameActive) return;
                 
                 if (!this.startTime) {
-                    this.startTime = Date.now() - (this.elapsedTime * 1000);
+                    this.startTime = Date.now();
                 }
                 
                 clearInterval(this.timerInterval);
                 
                 this.timerInterval = setInterval(() => {
                     if (this.gameActive && !this.isPaused) {
-                        const elapsed = Math.floor((Date.now() - this.startTime) / 1000);
-                        const minutes = Math.floor(elapsed / 60);
-                        const seconds = elapsed % 60;
-                        document.getElementById('timer').textContent = 
-                            `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+                        const elapsed = this.getActualElapsedTime();
+                        document.getElementById('timer').textContent = this.formatTime(elapsed);
                     }
                 }, 1000);
             }
@@ -1619,7 +1657,7 @@
                 clearInterval(this.timerInterval);
                 this.clearSavedGame(); // Clear saved game on victory
                 
-                const timeElapsed = Math.floor((Date.now() - this.startTime) / 1000);
+                const timeElapsed = this.getActualElapsedTime();
                 const timeBonus = Math.max(0, 3000 - timeElapsed * 10);
                 const finalScore = Math.floor(this.score + timeBonus);
                 
@@ -1631,7 +1669,7 @@
                 document.getElementById('victoryScore').textContent = finalScore;
                 document.getElementById('victoryTimeBonus').textContent = Math.floor(timeBonus);
                 document.getElementById('victoryMoves').textContent = this.moves;
-                document.getElementById('victoryTime').textContent = document.getElementById('timer').textContent;
+                document.getElementById('victoryTime').textContent = this.formatTime(timeElapsed);
                 
                 // Show victory modal
                 document.getElementById('victoryModal').style.display = 'block';
