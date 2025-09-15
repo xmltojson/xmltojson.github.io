@@ -825,6 +825,7 @@ Copyright (c) 2025 Valentyn Kolesnikov <0009-0003-9608-3364@orcid.org>
                 this.pausedTime = 0;
                 this.totalPausedDuration = 0; // Track total time spent paused
                 this.autoSaveInterval = null;
+                this.initialTileCount = 0; // Track initial number of tiles for time bonus calculation
                 
                 this.symbols = [
                     '🀄', '🎋', '🎍', '🌸', '🌺', '🌻', '🌷', '🌹',
@@ -853,6 +854,43 @@ Copyright (c) 2025 Valentyn Kolesnikov <0009-0003-9608-3364@orcid.org>
                 });
             }
 
+            calculateTimeBonus(timeElapsed, tileCount) {
+                // Base time allowance: 1.2 seconds per tile for perfect score
+                // This gives players reasonable time based on puzzle complexity
+                const baseTimePerTile = 1.2; // seconds
+                const perfectTime = tileCount * baseTimePerTile;
+                
+                // Maximum bonus is based on tile count
+                // More tiles = higher potential bonus
+                const maxBonus = tileCount * 50; // 50 points per tile maximum
+                
+                // Calculate bonus with a more generous curve
+                let bonus = 0;
+                
+                if (timeElapsed <= perfectTime) {
+                    // Full bonus for perfect time or better
+                    bonus = maxBonus;
+                } else if (timeElapsed <= perfectTime * 1.5) {
+                    // 75% bonus for up to 50% over perfect time
+                    const ratio = (perfectTime * 1.5 - timeElapsed) / (perfectTime * 0.5);
+                    bonus = Math.floor(maxBonus * 0.75 * ratio + maxBonus * 0.25);
+                } else if (timeElapsed <= perfectTime * 2) {
+                    // 25-75% bonus for 50-100% over perfect time
+                    const ratio = (perfectTime * 2 - timeElapsed) / (perfectTime * 0.5);
+                    bonus = Math.floor(maxBonus * 0.25 * ratio);
+                } else if (timeElapsed <= perfectTime * 3) {
+                    // Small bonus (up to 25%) for 100-200% over perfect time
+                    const ratio = (perfectTime * 3 - timeElapsed) / perfectTime;
+                    bonus = Math.floor(maxBonus * 0.1 * ratio);
+                } else {
+                    // No bonus for very slow completion
+                    bonus = 0;
+                }
+                
+                // Ensure bonus is never negative
+                return Math.max(0, bonus);
+            }
+
             startAutoSave() {
                 this.autoSaveInterval = setInterval(() => {
                     if (this.gameActive && this.tiles.length > 0) {
@@ -875,6 +913,7 @@ Copyright (c) 2025 Valentyn Kolesnikov <0009-0003-9608-3364@orcid.org>
                     shuffles: this.shuffles,
                     elapsedTime: actualElapsedTime, // Save the actual game time
                     isPaused: this.isPaused,
+                    initialTileCount: this.initialTileCount,
                     tiles: [],
                     timestamp: Date.now()
                 };
@@ -973,6 +1012,7 @@ Copyright (c) 2025 Valentyn Kolesnikov <0009-0003-9608-3364@orcid.org>
                 this.moves = savedGame.moves;
                 this.hints = savedGame.hints;
                 this.shuffles = savedGame.shuffles;
+                this.initialTileCount = savedGame.initialTileCount || savedGame.tiles.length;
                 this.gameActive = true;
                 this.selectedTile = null;
                 this.totalPausedDuration = 0;
@@ -1306,6 +1346,9 @@ Copyright (c) 2025 Valentyn Kolesnikov <0009-0003-9608-3364@orcid.org>
                 
                 const layout = this.layouts[this.currentLevel - 1];
                 const numPairs = Math.floor(layout.length / 2);
+                
+                // Store initial tile count for time bonus calculation
+                this.initialTileCount = layout.length;
                 
                 const tileValues = [];
                 for (let i = 0; i < numPairs; i++) {
@@ -1650,7 +1693,7 @@ Copyright (c) 2025 Valentyn Kolesnikov <0009-0003-9608-3364@orcid.org>
                 this.clearSavedGame(); // Clear saved game on victory
                 
                 const timeElapsed = this.getActualElapsedTime();
-                const timeBonus = Math.max(0, 3000 - timeElapsed * 10);
+                const timeBonus = this.calculateTimeBonus(timeElapsed, this.initialTileCount);
                 const finalScore = Math.floor(this.score + timeBonus);
                 
                 this.saveLevelData(this.currentLevel, finalScore, timeElapsed, this.moves);
@@ -1658,8 +1701,8 @@ Copyright (c) 2025 Valentyn Kolesnikov <0009-0003-9608-3364@orcid.org>
                 
                 // Update victory modal content
                 document.getElementById('victoryLevel').textContent = this.currentLevel;
-                document.getElementById('victoryScore').textContent = finalScore;
-                document.getElementById('victoryTimeBonus').textContent = Math.floor(timeBonus);
+                document.getElementById('victoryScore').textContent = finalScore.toLocaleString();
+                document.getElementById('victoryTimeBonus').textContent = timeBonus.toLocaleString();
                 document.getElementById('victoryMoves').textContent = this.moves;
                 document.getElementById('victoryTime').textContent = this.formatTime(timeElapsed);
                 
