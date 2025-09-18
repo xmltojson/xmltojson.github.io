@@ -1,0 +1,1640 @@
+<!DOCTYPE html>
+<!-- MIT License
+Copyright (c) 2025 Valentyn Kolesnikov <0009-0003-9608-3364@orcid.org>
+-->
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, maximum-scale=1.0">
+    <meta name="description" content="Crystal Match Quest">
+    <link rel="icon" type="image/x-icon" href="CrystalMatch.ico"/>
+    <title>Crystal Match Quest</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            padding: 5px;
+            overflow-x: hidden;
+        }
+
+        .game-container {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 10px;
+            padding: 10px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            max-width: 500px;
+            width: 100%;
+            animation: slideIn 0.5s ease-out;
+            margin: auto;
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateY(-50px);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 8px;
+        }
+
+        .header h1 {
+            font-size: 1.4em;
+            margin-bottom: 4px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .game-info {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 5px;
+            margin-bottom: 8px;
+        }
+
+        .info-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 5px 2px;
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            border-radius: 6px;
+            color: white;
+            font-weight: bold;
+        }
+
+        .info-label {
+            font-size: 0.6em;
+            opacity: 0.9;
+        }
+
+        .info-value {
+            font-size: 0.85em;
+            margin-top: 1px;
+        }
+
+        .game-board {
+            display: grid;
+            grid-template-columns: repeat(8, 1fr);
+            gap: 2px;
+            padding: 5px;
+            background: rgba(0, 0, 0, 0.05);
+            border-radius: 8px;
+            margin-bottom: 8px;
+            max-width: 100%;
+            aspect-ratio: 1;
+        }
+
+        .crystal {
+            width: 100%;
+            aspect-ratio: 1;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
+            user-select: none;
+            background: rgba(255, 255, 255, 0.9);
+        }
+
+        .crystal svg {
+            width: 70%;
+            height: 70%;
+            filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.2));
+        }
+
+        .crystal:active {
+            transform: scale(0.95);
+        }
+
+        .crystal.selected {
+            animation: pulse 0.5s infinite;
+            transform: scale(1.1);
+            box-shadow: 0 0 10px rgba(255, 215, 0, 0.8);
+            z-index: 20;
+        }
+
+        .crystal.hint {
+            animation: hintPulse 1s ease-out 2;
+            box-shadow: 0 0 15px rgba(0, 255, 0, 0.8);
+            z-index: 15;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1.1); }
+            50% { transform: scale(1.2); }
+            100% { transform: scale(1.1); }
+        }
+
+        @keyframes hintPulse {
+            0% { 
+                transform: scale(1);
+                box-shadow: 0 0 5px rgba(0, 255, 0, 0.4);
+            }
+            50% { 
+                transform: scale(1.15);
+                box-shadow: 0 0 20px rgba(0, 255, 0, 1);
+            }
+            100% { 
+                transform: scale(1);
+                box-shadow: 0 0 5px rgba(0, 255, 0, 0.4);
+            }
+        }
+
+        .crystal.matched {
+            animation: matchPop 0.5s ease-out forwards;
+        }
+
+        @keyframes matchPop {
+            0% { transform: scale(1) rotate(0deg); }
+            50% { transform: scale(1.3) rotate(180deg); }
+            100% { transform: scale(0) rotate(360deg); opacity: 0; }
+        }
+
+        .crystal.empty {
+            background: transparent !important;
+            box-shadow: none !important;
+            cursor: default;
+        }
+
+        .controls {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 5px;
+        }
+
+        .btn {
+            padding: 8px 4px;
+            border: none;
+            border-radius: 6px;
+            font-size: 0.7em;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            color: white;
+            text-transform: uppercase;
+            letter-spacing: 0.2px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 2px;
+            white-space: nowrap;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+
+        .btn-secondary {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+        }
+
+        .btn-success {
+            background: linear-gradient(135deg, #6ab04c, #badc58);
+        }
+
+        .btn-info {
+            background: linear-gradient(135deg, #48dbfb 0%, #0abde3 100%);
+        }
+
+        .btn:active {
+            transform: scale(0.95);
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+            padding: 10px;
+            overflow-y: auto;
+        }
+
+        .modal.active {
+            display: flex;
+            animation: fadeIn 0.3s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        .modal-content {
+            background: white;
+            padding: 15px;
+            border-radius: 12px;
+            text-align: center;
+            max-width: 400px;
+            width: 100%;
+            max-height: 80vh;
+            overflow-y: auto;
+            animation: slideDown 0.3s ease-out;
+            margin: auto;
+        }
+
+        .modal-content.large {
+            max-width: 450px;
+            max-height: 85vh;
+        }
+
+        @keyframes slideDown {
+            from {
+                transform: translateY(-50px);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        .modal h2 {
+            color: #764ba2;
+            margin-bottom: 10px;
+            font-size: 1.3em;
+        }
+
+        .modal p {
+            margin-bottom: 8px;
+            color: #666;
+            font-size: 0.85em;
+            line-height: 1.4;
+        }
+
+        .modal-buttons {
+            display: flex;
+            gap: 8px;
+            justify-content: center;
+            margin-top: 12px;
+            flex-wrap: wrap;
+        }
+
+        .modal-buttons .btn {
+            flex: 1;
+            min-width: 100px;
+            padding: 10px 8px;
+            font-size: 0.8em;
+        }
+
+        .stars {
+            font-size: 1.8em;
+            color: #f9ca24;
+            margin: 10px 0;
+        }
+
+        .level-select {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 5px;
+            max-height: 300px;
+            overflow-y: auto;
+            padding: 8px;
+            margin: 10px 0;
+        }
+
+        .level-btn {
+            padding: 4px;
+            border: 2px solid #ddd;
+            background: white;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: bold;
+            font-size: 0.7em;
+            position: relative;
+            min-height: 50px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 2px;
+        }
+
+        .level-btn .level-number {
+            font-size: 1em;
+            color: #333;
+        }
+
+        .level-btn .level-stars {
+            font-size: 0.6em;
+            color: #f9ca24;
+            height: 10px;
+            line-height: 1;
+        }
+
+        .level-btn .level-score {
+            font-size: 0.55em;
+            color: #666;
+        }
+
+        .level-btn.completed {
+            background: linear-gradient(135deg, #6ab04c, #badc58);
+            border-color: #6ab04c;
+        }
+
+        .level-btn.completed .level-number {
+            color: white;
+        }
+
+        .level-btn.completed .level-score {
+            color: rgba(255, 255, 255, 0.9);
+        }
+
+        .level-btn.current {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-color: #667eea;
+            animation: pulse 2s infinite;
+        }
+
+        .level-btn.current .level-number,
+        .level-btn.current .level-score {
+            color: white;
+        }
+
+        .level-btn:active:not(:disabled) {
+            transform: scale(0.95);
+        }
+
+        .level-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            background: #f0f0f0;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 18px;
+            background: rgba(0, 0, 0, 0.1);
+            border-radius: 10px;
+            overflow: hidden;
+            margin-bottom: 8px;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+            transition: width 0.5s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            font-size: 0.7em;
+        }
+
+        .how-to-play {
+            text-align: left;
+            padding: 8px;
+            font-size: 0.85em;
+        }
+
+        .how-to-play h3 {
+            color: #764ba2;
+            margin: 12px 0 6px 0;
+            font-size: 1em;
+        }
+
+        .how-to-play ul {
+            margin-left: 18px;
+            color: #666;
+        }
+
+        .how-to-play li {
+            margin: 4px 0;
+            font-size: 0.85em;
+        }
+
+        .crystal-types {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8px;
+            margin: 8px 0;
+        }
+
+        .crystal-type {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 6px;
+            border-radius: 6px;
+            background: rgba(0, 0, 0, 0.05);
+        }
+
+        .crystal-type svg {
+            width: 35px;
+            height: 35px;
+        }
+
+        .crystal-type span {
+            font-size: 0.7em;
+            color: #666;
+            margin-top: 3px;
+        }
+
+        .particles {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: -1;
+            overflow: hidden;
+        }
+
+        .particle {
+            position: absolute;
+            width: 4px;
+            height: 4px;
+            background: rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            animation: float 10s infinite linear;
+        }
+
+        @keyframes float {
+            from {
+                transform: translateY(100vh) rotate(0deg);
+                opacity: 0;
+            }
+            10% {
+                opacity: 1;
+            }
+            90% {
+                opacity: 1;
+            }
+            to {
+                transform: translateY(-100vh) rotate(360deg);
+                opacity: 0;
+            }
+        }
+
+        /* Small phones (height less than 700px) */
+        @media (max-height: 700px) {
+            .game-container {
+                padding: 8px;
+            }
+            
+            .header h1 {
+                font-size: 1.2em;
+                margin-bottom: 3px;
+            }
+            
+            .game-info {
+                gap: 4px;
+                margin-bottom: 6px;
+            }
+            
+            .info-item {
+                padding: 4px 2px;
+            }
+            
+            .info-label {
+                font-size: 0.55em;
+            }
+            
+            .info-value {
+                font-size: 0.75em;
+            }
+            
+            .progress-bar {
+                height: 15px;
+                margin-bottom: 6px;
+            }
+            
+            .game-board {
+                gap: 1px;
+                padding: 4px;
+                margin-bottom: 6px;
+            }
+            
+            .controls {
+                gap: 4px;
+            }
+            
+            .btn {
+                padding: 6px 3px;
+                font-size: 0.65em;
+            }
+        }
+
+        /* Very small phones (height less than 600px) */
+        @media (max-height: 600px) {
+            body {
+                padding: 3px;
+            }
+            
+            .game-container {
+                padding: 6px;
+            }
+            
+            .header h1 {
+                font-size: 1.1em;
+                margin-bottom: 2px;
+            }
+            
+            .game-info {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 3px;
+                margin-bottom: 5px;
+            }
+            
+            .progress-bar {
+                height: 12px;
+            }
+            
+            .progress-fill {
+                font-size: 0.6em;
+            }
+            
+            .game-board {
+                margin-bottom: 5px;
+            }
+            
+            .crystal svg {
+                width: 65%;
+                height: 65%;
+            }
+        }
+
+        /* Landscape orientation on small devices */
+        @media (max-height: 500px) and (orientation: landscape) {
+            body {
+                align-items: center;
+                padding: 2px;
+            }
+            
+            .game-container {
+                display: grid;
+                grid-template-columns: 1fr auto;
+                gap: 10px;
+                max-width: 800px;
+                padding: 8px;
+            }
+            
+            .game-left {
+                display: flex;
+                flex-direction: column;
+            }
+            
+            .game-board {
+                max-width: 350px;
+                margin: 0 auto;
+            }
+            
+            .header h1 {
+                font-size: 1em;
+            }
+            
+            .controls {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        /* Width-based responsive */
+        @media (max-width: 380px) {
+            .header h1 {
+                font-size: 1.2em;
+            }
+            
+            .game-info {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            
+            .controls {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            
+            .btn {
+                font-size: 0.65em;
+                padding: 7px 4px;
+            }
+            
+            .level-select {
+                grid-template-columns: repeat(4, 1fr);
+            }
+        }
+
+        @media (max-width: 320px) {
+            .game-board {
+                gap: 1px;
+                padding: 3px;
+            }
+            
+            .crystal {
+                border-radius: 3px;
+            }
+            
+            .crystal svg {
+                width: 60%;
+                height: 60%;
+            }
+        }
+
+        /* Fix for iOS Safari */
+        @supports (-webkit-touch-callout: none) {
+            body {
+                min-height: -webkit-fill-available;
+            }
+            
+            .modal {
+                min-height: -webkit-fill-available;
+            }
+        }
+
+        /* Ensure game is playable on very small screens */
+        @media (max-width: 360px) and (max-height: 640px) {
+            .game-container {
+                padding: 5px;
+            }
+            
+            .header h1 {
+                font-size: 1.1em;
+            }
+            
+            .game-board {
+                gap: 1px;
+            }
+            
+            .controls {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 3px;
+            }
+            
+            .btn {
+                padding: 6px 3px;
+                font-size: 0.6em;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="particles" id="particles"></div>
+    
+    <div class="game-container">
+        <div class="game-left">
+            <div class="header">
+                <h1>💎 Crystal Match Quest</h1>
+            </div>
+            
+            <div class="game-info">
+                <div class="info-item">
+                    <span class="info-label">Level</span>
+                    <span class="info-value" id="currentLevel">1</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">Score</span>
+                    <span class="info-value" id="score">0</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">Moves</span>
+                    <span class="info-value" id="moves">20</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">Target</span>
+                    <span class="info-value" id="target">1000</span>
+                </div>
+            </div>
+            
+            <div class="progress-bar">
+                <div class="progress-fill" id="progressFill">0%</div>
+            </div>
+            
+            <div class="game-board" id="gameBoard"></div>
+            
+            <div class="controls">
+                <button class="btn btn-primary" onclick="game.showHint()">💡 Hint</button>
+                <button class="btn btn-secondary" onclick="game.shuffleBoard()">🔄 Shuffle</button>
+                <button class="btn btn-success" onclick="game.showLevelSelect()">📋 Levels</button>
+                <button class="btn btn-info" onclick="game.showHowToPlay()">❓ Help</button>
+            </div>
+        </div>
+    </div>
+    
+    <div class="modal" id="levelCompleteModal">
+        <div class="modal-content">
+            <h2>🎉 Level Complete!</h2>
+            <div class="stars" id="stars">⭐⭐⭐</div>
+            <p>Score: <span id="finalScore">0</span></p>
+            <p>Best Score: <span id="bestScore">0</span></p>
+            <div class="modal-buttons">
+                <button class="btn btn-primary" onclick="game.nextLevel()">Next Level</button>
+                <button class="btn btn-secondary" onclick="game.retryLevel()">Retry</button>
+            </div>
+        </div>
+    </div>
+    
+    <div class="modal" id="gameOverModal">
+        <div class="modal-content">
+            <h2>😢 Game Over</h2>
+            <p>You ran out of moves!</p>
+            <p>Score: <span id="gameOverScore">0</span></p>
+            <div class="modal-buttons">
+                <button class="btn btn-primary" onclick="game.retryLevel()">Try Again</button>
+                <button class="btn btn-secondary" onclick="game.showLevelSelect()">Level Select</button>
+            </div>
+        </div>
+    </div>
+    
+    <div class="modal" id="levelSelectModal">
+        <div class="modal-content large">
+            <h2>Select Level</h2>
+            <div class="level-select" id="levelSelect"></div>
+            <button class="btn btn-secondary" onclick="game.closeLevelSelect()">Close</button>
+        </div>
+    </div>
+
+    <div class="modal" id="allLevelsCompleteModal">
+        <div class="modal-content">
+            <h2>🏆 Congratulations! 🏆</h2>
+            <div class="stars">🌟🌟🌟🌟🌟</div>
+            <p>You've completed all 100 levels!</p>
+            <p>Total Stars Earned: <span id="totalStars">0</span></p>
+            <p>Thank you for playing Crystal Match Quest!</p>
+            <div class="modal-buttons">
+                <button class="btn btn-primary" onclick="game.closeAllLevelsComplete()">Continue Playing</button>
+                <button class="btn btn-success" onclick="game.showLevelSelect()">Level Select</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal" id="howToPlayModal">
+        <div class="modal-content large">
+            <h2>How to Play</h2>
+            <div class="how-to-play">
+                <h3>🎯 Objective</h3>
+                <p>Match 3 or more crystals of the same type to score points and reach the target score before running out of moves!</p>
+                
+                <h3>🎮 Controls</h3>
+                <ul>
+                    <li>Tap a crystal to select it</li>
+                    <li>Tap an adjacent crystal to swap them</li>
+                    <li>Create matches of 3 or more in a row</li>
+                    <li>Cascading matches give bonus points!</li>
+                </ul>
+                
+                <h3>💎 Crystal Types</h3>
+                <div class="crystal-types" id="crystalTypes"></div>
+                
+                <h3>⭐ Scoring</h3>
+                <ul>
+                    <li>3 crystals = 50 points</li>
+                    <li>4+ crystals = bonus points</li>
+                    <li>Cascade combos multiply score</li>
+                    <li>Higher levels give more points</li>
+                </ul>
+                
+                <h3>🏆 Stars</h3>
+                <ul>
+                    <li>⭐ Complete the level</li>
+                    <li>⭐⭐ Score 1.5x the target</li>
+                    <li>⭐⭐⭐ Score 2x the target</li>
+                </ul>
+                
+                <h3>💡 Tips</h3>
+                <ul>
+                    <li>Look for potential cascades</li>
+                    <li>Use hints when stuck</li>
+                    <li>Shuffle if no moves available</li>
+                    <li>Plan moves ahead for combos</li>
+                </ul>
+            </div>
+            <button class="btn btn-primary" onclick="game.closeHowToPlay()">Got it!</button>
+        </div>
+    </div>
+
+    <script>
+        class CrystalMatchGame {
+            constructor() {
+                this.board = [];
+                this.boardSize = 8;
+                this.crystalTypes = ['diamond', 'emerald', 'sapphire', 'topaz', 'amethyst', 'ruby'];
+                this.selectedCrystal = null;
+                this.currentLevel = 1;
+                this.score = 0;
+                this.moves = 20;
+                this.targetScore = 1000;
+                this.gameData = this.loadGameData();
+                this.currentGameState = this.loadCurrentGameState();
+                this.isAnimating = false;
+                this.autoSaveInterval = null;
+                
+                this.initGame();
+                this.createParticles();
+                this.populateCrystalTypes();
+                this.startAutoSave();
+            }
+            
+            loadGameData() {
+                const saved = localStorage.getItem('crystalMatchData');
+                if (saved) {
+                    return JSON.parse(saved);
+                }
+                return {
+                    unlockedLevel: 1,
+                    levelScores: {},
+                    levelStars: {},
+                    totalScore: 0
+                };
+            }
+            
+            saveGameData() {
+                localStorage.setItem('crystalMatchData', JSON.stringify(this.gameData));
+            }
+            
+            loadCurrentGameState() {
+                const saved = localStorage.getItem('crystalMatchCurrentGame');
+                if (saved) {
+                    try {
+                        const state = JSON.parse(saved);
+                        // Verify the state is valid
+                        if (state && state.board && state.currentLevel) {
+                            return state;
+                        }
+                    } catch (e) {
+                        console.error('Failed to load game state:', e);
+                    }
+                }
+                return null;
+            }
+            
+            saveCurrentGameState() {
+                const state = {
+                    board: this.board,
+                    currentLevel: this.currentLevel,
+                    score: this.score,
+                    moves: this.moves,
+                    targetScore: this.targetScore,
+                    crystalTypes: this.crystalTypes,
+                    timestamp: Date.now()
+                };
+                localStorage.setItem('crystalMatchCurrentGame', JSON.stringify(state));
+            }
+            
+            clearCurrentGameState() {
+                localStorage.removeItem('crystalMatchCurrentGame');
+            }
+            
+            startAutoSave() {
+                // Save game state every 5 seconds
+                this.autoSaveInterval = setInterval(() => {
+                    if (!this.isAnimating) {
+                        this.saveCurrentGameState();
+                    }
+                }, 5000);
+                
+                // Also save on important events
+                window.addEventListener('beforeunload', () => {
+                    this.saveCurrentGameState();
+                });
+                
+                // Save when page loses focus
+                document.addEventListener('visibilitychange', () => {
+                    if (document.hidden && !this.isAnimating) {
+                        this.saveCurrentGameState();
+                    }
+                });
+            }
+            
+            initGame() {
+                // Check if we have a saved game state
+                if (this.currentGameState) {
+                    // Restore the saved state
+                    this.board = this.currentGameState.board;
+                    this.currentLevel = this.currentGameState.currentLevel;
+                    this.score = this.currentGameState.score;
+                    this.moves = this.currentGameState.moves;
+                    this.targetScore = this.currentGameState.targetScore;
+                    this.crystalTypes = this.currentGameState.crystalTypes;
+                    
+                    // Clear the saved state after loading
+                    this.currentGameState = null;
+                    
+                    this.renderBoard();
+                    this.updateUI();
+                } else {
+                    // Start new game or level
+                    this.loadLevel(this.currentLevel);
+                    this.createBoard();
+                    this.renderBoard();
+                    this.updateUI();
+                }
+            }
+            
+            loadLevel(level) {
+                this.currentLevel = level;
+                this.score = 0;
+                
+                // Level progression formula
+                this.moves = Math.max(15, 25 - Math.floor(level / 10));
+                this.targetScore = 1000 + (level - 1) * 150;
+                
+                // Add more crystal types as levels progress
+                const crystalCount = Math.min(6, 3 + Math.floor(level / 20));
+                this.crystalTypes = ['diamond', 'emerald', 'sapphire', 'topaz', 'amethyst', 'ruby'].slice(0, crystalCount);
+                
+                // Clear saved game state when starting a new level
+                this.clearCurrentGameState();
+                
+                this.updateUI();
+            }
+            
+            createBoard() {
+                this.board = [];
+                for (let row = 0; row < this.boardSize; row++) {
+                    this.board[row] = [];
+                    for (let col = 0; col < this.boardSize; col++) {
+                        this.board[row][col] = this.getRandomCrystal();
+                    }
+                }
+                
+                // Ensure no initial matches
+                this.removeInitialMatches();
+            }
+            
+            removeInitialMatches() {
+                let hasMatches = true;
+                while (hasMatches) {
+                    hasMatches = false;
+                    for (let row = 0; row < this.boardSize; row++) {
+                        for (let col = 0; col < this.boardSize; col++) {
+                            if (this.checkMatch(row, col, false)) {
+                                this.board[row][col] = this.getRandomCrystal();
+                                hasMatches = true;
+                            }
+                        }
+                    }
+                }
+            }
+            
+            getRandomCrystal() {
+                const type = this.crystalTypes[Math.floor(Math.random() * this.crystalTypes.length)];
+                return { type };
+            }
+            
+            createCrystalSVG(type, small = false) {
+                const svgNS = "http://www.w3.org/2000/svg";
+                const svg = document.createElementNS(svgNS, "svg");
+                svg.setAttribute("viewBox", "0 0 100 100");
+                
+                const id = small ? `${type}Small` : `${type}${Math.random()}`;
+                
+                switch(type) {
+                    case 'diamond':
+                        svg.innerHTML = `
+                            <defs>
+                                <linearGradient id="${id}Grad" x1="0%" y1="0%" x2="100%" y2="100%">
+                                    <stop offset="0%" style="stop-color:#ff6b6b;stop-opacity:1" />
+                                    <stop offset="100%" style="stop-color:#ff4757;stop-opacity:1" />
+                                </linearGradient>
+                            </defs>
+                            <polygon points="50,10 80,40 50,90 20,40" fill="url(#${id}Grad)" stroke="#ff4757" stroke-width="2"/>
+                            <polygon points="50,10 65,25 50,40 35,25" fill="rgba(255,255,255,0.4)"/>
+                        `;
+                        break;
+                    case 'emerald':
+                        svg.innerHTML = `
+                            <defs>
+                                <linearGradient id="${id}Grad" x1="0%" y1="0%" x2="100%" y2="100%">
+                                    <stop offset="0%" style="stop-color:#6ab04c;stop-opacity:1" />
+                                    <stop offset="100%" style="stop-color:#badc58;stop-opacity:1" />
+                                </linearGradient>
+                            </defs>
+                            <rect x="25" y="25" width="50" height="50" rx="10" fill="url(#${id}Grad)" stroke="#6ab04c" stroke-width="2"/>
+                            <rect x="35" y="35" width="30" height="15" fill="rgba(255,255,255,0.4)"/>
+                        `;
+                        break;
+                    case 'sapphire':
+                        svg.innerHTML = `
+                            <defs>
+                                <linearGradient id="${id}Grad" x1="0%" y1="0%" x2="100%" y2="100%">
+                                    <stop offset="0%" style="stop-color:#4834d4;stop-opacity:1" />
+                                    <stop offset="100%" style="stop-color:#686de0;stop-opacity:1" />
+                                </linearGradient>
+                            </defs>
+                            <circle cx="50" cy="50" r="30" fill="url(#${id}Grad)" stroke="#4834d4" stroke-width="2"/>
+                            <ellipse cx="50" cy="35" rx="15" ry="10" fill="rgba(255,255,255,0.4)"/>
+                        `;
+                        break;
+                    case 'topaz':
+                        svg.innerHTML = `
+                            <defs>
+                                <linearGradient id="${id}Grad" x1="0%" y1="0%" x2="100%" y2="100%">
+                                    <stop offset="0%" style="stop-color:#f9ca24;stop-opacity:1" />
+                                    <stop offset="100%" style="stop-color:#f0932b;stop-opacity:1" />
+                                </linearGradient>
+                            </defs>
+                            <polygon points="50,20 70,35 70,65 50,80 30,65 30,35" fill="url(#${id}Grad)" stroke="#f0932b" stroke-width="2"/>
+                            <polygon points="50,20 60,30 50,40 40,30" fill="rgba(255,255,255,0.4)"/>
+                        `;
+                        break;
+                    case 'amethyst':
+                        svg.innerHTML = `
+                            <defs>
+                                <linearGradient id="${id}Grad" x1="0%" y1="0%" x2="100%" y2="100%">
+                                    <stop offset="0%" style="stop-color:#be2edd;stop-opacity:1" />
+                                    <stop offset="100%" style="stop-color:#e056fd;stop-opacity:1" />
+                                </linearGradient>
+                            </defs>
+                            <polygon points="50,15 75,30 75,60 50,85 25,60 25,30" fill="url(#${id}Grad)" stroke="#be2edd" stroke-width="2"/>
+                            <polygon points="50,15 65,25 50,35 35,25" fill="rgba(255,255,255,0.4)"/>
+                        `;
+                        break;
+                    case 'ruby':
+                        svg.innerHTML = `
+                            <defs>
+                                <linearGradient id="${id}Grad" x1="0%" y1="0%" x2="100%" y2="100%">
+                                    <stop offset="0%" style="stop-color:#fa8231;stop-opacity:1" />
+                                    <stop offset="100%" style="stop-color:#fd9644;stop-opacity:1" />
+                                </linearGradient>
+                            </defs>
+                            <path d="M50,20 L70,40 L60,70 L40,70 L30,40 Z" fill="url(#${id}Grad)" stroke="#fa8231" stroke-width="2"/>
+                            <path d="M50,20 L60,30 L50,40 L40,30 Z" fill="rgba(255,255,255,0.4)"/>
+                        `;
+                        break;
+                }
+                
+                return svg;
+            }
+            
+            populateCrystalTypes() {
+                const container = document.getElementById('crystalTypes');
+                if (!container) return;
+                
+                container.innerHTML = '';
+                const types = ['diamond', 'emerald', 'sapphire', 'topaz', 'amethyst', 'ruby'];
+                const names = ['Diamond', 'Emerald', 'Sapphire', 'Topaz', 'Amethyst', 'Ruby'];
+                
+                types.forEach((type, index) => {
+                    const div = document.createElement('div');
+                    div.className = 'crystal-type';
+                    div.appendChild(this.createCrystalSVG(type, true));
+                    const span = document.createElement('span');
+                    span.textContent = names[index];
+                    div.appendChild(span);
+                    container.appendChild(div);
+                });
+            }
+            
+            renderBoard() {
+                const boardElement = document.getElementById('gameBoard');
+                boardElement.innerHTML = '';
+                
+                for (let row = 0; row < this.boardSize; row++) {
+                    for (let col = 0; col < this.boardSize; col++) {
+                        const crystal = document.createElement('div');
+                        
+                        if (this.board[row][col] && this.board[row][col].type) {
+                            crystal.className = 'crystal';
+                            crystal.appendChild(this.createCrystalSVG(this.board[row][col].type));
+                            crystal.onclick = () => this.selectCrystal(row, col);
+                        } else {
+                            crystal.className = 'crystal empty';
+                        }
+                        
+                        crystal.dataset.row = row;
+                        crystal.dataset.col = col;
+                        boardElement.appendChild(crystal);
+                    }
+                }
+            }
+            
+            selectCrystal(row, col) {
+                if (this.isAnimating) return;
+                if (!this.board[row][col]) return;
+                
+                const crystalElement = document.querySelector(`[data-row="${row}"][data-col="${col}"]`);
+                
+                if (!this.selectedCrystal) {
+                    this.selectedCrystal = { row, col, element: crystalElement };
+                    crystalElement.classList.add('selected');
+                } else {
+                    const prevRow = this.selectedCrystal.row;
+                    const prevCol = this.selectedCrystal.col;
+                    
+                    // Check if adjacent
+                    if (this.isAdjacent(prevRow, prevCol, row, col)) {
+                        this.swapCrystals(prevRow, prevCol, row, col);
+                    } else {
+                        // Deselect and select new
+                        this.selectedCrystal.element.classList.remove('selected');
+                        this.selectedCrystal = { row, col, element: crystalElement };
+                        crystalElement.classList.add('selected');
+                    }
+                }
+            }
+            
+            isAdjacent(row1, col1, row2, col2) {
+                const rowDiff = Math.abs(row1 - row2);
+                const colDiff = Math.abs(col1 - col2);
+                return (rowDiff === 1 && colDiff === 0) || (rowDiff === 0 && colDiff === 1);
+            }
+            
+            async swapCrystals(row1, col1, row2, col2) {
+                this.isAnimating = true;
+                
+                // Clear selection
+                if (this.selectedCrystal && this.selectedCrystal.element) {
+                    this.selectedCrystal.element.classList.remove('selected');
+                }
+                
+                // Swap in array
+                const temp = this.board[row1][col1];
+                this.board[row1][col1] = this.board[row2][col2];
+                this.board[row2][col2] = temp;
+                
+                // Animate swap
+                this.renderBoard();
+                
+                // Check for matches
+                const matches1 = this.checkMatch(row1, col1, true);
+                const matches2 = this.checkMatch(row2, col2, true);
+                
+                if (matches1.length > 0 || matches2.length > 0) {
+                    this.moves--;
+                    await this.handleMatches([...matches1, ...matches2]);
+                    await this.dropCrystals();
+                    await this.fillBoard();
+                    await this.checkCascadeMatches();
+                    this.updateUI();
+                    this.checkGameState();
+                    
+                    // Save state after successful move
+                    this.saveCurrentGameState();
+                } else {
+                    // Swap back if no match
+                    const temp = this.board[row1][col1];
+                    this.board[row1][col1] = this.board[row2][col2];
+                    this.board[row2][col2] = temp;
+                    this.renderBoard();
+                }
+                
+                this.selectedCrystal = null;
+                this.isAnimating = false;
+            }
+            
+            checkMatch(row, col, returnMatches = false) {
+                if (!this.board[row][col]) return returnMatches ? [] : false;
+                
+                const crystal = this.board[row][col];
+                const matches = new Set();
+                
+                // Check horizontal
+                let left = col;
+                while (left > 0 && this.board[row][left - 1] && 
+                       this.board[row][left - 1].type === crystal.type) left--;
+                let right = col;
+                while (right < this.boardSize - 1 && this.board[row][right + 1] && 
+                       this.board[row][right + 1].type === crystal.type) right++;
+                
+                if (right - left >= 2) {
+                    for (let c = left; c <= right; c++) {
+                        matches.add(`${row},${c}`);
+                    }
+                }
+                
+                // Check vertical
+                let top = row;
+                while (top > 0 && this.board[top - 1][col] && 
+                       this.board[top - 1][col].type === crystal.type) top--;
+                let bottom = row;
+                while (bottom < this.boardSize - 1 && this.board[bottom + 1][col] && 
+                       this.board[bottom + 1][col].type === crystal.type) bottom++;
+                
+                if (bottom - top >= 2) {
+                    for (let r = top; r <= bottom; r++) {
+                        matches.add(`${r},${col}`);
+                    }
+                }
+                
+                if (returnMatches) {
+                    return Array.from(matches);
+                }
+                return matches.size > 0;
+            }
+            
+            async handleMatches(matches) {
+                const uniqueMatches = [...new Set(matches)];
+                
+                // Animate matches
+                uniqueMatches.forEach(match => {
+                    const [row, col] = match.split(',').map(Number);
+                    const element = document.querySelector(`[data-row="${row}"][data-col="${col}"]`);
+                    if (element) element.classList.add('matched');
+                });
+                
+                // Calculate score
+                const matchScore = uniqueMatches.length * 50 * (1 + Math.floor(this.currentLevel / 10));
+                this.score += matchScore;
+                
+                // Wait for animation
+                await this.sleep(500);
+                
+                // Remove matched crystals
+                uniqueMatches.forEach(match => {
+                    const [row, col] = match.split(',').map(Number);
+                    this.board[row][col] = null;
+                });
+                
+                this.renderBoard();
+            }
+            
+            async dropCrystals() {
+                let moved = true;
+                while (moved) {
+                    moved = false;
+                    for (let col = 0; col < this.boardSize; col++) {
+                        for (let row = this.boardSize - 2; row >= 0; row--) {
+                            if (this.board[row][col] && !this.board[row + 1][col]) {
+                                let dropRow = row + 1;
+                                while (dropRow < this.boardSize && !this.board[dropRow][col]) {
+                                    dropRow++;
+                                }
+                                dropRow--;
+                                this.board[dropRow][col] = this.board[row][col];
+                                this.board[row][col] = null;
+                                moved = true;
+                            }
+                        }
+                    }
+                    if (moved) {
+                        this.renderBoard();
+                        await this.sleep(100);
+                    }
+                }
+            }
+            
+            async fillBoard() {
+                let filled = false;
+                for (let col = 0; col < this.boardSize; col++) {
+                    for (let row = 0; row < this.boardSize; row++) {
+                        if (!this.board[row][col]) {
+                            this.board[row][col] = this.getRandomCrystal();
+                            filled = true;
+                        }
+                    }
+                }
+                if (filled) {
+                    this.renderBoard();
+                    await this.sleep(200);
+                }
+            }
+            
+            async checkCascadeMatches() {
+                let hasMatches = true;
+                while (hasMatches) {
+                    hasMatches = false;
+                    const allMatches = [];
+                    
+                    for (let row = 0; row < this.boardSize; row++) {
+                        for (let col = 0; col < this.boardSize; col++) {
+                            if (this.board[row][col]) {
+                                const matches = this.checkMatch(row, col, true);
+                                if (matches.length > 0) {
+                                    allMatches.push(...matches);
+                                    hasMatches = true;
+                                }
+                            }
+                        }
+                    }
+                    
+                    if (hasMatches) {
+                        await this.handleMatches(allMatches);
+                        await this.dropCrystals();
+                        await this.fillBoard();
+                    }
+                }
+            }
+            
+            updateUI() {
+                document.getElementById('currentLevel').textContent = this.currentLevel;
+                document.getElementById('score').textContent = this.score.toLocaleString();
+                document.getElementById('moves').textContent = this.moves;
+                document.getElementById('target').textContent = this.targetScore.toLocaleString();
+                
+                const progress = Math.min(100, (this.score / this.targetScore) * 100);
+                const progressFill = document.getElementById('progressFill');
+                progressFill.style.width = `${progress}%`;
+                progressFill.textContent = `${Math.floor(progress)}%`;
+            }
+            
+            checkGameState() {
+                if (this.score >= this.targetScore) {
+                    this.clearCurrentGameState();
+                    setTimeout(() => this.levelComplete(), 500);
+                } else if (this.moves <= 0) {
+                    this.clearCurrentGameState();
+                    setTimeout(() => this.gameOver(), 500);
+                }
+            }
+            
+            levelComplete() {
+                const stars = this.calculateStars();
+                document.getElementById('stars').textContent = '⭐'.repeat(stars);
+                document.getElementById('finalScore').textContent = this.score.toLocaleString();
+                
+                // Save progress
+                if (this.currentLevel >= this.gameData.unlockedLevel) {
+                    this.gameData.unlockedLevel = Math.min(100, this.currentLevel + 1);
+                }
+                
+                if (!this.gameData.levelScores[this.currentLevel] || 
+                    this.score > this.gameData.levelScores[this.currentLevel]) {
+                    this.gameData.levelScores[this.currentLevel] = this.score;
+                }
+                
+                if (!this.gameData.levelStars[this.currentLevel] || 
+                    stars > this.gameData.levelStars[this.currentLevel]) {
+                    this.gameData.levelStars[this.currentLevel] = stars;
+                }
+                
+                document.getElementById('bestScore').textContent = 
+                    this.gameData.levelScores[this.currentLevel].toLocaleString();
+                
+                this.saveGameData();
+                document.getElementById('levelCompleteModal').classList.add('active');
+            }
+            
+            calculateStars() {
+                const scoreRatio = this.score / this.targetScore;
+                if (scoreRatio >= 2) return 3;
+                if (scoreRatio >= 1.5) return 2;
+                return 1;
+            }
+            
+            gameOver() {
+                document.getElementById('gameOverScore').textContent = this.score.toLocaleString();
+                document.getElementById('gameOverModal').classList.add('active');
+            }
+            
+            nextLevel() {
+                document.getElementById('levelCompleteModal').classList.remove('active');
+                if (this.currentLevel < 100) {
+                    this.loadLevel(this.currentLevel + 1);
+                    this.initGame();
+                } else {
+                    this.showAllLevelsComplete();
+                }
+            }
+            
+            showAllLevelsComplete() {
+                let totalStars = 0;
+                for (let level in this.gameData.levelStars) {
+                    totalStars += this.gameData.levelStars[level];
+                }
+                document.getElementById('totalStars').textContent = totalStars;
+                document.getElementById('allLevelsCompleteModal').classList.add('active');
+            }
+            
+            closeAllLevelsComplete() {
+                document.getElementById('allLevelsCompleteModal').classList.remove('active');
+            }
+            
+            retryLevel() {
+                document.getElementById('levelCompleteModal').classList.remove('active');
+                document.getElementById('gameOverModal').classList.remove('active');
+                this.loadLevel(this.currentLevel);
+                this.initGame();
+            }
+            
+            showHint() {
+                if (this.isAnimating) return;
+                
+                // Clear any existing hints
+                document.querySelectorAll('.crystal.hint').forEach(el => {
+                    el.classList.remove('hint');
+                });
+                
+                // Find a valid move
+                for (let row = 0; row < this.boardSize; row++) {
+                    for (let col = 0; col < this.boardSize; col++) {
+                        if (!this.board[row][col]) continue;
+                        
+                        // Check all adjacent cells
+                        const adjacents = [
+                            [row - 1, col], [row + 1, col],
+                            [row, col - 1], [row, col + 1]
+                        ];
+                        
+                        for (const [adjRow, adjCol] of adjacents) {
+                            if (adjRow >= 0 && adjRow < this.boardSize && 
+                                adjCol >= 0 && adjCol < this.boardSize &&
+                                this.board[adjRow][adjCol]) {
+                                // Temporarily swap
+                                const temp = this.board[row][col];
+                                this.board[row][col] = this.board[adjRow][adjCol];
+                                this.board[adjRow][adjCol] = temp;
+                                
+                                // Check for matches
+                                if (this.checkMatch(row, col, false) || 
+                                    this.checkMatch(adjRow, adjCol, false)) {
+                                    // Swap back
+                                    this.board[adjRow][adjCol] = this.board[row][col];
+                                    this.board[row][col] = temp;
+                                    
+                                    // Highlight both crystals involved in the hint
+                                    const element1 = document.querySelector(`[data-row="${row}"][data-col="${col}"]`);
+                                    const element2 = document.querySelector(`[data-row="${adjRow}"][data-col="${adjCol}"]`);
+                                    
+                                    if (element1 && element2) {
+                                        element1.classList.add('hint');
+                                        element2.classList.add('hint');
+                                        
+                                        // Remove hint after animation completes
+                                        setTimeout(() => {
+                                            element1.classList.remove('hint');
+                                            element2.classList.remove('hint');
+                                        }, 2000);
+                                    }
+                                    return;
+                                }
+                                
+                                // Swap back
+                                this.board[adjRow][adjCol] = this.board[row][col];
+                                this.board[row][col] = temp;
+                            }
+                        }
+                    }
+                }
+                
+                // No valid moves found - shuffle
+                this.shuffleBoard();
+            }
+            
+            shuffleBoard() {
+                if (this.isAnimating) return;
+                
+                // Keep shuffling until we have valid moves
+                let attempts = 0;
+                do {
+                    for (let i = 0; i < 100; i++) {
+                        const row1 = Math.floor(Math.random() * this.boardSize);
+                        const col1 = Math.floor(Math.random() * this.boardSize);
+                        const row2 = Math.floor(Math.random() * this.boardSize);
+                        const col2 = Math.floor(Math.random() * this.boardSize);
+                        
+                        if (this.board[row1][col1] && this.board[row2][col2]) {
+                            const temp = this.board[row1][col1];
+                            this.board[row1][col1] = this.board[row2][col2];
+                            this.board[row2][col2] = temp;
+                        }
+                    }
+                    
+                    this.removeInitialMatches();
+                    attempts++;
+                } while (!this.hasValidMoves() && attempts < 10);
+                
+                this.renderBoard();
+                this.saveCurrentGameState();
+            }
+            
+            hasValidMoves() {
+                for (let row = 0; row < this.boardSize; row++) {
+                    for (let col = 0; col < this.boardSize; col++) {
+                        if (!this.board[row][col]) continue;
+                        
+                        const adjacents = [
+                            [row - 1, col], [row + 1, col],
+                            [row, col - 1], [row, col + 1]
+                        ];
+                        
+                        for (const [adjRow, adjCol] of adjacents) {
+                            if (adjRow >= 0 && adjRow < this.boardSize && 
+                                adjCol >= 0 && adjCol < this.boardSize &&
+                                this.board[adjRow][adjCol]) {
+                                // Temporarily swap
+                                const temp = this.board[row][col];
+                                this.board[row][col] = this.board[adjRow][adjCol];
+                                this.board[adjRow][adjCol] = temp;
+                                
+                                // Check for matches
+                                const hasMatch = this.checkMatch(row, col, false) || 
+                                               this.checkMatch(adjRow, adjCol, false);
+                                
+                                // Swap back
+                                this.board[adjRow][adjCol] = this.board[row][col];
+                                this.board[row][col] = temp;
+                                
+                                if (hasMatch) return true;
+                            }
+                        }
+                    }
+                }
+                return false;
+            }
+            
+            showLevelSelect() {
+                const levelSelect = document.getElementById('levelSelect');
+                levelSelect.innerHTML = '';
+                
+                for (let i = 1; i <= 100; i++) {
+                    const btn = document.createElement('div');
+                    btn.className = 'level-btn';
+                    
+                    const levelNumber = document.createElement('div');
+                    levelNumber.className = 'level-number';
+                    levelNumber.textContent = i;
+                    btn.appendChild(levelNumber);
+                    
+                    if (i <= this.gameData.unlockedLevel) {
+                        const stars = this.gameData.levelStars[i] || 0;
+                        if (stars > 0) {
+                            const starsDiv = document.createElement('div');
+                            starsDiv.className = 'level-stars';
+                            starsDiv.textContent = '⭐'.repeat(stars);
+                            btn.appendChild(starsDiv);
+                            btn.classList.add('completed');
+                        }
+                        
+                        const score = this.gameData.levelScores[i];
+                        if (score) {
+                            const scoreDiv = document.createElement('div');
+                            scoreDiv.className = 'level-score';
+                            scoreDiv.textContent = score >= 10000 ? 
+                                Math.floor(score/1000) + 'k' : score.toLocaleString();
+                            btn.appendChild(scoreDiv);
+                        }
+                        
+                        if (i === this.currentLevel) {
+                            btn.classList.add('current');
+                        }
+                        
+                        btn.onclick = () => {
+                            this.closeLevelSelect();
+                            this.loadLevel(i);
+                            this.initGame();
+                        };
+                    } else {
+                        btn.disabled = true;
+                    }
+                    
+                    levelSelect.appendChild(btn);
+                }
+                
+                document.getElementById('levelSelectModal').classList.add('active');
+            }
+            
+            closeLevelSelect() {
+                document.getElementById('levelSelectModal').classList.remove('active');
+                document.getElementById('gameOverModal').classList.remove('active');
+            }
+            
+            showHowToPlay() {
+                this.populateCrystalTypes();
+                document.getElementById('howToPlayModal').classList.add('active');
+            }
+            
+            closeHowToPlay() {
+                document.getElementById('howToPlayModal').classList.remove('active');
+            }
+            
+            createParticles() {
+                const particlesContainer = document.getElementById('particles');
+                for (let i = 0; i < 8; i++) {
+                    const particle = document.createElement('div');
+                    particle.className = 'particle';
+                    particle.style.left = Math.random() * 100 + '%';
+                    particle.style.animationDelay = Math.random() * 10 + 's';
+                    particle.style.animationDuration = (10 + Math.random() * 10) + 's';
+                    particlesContainer.appendChild(particle);
+                }
+            }
+            
+            sleep(ms) {
+                return new Promise(resolve => setTimeout(resolve, ms));
+            }
+        }
+        
+        // Initialize game
+        const game = new CrystalMatchGame();
+    </script>
+</body>
+</html>
