@@ -317,6 +317,17 @@ Copyright (c) 2025 Valentyn Kolesnikov <0009-0003-9608-3364@orcid.org>
             z-index: 10;
         }
 
+        .level-score-info {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin-top: 3px;
+            margin-bottom: 3px;
+            font-size: 0.8em;
+            color: #764ba2;
+            font-weight: bold;
+        }
+
         @keyframes slideDown {
             from {
                 transform: translateY(-100%);
@@ -460,8 +471,8 @@ Copyright (c) 2025 Valentyn Kolesnikov <0009-0003-9608-3364@orcid.org>
                 font-size: 0.8em;
             }
 
-            .best-score-display {
-                margin-top: 3px;
+            .level-score-info {
+                margin-top: 2px;
                 font-size: 0.75em;
             }
         }
@@ -540,14 +551,6 @@ Copyright (c) 2025 Valentyn Kolesnikov <0009-0003-9608-3364@orcid.org>
         .close-btn:hover {
             transform: scale(1.2);
         }
-
-        .best-score-display {
-            text-align: center;
-            margin-top: 3px;
-            color: #764ba2;
-            font-weight: bold;
-            font-size: 0.8em;
-        }
     </style>
 </head>
 <body>
@@ -561,7 +564,7 @@ Copyright (c) 2025 Valentyn Kolesnikov <0009-0003-9608-3364@orcid.org>
             <div class="game-info">
                 <div class="info-box">Level: <span id="level">1</span>/20</div>
                 <div class="info-box">Score: <span id="score">0</span></div>
-                <div class="info-box">High Score: <span id="highScore">0</span></div>
+                <div class="info-box">Total: <span id="totalScore">0</span></div>
                 <div class="info-box">Speed: <span id="speed">Normal</span></div>
                 <div class="info-box">Target: <span id="target">10</span> 🍎</div>
             </div>
@@ -581,7 +584,10 @@ Copyright (c) 2025 Valentyn Kolesnikov <0009-0003-9608-3364@orcid.org>
                 <button class="btn" id="resetBtn">Reset All</button>
             </div>
 
-            <div class="best-score-display" id="bestScoreDisplay"></div>
+            <div class="level-score-info">
+                <span id="levelScoreDisplay">Level Score: 0</span>
+                <span id="bestScoreDisplay">Best: --</span>
+            </div>
 
             <div class="mobile-controls">
                 <div></div>
@@ -661,13 +667,14 @@ Copyright (c) 2025 Valentyn Kolesnikov <0009-0003-9608-3364@orcid.org>
                 this.nextDirection = {x: 0, y: 0};
                 this.food = this.generateFood();
                 this.score = 0;
+                this.levelScore = 0; // Score for current level only
+                this.totalScore = 0; // Total accumulated score
                 this.level = 1;
                 this.gameRunning = false;
                 this.gamePaused = false;
                 this.gameSpeed = 100;
                 this.targetScore = 10;
                 this.foodEaten = 0;
-                this.levelStartScore = 0;
                 
                 // Level configurations
                 this.levels = this.generateLevels();
@@ -687,7 +694,7 @@ Copyright (c) 2025 Valentyn Kolesnikov <0009-0003-9608-3364@orcid.org>
                 const levels = [];
                 for (let i = 1; i <= 20; i++) {
                     // Base speed calculation
-                    let baseSpeed = Math.max(50, 150 - i * 3.5);
+                    let baseSpeed = Math.max(50, 150 - i * 4);
                     
                     // Increase speed by 20% for mobile (slower gameplay)
                     if (this.isMobile) {
@@ -697,11 +704,12 @@ Copyright (c) 2025 Valentyn Kolesnikov <0009-0003-9608-3364@orcid.org>
                     levels.push({
                         level: i,
                         name: this.getLevelName(i),
-                        targetFood: 10 + Math.floor(i * 1.25),
+                        targetFood: 10 + Math.floor(i * 1.3),
                         speed: baseSpeed,
                         obstacles: i > 5 ? Math.floor(i / 2) : 0,
                         specialFoodChance: Math.min(0.3, 0.1 + i * 0.01),
-                        speedName: i <= 5 ? 'Slow' : i <= 10 ? 'Normal' : i <= 15 ? 'Fast' : 'Extreme'
+                        speedName: i <= 5 ? 'Slow' : i <= 10 ? 'Normal' : i <= 15 ? 'Fast' : 'Extreme',
+                        bonusMultiplier: 1 + (i - 1) * 0.1 // Higher levels give more points
                     });
                 }
                 return levels;
@@ -731,7 +739,6 @@ Copyright (c) 2025 Valentyn Kolesnikov <0009-0003-9608-3364@orcid.org>
                 } else {
                     this.initializeEmptyState();
                 }
-                document.getElementById('highScore').textContent = this.highScore;
             }
 
             initializeEmptyState() {
@@ -759,11 +766,12 @@ Copyright (c) 2025 Valentyn Kolesnikov <0009-0003-9608-3364@orcid.org>
                     food: this.food,
                     specialFood: this.specialFood,
                     score: this.score,
+                    levelScore: this.levelScore,
+                    totalScore: this.totalScore,
                     level: this.level,
                     foodEaten: this.foodEaten,
                     obstacles: this.obstacles,
                     currentLevelStart: this.currentLevelStart,
-                    levelStartScore: this.levelStartScore,
                     timestamp: Date.now()
                 };
                 
@@ -784,12 +792,13 @@ Copyright (c) 2025 Valentyn Kolesnikov <0009-0003-9608-3364@orcid.org>
                             this.nextDirection = session.nextDirection || session.direction;
                             this.food = session.food;
                             this.specialFood = session.specialFood;
-                            this.score = session.score;
+                            this.score = session.score || 0;
+                            this.levelScore = session.levelScore || 0;
+                            this.totalScore = session.totalScore || 0;
                             this.level = session.level;
                             this.foodEaten = session.foodEaten;
                             this.obstacles = session.obstacles || [];
                             this.currentLevelStart = session.currentLevelStart || this.level;
-                            this.levelStartScore = session.levelStartScore || 0;
                             
                             // Set game as paused
                             this.gameRunning = true;
@@ -934,7 +943,8 @@ Copyright (c) 2025 Valentyn Kolesnikov <0009-0003-9608-3364@orcid.org>
                 this.direction = {x: 1, y: 0};
                 this.nextDirection = {x: 1, y: 0};
                 this.currentLevelStart = 1;
-                this.levelStartScore = 0;
+                this.levelScore = 0;
+                this.totalScore = 0;
                 
                 document.getElementById('startBtn').style.display = 'none';
                 document.getElementById('pauseBtn').disabled = false;
@@ -955,7 +965,9 @@ Copyright (c) 2025 Valentyn Kolesnikov <0009-0003-9608-3364@orcid.org>
                 this.initializeGame();
                 this.level = levelNum;
                 this.currentLevelStart = levelNum;
-                this.levelStartScore = 0;
+                this.levelScore = 0;
+                this.totalScore = 0;
+                this.score = 0;
                 this.gameRunning = true;
                 this.gamePaused = false;
                 this.direction = {x: 1, y: 0};
@@ -980,19 +992,30 @@ Copyright (c) 2025 Valentyn Kolesnikov <0009-0003-9608-3364@orcid.org>
                 this.previousSnake = [...this.snake];
                 this.direction = {x: 1, y: 0};
                 this.nextDirection = {x: 1, y: 0};
-                this.score = this.levelStartScore;
+                this.levelScore = 0;
                 this.foodEaten = 0;
                 this.specialFood = null;
                 this.gamePaused = false;
                 this.gameRunning = true;
+                
+                // Reset obstacles
+                this.obstacles = [];
+                const levelConfig = this.levels[this.level - 1];
+                if (levelConfig.obstacles > 0) {
+                    for (let i = 0; i < levelConfig.obstacles; i++) {
+                        this.obstacles.push(this.generateObstacle());
+                    }
+                }
+                
+                // Generate new food position
+                this.food = this.generateFood();
                 
                 document.getElementById('startBtn').style.display = 'none';
                 document.getElementById('pauseBtn').disabled = false;
                 document.getElementById('pauseBtn').textContent = 'Pause';
                 document.getElementById('pausedOverlay').style.display = 'none';
                 
-                // Reload level with obstacles
-                this.loadLevel(this.level, true);
+                this.updateDisplay();
                 this.updateBestScore();
                 this.gameLoop();
             }
@@ -1012,7 +1035,8 @@ Copyright (c) 2025 Valentyn Kolesnikov <0009-0003-9608-3364@orcid.org>
                 document.getElementById('pauseBtn').disabled = true;
                 document.getElementById('pauseBtn').textContent = 'Pause';
                 document.getElementById('pausedOverlay').style.display = 'none';
-                document.getElementById('bestScoreDisplay').textContent = '';
+                document.getElementById('levelScoreDisplay').textContent = 'Level Score: 0';
+                document.getElementById('bestScoreDisplay').textContent = 'Best: --';
             }
 
             loadLevel(levelNum, resetSnake = true) {
@@ -1022,6 +1046,7 @@ Copyright (c) 2025 Valentyn Kolesnikov <0009-0003-9608-3364@orcid.org>
                 
                 if (resetSnake) {
                     this.foodEaten = 0;
+                    this.levelScore = 0;
                     this.snake = [{x: 12, y: 12}];
                     this.previousSnake = [...this.snake];
                     
@@ -1066,7 +1091,8 @@ Copyright (c) 2025 Valentyn Kolesnikov <0009-0003-9608-3364@orcid.org>
                     document.getElementById('pauseBtn').textContent = 'Pause';
                     document.getElementById('pausedOverlay').style.display = 'none';
                     document.getElementById('savedGameNotice').style.display = 'none';
-                    document.getElementById('bestScoreDisplay').textContent = '';
+                    document.getElementById('levelScoreDisplay').textContent = 'Level Score: 0';
+                    document.getElementById('bestScoreDisplay').textContent = 'Best: --';
                     this.updateLevelModal();
                 }
             }
@@ -1108,9 +1134,13 @@ Copyright (c) 2025 Valentyn Kolesnikov <0009-0003-9608-3364@orcid.org>
                         
                         let stars = '';
                         if (hasCompleted) {
-                            const maxScore = levelConfig.targetFood * 10 + 500; // Approximate max score
-                            const percentage = bestScore / maxScore;
-                            const starCount = percentage >= 0.8 ? 3 : percentage >= 0.5 ? 2 : 1;
+                            // Calculate max possible score for this level
+                            const basePoints = levelConfig.targetFood * 10;
+                            const bonusPoints = Math.floor(basePoints * levelConfig.bonusMultiplier);
+                            const maxPossible = bonusPoints + 200; // Approximate with some special foods
+                            
+                            const percentage = bestScore / maxPossible;
+                            const starCount = percentage >= 0.7 ? 3 : percentage >= 0.4 ? 2 : 1;
                             stars = '⭐'.repeat(starCount);
                         }
                         
@@ -1118,7 +1148,7 @@ Copyright (c) 2025 Valentyn Kolesnikov <0009-0003-9608-3364@orcid.org>
                             <div class="level-number">${i}</div>
                             <div class="level-name">${levelConfig.name}</div>
                             ${hasCompleted ? `
-                                <div class="level-score">Best: ${bestScore}</div>
+                                <div class="level-score">Score: ${bestScore}</div>
                                 <div class="star-rating">${stars}</div>
                             ` : `
                                 <div class="level-score">Target: ${levelConfig.targetFood} 🍎</div>
@@ -1139,9 +1169,9 @@ Copyright (c) 2025 Valentyn Kolesnikov <0009-0003-9608-3364@orcid.org>
             updateBestScore() {
                 const bestScore = this.levelScores[this.level];
                 if (bestScore) {
-                    document.getElementById('bestScoreDisplay').textContent = `Best Score for Level ${this.level}: ${bestScore}`;
+                    document.getElementById('bestScoreDisplay').textContent = `Best: ${bestScore}`;
                 } else {
-                    document.getElementById('bestScoreDisplay').textContent = `First attempt at Level ${this.level}`;
+                    document.getElementById('bestScoreDisplay').textContent = `Best: --`;
                 }
             }
 
@@ -1189,13 +1219,16 @@ Copyright (c) 2025 Valentyn Kolesnikov <0009-0003-9608-3364@orcid.org>
                 this.snake.unshift(head);
                 
                 // Check food collision
+                const levelConfig = this.levels[this.level - 1];
                 if (head.x === this.food.x && head.y === this.food.y) {
-                    this.score += 10;
+                    const points = Math.floor(10 * levelConfig.bonusMultiplier);
+                    this.levelScore += points;
+                    this.totalScore += points;
+                    this.score = this.totalScore; // For compatibility
                     this.foodEaten++;
                     this.food = this.generateFood();
                     
                     // Check for special food spawn
-                    const levelConfig = this.levels[this.level - 1];
                     if (Math.random() < levelConfig.specialFoodChance) {
                         this.specialFood = this.generateSpecialFood();
                         setTimeout(() => {
@@ -1209,7 +1242,10 @@ Copyright (c) 2025 Valentyn Kolesnikov <0009-0003-9608-3364@orcid.org>
                         return;
                     }
                 } else if (this.specialFood && head.x === this.specialFood.x && head.y === this.specialFood.y) {
-                    this.score += 50;
+                    const points = Math.floor(50 * levelConfig.bonusMultiplier);
+                    this.levelScore += points;
+                    this.totalScore += points;
+                    this.score = this.totalScore;
                     this.specialFood = null;
                 } else {
                     this.snake.pop();
@@ -1533,8 +1569,13 @@ Copyright (c) 2025 Valentyn Kolesnikov <0009-0003-9608-3364@orcid.org>
                 }
                 
                 // Save best score for this level
-                if (!this.levelScores[this.level] || this.score > this.levelScores[this.level]) {
-                    this.levelScores[this.level] = this.score;
+                if (!this.levelScores[this.level] || this.levelScore > this.levelScores[this.level]) {
+                    this.levelScores[this.level] = this.levelScore;
+                }
+                
+                // Update high score
+                if (this.totalScore > this.highScore) {
+                    this.highScore = this.totalScore;
                 }
                 
                 this.saveState();
@@ -1548,7 +1589,7 @@ Copyright (c) 2025 Valentyn Kolesnikov <0009-0003-9608-3364@orcid.org>
                     if (this.level < 20) {
                         this.level++;
                         this.currentLevelStart = this.level;
-                        this.levelStartScore = this.score; // Keep score for next level
+                        this.levelScore = 0; // Reset level score for new level
                         this.snake = [{x: 12, y: 12}];
                         this.previousSnake = [...this.snake];
                         this.direction = {x: 1, y: 0};
@@ -1560,7 +1601,7 @@ Copyright (c) 2025 Valentyn Kolesnikov <0009-0003-9608-3364@orcid.org>
                         this.gameRunning = true;
                         this.gameLoop();
                     } else {
-                        this.showModal('🎉 Congratulations! 🎉', `You completed all 20 levels!<br>Final score: ${this.score}`, false);
+                        this.showModal('🎉 Congratulations! 🎉', `You completed all 20 levels!<br>Total score: ${this.totalScore}`, false);
                     }
                 }, 2000);
             }
@@ -1573,16 +1614,20 @@ Copyright (c) 2025 Valentyn Kolesnikov <0009-0003-9608-3364@orcid.org>
                 // Clear saved session
                 localStorage.removeItem('snakeGameSession');
                 
-                // Update high score
-                if (this.score > this.highScore) {
-                    this.highScore = this.score;
-                    document.getElementById('highScore').textContent = this.highScore;
+                // Update high score for this level if better
+                if (!this.levelScores[this.level] || this.levelScore > this.levelScores[this.level]) {
+                    this.levelScores[this.level] = this.levelScore;
+                }
+                
+                // Update global high score
+                if (this.totalScore > this.highScore) {
+                    this.highScore = this.totalScore;
                 }
                 
                 this.saveState();
                 
                 // Show modal with retry option
-                this.showModal('Game Over!', `Your score: ${this.score}<br>Level reached: ${this.level}`, true);
+                this.showModal('Game Over!', `Level ${this.level} Score: ${this.levelScore}<br>Total Score: ${this.totalScore}`, true);
             }
 
             showModal(title, message, showRetry = true) {
@@ -1602,13 +1647,10 @@ Copyright (c) 2025 Valentyn Kolesnikov <0009-0003-9608-3364@orcid.org>
             }
 
             updateDisplay() {
-                document.getElementById('score').textContent = this.score;
+                document.getElementById('score').textContent = this.levelScore;
+                document.getElementById('totalScore').textContent = this.totalScore;
                 document.getElementById('level').textContent = this.level;
-                
-                if (this.score > this.highScore) {
-                    this.highScore = this.score;
-                    document.getElementById('highScore').textContent = this.highScore;
-                }
+                document.getElementById('levelScoreDisplay').textContent = `Level Score: ${this.levelScore}`;
             }
         }
 
