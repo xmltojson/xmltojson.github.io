@@ -24,6 +24,7 @@ Copyright (c) 2025 Valentyn Kolesnikov <0009-0003-9608-3364@orcid.org>
             justify-content: center;
             align-items: center;
             overflow: hidden;
+            touch-action: none; /* Prevent default touch behaviors */
         }
 
         .game-container {
@@ -81,6 +82,7 @@ Copyright (c) 2025 Valentyn Kolesnikov <0009-0003-9608-3364@orcid.org>
         .canvas-container {
             position: relative;
             margin-bottom: 8px;
+            touch-action: none; /* Prevent scrolling when touching canvas */
         }
 
         canvas {
@@ -92,6 +94,7 @@ Copyright (c) 2025 Valentyn Kolesnikov <0009-0003-9608-3364@orcid.org>
             width: 100%;
             max-width: 500px;
             height: auto;
+            touch-action: none;
         }
 
         .controls {
@@ -361,6 +364,25 @@ Copyright (c) 2025 Valentyn Kolesnikov <0009-0003-9608-3364@orcid.org>
             font-weight: bold;
         }
 
+        .swipe-indicator {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 3em;
+            color: rgba(255, 255, 255, 0.8);
+            pointer-events: none;
+            display: none;
+            animation: fadeOut 0.5s ease-out;
+            z-index: 100;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+        }
+
+        @keyframes fadeOut {
+            0% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+            100% { opacity: 0; transform: translate(-50%, -50%) scale(1.5); }
+        }
+
         @keyframes slideDown {
             from {
                 transform: translateY(-100%);
@@ -410,6 +432,10 @@ Copyright (c) 2025 Valentyn Kolesnikov <0009-0003-9608-3364@orcid.org>
 
             canvas {
                 max-width: 400px;
+            }
+
+            .pause-hint {
+                display: none;
             }
         }
 
@@ -614,6 +640,7 @@ Copyright (c) 2025 Valentyn Kolesnikov <0009-0003-9608-3364@orcid.org>
                 <canvas id="gameCanvas" width="500" height="500"></canvas>
                 <div class="level-complete" id="levelComplete">LEVEL COMPLETE!</div>
                 <div class="paused-overlay" id="pausedOverlay">PAUSED</div>
+                <div class="swipe-indicator" id="swipeIndicator"></div>
             </div>
             
             <div class="controls">
@@ -687,6 +714,13 @@ Copyright (c) 2025 Valentyn Kolesnikov <0009-0003-9608-3364@orcid.org>
                 this.isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || 
                                window.innerWidth <= 768;
                 
+                // Touch control properties
+                this.touchStartX = 0;
+                this.touchStartY = 0;
+                this.touchEndX = 0;
+                this.touchEndY = 0;
+                this.minSwipeDistance = 30; // Minimum distance for a swipe to register
+                
                 // Animation properties
                 this.animationProgress = 1;
                 this.lastUpdateTime = 0;
@@ -719,6 +753,7 @@ Copyright (c) 2025 Valentyn Kolesnikov <0009-0003-9608-3364@orcid.org>
                 this.loadState();
                 this.checkSavedGame();
                 this.setupEventListeners();
+                this.setupTouchControls();
                 this.updateLevelModal();
                 this.startAnimationLoop();
             }
@@ -900,6 +935,122 @@ Copyright (c) 2025 Valentyn Kolesnikov <0009-0003-9608-3364@orcid.org>
                         localStorage.removeItem('snakeGameSession');
                     }
                 }
+            }
+
+            setupTouchControls() {
+                // Touch events for swipe detection on canvas
+                this.canvas.addEventListener('touchstart', (e) => {
+                    e.preventDefault();
+                    const touch = e.touches[0];
+                    this.touchStartX = touch.clientX;
+                    this.touchStartY = touch.clientY;
+                }, { passive: false });
+
+                this.canvas.addEventListener('touchmove', (e) => {
+                    e.preventDefault(); // Prevent scrolling while swiping
+                }, { passive: false });
+
+                this.canvas.addEventListener('touchend', (e) => {
+                    e.preventDefault();
+                    const touch = e.changedTouches[0];
+                    this.touchEndX = touch.clientX;
+                    this.touchEndY = touch.clientY;
+                    this.handleSwipe();
+                }, { passive: false });
+
+                // Also add touch support for the entire game container
+                const gameContainer = document.querySelector('.game-container');
+                let containerTouchStartX = 0;
+                let containerTouchStartY = 0;
+
+                gameContainer.addEventListener('touchstart', (e) => {
+                    // Only handle if touch is not on a button or other interactive element
+                    if (e.target.tagName !== 'BUTTON' && e.target.tagName !== 'CANVAS') {
+                        const touch = e.touches[0];
+                        containerTouchStartX = touch.clientX;
+                        containerTouchStartY = touch.clientY;
+                    }
+                }, { passive: true });
+
+                gameContainer.addEventListener('touchend', (e) => {
+                    // Only handle if touch is not on a button or other interactive element
+                    if (e.target.tagName !== 'BUTTON' && e.target.tagName !== 'CANVAS') {
+                        const touch = e.changedTouches[0];
+                        const deltaX = touch.clientX - containerTouchStartX;
+                        const deltaY = touch.clientY - containerTouchStartY;
+                        
+                        if (Math.abs(deltaX) > this.minSwipeDistance || Math.abs(deltaY) > this.minSwipeDistance) {
+                            this.touchStartX = containerTouchStartX;
+                            this.touchStartY = containerTouchStartY;
+                            this.touchEndX = touch.clientX;
+                            this.touchEndY = touch.clientY;
+                            this.handleSwipe();
+                        }
+                    }
+                }, { passive: true });
+            }
+
+            handleSwipe() {
+                if (!this.gameRunning || this.gamePaused) return;
+
+                const deltaX = this.touchEndX - this.touchStartX;
+                const deltaY = this.touchEndY - this.touchStartY;
+                
+                // Check if swipe distance is sufficient
+                if (Math.abs(deltaX) < this.minSwipeDistance && Math.abs(deltaY) < this.minSwipeDistance) {
+                    return;
+                }
+
+                // Determine swipe direction
+                let swipeDirection = '';
+                if (Math.abs(deltaX) > Math.abs(deltaY)) {
+                    // Horizontal swipe
+                    if (deltaX > 0) {
+                        swipeDirection = 'right';
+                        if (this.direction.x === 0) {
+                            this.nextDirection = {x: 1, y: 0};
+                            this.showSwipeIndicator('→');
+                        }
+                    } else {
+                        swipeDirection = 'left';
+                        if (this.direction.x === 0) {
+                            this.nextDirection = {x: -1, y: 0};
+                            this.showSwipeIndicator('←');
+                        }
+                    }
+                } else {
+                    // Vertical swipe
+                    if (deltaY > 0) {
+                        swipeDirection = 'down';
+                        if (this.direction.y === 0) {
+                            this.nextDirection = {x: 0, y: 1};
+                            this.showSwipeIndicator('↓');
+                        }
+                    } else {
+                        swipeDirection = 'up';
+                        if (this.direction.y === 0) {
+                            this.nextDirection = {x: 0, y: -1};
+                            this.showSwipeIndicator('↑');
+                        }
+                    }
+                }
+            }
+
+            showSwipeIndicator(direction) {
+                const indicator = document.getElementById('swipeIndicator');
+                indicator.textContent = direction;
+                indicator.style.display = 'block';
+                
+                // Reset animation
+                indicator.style.animation = 'none';
+                setTimeout(() => {
+                    indicator.style.animation = 'fadeOut 0.5s ease-out';
+                }, 10);
+                
+                // Hide after animation
+                setTimeout(() => {
+                    indicator.style.display = 'none';
+                }, 500);
             }
 
             setupEventListeners() {
