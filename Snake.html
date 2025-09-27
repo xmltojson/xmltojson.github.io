@@ -176,6 +176,44 @@ Copyright (c) 2025 Valentyn Kolesnikov <0009-0003-9608-3364@orcid.org>
             flex-wrap: wrap;
         }
 
+        .confirm-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1001;
+        }
+
+        .confirm-modal-content {
+            background: white;
+            padding: 25px;
+            border-radius: 15px;
+            text-align: center;
+            max-width: 350px;
+            width: 90%;
+        }
+
+        .confirm-modal-content h3 {
+            color: #764ba2;
+            margin-bottom: 15px;
+        }
+
+        .confirm-modal-content p {
+            margin-bottom: 20px;
+            color: #333;
+        }
+
+        .confirm-buttons {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+        }
+
         /* Level Selection Modal */
         .level-modal-content {
             background: white;
@@ -201,24 +239,18 @@ Copyright (c) 2025 Valentyn Kolesnikov <0009-0003-9608-3364@orcid.org>
         }
 
         .level-card {
-            background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%);
-            border: 2px solid #d1d5db;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: 2px solid #764ba2;
             border-radius: 10px;
             padding: 12px;
             text-align: center;
-            cursor: not-allowed;
+            cursor: pointer;
             transition: all 0.3s;
             position: relative;
-        }
-
-        .level-card.unlocked {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            border-color: #764ba2;
             color: white;
-            cursor: pointer;
         }
 
-        .level-card.unlocked:hover {
+        .level-card:hover {
             transform: translateY(-5px);
             box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
         }
@@ -226,8 +258,6 @@ Copyright (c) 2025 Valentyn Kolesnikov <0009-0003-9608-3364@orcid.org>
         .level-card.completed {
             background: linear-gradient(135deg, #10b981 0%, #059669 100%);
             border-color: #059669;
-            color: white;
-            cursor: pointer;
         }
 
         .level-card.current {
@@ -252,14 +282,10 @@ Copyright (c) 2025 Valentyn Kolesnikov <0009-0003-9608-3364@orcid.org>
             opacity: 0.9;
         }
 
-        .level-card .lock-icon {
-            font-size: 1.8em;
-            margin-bottom: 3px;
-        }
-
-        .level-card .star-rating {
+        .level-card .level-time {
             margin-top: 3px;
-            font-size: 1em;
+            font-size: 0.85em;
+            font-weight: bold;
         }
 
         .mobile-controls {
@@ -315,6 +341,13 @@ Copyright (c) 2025 Valentyn Kolesnikov <0009-0003-9608-3364@orcid.org>
             font-weight: bold;
             display: none;
             z-index: 10;
+        }
+
+        .pause-hint {
+            font-size: 0.7em;
+            color: #666;
+            text-align: center;
+            margin-top: 3px;
         }
 
         .level-score-info {
@@ -590,6 +623,8 @@ Copyright (c) 2025 Valentyn Kolesnikov <0009-0003-9608-3364@orcid.org>
                 <button class="btn" id="resetBtn">Reset All</button>
             </div>
 
+            <div class="pause-hint">Press Space or P to pause/resume</div>
+
             <div class="level-score-info">
                 <span id="levelScoreDisplay">Level Score: 0</span>
                 <span id="bestScoreDisplay">Best: --</span>
@@ -611,9 +646,9 @@ Copyright (c) 2025 Valentyn Kolesnikov <0009-0003-9608-3364@orcid.org>
             <h2 id="modalTitle">Game Over!</h2>
             <p id="modalMessage">Your score: <span id="finalScore">0</span></p>
             <div class="modal-buttons">
-                <button class="btn retry" id="modalRetryBtn">Retry Level</button>
                 <button class="btn" id="modalContinueBtn">Continue</button>
                 <button class="btn" id="modalMenuBtn">Main Menu</button>
+                <button class="btn retry" id="modalRetryBtn">Retry Level</button>
             </div>
         </div>
     </div>
@@ -626,6 +661,17 @@ Copyright (c) 2025 Valentyn Kolesnikov <0009-0003-9608-3364@orcid.org>
                 <!-- Level cards will be added dynamically -->
             </div>
             <button class="btn" id="closeLevelBtn">Close</button>
+        </div>
+    </div>
+
+    <div class="confirm-modal" id="confirmModal">
+        <div class="confirm-modal-content">
+            <h3>Reset All Progress?</h3>
+            <p>This will delete all your progress, scores, and unlocked levels. This action cannot be undone.</p>
+            <div class="confirm-buttons">
+                <button class="btn" id="confirmYes">Yes, Reset</button>
+                <button class="btn" id="confirmNo">Cancel</button>
+            </div>
         </div>
     </div>
 
@@ -664,6 +710,10 @@ Copyright (c) 2025 Valentyn Kolesnikov <0009-0003-9608-3364@orcid.org>
                 
                 // Corner exclusion zone (2x2 tiles in each corner)
                 this.cornerExclusionSize = 2;
+                
+                // Time tracking
+                this.levelStartTime = 0;
+                this.levelTimes = {}; // Store best times for each level
                 
                 this.initializeGame();
                 this.loadState();
@@ -712,7 +762,7 @@ Copyright (c) 2025 Valentyn Kolesnikov <0009-0003-9608-3364@orcid.org>
                     // Base speed calculation
                     let baseSpeed = Math.max(50, 150 - i * 4);
                     
-                    // Increase speed by 20% for mobile (slower gameplay)
+                    // Increase speed by 20% for mobile (slower gameplay) - VERIFIED
                     if (this.isMobile) {
                         baseSpeed = Math.round(baseSpeed * 1.2);
                     }
@@ -747,8 +797,10 @@ Copyright (c) 2025 Valentyn Kolesnikov <0009-0003-9608-3364@orcid.org>
                     try {
                         const state = JSON.parse(savedState);
                         this.highScore = state.highScore || 0;
-                        this.unlockedLevels = state.unlockedLevels || 1;
+                        // All levels are now unlocked by default
+                        this.unlockedLevels = 20;
                         this.levelScores = state.levelScores || {};
+                        this.levelTimes = state.levelTimes || {};
                     } catch (e) {
                         this.initializeEmptyState();
                     }
@@ -759,15 +811,17 @@ Copyright (c) 2025 Valentyn Kolesnikov <0009-0003-9608-3364@orcid.org>
 
             initializeEmptyState() {
                 this.highScore = 0;
-                this.unlockedLevels = 1;
+                this.unlockedLevels = 20; // All levels unlocked
                 this.levelScores = {};
+                this.levelTimes = {};
             }
 
             saveState() {
                 const state = {
                     highScore: this.highScore,
                     unlockedLevels: this.unlockedLevels,
-                    levelScores: this.levelScores
+                    levelScores: this.levelScores,
+                    levelTimes: this.levelTimes
                 };
                 localStorage.setItem('snakeGameState', JSON.stringify(state));
             }
@@ -789,6 +843,7 @@ Copyright (c) 2025 Valentyn Kolesnikov <0009-0003-9608-3364@orcid.org>
                     foodEaten: this.foodEaten,
                     obstacles: this.obstacles,
                     currentLevelStart: this.currentLevelStart,
+                    levelStartTime: this.levelStartTime,
                     timestamp: Date.now()
                 };
                 
@@ -817,6 +872,7 @@ Copyright (c) 2025 Valentyn Kolesnikov <0009-0003-9608-3364@orcid.org>
                             this.foodEaten = session.foodEaten;
                             this.obstacles = session.obstacles || [];
                             this.currentLevelStart = session.currentLevelStart || this.level;
+                            this.levelStartTime = session.levelStartTime || Date.now();
                             
                             // Set game as paused
                             this.gameRunning = true;
@@ -852,7 +908,7 @@ Copyright (c) 2025 Valentyn Kolesnikov <0009-0003-9608-3364@orcid.org>
                 // Button controls
                 document.getElementById('startBtn').addEventListener('click', () => this.startGame());
                 document.getElementById('pauseBtn').addEventListener('click', () => this.togglePause());
-                document.getElementById('resetBtn').addEventListener('click', () => this.resetGame());
+                document.getElementById('resetBtn').addEventListener('click', () => this.showConfirmModal());
                 document.getElementById('levelsBtn').addEventListener('click', () => this.showLevelModal());
                 document.getElementById('modalRetryBtn').addEventListener('click', () => {
                     this.closeModal();
@@ -870,6 +926,15 @@ Copyright (c) 2025 Valentyn Kolesnikov <0009-0003-9608-3364@orcid.org>
                 // Level modal controls
                 document.getElementById('closeLevelModal').addEventListener('click', () => this.closeLevelModal());
                 document.getElementById('closeLevelBtn').addEventListener('click', () => this.closeLevelModal());
+                
+                // Confirm modal controls
+                document.getElementById('confirmYes').addEventListener('click', () => {
+                    this.closeConfirmModal();
+                    this.resetGame();
+                });
+                document.getElementById('confirmNo').addEventListener('click', () => {
+                    this.closeConfirmModal();
+                });
                 
                 // Mobile controls with touch feedback
                 document.querySelectorAll('.mobile-btn').forEach(btn => {
@@ -892,6 +957,15 @@ Copyright (c) 2025 Valentyn Kolesnikov <0009-0003-9608-3364@orcid.org>
             }
 
             handleKeyPress(e) {
+                // Handle pause with Space or P keys
+                if (e.key === ' ' || e.key === 'p' || e.key === 'P') {
+                    e.preventDefault();
+                    if (this.gameRunning) {
+                        this.togglePause();
+                    }
+                    return;
+                }
+
                 if (!this.gameRunning || this.gamePaused) return;
                 
                 switch(e.key) {
@@ -949,6 +1023,12 @@ Copyright (c) 2025 Valentyn Kolesnikov <0009-0003-9608-3364@orcid.org>
                 }
             }
 
+            formatTime(seconds) {
+                const mins = Math.floor(seconds / 60);
+                const secs = Math.floor(seconds % 60);
+                return `${mins}:${secs.toString().padStart(2, '0')}`;
+            }
+
             startGame() {
                 if (this.gameRunning && !this.gamePaused) return;
                 
@@ -964,6 +1044,7 @@ Copyright (c) 2025 Valentyn Kolesnikov <0009-0003-9608-3364@orcid.org>
                 this.levelScore = 0;
                 this.totalScore = 0;
                 this.totalScoreAtLevelStart = 0;
+                this.levelStartTime = Date.now();
                 
                 document.getElementById('startBtn').style.display = 'none';
                 document.getElementById('pauseBtn').disabled = false;
@@ -976,7 +1057,8 @@ Copyright (c) 2025 Valentyn Kolesnikov <0009-0003-9608-3364@orcid.org>
             }
 
             startFromLevel(levelNum) {
-                if (levelNum > this.unlockedLevels) return;
+                // All levels are now accessible
+                if (levelNum < 1 || levelNum > 20) return;
                 
                 // Clear saved session
                 localStorage.removeItem('snakeGameSession');
@@ -992,6 +1074,7 @@ Copyright (c) 2025 Valentyn Kolesnikov <0009-0003-9608-3364@orcid.org>
                 this.gamePaused = false;
                 this.direction = {x: 1, y: 0};
                 this.nextDirection = {x: 1, y: 0};
+                this.levelStartTime = Date.now();
                 
                 document.getElementById('startBtn').style.display = 'none';
                 document.getElementById('pauseBtn').disabled = false;
@@ -1017,6 +1100,7 @@ Copyright (c) 2025 Valentyn Kolesnikov <0009-0003-9608-3364@orcid.org>
                 this.specialFood = null;
                 this.gamePaused = false;
                 this.gameRunning = true;
+                this.levelStartTime = Date.now();
                 
                 // Restore total score to what it was at level start
                 this.totalScore = this.totalScoreAtLevelStart;
@@ -1044,12 +1128,8 @@ Copyright (c) 2025 Valentyn Kolesnikov <0009-0003-9608-3364@orcid.org>
             }
 
             continueFromLevel() {
-                // Continue from next unlocked level
-                if (this.unlockedLevels > this.level) {
-                    this.startFromLevel(this.unlockedLevels);
-                } else {
-                    this.resetToMenu();
-                }
+                // Continue from next level or current level
+                this.startFromLevel(Math.min(this.level + 1, 20));
             }
 
             resetToMenu() {
@@ -1074,6 +1154,7 @@ Copyright (c) 2025 Valentyn Kolesnikov <0009-0003-9608-3364@orcid.org>
                     this.totalScoreAtLevelStart = this.totalScore;
                     this.snake = [{x: 12, y: 12}];
                     this.previousSnake = [...this.snake];
+                    this.levelStartTime = Date.now();
                     
                     // Generate obstacles for higher levels
                     this.obstacles = [];
@@ -1104,25 +1185,36 @@ Copyright (c) 2025 Valentyn Kolesnikov <0009-0003-9608-3364@orcid.org>
                 }
             }
 
+            showConfirmModal() {
+                document.getElementById('confirmModal').style.display = 'flex';
+            }
+
+            closeConfirmModal() {
+                document.getElementById('confirmModal').style.display = 'none';
+            }
+
             resetGame() {
-                if (confirm('This will reset all progress and scores. Are you sure?')) {
-                    localStorage.removeItem('snakeGameSession');
-                    localStorage.removeItem('snakeGameState');
-                    this.obstacles = [];
-                    this.initializeEmptyState();
-                    this.initializeGame();
-                    document.getElementById('startBtn').style.display = 'inline-block';
-                    document.getElementById('pauseBtn').disabled = true;
-                    document.getElementById('pauseBtn').textContent = 'Pause';
-                    document.getElementById('pausedOverlay').style.display = 'none';
-                    document.getElementById('savedGameNotice').style.display = 'none';
-                    document.getElementById('levelScoreDisplay').textContent = 'Level Score: 0';
-                    document.getElementById('bestScoreDisplay').textContent = 'Best: --';
-                    this.updateLevelModal();
-                }
+                localStorage.removeItem('snakeGameSession');
+                localStorage.removeItem('snakeGameState');
+                this.obstacles = [];
+                this.initializeEmptyState();
+                this.initializeGame();
+                document.getElementById('startBtn').style.display = 'inline-block';
+                document.getElementById('pauseBtn').disabled = true;
+                document.getElementById('pauseBtn').textContent = 'Pause';
+                document.getElementById('pausedOverlay').style.display = 'none';
+                document.getElementById('savedGameNotice').style.display = 'none';
+                document.getElementById('levelScoreDisplay').textContent = 'Level Score: 0';
+                document.getElementById('bestScoreDisplay').textContent = 'Best: --';
+                this.updateLevelModal();
             }
 
             showLevelModal() {
+                // Pause the game when opening level selection
+                if (this.gameRunning && !this.gamePaused) {
+                    this.togglePause();
+                }
+                
                 this.updateLevelModal();
                 document.getElementById('levelSelectModal').style.display = 'flex';
             }
@@ -1140,8 +1232,8 @@ Copyright (c) 2025 Valentyn Kolesnikov <0009-0003-9608-3364@orcid.org>
                     const card = document.createElement('div');
                     card.className = 'level-card';
                     
-                    const isUnlocked = i <= this.unlockedLevels;
                     const bestScore = this.levelScores[i] || 0;
+                    const bestTime = this.levelTimes[i];
                     const hasCompleted = bestScore > 0;
                     const isCurrent = i === this.level && this.gameRunning;
                     
@@ -1150,42 +1242,26 @@ Copyright (c) 2025 Valentyn Kolesnikov <0009-0003-9608-3364@orcid.org>
                     }
                     if (hasCompleted) {
                         card.classList.add('completed');
-                    } else if (isUnlocked) {
-                        card.classList.add('unlocked');
                     }
                     
-                    if (isUnlocked) {
-                        card.onclick = () => this.startFromLevel(i);
-                        
-                        let stars = '';
-                        if (hasCompleted) {
-                            // Calculate max possible score for this level
-                            const basePoints = levelConfig.targetFood * 10;
-                            const bonusPoints = Math.floor(basePoints * levelConfig.bonusMultiplier);
-                            const maxPossible = bonusPoints + 200; // Approximate with some special foods
-                            
-                            const percentage = bestScore / maxPossible;
-                            const starCount = percentage >= 0.7 ? 3 : percentage >= 0.4 ? 2 : 1;
-                            stars = '⭐'.repeat(starCount);
-                        }
-                        
-                        card.innerHTML = `
-                            <div class="level-number">${i}</div>
-                            <div class="level-name">${levelConfig.name}</div>
-                            ${hasCompleted ? `
-                                <div class="level-score">Score: ${bestScore}</div>
-                                <div class="star-rating">${stars}</div>
-                            ` : `
-                                <div class="level-score">Target: ${levelConfig.targetFood} 🍎</div>
-                            `}
-                        `;
-                    } else {
-                        card.innerHTML = `
-                            <div class="lock-icon">🔒</div>
-                            <div class="level-number">${i}</div>
-                            <div class="level-name">Locked</div>
-                        `;
+                    // All levels are now clickable
+                    card.onclick = () => this.startFromLevel(i);
+                    
+                    let timeDisplay = '';
+                    if (bestTime) {
+                        timeDisplay = `⏱️ ${this.formatTime(bestTime)}`;
                     }
+                    
+                    card.innerHTML = `
+                        <div class="level-number">${i}</div>
+                        <div class="level-name">${levelConfig.name}</div>
+                        ${hasCompleted ? `
+                            <div class="level-score">Score: ${bestScore}</div>
+                            <div class="level-time">${timeDisplay}</div>
+                        ` : `
+                            <div class="level-score">Target: ${levelConfig.targetFood} 🍎</div>
+                        `}
+                    `;
                     
                     grid.appendChild(card);
                 }
@@ -1641,6 +1717,9 @@ Copyright (c) 2025 Valentyn Kolesnikov <0009-0003-9608-3364@orcid.org>
                 this.gameRunning = false;
                 document.getElementById('levelComplete').style.display = 'block';
                 
+                // Calculate completion time
+                const completionTime = (Date.now() - this.levelStartTime) / 1000;
+                
                 // Start shrink animation - save all segments except head
                 if (this.snake.length > 1) {
                     this.shrinkAnimation.segments = this.snake.slice(1).map(seg => ({...seg}));
@@ -1648,14 +1727,14 @@ Copyright (c) 2025 Valentyn Kolesnikov <0009-0003-9608-3364@orcid.org>
                     this.shrinkAnimation.progress = 0;
                 }
                 
-                // Update unlocked levels
-                if (this.level >= this.unlockedLevels && this.level < 20) {
-                    this.unlockedLevels = this.level + 1;
-                }
-                
                 // Save best score for this level
                 if (!this.levelScores[this.level] || this.levelScore > this.levelScores[this.level]) {
                     this.levelScores[this.level] = this.levelScore;
+                }
+                
+                // Save best time for this level
+                if (!this.levelTimes[this.level] || completionTime < this.levelTimes[this.level]) {
+                    this.levelTimes[this.level] = completionTime;
                 }
                 
                 // Update high score
@@ -1700,6 +1779,7 @@ Copyright (c) 2025 Valentyn Kolesnikov <0009-0003-9608-3364@orcid.org>
                         
                         this.foodEaten = 0;
                         this.totalScoreAtLevelStart = this.totalScore;
+                        this.levelStartTime = Date.now();
                         
                         this.updateBestScore();
                         this.gameRunning = true;
