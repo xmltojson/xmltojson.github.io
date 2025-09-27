@@ -364,25 +364,6 @@ Copyright (c) 2025 Valentyn Kolesnikov <0009-0003-9608-3364@orcid.org>
             font-weight: bold;
         }
 
-        .swipe-indicator {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            font-size: 3em;
-            color: rgba(255, 255, 255, 0.8);
-            pointer-events: none;
-            display: none;
-            animation: fadeOut 0.5s ease-out;
-            z-index: 100;
-            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
-        }
-
-        @keyframes fadeOut {
-            0% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
-            100% { opacity: 0; transform: translate(-50%, -50%) scale(1.5); }
-        }
-
         @keyframes slideDown {
             from {
                 transform: translateY(-100%);
@@ -640,7 +621,6 @@ Copyright (c) 2025 Valentyn Kolesnikov <0009-0003-9608-3364@orcid.org>
                 <canvas id="gameCanvas" width="500" height="500"></canvas>
                 <div class="level-complete" id="levelComplete">LEVEL COMPLETE!</div>
                 <div class="paused-overlay" id="pausedOverlay">PAUSED</div>
-                <div class="swipe-indicator" id="swipeIndicator"></div>
             </div>
             
             <div class="controls">
@@ -714,12 +694,13 @@ Copyright (c) 2025 Valentyn Kolesnikov <0009-0003-9608-3364@orcid.org>
                 this.isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || 
                                window.innerWidth <= 768;
                 
-                // Touch control properties
+                // Touch control properties - more sensitive settings
                 this.touchStartX = 0;
                 this.touchStartY = 0;
                 this.touchEndX = 0;
                 this.touchEndY = 0;
-                this.minSwipeDistance = 30; // Minimum distance for a swipe to register
+                this.minSwipeDistance = 10; // Reduced from 30 for more sensitivity
+                this.swipeRatio = 0.5; // Ratio to determine if swipe is more horizontal or vertical
                 
                 // Animation properties
                 this.animationProgress = 1;
@@ -995,62 +976,42 @@ Copyright (c) 2025 Valentyn Kolesnikov <0009-0003-9608-3364@orcid.org>
 
                 const deltaX = this.touchEndX - this.touchStartX;
                 const deltaY = this.touchEndY - this.touchStartY;
+                const absDeltaX = Math.abs(deltaX);
+                const absDeltaY = Math.abs(deltaY);
                 
-                // Check if swipe distance is sufficient
-                if (Math.abs(deltaX) < this.minSwipeDistance && Math.abs(deltaY) < this.minSwipeDistance) {
+                // Check if swipe distance is sufficient (more sensitive now)
+                if (absDeltaX < this.minSwipeDistance && absDeltaY < this.minSwipeDistance) {
                     return;
                 }
 
-                // Determine swipe direction
-                let swipeDirection = '';
-                if (Math.abs(deltaX) > Math.abs(deltaY)) {
+                // Determine swipe direction with improved ratio detection
+                if (absDeltaX > absDeltaY * this.swipeRatio) {
                     // Horizontal swipe
                     if (deltaX > 0) {
-                        swipeDirection = 'right';
+                        // Swipe right
                         if (this.direction.x === 0) {
                             this.nextDirection = {x: 1, y: 0};
-                            this.showSwipeIndicator('→');
                         }
                     } else {
-                        swipeDirection = 'left';
+                        // Swipe left
                         if (this.direction.x === 0) {
                             this.nextDirection = {x: -1, y: 0};
-                            this.showSwipeIndicator('←');
                         }
                     }
-                } else {
+                } else if (absDeltaY > absDeltaX * this.swipeRatio) {
                     // Vertical swipe
                     if (deltaY > 0) {
-                        swipeDirection = 'down';
+                        // Swipe down
                         if (this.direction.y === 0) {
                             this.nextDirection = {x: 0, y: 1};
-                            this.showSwipeIndicator('↓');
                         }
                     } else {
-                        swipeDirection = 'up';
+                        // Swipe up
                         if (this.direction.y === 0) {
                             this.nextDirection = {x: 0, y: -1};
-                            this.showSwipeIndicator('↑');
                         }
                     }
                 }
-            }
-
-            showSwipeIndicator(direction) {
-                const indicator = document.getElementById('swipeIndicator');
-                indicator.textContent = direction;
-                indicator.style.display = 'block';
-                
-                // Reset animation
-                indicator.style.animation = 'none';
-                setTimeout(() => {
-                    indicator.style.animation = 'fadeOut 0.5s ease-out';
-                }, 10);
-                
-                // Hide after animation
-                setTimeout(() => {
-                    indicator.style.display = 'none';
-                }, 500);
             }
 
             setupEventListeners() {
