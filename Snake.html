@@ -1098,128 +1098,280 @@ Copyright (c) 2025 Valentyn Kolesnikov <0009-0003-9608-3364@orcid.org>
                 }
             }
 
-            // AI Pathfinding using A* algorithm
-            findPath(start, target) {
-                const openSet = [start];
-                const closedSet = new Set();
-                const gScore = new Map();
-                const fScore = new Map();
+            // --------- AI HELPERS (new/improved) ----------
+            posKey(pos) {
+                return `${pos.x},${pos.y}`;
+            }
+
+            isInside(x, y) {
+                return x >= 0 && x < this.tileCount && y >= 0 && y < this.tileCount;
+            }
+
+            cloneSnake(snake) {
+                return snake.map(s => ({ x: s.x, y: s.y }));
+            }
+
+            isCellBlocked(x, y, snakeBody, allowTail = false) {
+                // Obstacles
+                if (this.obstacles && this.obstacles.some(o => o.x === x && o.y === y)) return true;
+                // Snake body
+                for (let i = 0; i < snakeBody.length; i++) {
+                    const seg = snakeBody[i];
+                    // If allowTail and it's the tail cell, treat as free
+                    const isTail = i === snakeBody.length - 1;
+                    if (seg.x === x && seg.y === y) {
+                        if (allowTail && isTail) return false;
+                        return true;
+                    }
+                }
+                return false;
+            }
+
+            neighborsOf(pos) {
+                return [
+                    { x: pos.x + 1, y: pos.y },
+                    { x: pos.x - 1, y: pos.y },
+                    { x: pos.x, y: pos.y + 1 },
+                    { x: pos.x, y: pos.y - 1 }
+                ].filter(n => this.isInside(n.x, n.y));
+            }
+
+            // A* with option to treat tail as passable target
+            findPath(start, target, allowTail = false, snakeOverride = null) {
+                const snakeBody = snakeOverride ? this.cloneSnake(snakeOverride) : this.cloneSnake(this.snake);
+                const open = [];
                 const cameFrom = new Map();
-                
-                const key = (pos) => `${pos.x},${pos.y}`;
-                const heuristic = (a, b) => Math.abs(a.x - b.x) + Math.abs(a.y - b.y);
-                
-                gScore.set(key(start), 0);
-                fScore.set(key(start), heuristic(start, target));
-                
-                while (openSet.length > 0) {
-                    let current = openSet.reduce((min, pos) => 
-                        fScore.get(key(pos)) < fScore.get(key(min)) ? pos : min
-                    );
-                    
+                const g = new Map();
+                const f = new Map();
+
+                const h = (a, b) => Math.abs(a.x - b.x) + Math.abs(a.y - b.y);
+
+                const startKey = this.posKey(start);
+                open.push({ ...start });
+                g.set(startKey, 0);
+                f.set(startKey, h(start, target));
+
+                const inOpen = (p) => open.findIndex(o => o.x === p.x && o.y === p.y);
+
+                while (open.length > 0) {
+                    // Get node with smallest f
+                    let bestIdx = 0;
+                    for (let i = 1; i < open.length; i++) {
+                        const ki = this.posKey(open[i]);
+                        const kb = this.posKey(open[bestIdx]);
+                        if (f.get(ki) < f.get(kb)) bestIdx = i;
+                    }
+                    const current = open.splice(bestIdx, 1)[0];
+                    const cKey = this.posKey(current);
+
                     if (current.x === target.x && current.y === target.y) {
+                        // Reconstruct path
                         const path = [];
-                        while (cameFrom.has(key(current))) {
-                            path.unshift(current);
-                            current = cameFrom.get(key(current));
+                        let curK = cKey;
+                        let cur = current;
+                        while (cameFrom.has(curK)) {
+                            path.unshift(cur);
+                            cur = cameFrom.get(curK);
+                            curK = this.posKey(cur);
                         }
                         return path;
                     }
-                    
-                    openSet.splice(openSet.indexOf(current), 1);
-                    closedSet.add(key(current));
-                    
-                    const neighbors = [
-                        {x: current.x + 1, y: current.y},
-                        {x: current.x - 1, y: current.y},
-                        {x: current.x, y: current.y + 1},
-                        {x: current.x, y: current.y - 1}
-                    ];
-                    
-                    for (const neighbor of neighbors) {
-                        if (neighbor.x < 0 || neighbor.x >= this.tileCount ||
-                            neighbor.y < 0 || neighbor.y >= this.tileCount ||
-                            closedSet.has(key(neighbor))) {
-                            continue;
+
+                    const neigh = this.neighborsOf(current);
+                    for (const nb of neigh) {
+                        // allow stepping onto tail if allowed
+                        const blocked = this.isCellBlocked(nb.x, nb.y, snakeBody, allowTail && nb.x === target.x && nb.y === target.y ? true : false);
+                        if (blocked) continue;
+
+                        const nKey = this.posKey(nb);
+                        const tentative = g.get(cKey) + 1;
+                        if (!g.has(nKey) || tentative < g.get(nKey)) {
+                            cameFrom.set(nKey, current);
+                            g.set(nKey, tentative);
+                            f.set(nKey, tentative + h(nb, target));
+                            if (inOpen(nb) === -1) open.push(nb);
                         }
-                        
-                        // Check if neighbor is blocked by snake body or obstacles
-                        const isBlocked = this.snake.some(seg => 
-                            seg.x === neighbor.x && seg.y === neighbor.y && 
-                            !(seg === this.snake[this.snake.length - 1])
-                        ) || this.obstacles.some(obs => 
-                            obs.x === neighbor.x && obs.y === neighbor.y
-                        );
-                        
-                        if (isBlocked) continue;
-                        
-                        const tentativeGScore = gScore.get(key(current)) + 1;
-                        
-                        if (!openSet.some(pos => pos.x === neighbor.x && pos.y === neighbor.y)) {
-                            openSet.push(neighbor);
-                        } else if (tentativeGScore >= gScore.get(key(neighbor))) {
-                            continue;
-                        }
-                        
-                        cameFrom.set(key(neighbor), current);
-                        gScore.set(key(neighbor), tentativeGScore);
-                        fScore.set(key(neighbor), tentativeGScore + heuristic(neighbor, target));
                     }
                 }
-                
                 return null;
             }
 
-            calculateAIMove() {
-                const head = this.snake[0];
-                let target = this.food;
-                
-                // Check if special food is closer and accessible
-                if (this.specialFood) {
-                    const distToFood = Math.abs(head.x - this.food.x) + Math.abs(head.y - this.food.y);
-                    const distToSpecial = Math.abs(head.x - this.specialFood.x) + Math.abs(head.y - this.specialFood.y);
-                    if (distToSpecial < distToFood) {
-                        target = this.specialFood;
+            // BFS existence check from start to goal, with body occupancy and optional allowTailGoal
+            pathExists(start, goal, snakeBody, allowTailGoal = true) {
+                const q = [ { ...start } ];
+                const visited = new Set([ this.posKey(start) ]);
+                const goalKey = this.posKey(goal);
+                while (q.length) {
+                    const cur = q.shift();
+                    if (cur.x === goal.x && cur.y === goal.y) return true;
+                    for (const nb of this.neighborsOf(cur)) {
+                        const nbKey = this.posKey(nb);
+                        if (visited.has(nbKey)) continue;
+                        // Blocked except we allow stepping onto goal if allowTailGoal
+                        let blocked = this.isCellBlocked(nb.x, nb.y, snakeBody, allowTailGoal && nbKey === goalKey);
+                        if (blocked) continue;
+                        visited.add(nbKey);
+                        q.push(nb);
                     }
                 }
-                
-                // Find path to target
-                const path = this.findPath(head, target);
-                
-                if (path && path.length > 0) {
-                    const nextPos = path[0];
-                    const dx = nextPos.x - head.x;
-                    const dy = nextPos.y - head.y;
-                    
-                    // Only change direction if it's not opposite to current direction
-                    if (!(dx === -this.direction.x && dy === -this.direction.y)) {
-                        this.nextDirection = {x: dx, y: dy};
+                return false;
+            }
+
+            // Count reachable free cells from start given current occupancy
+            floodFillReachableCount(start, snakeBody) {
+                const startKey = this.posKey(start);
+                const q = [ start ];
+                const visited = new Set([ startKey ]);
+                let count = 0;
+                while (q.length) {
+                    const cur = q.shift();
+                    count++;
+                    for (const nb of this.neighborsOf(cur)) {
+                        const nbKey = this.posKey(nb);
+                        if (visited.has(nbKey)) continue;
+                        if (this.isCellBlocked(nb.x, nb.y, snakeBody, false)) continue;
+                        visited.add(nbKey);
+                        q.push(nb);
+                    }
+                }
+                return count;
+            }
+
+            // Simulate moving along a path to target as if target is food (grow on last step)
+            simulatePath(path) {
+                let simSnake = this.cloneSnake(this.snake);
+                for (let i = 0; i < path.length; i++) {
+                    const step = path[i];
+                    // move head
+                    simSnake.unshift({ x: step.x, y: step.y });
+                    // If last step (eat), grow (do not pop). Otherwise, tail moves.
+                    if (i < path.length - 1) {
+                        simSnake.pop();
+                    }
+                }
+                return simSnake;
+            }
+
+            // Check safety: after eating on this path, ensure head can reach tail
+            isPathSafe(path) {
+                if (!path || path.length === 0) return false;
+                const simSnake = this.simulatePath(path);
+                const simHead = simSnake[0];
+                const simTail = simSnake[simSnake.length - 1];
+                // After eating, ensure there is a path from head to tail (tail cell allowed)
+                return this.pathExists(simHead, simTail, simSnake, true);
+            }
+
+            getSafePathToTarget(target) {
+                const head = this.snake[0];
+                const path = this.findPath(head, target, false);
+                if (!path) return null;
+                return this.isPathSafe(path) ? path : null;
+            }
+
+            // --------- AI Logic (improved) ----------
+            calculateAIMove() {
+                const head = this.snake[0];
+
+                // Try special food first if it's closer AND safe
+                let chosenPath = null;
+                if (this.specialFood) {
+                    const distFood = Math.abs(head.x - this.food.x) + Math.abs(head.y - this.food.y);
+                    const distSpecial = Math.abs(head.x - this.specialFood.x) + Math.abs(head.y - this.specialFood.y);
+                    const pathSpecial = this.getSafePathToTarget(this.specialFood);
+                    const pathFood = this.getSafePathToTarget(this.food);
+                    // Prefer any safe path; if both, prefer the shorter; slight bias to special
+                    if (pathSpecial && (!pathFood || pathSpecial.length <= pathFood.length + 1 || distSpecial < distFood)) {
+                        chosenPath = pathSpecial;
+                    } else if (pathFood) {
+                        chosenPath = pathFood;
                     }
                 } else {
-                    // If no path found, try to survive by finding any safe move
-                    const possibleMoves = [
-                        {x: 1, y: 0},
-                        {x: -1, y: 0},
-                        {x: 0, y: 1},
-                        {x: 0, y: -1}
-                    ];
-                    
-                    for (const move of possibleMoves) {
-                        // Skip opposite direction
-                        if (move.x === -this.direction.x && move.y === -this.direction.y) continue;
-                        
-                        const newPos = {
-                            x: head.x + move.x,
-                            y: head.y + move.y
-                        };
-                        
-                        // Check if move is safe
-                        if (newPos.x >= 0 && newPos.x < this.tileCount &&
-                            newPos.y >= 0 && newPos.y < this.tileCount &&
-                            !this.snake.some(seg => seg.x === newPos.x && seg.y === newPos.y) &&
-                            !this.obstacles.some(obs => obs.x === newPos.x && obs.y === newPos.y)) {
-                            this.nextDirection = move;
-                            break;
+                    // Only normal food
+                    chosenPath = this.getSafePathToTarget(this.food);
+                }
+
+                if (chosenPath && chosenPath.length > 0) {
+                    // Follow safe path to food
+                    const nextPos = chosenPath[0];
+                    const dx = nextPos.x - head.x;
+                    const dy = nextPos.y - head.y;
+                    if (!(dx === -this.direction.x && dy === -this.direction.y)) {
+                        this.nextDirection = { x: dx, y: dy };
+                        return;
+                    }
+                }
+
+                // If no safe path to food, try to follow tail (survival mode)
+                const tail = this.snake[this.snake.length - 1];
+                // When moving to tail, allow stepping onto tail (it will move)
+                const pathToTail = this.findPath(head, tail, true);
+                if (pathToTail && pathToTail.length > 0) {
+                    const nextPos = pathToTail[0];
+                    const dx = nextPos.x - head.x;
+                    const dy = nextPos.y - head.y;
+                    if (!(dx === -this.direction.x && dy === -this.direction.y)) {
+                        this.nextDirection = { x: dx, y: dy };
+                        return;
+                    }
+                }
+
+                // Fallback: choose any safe move maximizing future freedom
+                const possibleMoves = [
+                    { x: 1, y: 0 },
+                    { x: -1, y: 0 },
+                    { x: 0, y: 1 },
+                    { x: 0, y: -1 }
+                ];
+
+                let bestMove = null;
+                let bestScore = -Infinity;
+
+                for (const move of possibleMoves) {
+                    // Skip opposite direction
+                    if (move.x === -this.direction.x && move.y === -this.direction.y) continue;
+                    const newPos = { x: head.x + move.x, y: head.y + move.y };
+                    // Check board bounds and immediate collision
+                    if (!this.isInside(newPos.x, newPos.y)) continue;
+                    if (this.isCellBlocked(newPos.x, newPos.y, this.snake, false)) continue;
+
+                    // Build simulated snake after making this single move
+                    const simSnake = this.cloneSnake(this.snake);
+                    simSnake.unshift({ x: newPos.x, y: newPos.y });
+                    const eatsNormal = (newPos.x === this.food.x && newPos.y === this.food.y);
+                    const eatsSpecial = (this.specialFood && newPos.x === this.specialFood.x && newPos.y === this.specialFood.y);
+                    if (!eatsNormal && !eatsSpecial) {
+                        simSnake.pop();
+                    }
+                    // Score this move by reachable space and distance to tail (encourage following tail)
+                    const reach = this.floodFillReachableCount(simSnake[0], simSnake);
+                    const tailDist = Math.abs(simSnake[0].x - simSnake[simSnake.length - 1].x) + Math.abs(simSnake[0].y - simSnake[simSnake.length - 1].y);
+                    // Also lightly encourage moving closer to food only if it's safe later
+                    const foodDist = Math.abs(simSnake[0].x - this.food.x) + Math.abs(simSnake[0].y - this.food.y);
+                    const score = reach * 10 - foodDist * 0.5 + tailDist * 0.2;
+
+                    if (score > bestScore) {
+                        bestScore = score;
+                        bestMove = move;
+                    }
+                }
+
+                if (bestMove) {
+                    this.nextDirection = bestMove;
+                } else {
+                    // Last resort: keep direction if possible
+                    const fallback = { x: head.x + this.direction.x, y: head.y + this.direction.y };
+                    if (this.isInside(fallback.x, fallback.y) && !this.isCellBlocked(fallback.x, fallback.y, this.snake, false)) {
+                        this.nextDirection = { ...this.direction };
+                    } else {
+                        // Try any non-opposite move that is not instantly fatal
+                        for (const move of possibleMoves) {
+                            if (move.x === -this.direction.x && move.y === -this.direction.y) continue;
+                            const np = { x: head.x + move.x, y: head.y + move.y };
+                            if (this.isInside(np.x, np.y) && !this.isCellBlocked(np.x, np.y, this.snake, false)) {
+                                this.nextDirection = move;
+                                break;
+                            }
                         }
                     }
                 }
