@@ -136,7 +136,7 @@ Copyright (c) 2025 Valentyn Kolesnikov <0009-0003-9608-3364@orcid.org>
         .ai-checkbox-container input[type="checkbox"] {
             width: 16px;
             height: 16px;
-            cursor: pointer.
+            cursor: pointer;
         }
 
         .btn {
@@ -411,7 +411,7 @@ Copyright (c) 2025 Valentyn Kolesnikov <0009-0003-9608-3364@orcid.org>
             }
             to {
                 transform: translateY(0);
-                opacity: 1);
+                opacity: 1;
             }
         }
 
@@ -834,6 +834,7 @@ Copyright (c) 2025 Valentyn Kolesnikov <0009-0003-9608-3364@orcid.org>
                 this.aiMode = false;
                 this.aiPath = [];
                 this.aiRetryCount = 0;
+                this.aiGameLoopTimeout = null;
                 
                 // Check if mobile device
                 this.isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || 
@@ -878,6 +879,7 @@ Copyright (c) 2025 Valentyn Kolesnikov <0009-0003-9608-3364@orcid.org>
                 this.initializeGame();
                 this.loadState();
                 this.checkSavedGame();
+                this.checkSavedDialog();
                 this.setupEventListeners();
                 this.setupTouchControls();
                 this.updateLevelModal();
@@ -1010,6 +1012,45 @@ Copyright (c) 2025 Valentyn Kolesnikov <0009-0003-9608-3364@orcid.org>
                 };
                 
                 localStorage.setItem('snakeGameSession', JSON.stringify(gameSession));
+            }
+
+            saveDialogState() {
+                // Don't save dialog state if in AI mode
+                if (this.aiMode) return;
+                
+                const dialogState = {
+                    isShowing: true,
+                    level: this.level,
+                    levelScore: this.levelScore,
+                    totalScore: this.totalScore,
+                    currentLevelStart: this.currentLevelStart,
+                    totalScoreAtLevelStart: this.totalScoreAtLevelStart,
+                    timestamp: Date.now()
+                };
+                
+                localStorage.setItem('snakeGameDialog', JSON.stringify(dialogState));
+            }
+
+            checkSavedDialog() {
+                const savedDialog = localStorage.getItem('snakeGameDialog');
+                if (savedDialog) {
+                    try {
+                        const dialog = JSON.parse(savedDialog);
+                        // Check if dialog was saved within last 24 hours
+                        if (Date.now() - dialog.timestamp < 3600000 * 24) {
+                            this.level = dialog.level;
+                            this.levelScore = dialog.levelScore;
+                            this.totalScore = dialog.totalScore;
+                            this.currentLevelStart = dialog.currentLevelStart;
+                            this.totalScoreAtLevelStart = dialog.totalScoreAtLevelStart;
+                            
+                            // Show the game over modal
+                            this.showModal('Game Over!', `Level ${this.level} Score: ${this.levelScore}<br>Total Score: ${this.totalScore}`, true);
+                        }
+                    } catch (e) {
+                        localStorage.removeItem('snakeGameDialog');
+                    }
+                }
             }
 
             checkSavedGame() {
@@ -1405,6 +1446,7 @@ Copyright (c) 2025 Valentyn Kolesnikov <0009-0003-9608-3364@orcid.org>
                 if (this.gameRunning && !this.gamePaused) return;
                 
                 localStorage.removeItem('snakeGameSession');
+                localStorage.removeItem('snakeGameDialog');
                 
                 this.initializeGame();
                 this.gameRunning = true;
@@ -1432,6 +1474,7 @@ Copyright (c) 2025 Valentyn Kolesnikov <0009-0003-9608-3364@orcid.org>
                 if (levelNum < 1 || levelNum > 20) return;
                 
                 localStorage.removeItem('snakeGameSession');
+                localStorage.removeItem('snakeGameDialog');
                 
                 this.initializeGame();
                 this.level = levelNum;
@@ -1459,6 +1502,13 @@ Copyright (c) 2025 Valentyn Kolesnikov <0009-0003-9608-3364@orcid.org>
 
             retryLevel() {
                 localStorage.removeItem('snakeGameSession');
+                localStorage.removeItem('snakeGameDialog');
+                
+                // Clear any existing game loop timeout
+                if (this.aiGameLoopTimeout) {
+                    clearTimeout(this.aiGameLoopTimeout);
+                    this.aiGameLoopTimeout = null;
+                }
                 
                 this.snake = [{x: 12, y: 12}];
                 this.previousSnake = [...this.snake];
@@ -1480,7 +1530,7 @@ Copyright (c) 2025 Valentyn Kolesnikov <0009-0003-9608-3364@orcid.org>
                         this.obstacles.push(this.generateObstacle());
                     }
                 }
-                this.gameSpeed = levelConfig.speed; // ensure speed is correct on retry
+                this.gameSpeed = levelConfig.speed;
                 
                 this.food = this.generateFood();
                 
@@ -1495,6 +1545,12 @@ Copyright (c) 2025 Valentyn Kolesnikov <0009-0003-9608-3364@orcid.org>
             }
 
             aiRetryLevel() {
+                // Clear any existing game loop timeout
+                if (this.aiGameLoopTimeout) {
+                    clearTimeout(this.aiGameLoopTimeout);
+                    this.aiGameLoopTimeout = null;
+                }
+                
                 // AI automatic retry without modal
                 this.aiRetryCount++;
                 console.log(`AI Retry #${this.aiRetryCount} for Level ${this.level}`);
@@ -1519,7 +1575,7 @@ Copyright (c) 2025 Valentyn Kolesnikov <0009-0003-9608-3364@orcid.org>
                         this.obstacles.push(this.generateObstacle());
                     }
                 }
-                this.gameSpeed = levelConfig.speed; // ensure speed is correct on AI retry
+                this.gameSpeed = levelConfig.speed;
                 
                 this.food = this.generateFood();
                 
@@ -1537,6 +1593,7 @@ Copyright (c) 2025 Valentyn Kolesnikov <0009-0003-9608-3364@orcid.org>
             }
 
             resetToMenu() {
+                localStorage.removeItem('snakeGameDialog');
                 this.initializeGame();
                 document.getElementById('startBtn').style.display = 'inline-block';
                 document.getElementById('pauseBtn').disabled = true;
@@ -1600,6 +1657,7 @@ Copyright (c) 2025 Valentyn Kolesnikov <0009-0003-9608-3364@orcid.org>
             resetGame() {
                 localStorage.removeItem('snakeGameSession');
                 localStorage.removeItem('snakeGameState');
+                localStorage.removeItem('snakeGameDialog');
                 this.obstacles = [];
                 this.initializeEmptyState();
                 this.initializeGame();
@@ -1689,8 +1747,8 @@ Copyright (c) 2025 Valentyn Kolesnikov <0009-0003-9608-3364@orcid.org>
                 this.update();
                 this.animationProgress = 0;
                 
-                // Use consistent level speed
-                setTimeout(() => this.gameLoop(), this.gameSpeed);
+                // Store timeout reference for AI mode
+                this.aiGameLoopTimeout = setTimeout(() => this.gameLoop(), this.gameSpeed);
             }
 
             update() {
@@ -2083,6 +2141,13 @@ Copyright (c) 2025 Valentyn Kolesnikov <0009-0003-9608-3364@orcid.org>
 
             levelComplete() {
                 this.gameRunning = false;
+                
+                // Clear any existing game loop timeout
+                if (this.aiGameLoopTimeout) {
+                    clearTimeout(this.aiGameLoopTimeout);
+                    this.aiGameLoopTimeout = null;
+                }
+                
                 document.getElementById('levelComplete').style.display = 'block';
                 
                 const completionTime = (Date.now() - this.levelStartTime) / 1000;
@@ -2111,6 +2176,7 @@ Copyright (c) 2025 Valentyn Kolesnikov <0009-0003-9608-3364@orcid.org>
                 }
                 
                 localStorage.removeItem('snakeGameSession');
+                localStorage.removeItem('snakeGameDialog');
                 
                 // Reset AI retry count on successful completion
                 if (this.aiMode) {
@@ -2185,6 +2251,12 @@ Copyright (c) 2025 Valentyn Kolesnikov <0009-0003-9608-3364@orcid.org>
             gameOver() {
                 this.gameRunning = false;
                 
+                // Clear any existing game loop timeout
+                if (this.aiGameLoopTimeout) {
+                    clearTimeout(this.aiGameLoopTimeout);
+                    this.aiGameLoopTimeout = null;
+                }
+                
                 // If AI mode, automatically retry the level
                 if (this.aiMode) {
                     console.log(`AI failed at Level ${this.level}. Retrying...`);
@@ -2207,6 +2279,7 @@ Copyright (c) 2025 Valentyn Kolesnikov <0009-0003-9608-3364@orcid.org>
                 }
                 
                 this.saveState();
+                this.saveDialogState();
                 
                 this.showModal('Game Over!', `Level ${this.level} Score: ${this.levelScore}<br>Total Score: ${this.totalScore}`, true);
             }
@@ -2224,6 +2297,7 @@ Copyright (c) 2025 Valentyn Kolesnikov <0009-0003-9608-3364@orcid.org>
 
             closeModal() {
                 document.getElementById('gameOverModal').style.display = 'none';
+                localStorage.removeItem('snakeGameDialog');
             }
 
             updateDisplay() {
