@@ -1,0 +1,1395 @@
+<!DOCTYPE html>
+<!-- MIT License
+Copyright (c) 2025 Valentyn Kolesnikov <0009-0003-9608-3364@orcid.org>
+-->
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Calculator">
+    <link rel="icon" type="image/x-icon" href="Calculator.ico"/>
+    <title>Calculator</title>
+    
+    <!-- Math.js library for calculations -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjs/11.11.0/math.min.js"></script>
+    
+    <!-- Font Awesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+            overflow-x: hidden;
+        }
+
+        .container {
+            display: flex;
+            gap: 20px;
+            max-width: 1100px;
+            width: 100%;
+            height: calc(100vh - 40px);
+            max-height: 800px;
+        }
+
+        .calculator {
+            background: rgba(255, 255, 255, 0.98);
+            border-radius: 20px;
+            padding: 24px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            backdrop-filter: blur(10px);
+            flex: 1;
+            max-width: 450px;
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+            overflow: hidden;
+        }
+
+        .scientific-mode.calculator {
+            max-width: 520px;
+        }
+
+        .display {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 15px;
+            box-shadow: inset 0 4px 10px rgba(0, 0, 0, 0.1);
+            min-height: 100px;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-end;
+            flex-shrink: 0;
+        }
+
+        .expression {
+            color: rgba(255, 255, 255, 0.85);
+            font-size: 14px;
+            min-height: 20px;
+            margin-bottom: 6px;
+            text-align: right;
+            word-wrap: break-word;
+            overflow-wrap: break-word;
+        }
+
+        .result {
+            color: white;
+            font-size: 36px;
+            font-weight: 300;
+            text-align: right;
+            min-height: 42px;
+            overflow-x: auto;
+            word-wrap: break-word;
+            overflow-wrap: break-word;
+        }
+
+        .result::-webkit-scrollbar {
+            height: 3px;
+        }
+
+        .result::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .result::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.3);
+            border-radius: 3px;
+        }
+
+        .mode-toggle {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 12px;
+            flex-shrink: 0;
+        }
+
+        .mode-btn {
+            flex: 1;
+            padding: 8px;
+            border: none;
+            background: #f0f0f0;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-weight: 500;
+            font-size: 14px;
+        }
+
+        .mode-btn.active {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            box-shadow: 0 3px 10px rgba(102, 126, 234, 0.3);
+        }
+
+        .mode-btn:hover:not(.active) {
+            background: #e0e0e0;
+        }
+
+        /* DEG/RAD toggle */
+        .deg-rad-container {
+            display: none;
+            margin-bottom: 10px;
+            flex-shrink: 0;
+        }
+
+        .scientific-mode .deg-rad-container {
+            display: block;
+        }
+
+        .deg-rad-toggle {
+            padding: 6px 16px;
+            background: #f0f0f0;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+
+        .deg-rad-toggle:hover {
+            background: #e0e0e0;
+        }
+
+        /* Memory buttons row */
+        .memory-buttons {
+            display: grid;
+            grid-template-columns: repeat(6, 1fr);
+            gap: 8px;
+            margin-bottom: 12px;
+            padding: 10px;
+            background: #f8f8f8;
+            border-radius: 10px;
+            flex-shrink: 0;
+        }
+
+        .memory-display {
+            display: none;
+            margin-bottom: 10px;
+            padding: 10px;
+            background: #f0f0f0;
+            border-radius: 8px;
+            max-height: 120px;
+            overflow-y: auto;
+            flex-shrink: 0;
+        }
+
+        .memory-display.show {
+            display: block;
+        }
+
+        .memory-item {
+            padding: 6px;
+            margin-bottom: 4px;
+            background: white;
+            border-radius: 5px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 14px;
+        }
+
+        .memory-value {
+            font-weight: 600;
+            color: #333;
+        }
+
+        .memory-item-actions {
+            display: flex;
+            gap: 4px;
+        }
+
+        .memory-item-btn {
+            padding: 3px 6px;
+            background: #e0e0e0;
+            border: none;
+            border-radius: 3px;
+            cursor: pointer;
+            font-size: 11px;
+        }
+
+        .memory-item-btn:hover {
+            background: #d0d0d0;
+        }
+
+        .mem-btn {
+            padding: 10px;
+            border: none;
+            background: white;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-size: 13px;
+            font-weight: 500;
+            color: #333;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+        }
+
+        .mem-btn:hover:not(:disabled) {
+            background: #667eea;
+            color: white;
+            transform: translateY(-1px);
+            box-shadow: 0 3px 8px rgba(102, 126, 234, 0.3);
+        }
+
+        .mem-btn:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+        }
+
+        .mem-btn.active {
+            background: #667eea;
+            color: white;
+        }
+
+        /* Buttons container with scroll if needed */
+        .buttons-wrapper {
+            flex: 1;
+            overflow-y: auto;
+            overflow-x: hidden;
+            padding-right: 5px;
+        }
+
+        .buttons-wrapper::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .buttons-wrapper::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 6px;
+        }
+
+        .buttons-wrapper::-webkit-scrollbar-thumb {
+            background: #ccc;
+            border-radius: 6px;
+        }
+
+        .buttons-wrapper::-webkit-scrollbar-thumb:hover {
+            background: #aaa;
+        }
+
+        /* Standard mode buttons */
+        .buttons {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 8px;
+        }
+
+        /* Scientific mode specific */
+        .scientific-mode .buttons {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 7px;
+        }
+
+        .btn {
+            padding: 18px 8px;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-weight: 400;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+            min-height: 52px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .btn:before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.5);
+            transform: translate(-50%, -50%);
+            transition: width 0.6s, height 0.6s;
+        }
+
+        .btn:active:before {
+            width: 300px;
+            height: 300px;
+        }
+
+        .btn.number {
+            background: white;
+            color: #333;
+            font-size: 20px;
+            font-weight: 500;
+        }
+
+        .btn.number:hover {
+            background: #f8f8f8;
+            transform: translateY(-1px);
+            box-shadow: 0 3px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .btn.operator {
+            background: #f0f0f0;
+            color: #333;
+            font-size: 20px;
+        }
+
+        .btn.operator:hover {
+            background: #e0e0e0;
+            transform: translateY(-1px);
+            box-shadow: 0 3px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .btn.function {
+            background: #f5f5f5;
+            color: #555;
+            font-size: 15px;
+        }
+
+        .btn.function:hover {
+            background: #e8e8e8;
+            transform: translateY(-1px);
+            box-shadow: 0 3px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .btn.clear {
+            background: #fff0f0;
+            color: #d32f2f;
+            font-weight: 500;
+        }
+
+        .btn.clear:hover {
+            background: #ffebeb;
+            transform: translateY(-1px);
+            box-shadow: 0 3px 8px rgba(211, 47, 47, 0.2);
+        }
+
+        .btn.equals {
+            background: linear-gradient(135deg, #ff6b35 0%, #ff5722 100%);
+            color: white;
+            font-size: 24px;
+            font-weight: 500;
+        }
+
+        .btn.equals:hover {
+            background: linear-gradient(135deg, #ff5722 0%, #ff4411 100%);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(255, 87, 34, 0.4);
+        }
+
+        /* Scientific buttons */
+        .btn.scientific {
+            font-size: 13px;
+            padding: 16px 6px;
+            background: #f8f8f8;
+        }
+
+        .btn.scientific:hover {
+            background: #ececec;
+        }
+
+        .history-panel {
+            background: rgba(255, 255, 255, 0.98);
+            border-radius: 20px;
+            padding: 24px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            backdrop-filter: blur(10px);
+            flex: 1;
+            max-width: 380px;
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+            overflow: hidden;
+        }
+
+        .history-header {
+            margin-bottom: 15px;
+            flex-shrink: 0;
+        }
+
+        .history-header-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .history-title {
+            font-size: 20px;
+            font-weight: 600;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .clear-history {
+            padding: 8px 14px;
+            background: #fff0f0;
+            color: #d32f2f;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-weight: 500;
+            font-size: 13px;
+        }
+
+        .clear-history:hover {
+            background: #ffebeb;
+            transform: translateY(-1px);
+            box-shadow: 0 3px 8px rgba(211, 47, 47, 0.2);
+        }
+
+        .search-box {
+            position: relative;
+            margin-bottom: 15px;
+            flex-shrink: 0;
+        }
+
+        .search-input {
+            width: 100%;
+            padding: 10px 40px 10px 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            font-size: 14px;
+            transition: all 0.3s;
+        }
+
+        .search-input:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .search-icon {
+            position: absolute;
+            right: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #999;
+        }
+
+        .history-list {
+            overflow-y: auto;
+            overflow-x: hidden;
+            flex: 1;
+            padding-right: 5px;
+        }
+
+        .history-item {
+            padding: 12px;
+            margin-bottom: 10px;
+            background: #f8f9fa;
+            border-radius: 10px;
+            transition: all 0.3s;
+            border-left: 3px solid transparent;
+            position: relative;
+        }
+
+        .history-item:hover {
+            background: #e9ecef;
+            border-left-color: #667eea;
+            transform: translateX(3px);
+        }
+
+        .history-item:hover .history-actions {
+            opacity: 1;
+        }
+
+        .history-content {
+            padding-right: 75px;
+        }
+
+        .history-expression {
+            color: #666;
+            font-size: 14px;
+            margin-bottom: 5px;
+            word-wrap: break-word;
+            overflow-wrap: break-word;
+        }
+
+        .history-result {
+            color: #333;
+            font-size: 18px;
+            font-weight: 600;
+            word-wrap: break-word;
+            overflow-wrap: break-word;
+        }
+
+        .history-time {
+            color: #999;
+            font-size: 12px;
+            margin-top: 5px;
+        }
+
+        .history-actions {
+            position: absolute;
+            right: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            display: flex;
+            gap: 5px;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        .history-btn {
+            width: 30px;
+            height: 30px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 13px;
+        }
+
+        .history-btn.copy {
+            background: #e3f2fd;
+            color: #1976d2;
+        }
+
+        .history-btn.copy:hover {
+            background: #bbdefb;
+            transform: scale(1.1);
+        }
+
+        .history-btn.transfer {
+            background: #f3e5f5;
+            color: #7b1fa2;
+        }
+
+        .history-btn.transfer:hover {
+            background: #e1bee7;
+            transform: scale(1.1);
+        }
+
+        .copied-toast {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #4caf50;
+            color: white;
+            padding: 12px 24px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(76, 175, 80, 0.4);
+            opacity: 0;
+            transition: opacity 0.3s;
+            z-index: 1000;
+            font-weight: 500;
+        }
+
+        .copied-toast.show {
+            opacity: 1;
+        }
+
+        .empty-history {
+            text-align: center;
+            color: #999;
+            padding: 40px 20px;
+            font-style: italic;
+        }
+
+        .no-results {
+            text-align: center;
+            color: #999;
+            padding: 40px 20px;
+            font-style: italic;
+        }
+
+        /* Scrollbar styling */
+        .history-list::-webkit-scrollbar,
+        .memory-display::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .history-list::-webkit-scrollbar-track,
+        .memory-display::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 6px;
+        }
+
+        .history-list::-webkit-scrollbar-thumb,
+        .memory-display::-webkit-scrollbar-thumb {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 6px;
+        }
+
+        /* Responsive design */
+        @media (max-width: 900px) {
+            .container {
+                flex-direction: column;
+                height: auto;
+                max-height: none;
+            }
+
+            .calculator, .history-panel {
+                max-width: 100%;
+                height: auto;
+                min-height: 500px;
+            }
+
+            .scientific-mode.calculator {
+                max-width: 100%;
+            }
+
+            .buttons-wrapper {
+                max-height: 400px;
+            }
+        }
+
+        @media (max-width: 600px) {
+            .container {
+                padding: 10px;
+            }
+
+            .calculator, .history-panel {
+                padding: 20px;
+            }
+
+            .memory-buttons {
+                grid-template-columns: repeat(3, 1fr);
+            }
+
+            .btn {
+                padding: 16px 6px;
+                min-height: 48px;
+                font-size: 14px;
+            }
+
+            .btn.number {
+                font-size: 18px;
+            }
+
+            .btn.operator {
+                font-size: 18px;
+            }
+
+            .btn.scientific {
+                font-size: 12px;
+            }
+
+            .history-content {
+                padding-right: 0;
+                padding-bottom: 40px;
+            }
+
+            .history-actions {
+                bottom: 6px;
+                top: auto;
+                right: 6px;
+                transform: none;
+                opacity: 1;
+            }
+        }
+
+        /* Animation */
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .history-item {
+            animation: fadeIn 0.3s ease;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="calculator" id="calculator">
+            <div class="display">
+                <div class="expression" id="expression"></div>
+                <div class="result" id="result">0</div>
+            </div>
+
+            <div class="mode-toggle">
+                <button class="mode-btn active" onclick="toggleMode('simple')">Standard</button>
+                <button class="mode-btn" onclick="toggleMode('scientific')">Scientific</button>
+            </div>
+
+            <!-- DEG/RAD toggle for scientific mode -->
+            <div class="deg-rad-container">
+                <button class="deg-rad-toggle" id="degRadBtn" onclick="toggleDegRad()">DEG</button>
+            </div>
+
+            <!-- Memory display -->
+            <div class="memory-display" id="memoryDisplay"></div>
+
+            <!-- Memory buttons -->
+            <div class="memory-buttons">
+                <button class="mem-btn" onclick="memoryClear()" id="mcBtn" disabled>MC</button>
+                <button class="mem-btn" onclick="memoryRecall()" id="mrBtn" disabled>MR</button>
+                <button class="mem-btn" onclick="memoryAdd()">M+</button>
+                <button class="mem-btn" onclick="memorySubtract()">M-</button>
+                <button class="mem-btn" onclick="memoryStore()">MS</button>
+                <button class="mem-btn" onclick="toggleMemoryDisplay()" id="mBtn" disabled>M↓</button>
+            </div>
+
+            <div class="buttons-wrapper">
+                <div class="buttons" id="buttonsContainer">
+                    <!-- Buttons will be dynamically generated based on mode -->
+                </div>
+            </div>
+        </div>
+
+        <div class="history-panel">
+            <div class="history-header">
+                <div class="history-header-top">
+                    <h2 class="history-title">
+                        <i class="fas fa-history"></i> History
+                    </h2>
+                    <button class="clear-history" onclick="clearHistory()">
+                        <i class="fas fa-trash"></i> Clear
+                    </button>
+                </div>
+                <div class="search-box">
+                    <input type="text" class="search-input" id="searchInput" placeholder="Search history..." oninput="searchHistory()">
+                    <i class="fas fa-search search-icon"></i>
+                </div>
+            </div>
+            <div class="history-list" id="historyList">
+                <div class="empty-history">No calculations yet</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast notification for copy -->
+    <div class="copied-toast" id="copiedToast">Copied to clipboard!</div>
+
+    <script>
+        let expression = '';
+        let result = '0';
+        let history = [];
+        let memoryStack = [];
+        let angleMode = 'deg';
+        let justCalculated = false;
+        const MAX_HISTORY = 1000;
+
+        // Load history and memory from localStorage on page load
+        window.onload = function() {
+            loadHistory();
+            loadMemory();
+            updateHistoryDisplay();
+            renderButtons('simple');
+        };
+
+        function toggleMode(mode) {
+            const calculator = document.getElementById('calculator');
+            const modeBtns = document.querySelectorAll('.mode-btn');
+            
+            modeBtns.forEach(btn => btn.classList.remove('active'));
+            event.target.classList.add('active');
+            
+            if (mode === 'scientific') {
+                calculator.classList.add('scientific-mode');
+                renderButtons('scientific');
+            } else {
+                calculator.classList.remove('scientific-mode');
+                renderButtons('simple');
+            }
+        }
+
+        function renderButtons(mode) {
+            const container = document.getElementById('buttonsContainer');
+            
+            if (mode === 'simple') {
+                container.innerHTML = `
+                    <!-- Row 1 -->
+                    <button class="btn function" onclick="appendOperator('%')">%</button>
+                    <button class="btn clear" onclick="clearEntry()">CE</button>
+                    <button class="btn clear" onclick="clearAll()">C</button>
+                    <button class="btn clear" onclick="deleteLast()">⌫</button>
+
+                    <!-- Row 2 -->
+                    <button class="btn function" onclick="appendFunction('1/')">1/x</button>
+                    <button class="btn function" onclick="appendOperator('^2')">x²</button>
+                    <button class="btn function" onclick="appendFunction('sqrt(')">√x</button>
+                    <button class="btn operator" onclick="appendOperator('/')">÷</button>
+
+                    <!-- Row 3 -->
+                    <button class="btn number" onclick="appendNumber('7')">7</button>
+                    <button class="btn number" onclick="appendNumber('8')">8</button>
+                    <button class="btn number" onclick="appendNumber('9')">9</button>
+                    <button class="btn operator" onclick="appendOperator('*')">×</button>
+
+                    <!-- Row 4 -->
+                    <button class="btn number" onclick="appendNumber('4')">4</button>
+                    <button class="btn number" onclick="appendNumber('5')">5</button>
+                    <button class="btn number" onclick="appendNumber('6')">6</button>
+                    <button class="btn operator" onclick="appendOperator('-')">−</button>
+
+                    <!-- Row 5 -->
+                    <button class="btn number" onclick="appendNumber('1')">1</button>
+                    <button class="btn number" onclick="appendNumber('2')">2</button>
+                    <button class="btn number" onclick="appendNumber('3')">3</button>
+                    <button class="btn operator" onclick="appendOperator('+')">+</button>
+
+                    <!-- Row 6 -->
+                    <button class="btn function" onclick="toggleSign()">+/−</button>
+                    <button class="btn number" onclick="appendNumber('0')">0</button>
+                    <button class="btn number" onclick="appendNumber('.')">.</button>
+                    <button class="btn equals" onclick="calculate()">=</button>
+                `;
+            } else {
+                container.innerHTML = `
+                    <!-- Row 1 -->
+                    <button class="btn scientific" onclick="toggle2nd()">2ⁿᵈ</button>
+                    <button class="btn scientific" onclick="appendConstant('pi')">π</button>
+                    <button class="btn scientific" onclick="appendConstant('e')">e</button>
+                    <button class="btn clear" onclick="clearAll()">C</button>
+                    <button class="btn clear" onclick="deleteLast()">⌫</button>
+
+                    <!-- Row 2 -->
+                    <button class="btn scientific" onclick="appendOperator('^2')">x²</button>
+                    <button class="btn scientific" onclick="appendFunction('1/')">1/x</button>
+                    <button class="btn scientific" onclick="appendFunction('abs(')">|x|</button>
+                    <button class="btn scientific" onclick="appendFunction('exp(')">exp</button>
+                    <button class="btn scientific" onclick="appendOperator('mod')">mod</button>
+
+                    <!-- Row 3 -->
+                    <button class="btn scientific" onclick="appendFunction('sqrt(')">²√x</button>
+                    <button class="btn operator" onclick="appendOperator('(')">(</button>
+                    <button class="btn operator" onclick="appendOperator(')')">)</button>
+                    <button class="btn scientific" onclick="appendOperator('!')">n!</button>
+                    <button class="btn operator" onclick="appendOperator('/')">÷</button>
+
+                    <!-- Row 4 -->
+                    <button class="btn scientific" onclick="appendOperator('^')">xʸ</button>
+                    <button class="btn number" onclick="appendNumber('7')">7</button>
+                    <button class="btn number" onclick="appendNumber('8')">8</button>
+                    <button class="btn number" onclick="appendNumber('9')">9</button>
+                    <button class="btn operator" onclick="appendOperator('*')">×</button>
+
+                    <!-- Row 5 -->
+                    <button class="btn scientific" onclick="appendFunction('10^')">10ˣ</button>
+                    <button class="btn number" onclick="appendNumber('4')">4</button>
+                    <button class="btn number" onclick="appendNumber('5')">5</button>
+                    <button class="btn number" onclick="appendNumber('6')">6</button>
+                    <button class="btn operator" onclick="appendOperator('-')">−</button>
+
+                    <!-- Row 6 -->
+                    <button class="btn scientific" onclick="appendFunction('log(')">log</button>
+                    <button class="btn number" onclick="appendNumber('1')">1</button>
+                    <button class="btn number" onclick="appendNumber('2')">2</button>
+                    <button class="btn number" onclick="appendNumber('3')">3</button>
+                    <button class="btn operator" onclick="appendOperator('+')">+</button>
+
+                    <!-- Row 7 -->
+                    <button class="btn scientific" onclick="appendFunction('ln(')">ln</button>
+                    <button class="btn function" onclick="toggleSign()">+/−</button>
+                    <button class="btn number" onclick="appendNumber('0')">0</button>
+                    <button class="btn number" onclick="appendNumber('.')">.</button>
+                    <button class="btn equals" onclick="calculate()">=</button>
+                `;
+            }
+        }
+
+        function toggle2nd() {
+            // Placeholder for 2nd function toggle
+            // This would switch between primary and secondary functions
+        }
+
+        function appendNumber(num) {
+            if (justCalculated) {
+                expression = '';
+                justCalculated = false;
+            }
+            expression += num;
+            updateDisplay();
+        }
+
+        function appendOperator(op) {
+            justCalculated = false;
+            if (op === '^2') {
+                expression += '^2';
+            } else {
+                expression += op;
+            }
+            updateDisplay();
+        }
+
+        function appendFunction(func) {
+            if (justCalculated) {
+                expression = '';
+                justCalculated = false;
+            }
+            if (func === '1/') {
+                if (expression) {
+                    expression = '1/(' + expression + ')';
+                } else {
+                    expression = '1/';
+                }
+            } else if (func === '10^') {
+                expression += '10^';
+            } else {
+                expression += func;
+            }
+            updateDisplay();
+        }
+
+        function appendConstant(constant) {
+            if (justCalculated) {
+                expression = '';
+                justCalculated = false;
+            }
+            expression += constant;
+            updateDisplay();
+        }
+
+        function clearAll() {
+            expression = '';
+            result = '0';
+            justCalculated = false;
+            updateDisplay();
+        }
+
+        function clearEntry() {
+            const operators = ['+', '-', '*', '/', '^', '%', 'mod'];
+            let lastOpIndex = -1;
+            
+            for (let op of operators) {
+                let index = expression.lastIndexOf(op);
+                if (index > lastOpIndex) {
+                    lastOpIndex = index;
+                }
+            }
+            
+            if (lastOpIndex !== -1) {
+                expression = expression.substring(0, lastOpIndex + 1);
+            } else {
+                expression = '';
+            }
+            
+            justCalculated = false;
+            updateDisplay();
+        }
+
+        function deleteLast() {
+            if (!justCalculated) {
+                expression = expression.slice(0, -1);
+                updateDisplay();
+            }
+        }
+
+        function toggleSign() {
+            if (expression && !isNaN(expression)) {
+                expression = String(-parseFloat(expression));
+                updateDisplay();
+            } else if (result !== '0' && result !== 'Error') {
+                expression = String(-parseFloat(result));
+                updateDisplay();
+            }
+        }
+
+        function toggleDegRad() {
+            angleMode = angleMode === 'deg' ? 'rad' : 'deg';
+            document.getElementById('degRadBtn').textContent = angleMode.toUpperCase();
+        }
+
+        // Memory functions
+        function memoryStore() {
+            const value = result !== '0' && result !== 'Error' ? result : expression;
+            if (value && value !== '0') {
+                memoryStack = [parseFloat(value)];
+                updateMemoryButtons();
+                saveMemory();
+            }
+        }
+
+        function memoryRecall() {
+            if (memoryStack.length > 0) {
+                expression = memoryStack[0].toString();
+                justCalculated = false;
+                updateDisplay();
+            }
+        }
+
+        function memoryClear() {
+            memoryStack = [];
+            updateMemoryButtons();
+            saveMemory();
+            document.getElementById('memoryDisplay').classList.remove('show');
+            updateMemoryDisplay();
+        }
+
+        function memoryAdd() {
+            const value = result !== '0' && result !== 'Error' ? result : expression;
+            if (value && value !== '0') {
+                if (memoryStack.length === 0) {
+                    memoryStack.push(parseFloat(value));
+                } else {
+                    memoryStack[0] += parseFloat(value);
+                }
+                updateMemoryButtons();
+                saveMemory();
+                updateMemoryDisplay();
+            }
+        }
+
+        function memorySubtract() {
+            const value = result !== '0' && result !== 'Error' ? result : expression;
+            if (value && value !== '0') {
+                if (memoryStack.length === 0) {
+                    memoryStack.push(-parseFloat(value));
+                } else {
+                    memoryStack[0] -= parseFloat(value);
+                }
+                updateMemoryButtons();
+                saveMemory();
+                updateMemoryDisplay();
+            }
+        }
+
+        function toggleMemoryDisplay() {
+            const display = document.getElementById('memoryDisplay');
+            display.classList.toggle('show');
+            if (display.classList.contains('show')) {
+                updateMemoryDisplay();
+            }
+        }
+
+        function updateMemoryDisplay() {
+            const display = document.getElementById('memoryDisplay');
+            if (memoryStack.length === 0) {
+                display.innerHTML = '<div style="text-align: center; color: #999; padding: 15px;">No memory stored</div>';
+            } else {
+                display.innerHTML = memoryStack.map((value, index) => `
+                    <div class="memory-item">
+                        <span class="memory-value">${value}</span>
+                        <div class="memory-item-actions">
+                            <button class="memory-item-btn" onclick="useMemoryValue(${index})">Use</button>
+                            <button class="memory-item-btn" onclick="deleteMemoryValue(${index})">Delete</button>
+                        </div>
+                    </div>
+                `).join('');
+            }
+        }
+
+        function useMemoryValue(index) {
+            expression = memoryStack[index].toString();
+            justCalculated = false;
+            updateDisplay();
+        }
+
+        function deleteMemoryValue(index) {
+            memoryStack.splice(index, 1);
+            updateMemoryButtons();
+            saveMemory();
+            updateMemoryDisplay();
+        }
+
+        function updateMemoryButtons() {
+            const hasMemory = memoryStack.length > 0;
+            document.getElementById('mcBtn').disabled = !hasMemory;
+            document.getElementById('mrBtn').disabled = !hasMemory;
+            document.getElementById('mBtn').disabled = !hasMemory;
+            
+            if (hasMemory) {
+                document.getElementById('mBtn').classList.add('active');
+            } else {
+                document.getElementById('mBtn').classList.remove('active');
+                document.getElementById('memoryDisplay').classList.remove('show');
+            }
+        }
+
+        function saveMemory() {
+            localStorage.setItem('calculatorMemory', JSON.stringify(memoryStack));
+        }
+
+        function loadMemory() {
+            const saved = localStorage.getItem('calculatorMemory');
+            if (saved) {
+                try {
+                    memoryStack = JSON.parse(saved);
+                    updateMemoryButtons();
+                } catch (e) {
+                    memoryStack = [];
+                }
+            }
+        }
+
+        function calculate() {
+            if (!expression) return;
+            
+            try {
+                let evalExpression = expression;
+                
+                // Replace display symbols with math.js compatible ones
+                evalExpression = evalExpression.replace(/×/g, '*');
+                evalExpression = evalExpression.replace(/÷/g, '/');
+                evalExpression = evalExpression.replace(/−/g, '-');
+                evalExpression = evalExpression.replace(/mod/g, '%');
+                evalExpression = evalExpression.replace(/ln\(/g, 'log(');
+                evalExpression = evalExpression.replace(/10\^/g, '10^');
+                
+                // Configure math.js for angle mode
+                if (angleMode === 'deg') {
+                    math.config({ angles: 'deg' });
+                } else {
+                    math.config({ angles: 'rad' });
+                }
+                
+                // Evaluate using math.js
+                const calculatedResult = math.evaluate(evalExpression);
+                result = calculatedResult.toString();
+                
+                // Add to history
+                addToHistory(expression, result);
+                
+                // Update display
+                document.getElementById('result').textContent = formatResult(result);
+                
+                // Set flag that we just calculated
+                justCalculated = true;
+                expression = result;
+                
+            } catch (error) {
+                result = 'Error';
+                document.getElementById('result').textContent = result;
+                console.error('Calculation error:', error);
+            }
+        }
+
+        function formatResult(value) {
+            const num = parseFloat(value);
+            if (isNaN(num)) return value;
+            
+            // Format large numbers with scientific notation
+            if (Math.abs(num) > 1e10 || (Math.abs(num) < 1e-10 && num !== 0)) {
+                return num.toExponential(6);
+            }
+            
+            // Round to 10 decimal places to avoid floating point issues
+            return Math.round(num * 1e10) / 1e10;
+        }
+
+        function updateDisplay() {
+            document.getElementById('expression').textContent = expression || '';
+            
+            if (expression) {
+                try {
+                    let evalExpression = expression;
+                    evalExpression = evalExpression.replace(/×/g, '*');
+                    evalExpression = evalExpression.replace(/÷/g, '/');
+                    evalExpression = evalExpression.replace(/−/g, '-');
+                    evalExpression = evalExpression.replace(/ln\(/g, 'log(');
+                    evalExpression = evalExpression.replace(/mod/g, '%');
+                    evalExpression = evalExpression.replace(/10\^/g, '10^');
+                    
+                    const preview = math.evaluate(evalExpression);
+                    document.getElementById('result').textContent = formatResult(preview.toString());
+                } catch {
+                    // Don't update result if expression is incomplete
+                }
+            } else {
+                document.getElementById('result').textContent = '0';
+            }
+        }
+
+        function formatDate(timestamp) {
+            const date = new Date(timestamp);
+            const now = new Date();
+            const diffMs = now - date;
+            const diffSecs = Math.floor(diffMs / 1000);
+            const diffMins = Math.floor(diffSecs / 60);
+            const diffHours = Math.floor(diffMins / 60);
+            const diffDays = Math.floor(diffHours / 24);
+
+            if (diffSecs < 60) {
+                return 'Just now';
+            } else if (diffMins < 60) {
+                return `${diffMins} minute${diffMins > 1 ? 's' : ''} ago`;
+            } else if (diffHours < 24) {
+                return `${diffHours} hour${diffHours > 1 ? 's' : ''} ago`;
+            } else if (diffDays < 7) {
+                return `${diffDays} day${diffDays > 1 ? 's' : ''} ago`;
+            } else {
+                return date.toLocaleDateString('en-US', { 
+                    month: 'short', 
+                    day: 'numeric',
+                    year: date.getFullYear() !== now.getFullYear() ? 'numeric' : undefined
+                });
+            }
+        }
+
+        function addToHistory(expr, res) {
+            const historyItem = {
+                expression: expr,
+                result: res,
+                timestamp: new Date().toISOString()
+            };
+            
+            history.unshift(historyItem);
+            
+            if (history.length > MAX_HISTORY) {
+                history = history.slice(0, MAX_HISTORY);
+            }
+            
+            saveHistory();
+            updateHistoryDisplay();
+        }
+
+        function saveHistory() {
+            localStorage.setItem('calculatorHistory', JSON.stringify(history));
+        }
+
+        function loadHistory() {
+            const saved = localStorage.getItem('calculatorHistory');
+            if (saved) {
+                try {
+                    history = JSON.parse(saved);
+                } catch (e) {
+                    console.error('Error loading history:', e);
+                    history = [];
+                }
+            }
+        }
+
+        function clearHistory() {
+            history = [];
+            saveHistory();
+            updateHistoryDisplay();
+        }
+
+        function searchHistory() {
+            const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+            updateHistoryDisplay(searchTerm);
+        }
+
+        function updateHistoryDisplay(searchTerm = '') {
+            const historyList = document.getElementById('historyList');
+            
+            let filteredHistory = history;
+            
+            if (searchTerm) {
+                filteredHistory = history.filter(item => 
+                    item.expression.toLowerCase().includes(searchTerm) ||
+                    item.result.toLowerCase().includes(searchTerm)
+                );
+            }
+            
+            if (history.length === 0) {
+                historyList.innerHTML = '<div class="empty-history">No calculations yet</div>';
+                return;
+            }
+            
+            if (filteredHistory.length === 0) {
+                historyList.innerHTML = '<div class="no-results">No results found</div>';
+                return;
+            }
+            
+            historyList.innerHTML = filteredHistory.map((item, index) => {
+                const originalIndex = history.indexOf(item);
+                const timeString = formatDate(item.timestamp);
+                
+                return `
+                    <div class="history-item">
+                        <div class="history-content">
+                            <div class="history-expression">${item.expression}</div>
+                            <div class="history-result">= ${formatResult(item.result)}</div>
+                            <div class="history-time">${timeString}</div>
+                        </div>
+                        <div class="history-actions">
+                            <button class="history-btn copy" onclick="copyToClipboard('${item.result}')" title="Copy result">
+                                <i class="fas fa-copy"></i>
+                            </button>
+                            <button class="history-btn transfer" onclick="transferToCalculator(${originalIndex})" title="Use in calculator">
+                                <i class="fas fa-calculator"></i>
+                            </button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function copyToClipboard(value) {
+            navigator.clipboard.writeText(value).then(() => {
+                showCopiedToast();
+            }).catch(() => {
+                const textarea = document.createElement('textarea');
+                textarea.value = value;
+                document.body.appendChild(textarea);
+                textarea.select();
+                document.execCommand('copy');
+                document.body.removeChild(textarea);
+                showCopiedToast();
+            });
+        }
+
+        function showCopiedToast() {
+            const toast = document.getElementById('copiedToast');
+            toast.classList.add('show');
+            
+            setTimeout(() => {
+                toast.classList.remove('show');
+            }, 2000);
+        }
+
+        function transferToCalculator(index) {
+            const item = history[index];
+            expression = item.result;
+            result = item.result;
+            justCalculated = false;
+            document.getElementById('expression').textContent = expression;
+            document.getElementById('result').textContent = formatResult(result);
+            
+            if (window.innerWidth <= 768) {
+                document.querySelector('.calculator').scrollIntoView({ behavior: 'smooth' });
+            }
+        }
+
+        // Keyboard support
+        document.addEventListener('keydown', function(event) {
+            if (document.getElementById('searchInput') === document.activeElement) {
+                return;
+            }
+            
+            if (event.key >= '0' && event.key <= '9') {
+                appendNumber(event.key);
+            } else if (event.key === '.') {
+                appendNumber('.');
+            } else if (event.key === '+' || event.key === '-' || event.key === '*' || event.key === '/') {
+                appendOperator(event.key);
+            } else if (event.key === '(' || event.key === ')') {
+                appendOperator(event.key);
+            } else if (event.key === 'Enter' || event.key === '=') {
+                event.preventDefault();
+                calculate();
+            } else if (event.key === 'Escape') {
+                clearAll();
+            } else if (event.key === 'Backspace') {
+                deleteLast();
+            }
+        });
+
+        // Update history display every minute to refresh relative times
+        setInterval(() => {
+            const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+            updateHistoryDisplay(searchTerm);
+        }, 60000);
+    </script>
+</body>
+</html>
