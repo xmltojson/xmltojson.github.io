@@ -599,7 +599,7 @@ Copyright (c) 2025 Valentyn Kolesnikov <0009-0003-9608-3364@orcid.org>
         }
 
         .history-content {
-            padding-right: 75px;
+            padding-right: 105px;
         }
 
         .history-expression {
@@ -668,6 +668,16 @@ Copyright (c) 2025 Valentyn Kolesnikov <0009-0003-9608-3364@orcid.org>
             transform: scale(1.1);
         }
 
+        .history-btn.delete {
+            background: #ffebee;
+            color: #c62828;
+        }
+
+        .history-btn.delete:hover {
+            background: #ffcdd2;
+            transform: scale(1.1);
+        }
+
         .copied-toast {
             position: fixed;
             bottom: 30px;
@@ -700,6 +710,22 @@ Copyright (c) 2025 Valentyn Kolesnikov <0009-0003-9608-3364@orcid.org>
             color: #999;
             padding: 40px 20px;
             font-style: italic;
+        }
+
+        /* Fade out animation for deleted items */
+        @keyframes fadeOut {
+            from {
+                opacity: 1;
+                transform: translateX(0);
+            }
+            to {
+                opacity: 0;
+                transform: translateX(100%);
+            }
+        }
+
+        .history-item.deleting {
+            animation: fadeOut 0.3s ease forwards;
         }
 
         /* Scrollbar styling */
@@ -1641,6 +1667,30 @@ Copyright (c) 2025 Valentyn Kolesnikov <0009-0003-9608-3364@orcid.org>
             updateHistoryDisplay();
         }
 
+        function deleteHistoryItem(index) {
+            // Add animation class to the item
+            const historyList = document.getElementById('historyList');
+            const items = historyList.querySelectorAll('.history-item');
+            
+            if (items[index]) {
+                items[index].classList.add('deleting');
+                
+                // Wait for animation to complete before removing
+                setTimeout(() => {
+                    history.splice(index, 1);
+                    saveHistory();
+                    const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+                    updateHistoryDisplay(searchTerm);
+                }, 300);
+            } else {
+                // Fallback if element not found
+                history.splice(index, 1);
+                saveHistory();
+                const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+                updateHistoryDisplay(searchTerm);
+            }
+        }
+
         function searchHistory() {
             const searchTerm = document.getElementById('searchInput').value.toLowerCase();
             updateHistoryDisplay(searchTerm);
@@ -1685,6 +1735,9 @@ Copyright (c) 2025 Valentyn Kolesnikov <0009-0003-9608-3364@orcid.org>
                             </button>
                             <button class="history-btn transfer" onclick="transferToCalculator(${originalIndex})" title="Use in calculator">
                                 <i class="fas fa-calculator"></i>
+                            </button>
+                            <button class="history-btn delete" onclick="deleteHistoryItem(${originalIndex})" title="Delete">
+                                <i class="fas fa-trash"></i>
                             </button>
                         </div>
                     </div>
