@@ -1,14 +1,9 @@
 <!DOCTYPE html>
-<!-- MIT License
-Copyright (c) 2025 Valentyn Kolesnikov <0009-0003-9608-3364@orcid.org>
--->
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="Calculator">
-    <link rel="icon" type="image/x-icon" href="Calculator.ico"/>
-    <title>Calculator</title>
+    <title>Scientific Calculator</title>
     
     <!-- Math.js library for calculations -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjs/11.11.0/math.min.js"></script>
@@ -137,18 +132,20 @@ Copyright (c) 2025 Valentyn Kolesnikov <0009-0003-9608-3364@orcid.org>
             background: #e0e0e0;
         }
 
-        /* DEG/RAD toggle */
-        .deg-rad-container {
+        /* Angle mode and F-E toggle */
+        .scientific-controls {
             display: none;
+            flex-direction: row;
+            gap: 10px;
             margin-bottom: 10px;
             flex-shrink: 0;
         }
 
-        .scientific-mode .deg-rad-container {
-            display: block;
+        .scientific-mode .scientific-controls {
+            display: flex;
         }
 
-        .deg-rad-toggle {
+        .angle-toggle, .fe-toggle {
             padding: 6px 16px;
             background: #f0f0f0;
             border: none;
@@ -159,8 +156,84 @@ Copyright (c) 2025 Valentyn Kolesnikov <0009-0003-9608-3364@orcid.org>
             transition: all 0.3s;
         }
 
-        .deg-rad-toggle:hover {
+        .angle-toggle:hover, .fe-toggle:hover {
             background: #e0e0e0;
+        }
+
+        .angle-toggle.active {
+            background: #667eea;
+            color: white;
+        }
+
+        /* Dropdown menus for trigonometry and functions */
+        .function-dropdowns {
+            display: none;
+            gap: 10px;
+            margin-bottom: 10px;
+            flex-shrink: 0;
+        }
+
+        .scientific-mode .function-dropdowns {
+            display: flex;
+        }
+
+        .dropdown {
+            position: relative;
+            flex: 1;
+        }
+
+        .dropdown-btn {
+            width: 100%;
+            padding: 8px 12px;
+            background: #f8f8f8;
+            border: 1px solid #e0e0e0;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 13px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: all 0.3s;
+        }
+
+        .dropdown-btn:hover {
+            background: #f0f0f0;
+            border-color: #667eea;
+        }
+
+        .dropdown-btn i {
+            font-size: 10px;
+        }
+
+        .dropdown-content {
+            display: none;
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: white;
+            border: 1px solid #e0e0e0;
+            border-radius: 6px;
+            margin-top: 4px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            z-index: 100;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+
+        .dropdown.active .dropdown-content {
+            display: block;
+        }
+
+        .dropdown-item {
+            padding: 8px 12px;
+            cursor: pointer;
+            font-size: 13px;
+            transition: background 0.2s;
+        }
+
+        .dropdown-item:hover {
+            background: #f0f0f0;
         }
 
         /* Memory buttons row */
@@ -400,6 +473,16 @@ Copyright (c) 2025 Valentyn Kolesnikov <0009-0003-9608-3364@orcid.org>
 
         .btn.scientific:hover {
             background: #ececec;
+        }
+
+        /* 2nd button active state */
+        .btn.second-active {
+            background: linear-gradient(135deg, #ff6b35 0%, #ff5722 100%);
+            color: white;
+        }
+
+        .btn.second-active:hover {
+            background: linear-gradient(135deg, #ff5722 0%, #ff4411 100%);
         }
 
         .history-panel {
@@ -715,12 +798,26 @@ Copyright (c) 2025 Valentyn Kolesnikov <0009-0003-9608-3364@orcid.org>
         .history-item {
             animation: fadeIn 0.3s ease;
         }
+
+        /* Angle indicator */
+        .angle-indicator {
+            position: absolute;
+            top: 5px;
+            right: 5px;
+            background: rgba(255, 255, 255, 0.2);
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 10px;
+            color: rgba(255, 255, 255, 0.9);
+            font-weight: 600;
+        }
     </style>
 </head>
 <body>
     <div class="container">
         <div class="calculator" id="calculator">
-            <div class="display">
+            <div class="display" style="position: relative;">
+                <span class="angle-indicator" id="angleIndicator" style="display: none;">DEG</span>
                 <div class="expression" id="expression"></div>
                 <div class="result" id="result">0</div>
             </div>
@@ -730,9 +827,48 @@ Copyright (c) 2025 Valentyn Kolesnikov <0009-0003-9608-3364@orcid.org>
                 <button class="mode-btn" onclick="toggleMode('scientific')">Scientific</button>
             </div>
 
-            <!-- DEG/RAD toggle for scientific mode -->
-            <div class="deg-rad-container">
-                <button class="deg-rad-toggle" id="degRadBtn" onclick="toggleDegRad()">DEG</button>
+            <!-- Scientific controls -->
+            <div class="scientific-controls">
+                <button class="angle-toggle" id="angleBtn" onclick="toggleAngleMode()">DEG</button>
+                <button class="fe-toggle" id="feBtn" onclick="toggleFEMode()">F-E</button>
+            </div>
+
+            <!-- Function dropdowns for scientific mode -->
+            <div class="function-dropdowns">
+                <div class="dropdown" id="trigDropdown">
+                    <button class="dropdown-btn" onclick="toggleDropdown('trigDropdown')">
+                        <span><i class="fas fa-calculator"></i> Trigonometry</span>
+                        <i class="fas fa-chevron-down"></i>
+                    </button>
+                    <div class="dropdown-content">
+                        <div class="dropdown-item" onclick="insertTrigFunction('sin')">sin</div>
+                        <div class="dropdown-item" onclick="insertTrigFunction('cos')">cos</div>
+                        <div class="dropdown-item" onclick="insertTrigFunction('tan')">tan</div>
+                        <div class="dropdown-item" onclick="insertTrigFunction('asin')">sin⁻¹</div>
+                        <div class="dropdown-item" onclick="insertTrigFunction('acos')">cos⁻¹</div>
+                        <div class="dropdown-item" onclick="insertTrigFunction('atan')">tan⁻¹</div>
+                        <div class="dropdown-item" onclick="insertTrigFunction('sinh')">sinh</div>
+                        <div class="dropdown-item" onclick="insertTrigFunction('cosh')">cosh</div>
+                        <div class="dropdown-item" onclick="insertTrigFunction('tanh')">tanh</div>
+                    </div>
+                </div>
+                <div class="dropdown" id="funcDropdown">
+                    <button class="dropdown-btn" onclick="toggleDropdown('funcDropdown')">
+                        <span><i class="fas fa-function"></i> Function</span>
+                        <i class="fas fa-chevron-down"></i>
+                    </button>
+                    <div class="dropdown-content">
+                        <div class="dropdown-item" onclick="insertFunction('abs(', 'funcDropdown')">|x|</div>
+                        <div class="dropdown-item" onclick="insertFunction('floor(', 'funcDropdown')">⌊x⌋</div>
+                        <div class="dropdown-item" onclick="insertFunction('ceil(', 'funcDropdown')">⌈x⌉</div>
+                        <div class="dropdown-item" onclick="insertFunction('round(', 'funcDropdown')">round</div>
+                        <div class="dropdown-item" onclick="insertFunction('random()', 'funcDropdown')">rand</div>
+                        <div class="dropdown-item" onclick="insertFunction('gcd(', 'funcDropdown')">gcd</div>
+                        <div class="dropdown-item" onclick="insertFunction('lcm(', 'funcDropdown')">lcm</div>
+                        <div class="dropdown-item" onclick="insertFunction('permutations(', 'funcDropdown')">nPr</div>
+                        <div class="dropdown-item" onclick="insertFunction('combinations(', 'funcDropdown')">nCr</div>
+                    </div>
+                </div>
             </div>
 
             <!-- Memory display -->
@@ -785,20 +921,96 @@ Copyright (c) 2025 Valentyn Kolesnikov <0009-0003-9608-3364@orcid.org>
         let history = [];
         let memoryStack = [];
         let angleMode = 'deg';
+        let feMode = false;
+        let secondMode = false;
         let justCalculated = false;
+        let customFunctionsImported = false;
         const MAX_HISTORY = 1000;
+
+        // Initialize custom functions once
+        function initCustomFunctions() {
+            if (!customFunctionsImported) {
+                try {
+                    // Custom trigonometric functions that handle degree/radian conversion
+                    math.import({
+                        // nth root function
+                        nthRoot: function(x, n) {
+                            return Math.pow(x, 1/n);
+                        },
+                        // log base 2
+                        log2: function(x) {
+                            return Math.log2(x);
+                        },
+                        // Degree-based trig functions
+                        sind: function(x) {
+                            return Math.sin(x * Math.PI / 180);
+                        },
+                        cosd: function(x) {
+                            return Math.cos(x * Math.PI / 180);
+                        },
+                        tand: function(x) {
+                            return Math.tan(x * Math.PI / 180);
+                        },
+                        asind: function(x) {
+                            return Math.asin(x) * 180 / Math.PI;
+                        },
+                        acosd: function(x) {
+                            return Math.acos(x) * 180 / Math.PI;
+                        },
+                        atand: function(x) {
+                            return Math.atan(x) * 180 / Math.PI;
+                        },
+                        // Cotangent functions
+                        cot: function(x) {
+                            return 1 / Math.tan(x);
+                        },
+                        cotd: function(x) {
+                            return 1 / Math.tan(x * Math.PI / 180);
+                        },
+                        // Secant functions
+                        sec: function(x) {
+                            return 1 / Math.cos(x);
+                        },
+                        secd: function(x) {
+                            return 1 / Math.cos(x * Math.PI / 180);
+                        },
+                        // Cosecant functions
+                        csc: function(x) {
+                            return 1 / Math.sin(x);
+                        },
+                        cscd: function(x) {
+                            return 1 / Math.sin(x * Math.PI / 180);
+                        }
+                    }, {override: true});
+                    customFunctionsImported = true;
+                } catch (e) {
+                    console.log('Custom functions already imported or error:', e);
+                }
+            }
+        }
 
         // Load history and memory from localStorage on page load
         window.onload = function() {
+            initCustomFunctions();
             loadHistory();
             loadMemory();
             updateHistoryDisplay();
             renderButtons('simple');
+            
+            // Close dropdowns when clicking outside
+            document.addEventListener('click', function(event) {
+                if (!event.target.closest('.dropdown')) {
+                    document.querySelectorAll('.dropdown').forEach(d => {
+                        d.classList.remove('active');
+                    });
+                }
+            });
         };
 
         function toggleMode(mode) {
             const calculator = document.getElementById('calculator');
             const modeBtns = document.querySelectorAll('.mode-btn');
+            const angleIndicator = document.getElementById('angleIndicator');
             
             modeBtns.forEach(btn => btn.classList.remove('active'));
             event.target.classList.add('active');
@@ -806,10 +1018,15 @@ Copyright (c) 2025 Valentyn Kolesnikov <0009-0003-9608-3364@orcid.org>
             if (mode === 'scientific') {
                 calculator.classList.add('scientific-mode');
                 renderButtons('scientific');
+                angleIndicator.style.display = 'block';
+                angleIndicator.textContent = angleMode.toUpperCase();
             } else {
                 calculator.classList.remove('scientific-mode');
                 renderButtons('simple');
+                angleIndicator.style.display = 'none';
             }
+            
+            secondMode = false;
         }
 
         function renderButtons(mode) {
@@ -854,9 +1071,17 @@ Copyright (c) 2025 Valentyn Kolesnikov <0009-0003-9608-3364@orcid.org>
                     <button class="btn equals" onclick="calculate()">=</button>
                 `;
             } else {
+                renderScientificButtons();
+            }
+        }
+
+        function renderScientificButtons() {
+            const container = document.getElementById('buttonsContainer');
+            
+            if (!secondMode) {
                 container.innerHTML = `
                     <!-- Row 1 -->
-                    <button class="btn scientific" onclick="toggle2nd()">2ⁿᵈ</button>
+                    <button class="btn scientific" id="2ndBtn" onclick="toggle2nd()">2ⁿᵈ</button>
                     <button class="btn scientific" onclick="appendConstant('pi')">π</button>
                     <button class="btn scientific" onclick="appendConstant('e')">e</button>
                     <button class="btn clear" onclick="clearAll()">C</button>
@@ -904,12 +1129,137 @@ Copyright (c) 2025 Valentyn Kolesnikov <0009-0003-9608-3364@orcid.org>
                     <button class="btn number" onclick="appendNumber('.')">.</button>
                     <button class="btn equals" onclick="calculate()">=</button>
                 `;
+            } else {
+                // Second mode functions
+                container.innerHTML = `
+                    <!-- Row 1 -->
+                    <button class="btn scientific second-active" id="2ndBtn" onclick="toggle2nd()">2ⁿᵈ</button>
+                    <button class="btn scientific" onclick="appendConstant('pi')">π</button>
+                    <button class="btn scientific" onclick="appendConstant('e')">e</button>
+                    <button class="btn clear" onclick="clearAll()">C</button>
+                    <button class="btn clear" onclick="deleteLast()">⌫</button>
+
+                    <!-- Row 2 -->
+                    <button class="btn scientific" onclick="appendOperator('^3')">x³</button>
+                    <button class="btn scientific" onclick="appendFunction('1/')">1/x</button>
+                    <button class="btn scientific" onclick="appendFunction('abs(')">|x|</button>
+                    <button class="btn scientific" onclick="appendFunction('exp(')">exp</button>
+                    <button class="btn scientific" onclick="appendOperator('mod')">mod</button>
+
+                    <!-- Row 3 -->
+                    <button class="btn scientific" onclick="appendFunction('cbrt(')">³√x</button>
+                    <button class="btn operator" onclick="appendOperator('(')">(</button>
+                    <button class="btn operator" onclick="appendOperator(')')">)</button>
+                    <button class="btn scientific" onclick="appendOperator('!')">n!</button>
+                    <button class="btn operator" onclick="appendOperator('/')">÷</button>
+
+                    <!-- Row 4 -->
+                    <button class="btn scientific" onclick="appendFunction('nthRoot(')">ʸ√x</button>
+                    <button class="btn number" onclick="appendNumber('7')">7</button>
+                    <button class="btn number" onclick="appendNumber('8')">8</button>
+                    <button class="btn number" onclick="appendNumber('9')">9</button>
+                    <button class="btn operator" onclick="appendOperator('*')">×</button>
+
+                    <!-- Row 5 -->
+                    <button class="btn scientific" onclick="appendFunction('2^')">2ˣ</button>
+                    <button class="btn number" onclick="appendNumber('4')">4</button>
+                    <button class="btn number" onclick="appendNumber('5')">5</button>
+                    <button class="btn number" onclick="appendNumber('6')">6</button>
+                    <button class="btn operator" onclick="appendOperator('-')">−</button>
+
+                    <!-- Row 6 -->
+                    <button class="btn scientific" onclick="appendFunction('log2(')">log₂</button>
+                    <button class="btn number" onclick="appendNumber('1')">1</button>
+                    <button class="btn number" onclick="appendNumber('2')">2</button>
+                    <button class="btn number" onclick="appendNumber('3')">3</button>
+                    <button class="btn operator" onclick="appendOperator('+')">+</button>
+
+                    <!-- Row 7 -->
+                    <button class="btn scientific" onclick="appendFunction('e^')">eˣ</button>
+                    <button class="btn function" onclick="toggleSign()">+/−</button>
+                    <button class="btn number" onclick="appendNumber('0')">0</button>
+                    <button class="btn number" onclick="appendNumber('.')">.</button>
+                    <button class="btn equals" onclick="calculate()">=</button>
+                `;
             }
         }
 
         function toggle2nd() {
-            // Placeholder for 2nd function toggle
-            // This would switch between primary and secondary functions
+            secondMode = !secondMode;
+            renderScientificButtons();
+        }
+
+        function toggleAngleMode() {
+            angleMode = angleMode === 'deg' ? 'rad' : 'deg';
+            const angleBtn = document.getElementById('angleBtn');
+            const angleIndicator = document.getElementById('angleIndicator');
+            
+            angleBtn.textContent = angleMode.toUpperCase();
+            angleIndicator.textContent = angleMode.toUpperCase();
+            
+            if (angleMode === 'deg') {
+                angleBtn.classList.add('active');
+            } else {
+                angleBtn.classList.remove('active');
+            }
+        }
+
+        function toggleFEMode() {
+            feMode = !feMode;
+            const btn = document.getElementById('feBtn');
+            btn.textContent = feMode ? 'F' : 'F-E';
+            updateDisplay();
+        }
+
+        function toggleDropdown(dropdownId) {
+            const dropdown = document.getElementById(dropdownId);
+            const wasActive = dropdown.classList.contains('active');
+            
+            // Close all dropdowns
+            document.querySelectorAll('.dropdown').forEach(d => {
+                d.classList.remove('active');
+            });
+            
+            // Toggle the clicked dropdown
+            if (!wasActive) {
+                dropdown.classList.add('active');
+            }
+            
+            event.stopPropagation();
+        }
+
+        function insertTrigFunction(func) {
+            if (justCalculated) {
+                expression = '';
+                justCalculated = false;
+            }
+            
+            // Add the appropriate function based on angle mode
+            if (angleMode === 'deg' && !func.startsWith('sinh') && !func.startsWith('cosh') && !func.startsWith('tanh')) {
+                // For degree mode, use custom degree functions
+                expression += func + 'd(';
+            } else {
+                // For radian mode or hyperbolic functions, use standard functions
+                expression += func + '(';
+            }
+            
+            updateDisplay();
+            
+            // Close the dropdown
+            document.getElementById('trigDropdown').classList.remove('active');
+        }
+
+        function insertFunction(func, dropdownId) {
+            if (justCalculated) {
+                expression = '';
+                justCalculated = false;
+            }
+            
+            expression += func;
+            updateDisplay();
+            
+            // Close the dropdown
+            document.getElementById(dropdownId).classList.remove('active');
         }
 
         function appendNumber(num) {
@@ -925,6 +1275,8 @@ Copyright (c) 2025 Valentyn Kolesnikov <0009-0003-9608-3364@orcid.org>
             justCalculated = false;
             if (op === '^2') {
                 expression += '^2';
+            } else if (op === '^3') {
+                expression += '^3';
             } else {
                 expression += op;
             }
@@ -944,6 +1296,13 @@ Copyright (c) 2025 Valentyn Kolesnikov <0009-0003-9608-3364@orcid.org>
                 }
             } else if (func === '10^') {
                 expression += '10^';
+            } else if (func === '2^') {
+                expression += '2^';
+            } else if (func === 'e^') {
+                expression += 'e^';
+            } else if (func === 'nthRoot(') {
+                // For nth root, we'll use the format: nthRoot(x, n)
+                expression += 'nthRoot(';
             } else {
                 expression += func;
             }
@@ -1002,11 +1361,6 @@ Copyright (c) 2025 Valentyn Kolesnikov <0009-0003-9608-3364@orcid.org>
                 expression = String(-parseFloat(result));
                 updateDisplay();
             }
-        }
-
-        function toggleDegRad() {
-            angleMode = angleMode === 'deg' ? 'rad' : 'deg';
-            document.getElementById('degRadBtn').textContent = angleMode.toUpperCase();
         }
 
         // Memory functions
@@ -1144,13 +1498,11 @@ Copyright (c) 2025 Valentyn Kolesnikov <0009-0003-9608-3364@orcid.org>
                 evalExpression = evalExpression.replace(/mod/g, '%');
                 evalExpression = evalExpression.replace(/ln\(/g, 'log(');
                 evalExpression = evalExpression.replace(/10\^/g, '10^');
+                evalExpression = evalExpression.replace(/2\^/g, '2^');
+                evalExpression = evalExpression.replace(/e\^/g, 'e^');
                 
-                // Configure math.js for angle mode
-                if (angleMode === 'deg') {
-                    math.config({ angles: 'deg' });
-                } else {
-                    math.config({ angles: 'rad' });
-                }
+                // Ensure custom functions are imported
+                initCustomFunctions();
                 
                 // Evaluate using math.js
                 const calculatedResult = math.evaluate(evalExpression);
@@ -1177,13 +1529,18 @@ Copyright (c) 2025 Valentyn Kolesnikov <0009-0003-9608-3364@orcid.org>
             const num = parseFloat(value);
             if (isNaN(num)) return value;
             
-            // Format large numbers with scientific notation
-            if (Math.abs(num) > 1e10 || (Math.abs(num) < 1e-10 && num !== 0)) {
-                return num.toExponential(6);
+            if (feMode) {
+                // Fixed notation
+                return num.toFixed(10).replace(/\.?0+$/, '');
+            } else {
+                // Format large numbers with scientific notation
+                if (Math.abs(num) > 1e10 || (Math.abs(num) < 1e-10 && num !== 0)) {
+                    return num.toExponential(6);
+                }
+                
+                // Round to 10 decimal places to avoid floating point issues
+                return Math.round(num * 1e10) / 1e10;
             }
-            
-            // Round to 10 decimal places to avoid floating point issues
-            return Math.round(num * 1e10) / 1e10;
         }
 
         function updateDisplay() {
@@ -1198,6 +1555,11 @@ Copyright (c) 2025 Valentyn Kolesnikov <0009-0003-9608-3364@orcid.org>
                     evalExpression = evalExpression.replace(/ln\(/g, 'log(');
                     evalExpression = evalExpression.replace(/mod/g, '%');
                     evalExpression = evalExpression.replace(/10\^/g, '10^');
+                    evalExpression = evalExpression.replace(/2\^/g, '2^');
+                    evalExpression = evalExpression.replace(/e\^/g, 'e^');
+                    
+                    // Ensure custom functions are imported
+                    initCustomFunctions();
                     
                     const preview = math.evaluate(evalExpression);
                     document.getElementById('result').textContent = formatResult(preview.toString());
