@@ -414,9 +414,14 @@ Copyright (c) 2025 Valentyn Kolesnikov <0009-0003-9608-3364@orcid.org>
             color: white;
         }
 
-        .btn-clear {
+        .btn-undo {
             background: #e74c3c;
             color: white;
+        }
+
+        .btn-undo:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
         }
 
         .btn-notes {
@@ -801,9 +806,9 @@ Copyright (c) 2025 Valentyn Kolesnikov <0009-0003-9608-3364@orcid.org>
                 <svg><path d="M3 2 L13 2 L13 14 L3 14 Z" fill="none" stroke="white" stroke-width="1"/><text x="8" y="10" text-anchor="middle" font-size="8" fill="white">N</text></svg>
                 Notes
             </button>
-            <button class="action-btn btn-clear" id="clearBtn" onclick="clearCell()">
-                <svg><path d="M4 4 L12 12 M12 4 L4 12" stroke="white" stroke-width="2"/></svg>
-                Clear
+            <button class="action-btn btn-undo" id="undoBtn" onclick="undoMove()">
+                <svg><path d="M3 8 C3 5, 5 3, 8 3 C11 3, 13 5, 13 8 C13 11, 11 13, 8 13" stroke="white" stroke-width="2" fill="none"/><polygon points="1,8 3,6 3,10" fill="white"/></svg>
+                Undo
             </button>
             <button class="action-btn btn-pause" id="pauseBtn" onclick="togglePause()">
                 <svg><rect x="4" y="3" width="3" height="10" fill="white"/><rect x="9" y="3" width="3" height="10" fill="white"/></svg>
@@ -871,6 +876,7 @@ Copyright (c) 2025 Valentyn Kolesnikov <0009-0003-9608-3364@orcid.org>
                         <li>Gray cells are fixed</li>
                         <li>Use Notes for reminders</li>
                         <li>Hint reveals one answer</li>
+                        <li>Undo restores previous move</li>
                         <li>Check verifies solution</li>
                         <li>Pause to stop timer</li>
                     </ul>
@@ -893,8 +899,8 @@ Copyright (c) 2025 Valentyn Kolesnikov <0009-0003-9608-3364@orcid.org>
                         <span class="shortcut-key">1-6</span>
                     </div>
                     <div class="shortcut-item">
-                        <span>Clear cell:</span>
-                        <span class="shortcut-key">Del</span>
+                        <span>Undo move:</span>
+                        <span class="shortcut-key">Ctrl+Z</span>
                     </div>
                     <div class="shortcut-item">
                         <span>Toggle notes:</span>
@@ -935,6 +941,8 @@ Copyright (c) 2025 Valentyn Kolesnikov <0009-0003-9608-3364@orcid.org>
         let isPaused = false;
         let isCompleted = false;
         let wasTimerRunning = false;
+        let moveHistory = [];
+        const MAX_HISTORY = 50;
 
         // Predefined puzzles with obfuscated storage
         const puzzleData = {
@@ -980,6 +988,75 @@ Copyright (c) 2025 Valentyn Kolesnikov <0009-0003-9608-3364@orcid.org>
             return arr;
         }
 
+        // Save move to history
+        function saveMove(row, col, oldValue, newValue, oldNotes, isHint = false) {
+            moveHistory.push({
+                row: row,
+                col: col,
+                oldValue: oldValue,
+                newValue: newValue,
+                oldNotes: oldNotes ? [...oldNotes] : null,
+                newNotes: notes[`${row}-${col}`] ? [...notes[`${row}-${col}`]] : null,
+                isHint: isHint,
+                timestamp: Date.now()
+            });
+            
+            // Keep history size manageable
+            if (moveHistory.length > MAX_HISTORY) {
+                moveHistory.shift();
+            }
+            
+            updateUndoButton();
+        }
+
+        // Undo last move
+        function undoMove() {
+            if (isPaused || isCompleted || moveHistory.length === 0) return;
+            
+            const lastMove = moveHistory.pop();
+            const cellKey = `${lastMove.row}-${lastMove.col}`;
+            
+            // Restore previous value
+            board[lastMove.row][lastMove.col] = lastMove.oldValue;
+            
+            // Restore notes
+            if (lastMove.oldNotes) {
+                notes[cellKey] = lastMove.oldNotes;
+            } else {
+                delete notes[cellKey];
+            }
+            
+            // Remove from hinted cells if it was a hint
+            if (lastMove.isHint) {
+                hintedCells.delete(cellKey);
+                hintsUsed--;
+                document.getElementById('hintsCount').textContent = hintsUsed;
+            }
+            
+            renderBoard();
+            checkErrors();
+            updateUndoButton();
+            autoSave();
+            
+            // Show feedback
+            const messageElement = document.getElementById('message');
+            messageElement.textContent = '↶ Move undone';
+            messageElement.className = 'message info';
+            setTimeout(() => {
+                messageElement.className = 'message';
+            }, 1500);
+        }
+
+        // Update undo button state
+        function updateUndoButton() {
+            const undoBtn = document.getElementById('undoBtn');
+            if (moveHistory.length === 0 || isCompleted) {
+                undoBtn.disabled = true;
+            } else {
+                undoBtn.disabled = false;
+            }
+        }
+
         // Update UI based on game completion state
         function updateCompletionState() {
             const board = document.getElementById('board');
@@ -1011,6 +1088,39 @@ Copyright (c) 2025 Valentyn Kolesnikov <0009-0003-9608-3364@orcid.org>
                 const cells = document.querySelectorAll('.sudoku-cell');
                 cells.forEach(cell => cell.classList.remove('completed'));
             }
+            
+            updateUndoButton();
+        }
+
+        // Check if puzzle is complete
+        function checkCompletion() {
+            for (let row = 0; row < 6; row++) {
+                for (let col = 0; col < 6; col++) {
+                    if (board[row][col] === 0 || board[row][col] !== solution[row][col]) {
+                        return false;
+                    }
+                }
+            }
+            return true;
+        }
+
+        // Handle puzzle completion
+        function handleCompletion() {
+            isCompleted = true;
+            stopTimer();
+            updateCompletionState();
+            
+            const finalTime = totalElapsedTime + (startTime ? Math.floor((Date.now() - startTime) / 1000) : 0);
+            const minutes = Math.floor(finalTime / 60);
+            const seconds = finalTime % 60;
+            const timeStr = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+            const hintText = hintsUsed > 0 ? ` with ${hintsUsed} hint${hintsUsed > 1 ? 's' : ''}` : '';
+            
+            const messageElement = document.getElementById('message');
+            messageElement.textContent = `🎉 Solved in ${timeStr}${hintText}!`;
+            messageElement.className = 'message success';
+            
+            autoSave();
         }
 
         // Local storage functions
@@ -1030,6 +1140,7 @@ Copyright (c) 2025 Valentyn Kolesnikov <0009-0003-9608-3364@orcid.org>
                 notesMode: notesMode,
                 isCompleted: isCompleted,
                 wasTimerRunning: !isCompleted && timerInterval !== null,
+                moveHistory: moveHistory,
                 timestamp: Date.now()
             };
             
@@ -1060,7 +1171,8 @@ Copyright (c) 2025 Valentyn Kolesnikov <0009-0003-9608-3364@orcid.org>
                 totalElapsedTime = gameState.totalElapsedTime || 0;
                 notesMode = gameState.notesMode || false;
                 isCompleted = gameState.isCompleted || false;
-                wasTimerRunning = gameState.wasTimerRunning !== false; // Default to true for backward compatibility
+                wasTimerRunning = gameState.wasTimerRunning !== false;
+                moveHistory = gameState.moveHistory || [];
                 
                 // Update UI
                 document.querySelectorAll('.difficulty-btn').forEach(btn => {
@@ -1110,7 +1222,7 @@ Copyright (c) 2025 Valentyn Kolesnikov <0009-0003-9608-3364@orcid.org>
         }
 
         function togglePause() {
-            if (isCompleted) return; // Can't pause completed game
+            if (isCompleted) return;
             
             isPaused = !isPaused;
             
@@ -1215,6 +1327,7 @@ Copyright (c) 2025 Valentyn Kolesnikov <0009-0003-9608-3364@orcid.org>
             clearGameState();
             totalElapsedTime = 0;
             isCompleted = false;
+            moveHistory = [];
             initGame(true);
         }
 
@@ -1239,6 +1352,7 @@ Copyright (c) 2025 Valentyn Kolesnikov <0009-0003-9608-3364@orcid.org>
             hintsUsed = 0;
             hintedCells.clear();
             isCompleted = false;
+            moveHistory = [];
             
             if (skipLoad) {
                 totalElapsedTime = 0;
@@ -1339,6 +1453,10 @@ Copyright (c) 2025 Valentyn Kolesnikov <0009-0003-9608-3364@orcid.org>
 
             const { row, col } = selectedCell;
             const cellKey = `${row}-${col}`;
+            
+            // Save current state for undo
+            const oldValue = board[row][col];
+            const oldNotes = notes[cellKey] ? [...notes[cellKey]] : null;
 
             if (notesMode) {
                 if (!notes[cellKey]) {
@@ -1352,10 +1470,12 @@ Copyright (c) 2025 Valentyn Kolesnikov <0009-0003-9608-3364@orcid.org>
                     notes[cellKey].sort();
                 }
                 board[row][col] = 0;
+                saveMove(row, col, oldValue, 0, oldNotes);
             } else {
                 board[row][col] = num;
                 delete notes[cellKey];
                 hintedCells.delete(cellKey);
+                saveMove(row, col, oldValue, num, oldNotes);
             }
 
             renderBoard();
@@ -1364,22 +1484,13 @@ Copyright (c) 2025 Valentyn Kolesnikov <0009-0003-9608-3364@orcid.org>
             cell.classList.add('selected');
 
             checkErrors();
-            autoSave();
-        }
-
-        function clearCell() {
-            if (!selectedCell || isPaused || isCompleted) return;
             
-            const { row, col } = selectedCell;
-            if (givenCells[row][col] !== 0) return;
-            
-            board[row][col] = 0;
-            delete notes[`${row}-${col}`];
-            hintedCells.delete(`${row}-${col}`);
-            renderBoard();
-            
-            selectCell(row, col);
-            autoSave();
+            // Check for completion after placing number
+            if (!notesMode && checkCompletion()) {
+                handleCompletion();
+            } else {
+                autoSave();
+            }
         }
 
         function checkErrors() {
@@ -1422,19 +1533,7 @@ Copyright (c) 2025 Valentyn Kolesnikov <0009-0003-9608-3364@orcid.org>
 
             const messageElement = document.getElementById('message');
             if (isComplete && isCorrect) {
-                isCompleted = true;
-                stopTimer();
-                updateCompletionState();
-                
-                const finalTime = totalElapsedTime + (startTime ? Math.floor((Date.now() - startTime) / 1000) : 0);
-                const minutes = Math.floor(finalTime / 60);
-                const seconds = finalTime % 60;
-                const timeStr = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
-                const hintText = hintsUsed > 0 ? ` with ${hintsUsed} hint${hintsUsed > 1 ? 's' : ''}` : '';
-                messageElement.textContent = `🎉 Solved in ${timeStr}${hintText}!`;
-                messageElement.className = 'message success';
-                
-                autoSave();
+                handleCompletion();
             } else if (!isComplete) {
                 messageElement.textContent = '📝 Puzzle not complete yet.';
                 messageElement.className = 'message info';
@@ -1468,44 +1567,32 @@ Copyright (c) 2025 Valentyn Kolesnikov <0009-0003-9608-3364@orcid.org>
             }
 
             const randomCell = emptyCells[Math.floor(Math.random() * emptyCells.length)];
+            const cellKey = `${randomCell.row}-${randomCell.col}`;
+            const oldValue = board[randomCell.row][randomCell.col];
+            const oldNotes = notes[cellKey] ? [...notes[cellKey]] : null;
+            
             board[randomCell.row][randomCell.col] = solution[randomCell.row][randomCell.col];
-            delete notes[`${randomCell.row}-${randomCell.col}`];
-            hintedCells.add(`${randomCell.row}-${randomCell.col}`);
+            delete notes[cellKey];
+            hintedCells.add(cellKey);
             hintsUsed++;
+            
+            // Save hint as a move for undo
+            saveMove(randomCell.row, randomCell.col, oldValue, board[randomCell.row][randomCell.col], oldNotes, true);
             
             document.getElementById('hintsCount').textContent = hintsUsed;
             
             renderBoard();
-            autoSave();
             
             const cell = document.querySelector(`[data-row="${randomCell.row}"][data-col="${randomCell.col}"]`);
             cell.classList.add('hint-cell');
             
-            let isComplete = true;
-            for (let row = 0; row < 6; row++) {
-                for (let col = 0; col < 6; col++) {
-                    if (board[row][col] === 0) {
-                        isComplete = false;
-                        break;
-                    }
-                }
-            }
-            
-            if (isComplete) {
-                isCompleted = true;
-                stopTimer();
-                updateCompletionState();
-                
+            // Check if puzzle is complete after hint
+            if (checkCompletion()) {
                 setTimeout(() => {
-                    const messageElement = document.getElementById('message');
-                    const finalTime = totalElapsedTime + (startTime ? Math.floor((Date.now() - startTime) / 1000) : 0);
-                    const minutes = Math.floor(finalTime / 60);
-                    const seconds = finalTime % 60;
-                    const timeStr = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
-                    messageElement.textContent = `🎉 Completed in ${timeStr} with ${hintsUsed} hints!`;
-                    messageElement.className = 'message success';
-                    autoSave();
+                    handleCompletion();
                 }, 500);
+            } else {
+                autoSave();
             }
         }
 
@@ -1542,6 +1629,7 @@ Copyright (c) 2025 Valentyn Kolesnikov <0009-0003-9608-3364@orcid.org>
             currentPuzzleIndex = (currentPuzzleIndex + 1) % puzzleData[currentDifficulty].length;
             totalElapsedTime = 0;
             isCompleted = false;
+            moveHistory = [];
             initGame(true);
         }
 
@@ -1576,12 +1664,35 @@ Copyright (c) 2025 Valentyn Kolesnikov <0009-0003-9608-3364@orcid.org>
 
             if (isPaused || isCompleted) return;
 
+            // Undo shortcut
+            if ((e.ctrlKey || e.metaKey) && e.key === 'z') {
+                e.preventDefault();
+                undoMove();
+                return;
+            }
+
             if (!selectedCell) return;
 
             if (e.key >= '1' && e.key <= '6') {
                 placeNumber(parseInt(e.key));
             } else if (e.key === 'Delete' || e.key === 'Backspace') {
-                clearCell();
+                // Clear current cell
+                const { row, col } = selectedCell;
+                if (givenCells[row][col] === 0) {
+                    const cellKey = `${row}-${col}`;
+                    const oldValue = board[row][col];
+                    const oldNotes = notes[cellKey] ? [...notes[cellKey]] : null;
+                    
+                    board[row][col] = 0;
+                    delete notes[cellKey];
+                    hintedCells.delete(cellKey);
+                    
+                    saveMove(row, col, oldValue, 0, oldNotes);
+                    
+                    renderBoard();
+                    selectCell(row, col);
+                    autoSave();
+                }
             } else if (e.key === 'n' || e.key === 'N') {
                 toggleNotesMode();
             } else if (e.key === 'ArrowUp' && selectedCell.row > 0) {
