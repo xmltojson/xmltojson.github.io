@@ -875,7 +875,7 @@ Copyright (c) 2025 Valentyn Kolesnikov <0009-0003-9608-3364@orcid.org>
                         <li>Click number (1-6) to place</li>
                         <li>Gray cells are fixed</li>
                         <li>Use Notes for reminders</li>
-                        <li>Hint reveals one answer</li>
+                        <li>Hint reveals one answer or corrects a wrong entry</li>
                         <li>Undo restores previous move</li>
                         <li>Check verifies solution</li>
                         <li>Pause to stop timer</li>
@@ -1549,48 +1549,56 @@ Copyright (c) 2025 Valentyn Kolesnikov <0009-0003-9608-3364@orcid.org>
             }
         }
 
+        // Hints now fill empty cells and also correct any wrong non-given entries,
+        // so repeatedly using hints will always lead to the correct solution.
         function getHint() {
             if (isPaused || isCompleted) return;
-            
-            const emptyCells = [];
+
+            const candidates = [];
             for (let row = 0; row < 6; row++) {
                 for (let col = 0; col < 6; col++) {
-                    if (board[row][col] === 0) {
-                        emptyCells.push({ row, col });
+                    if (givenCells[row][col] !== 0) continue; // skip fixed cells
+                    // choose any empty cell OR any cell with an incorrect value
+                    if (board[row][col] === 0 || board[row][col] !== solution[row][col]) {
+                        candidates.push({ row, col });
                     }
                 }
             }
 
-            if (emptyCells.length === 0) {
+            if (candidates.length === 0) {
+                // No empty or incorrect cells remain; check for completion
                 checkSolution();
                 return;
             }
 
-            const randomCell = emptyCells[Math.floor(Math.random() * emptyCells.length)];
-            const cellKey = `${randomCell.row}-${randomCell.col}`;
-            const oldValue = board[randomCell.row][randomCell.col];
+            const target = candidates[Math.floor(Math.random() * candidates.length)];
+            const cellKey = `${target.row}-${target.col}`;
+            const oldValue = board[target.row][target.col];
             const oldNotes = notes[cellKey] ? [...notes[cellKey]] : null;
             
-            board[randomCell.row][randomCell.col] = solution[randomCell.row][randomCell.col];
+            // Apply the correct solution value
+            board[target.row][target.col] = solution[target.row][target.col];
             delete notes[cellKey];
             hintedCells.add(cellKey);
             hintsUsed++;
             
             // Save hint as a move for undo
-            saveMove(randomCell.row, randomCell.col, oldValue, board[randomCell.row][randomCell.col], oldNotes, true);
+            saveMove(target.row, target.col, oldValue, board[target.row][target.col], oldNotes, true);
             
             document.getElementById('hintsCount').textContent = hintsUsed;
             
             renderBoard();
             
-            const cell = document.querySelector(`[data-row="${randomCell.row}"][data-col="${randomCell.col}"]`);
+            const cell = document.querySelector(`[data-row="${target.row}"][data-col="${target.col}"]`);
             cell.classList.add('hint-cell');
+
+            checkErrors();
             
             // Check if puzzle is complete after hint
             if (checkCompletion()) {
                 setTimeout(() => {
                     handleCompletion();
-                }, 500);
+                }, 300);
             } else {
                 autoSave();
             }
