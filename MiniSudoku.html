@@ -385,7 +385,6 @@ Copyright (c) 2025 Valentyn Kolesnikov <0009-0003-9608-3364@orcid.org>
             background: #f9f9f9;
         }
 
-        /* Dialog styles */
         .dialog-overlay {
             position: fixed;
             top: 0;
@@ -479,7 +478,6 @@ Copyright (c) 2025 Valentyn Kolesnikov <0009-0003-9608-3364@orcid.org>
             box-shadow: 0 3px 10px rgba(0, 0, 0, 0.2);
         }
 
-        /* How to play specific styles */
         .rules-section {
             margin-bottom: 15px;
         }
@@ -581,7 +579,6 @@ Copyright (c) 2025 Valentyn Kolesnikov <0009-0003-9608-3364@orcid.org>
             height: 14px;
         }
 
-        /* Mobile optimizations */
         @media (max-width: 480px) {
             .game-container {
                 padding: 12px;
@@ -765,28 +762,28 @@ Copyright (c) 2025 Valentyn Kolesnikov <0009-0003-9608-3364@orcid.org>
                         <div class="example-cell">3</div>
                         <div class="example-cell">2</div>
                         <div class="example-cell">3</div>
-                        <div class="example-cell">1</div>
-                        <div class="example-cell highlight">6</div>
-                        <div class="example-cell highlight">4</div>
+                        <div class="example-cell">4</div>
                         <div class="example-cell highlight">5</div>
-                        <div class="example-cell">5</div>
-                        <div class="example-cell">1</div>
-                        <div class="example-cell">4</div>
-                        <div class="example-cell highlight">2</div>
                         <div class="example-cell highlight">6</div>
-                        <div class="example-cell highlight">3</div>
-                        <div class="example-cell">6</div>
+                        <div class="example-cell highlight">1</div>
+                        <div class="example-cell">3</div>
                         <div class="example-cell">4</div>
                         <div class="example-cell">5</div>
-                        <div class="example-cell">3</div>
+                        <div class="example-cell highlight">6</div>
+                        <div class="example-cell highlight">1</div>
+                        <div class="example-cell highlight">2</div>
+                        <div class="example-cell">6</div>
                         <div class="example-cell">1</div>
                         <div class="example-cell">2</div>
                         <div class="example-cell">3</div>
-                        <div class="example-cell">6</div>
-                        <div class="example-cell">2</div>
-                        <div class="example-cell">5</div>
-                        <div class="example-cell">3</div>
                         <div class="example-cell">4</div>
+                        <div class="example-cell">5</div>
+                        <div class="example-cell">4</div>
+                        <div class="example-cell">5</div>
+                        <div class="example-cell">6</div>
+                        <div class="example-cell">1</div>
+                        <div class="example-cell">2</div>
+                        <div class="example-cell">3</div>
                     </div>
                     Highlighted cells show 2×3 blocks.
                 </div>
@@ -867,400 +864,31 @@ Copyright (c) 2025 Valentyn Kolesnikov <0009-0003-9608-3364@orcid.org>
     </div>
 
     <script>
+        // Fixed version: puzzles and solutions are generated and validated to ensure correctness.
+        // The previous static dataset (with invalid solutions) has been replaced by a generator.
+
         // Game state
         let board = [];
         let solution = [];
+        let givenGrid = [];
         let selectedCell = null;
         let notesMode = false;
         let notes = {};
         let hintsUsed = 0;
         let currentDifficulty = 'medium';
-        let currentPuzzleIndex = 0;
+        let currentPuzzleNumber = 1;
         let hintedCells = new Set();
         let startTime = null;
         let timerInterval = null;
 
-        // 20 predefined puzzles with 4 difficulty levels (5 puzzles each)
-        const puzzles = {
-            easy: [
-                {
-                    given: [
-                        [3, 0, 5, 6, 0, 2],
-                        [1, 0, 0, 5, 3, 0],
-                        [2, 3, 0, 0, 4, 5],
-                        [0, 1, 4, 2, 0, 3],
-                        [6, 0, 3, 4, 5, 0],
-                        [0, 5, 0, 0, 2, 0]
-                    ],
-                    solution: [
-                        [3, 4, 5, 6, 1, 2],
-                        [1, 6, 2, 5, 3, 4],
-                        [2, 3, 1, 6, 4, 5],
-                        [5, 1, 4, 2, 6, 3],
-                        [6, 2, 3, 4, 5, 1],
-                        [4, 5, 6, 1, 2, 3]
-                    ]
-                },
-                {
-                    given: [
-                        [0, 2, 3, 4, 0, 6],
-                        [4, 0, 6, 0, 2, 3],
-                        [1, 3, 0, 6, 0, 2],
-                        [6, 0, 2, 0, 3, 1],
-                        [2, 6, 0, 3, 1, 0],
-                        [3, 0, 1, 2, 6, 0]
-                    ],
-                    solution: [
-                        [5, 2, 3, 4, 1, 6],
-                        [4, 1, 6, 5, 2, 3],
-                        [1, 3, 4, 6, 5, 2],
-                        [6, 5, 2, 4, 3, 1],
-                        [2, 6, 5, 3, 1, 4],
-                        [3, 4, 1, 2, 6, 5]
-                    ]
-                },
-                {
-                    given: [
-                        [0, 5, 4, 0, 3, 1],
-                        [3, 1, 0, 4, 0, 6],
-                        [5, 0, 1, 3, 6, 0],
-                        [0, 3, 6, 1, 0, 5],
-                        [1, 0, 3, 6, 5, 0],
-                        [6, 0, 5, 0, 1, 3]
-                    ],
-                    solution: [
-                        [2, 5, 4, 6, 3, 1],
-                        [3, 1, 2, 4, 5, 6],
-                        [5, 4, 1, 3, 6, 2],
-                        [4, 3, 6, 1, 2, 5],
-                        [1, 2, 3, 6, 5, 4],
-                        [6, 4, 5, 2, 1, 3]
-                    ]
-                },
-                {
-                    given: [
-                        [6, 0, 2, 5, 0, 3],
-                        [5, 3, 0, 2, 6, 0],
-                        [0, 6, 3, 0, 2, 5],
-                        [3, 2, 0, 6, 5, 0],
-                        [0, 5, 6, 0, 3, 2],
-                        [2, 0, 5, 3, 0, 6]
-                    ],
-                    solution: [
-                        [6, 1, 2, 5, 4, 3],
-                        [5, 3, 4, 2, 6, 1],
-                        [1, 6, 3, 4, 2, 5],
-                        [3, 2, 1, 6, 5, 4],
-                        [4, 5, 6, 1, 3, 2],
-                        [2, 4, 5, 3, 1, 6]
-                    ]
-                },
-                {
-                    given: [
-                        [4, 6, 0, 1, 5, 0],
-                        [0, 5, 1, 0, 4, 6],
-                        [6, 0, 5, 4, 0, 1],
-	                        [1, 4, 0, 5, 6, 0],
-                        [5, 1, 0, 6, 0, 4],
-                        [0, 3, 6, 0, 1, 5]
-                    ],
-                    solution: [
-                        [4, 6, 2, 1, 5, 3],
-                        [3, 5, 1, 2, 4, 6],
-                        [6, 2, 5, 4, 3, 1],
-                        [1, 4, 3, 5, 6, 2],
-                        [5, 1, 2, 6, 3, 4],
-                        [2, 3, 6, 4, 1, 5]
-                    ]
-                }
-            ],
-            medium: [
-                {
-                    given: [
-                        [0, 0, 0, 0, 0, 0],
-                        [1, 0, 0, 0, 0, 6],
-                        [2, 3, 0, 0, 4, 5],
-                        [0, 0, 0, 0, 0, 0],
-                        [0, 0, 3, 4, 0, 0],
-                        [0, 5, 0, 0, 3, 0]
-                    ],
-                    solution: [
-                        [3, 4, 5, 6, 1, 2],
-                        [1, 6, 2, 5, 3, 4],
-                        [2, 3, 1, 6, 4, 5],
-                        [5, 1, 4, 2, 6, 3],
-                        [6, 2, 3, 4, 5, 1],
-                        [4, 5, 6, 1, 2, 3]
-                    ]
-                },
-                {
-                    given: [
-                        [0, 2, 0, 4, 0, 0],
-                        [0, 0, 6, 0, 2, 0],
-                        [1, 0, 0, 0, 0, 2],
-                        [6, 0, 0, 0, 0, 1],
-                        [0, 6, 0, 3, 0, 0],
-                        [0, 0, 1, 0, 6, 0]
-                    ],
-                    solution: [
-                        [5, 2, 3, 4, 1, 6],
-                        [4, 1, 6, 5, 2, 3],
-                        [1, 3, 4, 6, 5, 2],
-                        [6, 5, 2, 4, 3, 1],
-                        [2, 6, 5, 3, 1, 4],
-                        [3, 4, 1, 2, 6, 5]
-                    ]
-                },
-                {
-                    given: [
-                        [0, 5, 0, 0, 3, 0],
-                        [3, 0, 0, 0, 0, 6],
-                        [0, 0, 1, 3, 0, 0],
-                        [0, 3, 6, 0, 0, 0],
-                        [1, 0, 0, 0, 0, 4],
-                        [0, 4, 0, 0, 1, 0]
-                    ],
-                    solution: [
-                        [2, 5, 4, 6, 3, 1],
-                        [3, 1, 2, 4, 5, 6],
-                        [5, 4, 1, 3, 6, 2],
-                        [4, 3, 6, 1, 2, 5],
-                        [1, 2, 3, 6, 5, 4],
-                        [6, 4, 5, 2, 1, 3]
-                    ]
-                },
-                {
-                    given: [
-                        [6, 0, 0, 0, 0, 3],
-                        [0, 3, 0, 2, 0, 0],
-                        [0, 0, 3, 0, 2, 0],
-                        [3, 0, 0, 6, 0, 0],
-                        [0, 0, 6, 0, 3, 0],
-                        [2, 0, 0, 0, 0, 6]
-                    ],
-                    solution: [
-                        [6, 1, 2, 5, 4, 3],
-                        [5, 3, 4, 2, 6, 1],
-                        [1, 6, 3, 4, 2, 5],
-                        [3, 2, 1, 6, 5, 4],
-                        [4, 5, 6, 1, 3, 2],
-                        [2, 4, 5, 3, 1, 6]
-                    ]
-                },
-                {
-                    given: [
-                        [4, 0, 0, 1, 0, 0],
-                        [0, 0, 1, 0, 4, 0],
-                        [0, 2, 0, 0, 3, 0],
-                        [0, 4, 0, 0, 6, 0],
-                        [0, 1, 0, 6, 0, 0],
-                        [0, 0, 6, 0, 0, 5]
-                    ],
-                    solution: [
-                        [4, 6, 2, 1, 5, 3],
-                        [3, 5, 1, 2, 4, 6],
-                        [6, 2, 5, 4, 3, 1],
-                        [1, 4, 3, 5, 6, 2],
-                        [5, 1, 2, 6, 3, 4],
-                        [2, 3, 6, 4, 1, 5]
-                    ]
-                }
-            ],
-            hard: [
-                {
-                    given: [
-                        [0, 0, 0, 6, 0, 0],
-                        [1, 0, 0, 0, 0, 0],
-                        [0, 3, 0, 0, 4, 0],
-                        [0, 0, 0, 0, 6, 0],
-                        [0, 0, 0, 0, 0, 1],
-                        [0, 0, 6, 0, 0, 0]
-                    ],
-                    solution: [
-                        [3, 4, 5, 6, 1, 2],
-                        [1, 6, 2, 5, 3, 4],
-                        [2, 3, 1, 6, 4, 5],
-                        [5, 1, 4, 2, 6, 3],
-                        [6, 2, 3, 4, 5, 1],
-                        [4, 5, 6, 1, 2, 3]
-                    ]
-                },
-                {
-                    given: [
-                        [0, 2, 0, 0, 0, 0],
-                        [0, 0, 0, 5, 0, 3],
-                        [0, 0, 0, 0, 5, 0],
-                        [0, 5, 0, 0, 0, 0],
-                        [2, 0, 5, 0, 0, 0],
-                        [0, 0, 0, 0, 6, 0]
-                    ],
-                    solution: [
-                        [5, 2, 3, 4, 1, 6],
-                        [4, 1, 6, 5, 2, 3],
-                        [1, 3, 4, 6, 5, 2],
-                        [6, 5, 2, 4, 3, 1],
-                        [2, 6, 5, 3, 1, 4],
-                        [3, 4, 1, 2, 6, 5]
-                    ]
-                },
-                {
-                    given: [
-                        [0, 0, 4, 0, 0, 0],
-                        [0, 1, 0, 0, 5, 0],
-                        [0, 0, 0, 3, 0, 0],
-                        [0, 0, 6, 0, 0, 0],
-                        [0, 2, 0, 0, 5, 0],
-                        [0, 0, 0, 2, 0, 0]
-                    ],
-                    solution: [
-                        [2, 5, 4, 6, 3, 1],
-                        [3, 1, 2, 4, 5, 6],
-                        [5, 4, 1, 3, 6, 2],
-                        [4, 3, 6, 1, 2, 5],
-                        [1, 2, 3, 6, 5, 4],
-                        [6, 4, 5, 2, 1, 3]
-                    ]
-                },
-                {
-                    given: [
-                        [0, 0, 0, 5, 0, 0],
-                        [0, 0, 4, 0, 0, 1],
-                        [0, 6, 0, 0, 0, 0],
-                        [0, 0, 0, 0, 5, 0],
-                        [4, 0, 0, 1, 0, 0],
-                        [0, 0, 5, 0, 0, 0]
-                    ],
-                    solution: [
-                        [6, 1, 2, 5, 4, 3],
-                        [5, 3, 4, 2, 6, 1],
-                        [1, 6, 3, 4, 2, 5],
-                        [3, 2, 1, 6, 5, 4],
-                        [4, 5, 6, 1, 3, 2],
-                        [2, 4, 5, 3, 1, 6]
-                    ]
-                },
-                {
-                    given: [
-                        [0, 0, 0, 0, 5, 0],
-                        [0, 5, 0, 2, 0, 0],
-                        [6, 0, 0, 0, 0, 1],
-                        [1, 0, 0, 0, 0, 2],
-                        [0, 0, 2, 0, 3, 0],
-                        [0, 3, 0, 0, 0, 0]
-                    ],
-                    solution: [
-                        [4, 6, 2, 1, 5, 3],
-                        [3, 5, 1, 2, 4, 6],
-                        [6, 2, 5, 4, 3, 1],
-                        [1, 4, 3, 5, 6, 2],
-                        [5, 1, 2, 6, 3, 4],
-                        [2, 3, 6, 4, 1, 5]
-                    ]
-                }
-            ],
-            expert: [
-                {
-                    given: [
-                        [0, 0, 0, 0, 0, 2],
-                        [0, 0, 0, 0, 3, 0],
-                        [2, 0, 0, 0, 0, 0],
-                        [0, 0, 0, 0, 0, 3],
-                        [0, 2, 0, 0, 0, 0],
-                        [4, 0, 0, 0, 0, 0]
-                    ],
-                    solution: [
-                        [3, 4, 5, 6, 1, 2],
-                        [1, 6, 2, 5, 3, 4],
-                        [2, 3, 1, 6, 4, 5],
-                        [5, 1, 4, 2, 6, 3],
-                        [6, 2, 3, 4, 5, 1],
-                        [4, 5, 6, 1, 2, 3]
-                    ]
-                },
-                {
-                    given: [
-                        [0, 0, 3, 0, 0, 0],
-                        [0, 0, 0, 0, 2, 0],
-                        [0, 3, 0, 0, 0, 0],
-                        [6, 0, 0, 0, 3, 0],
-                        [0, 0, 0, 0, 0, 4],
-                        [0, 0, 0, 2, 0, 0]
-                    ],
-                    solution: [
-                        [5, 2, 3, 4, 1, 6],
-                        [4, 1, 6, 5, 2, 3],
-                        [1, 3, 4, 6, 5, 2],
-                        [6, 5, 2, 4, 3, 1],
-                        [2, 6, 5, 3, 1, 4],
-                        [3, 4, 1, 2, 6, 5]
-                    ]
-                },
-                {
-                    given: [
-                        [0, 0, 0, 6, 0, 0],
-                        [0, 0, 2, 0, 0, 0],
-                        [5, 0, 0, 0, 0, 2],
-                        [0, 0, 0, 0, 0, 5],
-                        [0, 0, 0, 6, 0, 0],
-                        [0, 0, 5, 0, 0, 0]
-                    ],
-                    solution: [
-                        [2, 5, 4, 6, 3, 1],
-                        [3, 1, 2, 4, 5, 6],
-                        [5, 4, 1, 3, 6, 2],
-                        [4, 3, 6, 1, 2, 5],
-                        [1, 2, 3, 6, 5, 4],
-                        [6, 4, 5, 2, 1, 3]
-                    ]
-                },
-                {
-                    given: [
-                        [6, 0, 0, 0, 0, 0],
-                        [0, 0, 0, 0, 6, 0],
-                        [0, 0, 3, 0, 0, 0],
-                        [0, 0, 0, 6, 0, 0],
-                        [0, 5, 0, 0, 0, 0],
-                        [0, 0, 0, 0, 0, 6]
-                    ],
-                    solution: [
-                        [6, 1, 2, 5, 4, 3],
-                        [5, 3, 4, 2, 6, 1],
-                        [1, 6, 3, 4, 2, 5],
-                        [3, 2, 1, 6, 5, 4],
-                        [4, 5, 6, 1, 3, 2],
-                        [2, 4, 5, 3, 1, 6]
-                    ]
-                },
-                {
-                    given: [
-                        [0, 0, 0, 0, 0, 3],
-                        [0, 5, 0, 0, 0, 0],
-                        [0, 0, 5, 0, 0, 0],
-                        [0, 0, 0, 5, 0, 0],
-                        [0, 0, 0, 0, 3, 0],
-                        [2, 0, 0, 0, 0, 0]
-                    ],
-                    solution: [
-                        [4, 6, 2, 1, 5, 3],
-                        [3, 5, 1, 2, 4, 6],
-                        [6, 2, 5, 4, 3, 1],
-                        [1, 4, 3, 5, 6, 2],
-                        [5, 1, 2, 6, 3, 4],
-                        [2, 3, 6, 4, 1, 5]
-                    ]
-                }
-            ]
-        };
-
         function startTimer() {
             startTime = Date.now();
             if (timerInterval) clearInterval(timerInterval);
-            
             timerInterval = setInterval(() => {
                 const elapsed = Math.floor((Date.now() - startTime) / 1000);
                 const minutes = Math.floor(elapsed / 60);
                 const seconds = elapsed % 60;
-                document.getElementById('timer').textContent = 
+                document.getElementById('timer').textContent =
                     `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
             }, 1000);
         }
@@ -1279,59 +907,223 @@ Copyright (c) 2025 Valentyn Kolesnikov <0009-0003-9608-3364@orcid.org>
         }
 
         function isValidMove(row, col, num) {
-            // Check row
+            // Row
             for (let c = 0; c < 6; c++) {
                 if (board[row][c] === num) return false;
             }
-            
-            // Check column
+            // Col
             for (let r = 0; r < 6; r++) {
                 if (board[r][col] === num) return false;
             }
-            
-            // Check 2x3 block
+            // Block 2x3
             const blockStartRow = Math.floor(row / 2) * 2;
             const blockStartCol = Math.floor(col / 3) * 3;
-            
             for (let r = blockStartRow; r < blockStartRow + 2; r++) {
                 for (let c = blockStartCol; c < blockStartCol + 3; c++) {
                     if (board[r][c] === num) return false;
                 }
             }
-            
             return true;
+        }
+
+        // Utility helpers
+        function deepCopyGrid(g) {
+            return g.map(row => [...row]);
+        }
+
+        function shuffle(arr) {
+            const a = [...arr];
+            for (let i = a.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [a[i], a[j]] = [a[j], a[i]];
+            }
+            return a;
+        }
+
+        // Build a valid base 6x6 Sudoku solution (2x3 blocks)
+        function buildBaseSolution() {
+            // Pattern: shifts per row [0, 3] within block rows, then +1 when moving to next block row
+            const base = [];
+            const rowShifts = [0, 3, 1, 4, 2, 5];
+            for (let r = 0; r < 6; r++) {
+                const row = [];
+                for (let c = 0; c < 6; c++) {
+                    const val = ((c + rowShifts[r]) % 6) + 1;
+                    row.push(val);
+                }
+                base.push(row);
+            }
+            return base;
+        }
+
+        // Permute rows/cols/digits while keeping validity
+        function permuteSolution(sol) {
+            let grid = deepCopyGrid(sol);
+
+            // Row block order (three blocks: [0,1], [2,3], [4,5])
+            const rowBlocks = [[0,1],[2,3],[4,5]];
+            const permRowBlocks = shuffle(rowBlocks);
+            const finalRowOrder = [];
+            for (const block of permRowBlocks) {
+                if (Math.random() < 0.5) {
+                    finalRowOrder.push(block[1], block[0]);
+                } else {
+                    finalRowOrder.push(block[0], block[1]);
+                }
+            }
+            grid = finalRowOrder.map(idx => grid[idx]);
+
+            // Column blocks ([0,1,2], [3,4,5]) and internal permutations
+            const colBlocks = [[0,1,2],[3,4,5]];
+            const permColBlocks = shuffle(colBlocks);
+            const leftPerm = shuffle([0,1,2]);
+            const rightPerm = shuffle([0,1,2]);
+
+            const buildColOrder = (block, perm) => perm.map(i => block[i]);
+            const finalColOrder = [
+                ...buildColOrder(permColBlocks[0], permColBlocks[0][0] < 3 ? leftPerm : rightPerm),
+                ...buildColOrder(permColBlocks[1], permColBlocks[1][0] < 3 ? rightPerm : leftPerm)
+            ];
+
+            const newGrid = [];
+            for (let r = 0; r < 6; r++) {
+                const newRow = [];
+                for (let ci = 0; ci < 6; ci++) {
+                    const c = finalColOrder[ci];
+                    newRow.push(grid[r][c]);
+                }
+                newGrid.push(newRow);
+            }
+
+            // Optional digit permutation
+            const digits = [1,2,3,4,5,6];
+            const permDigits = shuffle(digits);
+            const map = {};
+            digits.forEach((d, i) => map[d] = permDigits[i]);
+
+            for (let r = 0; r < 6; r++) {
+                for (let c = 0; c < 6; c++) {
+                    newGrid[r][c] = map[newGrid[r][c]];
+                }
+            }
+
+            return newGrid;
+        }
+
+        // Generate givens from a valid solution
+        function generateGiven(sol, difficulty) {
+            const keepCounts = {
+                easy: 24,     // 24 clues
+                medium: 20,   // 20 clues
+                hard: 16,     // 16 clues
+                expert: 12    // 12 clues
+            };
+            const keep = keepCounts[difficulty] || 20;
+
+            // Start with full solution as givens
+            const given = deepCopyGrid(sol);
+
+            // Count trackers
+            const rowCount = Array(6).fill(6);
+            const colCount = Array(6).fill(6);
+            const blockCount = Array(6).fill(6);
+
+            // Positions list
+            const positions = [];
+            for (let r = 0; r < 6; r++) {
+                for (let c = 0; c < 6; c++) {
+                    positions.push({ r, c });
+                }
+            }
+            const order = shuffle(positions);
+
+            // Minimum clues per unit to avoid empty rows/cols/blocks
+            const rowMin = 1;
+            const colMin = 1;
+            const blockMin = 1;
+
+            let cellsKept = 36;
+
+            // Remove while respecting minima
+            for (const pos of order) {
+                if (cellsKept <= keep) break;
+                const r = pos.r, c = pos.c;
+                const b = getBlockIndex(r, c);
+                if (given[r][c] === 0) continue;
+
+                if (rowCount[r] - 1 >= rowMin &&
+                    colCount[c] - 1 >= colMin &&
+                    blockCount[b] - 1 >= blockMin) {
+                    given[r][c] = 0;
+                    rowCount[r]--;
+                    colCount[c]--;
+                    blockCount[b]--;
+                    cellsKept--;
+                }
+            }
+
+            // If we still have more than desired keep (due to constraints), relax block minima
+            if (cellsKept > keep) {
+                for (const pos of order) {
+                    if (cellsKept <= keep) break;
+                    const r = pos.r, c = pos.c;
+                    if (given[r][c] === 0) continue;
+                    if (rowCount[r] - 1 >= rowMin && colCount[c] - 1 >= colMin) {
+                        given[r][c] = 0;
+                        rowCount[r]--;
+                        colCount[c]--;
+                        cellsKept--;
+                    }
+                }
+            }
+
+            return given;
+        }
+
+        // Validate that given cells match solution (repair if needed)
+        function validatePuzzle(given, sol) {
+            for (let r = 0; r < 6; r++) {
+                for (let c = 0; c < 6; c++) {
+                    if (given[r][c] !== 0 && given[r][c] !== sol[r][c]) {
+                        // Fix mismatch by aligning to solution
+                        given[r][c] = sol[r][c];
+                    }
+                }
+            }
         }
 
         function selectDifficulty(difficulty) {
             currentDifficulty = difficulty;
-            currentPuzzleIndex = Math.floor(Math.random() * 5);
-            
-            // Update UI
-            document.querySelectorAll('.difficulty-btn').forEach(btn => {
-                btn.classList.remove('active');
-            });
+            currentPuzzleNumber = 1;
+            hintedCells.clear();
+            document.querySelectorAll('.difficulty-btn').forEach(btn => btn.classList.remove('active'));
             document.querySelector(`.difficulty-btn.${difficulty}`).classList.add('active');
-            
             initGame();
         }
 
         function initGame() {
-            const puzzle = puzzles[currentDifficulty][currentPuzzleIndex];
-            board = puzzle.given.map(row => [...row]);
-            solution = puzzle.solution.map(row => [...row]);
+            // Build a fresh valid solution and derive givens for the current difficulty
+            solution = permuteSolution(buildBaseSolution());
+            givenGrid = generateGiven(solution, currentDifficulty);
+            validatePuzzle(givenGrid, solution);
+
+            board = deepCopyGrid(givenGrid);
             notes = {};
             hintsUsed = 0;
             hintedCells.clear();
-            
-            document.getElementById('puzzleNumber').textContent = `#${currentPuzzleIndex + 1}`;
+
+            document.getElementById('puzzleNumber').textContent = `#${currentPuzzleNumber}`;
             document.getElementById('hintsCount').textContent = '0';
-            
+
             renderBoard();
             renderNumberButtons();
             startTimer();
-            
-            // Clear any messages
+
+            selectedCell = null;
             document.getElementById('message').className = 'message';
+            document.getElementById('notesMode').className = 'notes-mode';
+            document.getElementById('notesMode').textContent = 'Notes Mode: OFF';
+            notesMode = false;
         }
 
         function renderBoard() {
@@ -1344,14 +1136,14 @@ Copyright (c) 2025 Valentyn Kolesnikov <0009-0003-9608-3364@orcid.org>
                     cell.className = 'sudoku-cell';
                     cell.dataset.row = row;
                     cell.dataset.col = col;
-                    
-                    // Add block highlighting
+
+                    // Block highlight
                     const blockIndex = getBlockIndex(row, col);
                     if (blockIndex % 2 === 1) {
                         cell.classList.add('block-highlight');
                     }
 
-                    // Add thicker borders for 2x3 blocks
+                    // Thicker borders for 2x3 blocks
                     cell.style.borderTop = row % 2 === 0 && row > 0 ? '2px solid #333' : '1px solid #ddd';
                     cell.style.borderLeft = col % 3 === 0 && col > 0 ? '2px solid #333' : '1px solid #ddd';
                     if (row === 0) cell.style.borderTop = '1px solid #333';
@@ -1361,14 +1153,14 @@ Copyright (c) 2025 Valentyn Kolesnikov <0009-0003-9608-3364@orcid.org>
 
                     if (board[row][col] !== 0) {
                         cell.textContent = board[row][col];
-                        if (puzzles[currentDifficulty][currentPuzzleIndex].given[row][col] !== 0) {
+                        if (givenGrid[row][col] !== 0) {
                             cell.classList.add('given');
                         } else if (hintedCells.has(`${row}-${col}`)) {
                             cell.classList.add('hint-cell');
                         }
                     }
 
-                    // Add notes container
+                    // Notes
                     const notesContainer = document.createElement('div');
                     notesContainer.className = 'cell-notes';
                     const cellKey = `${row}-${col}`;
@@ -1393,7 +1185,6 @@ Copyright (c) 2025 Valentyn Kolesnikov <0009-0003-9608-3364@orcid.org>
         function renderNumberButtons() {
             const container = document.getElementById('numberButtons');
             container.innerHTML = '';
-
             for (let i = 1; i <= 6; i++) {
                 const btn = document.createElement('button');
                 btn.className = 'number-btn';
@@ -1407,7 +1198,7 @@ Copyright (c) 2025 Valentyn Kolesnikov <0009-0003-9608-3364@orcid.org>
             const cells = document.querySelectorAll('.sudoku-cell');
             cells.forEach(cell => cell.classList.remove('selected'));
 
-            if (puzzles[currentDifficulty][currentPuzzleIndex].given[row][col] !== 0) return;
+            if (givenGrid[row][col] !== 0) return;
 
             selectedCell = { row, col };
             const cell = document.querySelector(`[data-row="${row}"][data-col="${col}"]`);
@@ -1421,13 +1212,10 @@ Copyright (c) 2025 Valentyn Kolesnikov <0009-0003-9608-3364@orcid.org>
             const cellKey = `${row}-${col}`;
 
             if (notesMode) {
-                if (!notes[cellKey]) {
-                    notes[cellKey] = [];
-                }
+                if (!notes[cellKey]) notes[cellKey] = [];
                 const index = notes[cellKey].indexOf(num);
-                if (index > -1) {
-                    notes[cellKey].splice(index, 1);
-                } else {
+                if (index > -1) notes[cellKey].splice(index, 1);
+                else {
                     notes[cellKey].push(num);
                     notes[cellKey].sort();
                 }
@@ -1439,7 +1227,7 @@ Copyright (c) 2025 Valentyn Kolesnikov <0009-0003-9608-3364@orcid.org>
             }
 
             renderBoard();
-            
+
             const cell = document.querySelector(`[data-row="${row}"][data-col="${col}"]`);
             cell.classList.add('selected');
 
@@ -1448,15 +1236,13 @@ Copyright (c) 2025 Valentyn Kolesnikov <0009-0003-9608-3364@orcid.org>
 
         function clearCell() {
             if (!selectedCell) return;
-            
             const { row, col } = selectedCell;
-            if (puzzles[currentDifficulty][currentPuzzleIndex].given[row][col] !== 0) return;
-            
+            if (givenGrid[row][col] !== 0) return;
+
             board[row][col] = 0;
             delete notes[`${row}-${col}`];
             hintedCells.delete(`${row}-${col}`);
             renderBoard();
-            
             selectCell(row, col);
         }
 
@@ -1470,12 +1256,14 @@ Copyright (c) 2025 Valentyn Kolesnikov <0009-0003-9608-3364@orcid.org>
                         const num = board[row][col];
                         const temp = board[row][col];
                         board[row][col] = 0;
-                        
+
+                        // Error if violates Sudoku or if not the solution's number
                         if (!isValidMove(row, col, num) || num !== solution[row][col]) {
                             const cell = document.querySelector(`[data-row="${row}"][data-col="${col}"]`);
-                            cell.classList.add('error');
+                            if (cell && !cell.classList.contains('given')) {
+                                cell.classList.add('error');
+                            }
                         }
-                        
                         board[row][col] = temp;
                     }
                 }
@@ -1520,9 +1308,7 @@ Copyright (c) 2025 Valentyn Kolesnikov <0009-0003-9608-3364@orcid.org>
             const emptyCells = [];
             for (let row = 0; row < 6; row++) {
                 for (let col = 0; col < 6; col++) {
-                    if (board[row][col] === 0) {
-                        emptyCells.push({ row, col });
-                    }
+                    if (board[row][col] === 0) emptyCells.push({ row, col });
                 }
             }
 
@@ -1536,14 +1322,14 @@ Copyright (c) 2025 Valentyn Kolesnikov <0009-0003-9608-3364@orcid.org>
             delete notes[`${randomCell.row}-${randomCell.col}`];
             hintedCells.add(`${randomCell.row}-${randomCell.col}`);
             hintsUsed++;
-            
+
             document.getElementById('hintsCount').textContent = hintsUsed;
-            
+
             renderBoard();
-            
+
             const cell = document.querySelector(`[data-row="${randomCell.row}"][data-col="${randomCell.col}"]`);
-            cell.classList.add('hint-cell');
-            
+            if (cell) cell.classList.add('hint-cell');
+
             // Check if puzzle is complete after hint
             let isComplete = true;
             for (let row = 0; row < 6; row++) {
@@ -1554,7 +1340,7 @@ Copyright (c) 2025 Valentyn Kolesnikov <0009-0003-9608-3364@orcid.org>
                     }
                 }
             }
-            
+
             if (isComplete) {
                 stopTimer();
                 setTimeout(() => {
@@ -1590,7 +1376,7 @@ Copyright (c) 2025 Valentyn Kolesnikov <0009-0003-9608-3364@orcid.org>
 
         function confirmNewGame() {
             closeDialog();
-            currentPuzzleIndex = (currentPuzzleIndex + 1) % 5;
+            currentPuzzleNumber++;
             initGame();
         }
 
