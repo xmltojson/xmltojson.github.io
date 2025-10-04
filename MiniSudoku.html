@@ -989,6 +989,11 @@ Copyright (c) 2025 Valentyn Kolesnikov <0009-0003-9608-3364@orcid.org>
         let timerInterval = null;
         let currentLeaderboardTab = 'easy';
 
+        // Completion/score flags to avoid duplicates and timer restart after reload
+        let gameCompleted = false;
+        let completionTimeMs = 0;
+        let scoreRecorded = false;
+
         // Load saved state on page load
         window.addEventListener('load', () => {
             loadGameState();
@@ -999,7 +1004,18 @@ Copyright (c) 2025 Valentyn Kolesnikov <0009-0003-9608-3364@orcid.org>
             saveGameState();
         });
 
+        function formatTime(ms) {
+            const totalSeconds = Math.floor(ms / 1000);
+            const minutes = Math.floor(totalSeconds / 60);
+            const seconds = totalSeconds % 60;
+            return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+        }
+
         function saveGameState() {
+            const elapsed = gameCompleted
+                ? completionTimeMs
+                : (startTime ? Date.now() - startTime : 0);
+
             const gameState = {
                 board,
                 solution,
@@ -1013,7 +1029,10 @@ Copyright (c) 2025 Valentyn Kolesnikov <0009-0003-9608-3364@orcid.org>
                 hintedCells: Array.from(hintedCells),
                 userFilledCells: Array.from(userFilledCells),
                 startTime,
-                elapsedTime: startTime ? Date.now() - startTime : 0
+                elapsedTime: elapsed,
+                gameCompleted,
+                completionTimeMs,
+                scoreRecorded
             };
             localStorage.setItem('miniSudokuState', JSON.stringify(gameState));
         }
@@ -1034,9 +1053,18 @@ Copyright (c) 2025 Valentyn Kolesnikov <0009-0003-9608-3364@orcid.org>
                     currentPuzzleNumber = gameState.currentPuzzleNumber || 1;
                     hintedCells = new Set(gameState.hintedCells || []);
                     userFilledCells = new Set(gameState.userFilledCells || []);
-                    
+                    gameCompleted = !!gameState.gameCompleted;
+                    completionTimeMs = gameState.completionTimeMs || 0;
+                    scoreRecorded = !!gameState.scoreRecorded;
+
                     // Restore timer
-                    if (gameState.elapsedTime) {
+                    stopTimer();
+                    if (gameCompleted) {
+                        // Do not start timer for completed game after reload
+                        const finalMs = completionTimeMs || gameState.elapsedTime || 0;
+                        document.getElementById('timer').textContent = formatTime(finalMs);
+                        startTime = null;
+                    } else if (gameState.elapsedTime) {
                         startTime = Date.now() - gameState.elapsedTime;
                         startTimer();
                     }
@@ -1050,13 +1078,18 @@ Copyright (c) 2025 Valentyn Kolesnikov <0009-0003-9608-3364@orcid.org>
                     if (notesMode) {
                         document.getElementById('notesMode').className = 'notes-mode active';
                         document.getElementById('notesMode').textContent = 'Notes Mode: ON';
+                    } else {
+                        document.getElementById('notesMode').className = 'notes-mode';
+                        document.getElementById('notesMode').textContent = 'Notes Mode: OFF';
                     }
 
                     renderBoard();
                     renderNumberButtons();
                     
-                    if (selectedCell) {
+                    if (!gameCompleted && selectedCell) {
                         selectCell(selectedCell.row, selectedCell.col);
+                    } else {
+                        selectedCell = null;
                     }
                 } catch (e) {
                     console.error('Failed to load saved state:', e);
@@ -1094,11 +1127,6 @@ Copyright (c) 2025 Valentyn Kolesnikov <0009-0003-9608-3364@orcid.org>
             currentLeaderboardTab = currentDifficulty;
             const overlay = document.getElementById('leaderboardOverlay');
             overlay.classList.add('show');
-            
-            // Set active tab
-            document.querySelectorAll('.leaderboard-tab').forEach(tab => tab.classList.remove('active'));
-            document.querySelector(`.leaderboard-tab[onclick*="${currentLeaderboardTab}"]`).classList.add('active');
-            
             showLeaderboardTab(currentLeaderboardTab);
         }
 
@@ -1109,10 +1137,15 @@ Copyright (c) 2025 Valentyn Kolesnikov <0009-0003-9608-3364@orcid.org>
 
         function showLeaderboardTab(difficulty) {
             currentLeaderboardTab = difficulty;
-            
-            // Update active tab
-            document.querySelectorAll('.leaderboard-tab').forEach(tab => tab.classList.remove('active'));
-            event.target.classList.add('active');
+
+            // Update active tab reliably (avoid using event.target)
+            document.querySelectorAll('.leaderboard-tab').forEach(tab => {
+                if (tab.textContent.trim().toLowerCase() === difficulty) {
+                    tab.classList.add('active');
+                } else {
+                    tab.classList.remove('active');
+                }
+            });
             
             const scores = JSON.parse(localStorage.getItem('miniSudokuScores') || '{}');
             const content = document.getElementById('leaderboardContent');
@@ -1123,9 +1156,7 @@ Copyright (c) 2025 Valentyn Kolesnikov <0009-0003-9608-3364@orcid.org>
             }
             
             content.innerHTML = scores[difficulty].map((score, index) => {
-                const minutes = Math.floor(score.time / 60000);
-                const seconds = Math.floor((score.time % 60000) / 1000);
-                const timeStr = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+                const timeStr = formatTime(score.time);
                 const hintsStr = score.hints > 0 ? `(${score.hints} hints)` : '(no hints)';
                 
                 return `
@@ -1141,6 +1172,9 @@ Copyright (c) 2025 Valentyn Kolesnikov <0009-0003-9608-3364@orcid.org>
         }
 
         function startTimer() {
+            if (gameCompleted) {
+                return; // Do not start timer when game is already completed
+            }
             if (!startTime) {
                 startTime = Date.now();
             }
@@ -1374,12 +1408,19 @@ Copyright (c) 2025 Valentyn Kolesnikov <0009-0003-9608-3364@orcid.org>
             hintedCells.clear();
             userFilledCells.clear();
 
+            // Reset completion/timer flags
+            gameCompleted = false;
+            completionTimeMs = 0;
+            scoreRecorded = false;
+            stopTimer();
+            startTime = null;
+            document.getElementById('timer').textContent = '00:00';
+
             document.getElementById('puzzleNumber').textContent = `#${currentPuzzleNumber}`;
             document.getElementById('hintsCount').textContent = '0';
 
             renderBoard();
             renderNumberButtons();
-            startTime = null;
             startTimer();
 
             selectedCell = null;
@@ -1466,6 +1507,7 @@ Copyright (c) 2025 Valentyn Kolesnikov <0009-0003-9608-3364@orcid.org>
             cells.forEach(cell => cell.classList.remove('selected'));
 
             if (givenGrid[row][col] !== 0) return;
+            if (gameCompleted) return; // prevent selecting after completion
 
             selectedCell = { row, col };
             const cell = document.querySelector(`[data-row="${row}"][data-col="${col}"]`);
@@ -1542,6 +1584,32 @@ Copyright (c) 2025 Valentyn Kolesnikov <0009-0003-9608-3364@orcid.org>
             }
         }
 
+        function recordCompletion() {
+            if (gameCompleted) return; // already recorded
+            stopTimer();
+            gameCompleted = true;
+            completionTimeMs = startTime ? Date.now() - startTime : 0;
+
+            const messageElement = document.getElementById('message');
+            const timeStr = formatTime(completionTimeMs);
+            const hintText = hintsUsed > 0 ? ` with ${hintsUsed} hint${hintsUsed > 1 ? 's' : ''}` : '';
+            messageElement.textContent = `🎉 Completed in ${timeStr}${hintText}!`;
+            messageElement.className = 'message success';
+
+            if (!scoreRecorded) {
+                saveScore(completionTimeMs, hintsUsed);
+                scoreRecorded = true;
+            }
+            // Reflect final time on timer display
+            document.getElementById('timer').textContent = timeStr;
+
+            saveGameState();
+
+            setTimeout(() => {
+                messageElement.className = 'message';
+            }, 3000);
+        }
+
         function checkSolution() {
             let isComplete = true;
             let isCorrect = true;
@@ -1558,32 +1626,25 @@ Copyright (c) 2025 Valentyn Kolesnikov <0009-0003-9608-3364@orcid.org>
 
             const messageElement = document.getElementById('message');
             if (isComplete && isCorrect) {
-                stopTimer();
-                const elapsedTime = Date.now() - startTime;
-                const time = document.getElementById('timer').textContent;
-                const hintText = hintsUsed > 0 ? ` with ${hintsUsed} hint${hintsUsed > 1 ? 's' : ''}` : '';
-                messageElement.textContent = `🎉 Solved in ${time}${hintText}!`;
-                messageElement.className = 'message success';
-                
-                // Save score
-                saveScore(elapsedTime, hintsUsed);
-                
-                // Clear saved state after completion
-                localStorage.removeItem('miniSudokuState');
+                recordCompletion(); // will save score only once and not restart timer
             } else if (!isComplete) {
                 messageElement.textContent = '📝 Puzzle not complete yet.';
                 messageElement.className = 'message info';
+                setTimeout(() => {
+                    messageElement.className = 'message';
+                }, 3000);
             } else {
                 messageElement.textContent = '❌ Some errors. Keep trying!';
                 messageElement.className = 'message error';
+                setTimeout(() => {
+                    messageElement.className = 'message';
+                }, 3000);
             }
-
-            setTimeout(() => {
-                messageElement.className = 'message';
-            }, 3000);
         }
 
         function getHint() {
+            if (gameCompleted) return;
+
             const emptyCells = [];
             for (let row = 0; row < 6; row++) {
                 for (let col = 0; col < 6; col++) {
@@ -1623,19 +1684,9 @@ Copyright (c) 2025 Valentyn Kolesnikov <0009-0003-9608-3364@orcid.org>
             }
 
             if (isComplete) {
-                stopTimer();
-                const elapsedTime = Date.now() - startTime;
+                // slight delay to show hint highlight, then record completion
                 setTimeout(() => {
-                    const messageElement = document.getElementById('message');
-                    const time = document.getElementById('timer').textContent;
-                    messageElement.textContent = `🎉 Completed in ${time} with ${hintsUsed} hints!`;
-                    messageElement.className = 'message success';
-                    
-                    // Save score
-                    saveScore(elapsedTime, hintsUsed);
-                    
-                    // Clear saved state after completion
-                    localStorage.removeItem('miniSudokuState');
+                    recordCompletion();
                 }, 500);
             }
 
