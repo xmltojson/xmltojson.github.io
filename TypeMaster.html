@@ -1,0 +1,1627 @@
+<!DOCTYPE html>
+<!-- MIT License
+Copyright (c) 2025 Valentyn Kolesnikov <0009-0003-9608-3364@orcid.org>
+-->
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="description" content="TypeMaster">
+    <link rel="icon" type="image/x-icon" href="TypeMaster.ico"/>
+    <title>TypeMaster</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 10px;
+            overflow-x: hidden;
+        }
+
+        .container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            max-width: 900px;
+            width: 100%;
+            padding: 20px;
+            position: relative;
+            animation: slideIn 0.5s ease-out;
+            max-height: 95vh;
+            overflow-y: auto;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        h1 {
+            color: #764ba2;
+            font-size: 2em;
+            margin-bottom: 5px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .header p {
+            font-size: 0.9em;
+            color: #666;
+        }
+
+        .level-info {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            margin-bottom: 15px;
+            padding: 15px;
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            border-radius: 10px;
+            color: white;
+        }
+
+        .level-badge {
+            font-size: 1.1em;
+            font-weight: bold;
+            text-align: center;
+        }
+
+        .stats-row {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .stat-item {
+            background: rgba(255,255,255,0.9);
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-weight: 500;
+            font-size: 0.9em;
+            color: #333;
+        }
+
+        .text-display {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 15px;
+            margin-bottom: 15px;
+            font-size: 1.1em;
+            line-height: 1.6;
+            letter-spacing: 0.5px;
+            position: relative;
+            min-height: 120px;
+            box-shadow: inset 0 2px 10px rgba(0,0,0,0.05);
+            overflow-x: auto;
+        }
+
+        .text-display span {
+            position: relative;
+            transition: all 0.1s;
+        }
+
+        .text-display span.correct {
+            color: #28a745;
+            background: rgba(40, 167, 69, 0.1);
+        }
+
+        .text-display span.incorrect {
+            color: #dc3545;
+            background: rgba(220, 53, 69, 0.2);
+            animation: shake 0.3s;
+        }
+
+        .text-display span.current {
+            background: #ffc107;
+            animation: pulse 1s infinite;
+            padding: 2px 4px;
+            border-radius: 3px;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-2px); }
+            75% { transform: translateX(2px); }
+        }
+
+        .input-area {
+            margin-bottom: 15px;
+        }
+
+        #typeInput {
+            width: 100%;
+            padding: 12px;
+            font-size: 1em;
+            border: 2px solid #ddd;
+            border-radius: 10px;
+            transition: all 0.3s;
+        }
+
+        #typeInput:focus {
+            outline: none;
+            border-color: #764ba2;
+            box-shadow: 0 0 0 3px rgba(118, 75, 162, 0.1);
+        }
+
+        .buttons {
+            display: flex;
+            gap: 8px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        button {
+            padding: 10px 20px;
+            font-size: 0.9em;
+            font-weight: 600;
+            border: none;
+            border-radius: 25px;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            touch-action: manipulation;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-primary:hover, .btn-primary:active {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(118, 75, 162, 0.4);
+        }
+
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+        }
+
+        .btn-secondary:hover, .btn-secondary:active {
+            background: #5a6268;
+            transform: translateY(-2px);
+        }
+
+        .btn-success {
+            background: #28a745;
+            color: white;
+        }
+
+        .btn-success:hover, .btn-success:active {
+            background: #218838;
+            transform: translateY(-2px);
+        }
+
+        .btn-warning {
+            background: #ffc107;
+            color: #333;
+        }
+
+        .btn-warning:hover, .btn-warning:active {
+            background: #e0a800;
+            transform: translateY(-2px);
+        }
+
+        .btn-danger {
+            background: #dc3545;
+            color: white;
+        }
+
+        .btn-danger:hover, .btn-danger:active {
+            background: #c82333;
+        }
+
+        /* Calendar Styles */
+        .calendar-container {
+            margin: 20px 0;
+        }
+
+        .calendar-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            padding: 10px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 10px;
+        }
+
+        .calendar-nav {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .calendar-nav button {
+            background: rgba(255,255,255,0.2);
+            color: white;
+            padding: 5px 10px;
+            font-size: 1.2em;
+            border-radius: 5px;
+        }
+
+        .calendar-nav button:hover {
+            background: rgba(255,255,255,0.3);
+        }
+
+        .calendar-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 5px;
+            margin-bottom: 15px;
+        }
+
+        .calendar-day-header {
+            text-align: center;
+            font-weight: bold;
+            color: #764ba2;
+            padding: 5px;
+            font-size: 0.9em;
+        }
+
+        .calendar-day {
+            aspect-ratio: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            border-radius: 8px;
+            background: #f8f9fa;
+            cursor: pointer;
+            transition: all 0.3s;
+            position: relative;
+            min-height: 40px;
+        }
+
+        .calendar-day:hover {
+            transform: scale(1.05);
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .calendar-day.other-month {
+            opacity: 0.3;
+        }
+
+        .calendar-day.today {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            font-weight: bold;
+        }
+
+        .calendar-day.has-data {
+            background: #e8f5e9;
+            border: 2px solid #4caf50;
+        }
+
+        .calendar-day-number {
+            font-size: 0.9em;
+            font-weight: 500;
+        }
+
+        .calendar-day-stats {
+            font-size: 0.7em;
+            margin-top: 2px;
+        }
+
+        .progress-indicator {
+            position: absolute;
+            bottom: 2px;
+            font-size: 0.6em;
+            font-weight: bold;
+        }
+
+        .progress-indicator.positive {
+            color: #28a745;
+        }
+
+        .progress-indicator.negative {
+            color: #dc3545;
+        }
+
+        /* Daily Stats Display */
+        .daily-stats {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 10px;
+            margin-top: 10px;
+        }
+
+        .daily-stats-header {
+            font-weight: bold;
+            color: #764ba2;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .daily-stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+            gap: 10px;
+        }
+
+        .daily-stat-item {
+            background: white;
+            padding: 10px;
+            border-radius: 8px;
+            text-align: center;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+        }
+
+        .daily-stat-value {
+            font-size: 1.2em;
+            font-weight: bold;
+            color: #764ba2;
+        }
+
+        .daily-stat-label {
+            font-size: 0.8em;
+            color: #666;
+            margin-top: 2px;
+        }
+
+        .progress-comparison {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            margin-top: 10px;
+            padding: 10px;
+            background: white;
+            border-radius: 8px;
+        }
+
+        .progress-arrow {
+            font-size: 1.5em;
+        }
+
+        /* Custom Dialog Styles */
+        .dialog-overlay {
+            display: none;
+            position: fixed;
+            z-index: 2000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.6);
+            animation: fadeIn 0.3s;
+            backdrop-filter: blur(5px);
+        }
+
+        .dialog-box {
+            background: white;
+            border-radius: 20px;
+            padding: 25px;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            max-width: 90%;
+            width: 400px;
+            max-height: 80vh;
+            overflow-y: auto;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+            animation: dialogSlideIn 0.3s;
+        }
+
+        @keyframes dialogSlideIn {
+            from {
+                transform: translate(-50%, -50%) scale(0.9);
+                opacity: 0;
+            }
+            to {
+                transform: translate(-50%, -50%) scale(1);
+                opacity: 1;
+            }
+        }
+
+        .dialog-header {
+            font-size: 1.3em;
+            font-weight: bold;
+            color: #764ba2;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .dialog-content {
+            color: #333;
+            line-height: 1.6;
+            margin-bottom: 20px;
+        }
+
+        .dialog-stats {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 10px;
+            margin: 10px 0;
+        }
+
+        .dialog-stat-row {
+            display: flex;
+            justify-content: space-between;
+            margin: 8px 0;
+        }
+
+        .dialog-buttons {
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+        }
+
+        .dialog-buttons button {
+            padding: 8px 20px;
+        }
+
+        /* Modal Styles */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+            animation: fadeIn 0.3s;
+            overflow-y: auto;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        .modal-content {
+            background-color: white;
+            margin: 20px auto;
+            padding: 20px;
+            border-radius: 20px;
+            width: 95%;
+            max-width: 700px;
+            max-height: 90vh;
+            overflow-y: auto;
+            animation: slideDown 0.3s;
+        }
+
+        @keyframes slideDown {
+            from {
+                transform: translateY(-50px);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        .close {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: color 0.3s;
+        }
+
+        .close:hover, .close:active {
+            color: #000;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .stat-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 15px;
+            border-radius: 15px;
+            text-align: center;
+            transition: transform 0.3s;
+        }
+
+        .stat-card:active {
+            transform: scale(0.95);
+        }
+
+        .stat-value {
+            font-size: 1.8em;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .stat-label {
+            font-size: 0.8em;
+            opacity: 0.9;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 25px;
+            background: #e9ecef;
+            border-radius: 15px;
+            overflow: hidden;
+            margin: 15px 0;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+            transition: width 0.5s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            font-size: 0.9em;
+        }
+
+        .achievement {
+            background: #ffd700;
+            color: #333;
+            padding: 10px 15px;
+            border-radius: 10px;
+            margin: 8px 0;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 0.9em;
+        }
+
+        .achievement::before {
+            content: "🏆";
+            font-size: 1.3em;
+        }
+
+        /* Mobile Optimizations */
+        @media (max-width: 600px) {
+            body {
+                padding: 5px;
+            }
+
+            .container {
+                padding: 15px;
+                border-radius: 15px;
+                max-height: 100vh;
+            }
+            
+            h1 {
+                font-size: 1.5em;
+            }
+
+            .header p {
+                font-size: 0.8em;
+            }
+            
+            .text-display {
+                font-size: 1em;
+                padding: 15px;
+                min-height: 100px;
+                line-height: 1.5;
+            }
+
+            .level-info {
+                padding: 12px;
+            }
+
+            .stat-item {
+                padding: 5px 10px;
+                font-size: 0.85em;
+            }
+
+            button {
+                padding: 8px 16px;
+                font-size: 0.85em;
+            }
+
+            #typeInput {
+                padding: 10px;
+                font-size: 16px; /* Prevents zoom on iOS */
+            }
+
+            .modal-content {
+                margin: 10px auto;
+                padding: 15px;
+                width: 98%;
+            }
+
+            .stats-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .stat-card {
+                padding: 12px;
+            }
+
+            .stat-value {
+                font-size: 1.5em;
+            }
+
+            .dialog-box {
+                width: 95%;
+                padding: 20px;
+            }
+
+            .dialog-header {
+                font-size: 1.1em;
+            }
+
+            .achievement {
+                font-size: 0.85em;
+                padding: 8px 12px;
+            }
+
+            .calendar-grid {
+                gap: 2px;
+            }
+
+            .calendar-day {
+                min-height: 35px;
+            }
+
+            .calendar-day-number {
+                font-size: 0.8em;
+            }
+
+            .calendar-day-stats {
+                font-size: 0.6em;
+            }
+
+            .daily-stats-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        /* Landscape mode adjustments */
+        @media (max-height: 500px) {
+            .container {
+                max-height: 100vh;
+                overflow-y: auto;
+            }
+
+            .text-display {
+                min-height: 60px;
+                max-height: 100px;
+                overflow-y: auto;
+            }
+
+            .header {
+                margin-bottom: 10px;
+            }
+
+            h1 {
+                font-size: 1.3em;
+                margin-bottom: 2px;
+            }
+        }
+
+        /* Touch device optimizations */
+        @media (hover: none) {
+            button:active {
+                transform: scale(0.95);
+            }
+
+            .stat-card:hover {
+                transform: none;
+            }
+        }
+
+        /* Virtual keyboard handling */
+        @supports (-webkit-touch-callout: none) {
+            input[type="text"] {
+                font-size: 16px !important;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>⌨️ TypeMaster Pro</h1>
+            <p>Master your typing skills level by level!</p>
+        </div>
+
+        <div class="level-info">
+            <div class="level-badge">Level <span id="currentLevel">1</span> / 20</div>
+            <div class="stats-row">
+                <div class="stat-item">⏱️ <span id="timer">0</span>s</div>
+                <div class="stat-item">⚡ <span id="wpm">0</span> WPM</div>
+                <div class="stat-item">🎯 <span id="accuracy">100</span>%</div>
+            </div>
+        </div>
+
+        <div class="progress-bar">
+            <div class="progress-fill" id="progressBar" style="width: 5%">
+                <span id="progressText">5%</span>
+            </div>
+        </div>
+
+        <div class="text-display" id="textDisplay">
+            Click "Start Typing" to begin!
+        </div>
+
+        <div class="input-area">
+            <input type="text" id="typeInput" placeholder="Type here..." disabled autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
+        </div>
+
+        <div class="buttons">
+            <button class="btn-primary" onclick="startTyping()">Start</button>
+            <button class="btn-secondary" onclick="resetLevel()">Reset</button>
+            <button class="btn-warning" onclick="confirmRestart()">🔄 Restart</button>
+            <button class="btn-success" onclick="showStats()">📊 Stats</button>
+            <button class="btn-primary" onclick="showCalendar()">📅 Calendar</button>
+        </div>
+    </div>
+
+    <!-- Custom Dialog Overlay -->
+    <div id="dialogOverlay" class="dialog-overlay">
+        <div class="dialog-box">
+            <div class="dialog-header" id="dialogHeader">
+                <span id="dialogIcon">📢</span>
+                <span id="dialogTitle">Message</span>
+            </div>
+            <div class="dialog-content" id="dialogContent">
+                Content goes here
+            </div>
+            <div class="dialog-buttons" id="dialogButtons">
+                <button class="btn-primary" onclick="closeDialog()">OK</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Calendar Modal -->
+    <div id="calendarModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeCalendar()">&times;</span>
+            <h2 style="color: #764ba2; margin-bottom: 15px; font-size: 1.5em;">📅 Activity Calendar</h2>
+            
+            <div class="calendar-container">
+                <div class="calendar-header">
+                    <button onclick="previousMonth()">◀</button>
+                    <div class="calendar-nav">
+                        <span id="currentMonth">January 2024</span>
+                    </div>
+                    <button onclick="nextMonth()">▶</button>
+                </div>
+                
+                <div class="calendar-grid" id="calendarGrid">
+                    <!-- Calendar will be generated here -->
+                </div>
+                
+                <div class="daily-stats" id="dailyStats" style="display: none;">
+                    <div class="daily-stats-header">
+                        <span>📊</span>
+                        <span id="selectedDate">Select a date</span>
+                    </div>
+                    <div class="daily-stats-grid" id="dailyStatsGrid">
+                        <!-- Daily stats will be shown here -->
+                    </div>
+                    <div class="progress-comparison" id="progressComparison">
+                        <!-- Progress comparison will be shown here -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Statistics Modal -->
+    <div id="statsModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeStats()">&times;</span>
+            <h2 style="color: #764ba2; margin-bottom: 15px; font-size: 1.5em;">📈 Your Statistics</h2>
+            
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-value" id="totalTime">0</div>
+                    <div class="stat-label">Total Time (min)</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="avgWpm">0</div>
+                    <div class="stat-label">Average WPM</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="avgAccuracy">0</div>
+                    <div class="stat-label">Avg Accuracy %</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="completedLevels">0</div>
+                    <div class="stat-label">Levels Done</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="totalWords">0</div>
+                    <div class="stat-label">Words Typed</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="bestWpm">0</div>
+                    <div class="stat-label">Best WPM</div>
+                </div>
+            </div>
+
+            <h3 style="margin-top: 20px; color: #764ba2; font-size: 1.2em;">🏆 Achievements</h3>
+            <div id="achievements"></div>
+
+            <button class="btn-danger" style="margin-top: 15px; width: 100%;" onclick="confirmClearProgress()">Clear All Progress</button>
+        </div>
+    </div>
+
+    <script>
+        // 20 predefined texts for different levels
+        const texts = [
+            "The quick brown fox jumps over the lazy dog near the river.",
+            "Practice makes perfect when you dedicate time every single day.",
+            "Technology is rapidly changing how we communicate with each other daily.",
+            "Success comes to those who work hard and never give up on dreams.",
+            "Learning to type faster will save you countless hours in the future.",
+            "The beautiful sunset painted the sky with shades of orange and pink.",
+            "Reading books expands your vocabulary and improves your writing skills significantly.",
+            "Coffee shops provide the perfect atmosphere for productive work sessions.",
+            "Mountain climbing requires both physical strength and mental determination to succeed.",
+            "Programming languages help us communicate instructions to computers effectively.",
+            "The ancient library contained thousands of manuscripts from different civilizations.",
+            "Healthy eating habits combined with regular exercise lead to better lifestyle.",
+            "Space exploration continues to reveal mysteries about our vast universe.",
+            "Music has the power to evoke emotions and bring people together harmoniously.",
+            "Environmental conservation is crucial for preserving our planet for future generations.",
+            "Artificial intelligence is transforming industries and creating new opportunities worldwide.",
+            "The Renaissance period marked significant advancements in art, science, and culture.",
+            "Effective communication skills are essential for success in professional environments.",
+            "Traveling to different countries broadens perspectives and creates lasting memories.",
+            "The complexity of quantum physics challenges our understanding of reality itself."
+        ];
+
+        // Game state
+        let currentLevel = 1;
+        let currentText = '';
+        let userInput = '';
+        let startTime = null;
+        let timerInterval = null;
+        let correctChars = 0;
+        let totalChars = 0;
+        let isTyping = false;
+        let dialogCallback = null;
+
+        // Calendar state
+        let currentCalendarMonth = new Date().getMonth();
+        let currentCalendarYear = new Date().getFullYear();
+        let selectedDateData = null;
+
+        // Statistics
+        let stats = {
+            totalTime: 0,
+            totalWords: 0,
+            totalSessions: 0,
+            avgWpm: 0,
+            avgAccuracy: 0,
+            bestWpm: 0,
+            completedLevels: [],
+            achievements: [],
+            dailyStats: {} // Format: "YYYY-MM-DD": { wpm, accuracy, words, time, sessions, levels }
+        };
+
+        // Custom dialog functions
+        function showDialog(title, content, icon = '📢', buttons = [{text: 'OK', action: closeDialog, style: 'btn-primary'}]) {
+            const overlay = document.getElementById('dialogOverlay');
+            document.getElementById('dialogTitle').textContent = title;
+            document.getElementById('dialogIcon').textContent = icon;
+            
+            if (typeof content === 'string') {
+                document.getElementById('dialogContent').innerHTML = content;
+            } else {
+                document.getElementById('dialogContent').innerHTML = '';
+                document.getElementById('dialogContent').appendChild(content);
+            }
+            
+            const buttonsDiv = document.getElementById('dialogButtons');
+            buttonsDiv.innerHTML = '';
+            buttons.forEach(btn => {
+                const button = document.createElement('button');
+                button.className = btn.style || 'btn-primary';
+                button.textContent = btn.text;
+                button.onclick = btn.action;
+                buttonsDiv.appendChild(button);
+            });
+            
+            overlay.style.display = 'block';
+        }
+
+        function closeDialog() {
+            document.getElementById('dialogOverlay').style.display = 'none';
+            if (dialogCallback) {
+                dialogCallback();
+                dialogCallback = null;
+            }
+        }
+
+        function showAlert(title, message, icon = '📢') {
+            showDialog(title, message, icon);
+        }
+
+        function showLevelComplete(level, wpm, accuracy, time) {
+            const content = document.createElement('div');
+            content.innerHTML = `
+                <div class="dialog-stats">
+                    <div class="dialog-stat-row">
+                        <span>⚡ WPM:</span>
+                        <strong>${wpm}</strong>
+                    </div>
+                    <div class="dialog-stat-row">
+                        <span>🎯 Accuracy:</span>
+                        <strong>${accuracy}%</strong>
+                    </div>
+                    <div class="dialog-stat-row">
+                        <span>⏱️ Time:</span>
+                        <strong>${time}s</strong>
+                    </div>
+                </div>
+                <p style="margin-top: 15px; text-align: center;">
+                    ${level < 20 ? `Ready for Level ${level + 1}?` : '🏆 All levels completed!'}
+                </p>
+            `;
+            
+            showDialog(`Level ${level} Complete!`, content.innerHTML, '🎉');
+        }
+
+        function confirmRestart() {
+            showDialog(
+                'Restart from Level 1?',
+                'Are you sure you want to restart from Level 1? Your statistics will be preserved.',
+                '🔄',
+                [
+                    {text: 'Cancel', action: closeDialog, style: 'btn-secondary'},
+                    {text: 'Restart', action: () => { restartFromLevel1(); closeDialog(); }, style: 'btn-warning'}
+                ]
+            );
+        }
+
+        function restartFromLevel1() {
+            currentLevel = 1;
+            resetLevel();
+            updateUI();
+            saveProgress();
+            showAlert('Restarted!', 'You have been reset to Level 1. Good luck!', '✅');
+        }
+
+        function confirmClearProgress() {
+            showDialog(
+                'Clear All Progress?',
+                'Are you sure you want to clear all your progress? This action cannot be undone!',
+                '⚠️',
+                [
+                    {text: 'Cancel', action: closeDialog, style: 'btn-secondary'},
+                    {text: 'Clear', action: () => { clearProgress(); closeDialog(); }, style: 'btn-danger'}
+                ]
+            );
+        }
+
+        // Get today's date string
+        function getDateString(date = new Date()) {
+            return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+        }
+
+        // Update daily statistics
+        function updateDailyStats(wpm, accuracy, words, time) {
+            const today = getDateString();
+            
+            if (!stats.dailyStats[today]) {
+                stats.dailyStats[today] = {
+                    wpm: 0,
+                    accuracy: 0,
+                    words: 0,
+                    time: 0,
+                    sessions: 0,
+                    levels: [],
+                    bestWpm: 0
+                };
+            }
+            
+            const todayStats = stats.dailyStats[today];
+            todayStats.sessions++;
+            todayStats.words += words;
+            todayStats.time += time;
+            
+            // Calculate weighted average for WPM and accuracy
+            todayStats.wpm = Math.round((todayStats.wpm * (todayStats.sessions - 1) + wpm) / todayStats.sessions);
+            todayStats.accuracy = Math.round((todayStats.accuracy * (todayStats.sessions - 1) + accuracy) / todayStats.sessions);
+            
+            if (wpm > todayStats.bestWpm) {
+                todayStats.bestWpm = wpm;
+            }
+            
+            if (!todayStats.levels.includes(currentLevel)) {
+                todayStats.levels.push(currentLevel);
+            }
+        }
+
+        // Calculate progress between days
+        function calculateProgress(date1, date2) {
+            const stats1 = stats.dailyStats[date1];
+            const stats2 = stats.dailyStats[date2];
+            
+            if (!stats1 || !stats2) return null;
+            
+            const wpmChange = ((stats2.wpm - stats1.wpm) / stats1.wpm * 100).toFixed(1);
+            const accuracyChange = ((stats2.accuracy - stats1.accuracy) / stats1.accuracy * 100).toFixed(1);
+            
+            return {
+                wpm: wpmChange,
+                accuracy: accuracyChange,
+                wpmValue: stats2.wpm - stats1.wpm,
+                accuracyValue: stats2.accuracy - stats1.accuracy
+            };
+        }
+
+        // Show calendar
+        function showCalendar() {
+            renderCalendar();
+            document.getElementById('calendarModal').style.display = 'block';
+        }
+
+        function closeCalendar() {
+            document.getElementById('calendarModal').style.display = 'none';
+        }
+
+        function renderCalendar() {
+            const monthNames = ["January", "February", "March", "April", "May", "June",
+                "July", "August", "September", "October", "November", "December"];
+            
+            document.getElementById('currentMonth').textContent = `${monthNames[currentCalendarMonth]} ${currentCalendarYear}`;
+            
+            const firstDay = new Date(currentCalendarYear, currentCalendarMonth, 1).getDay();
+            const daysInMonth = new Date(currentCalendarYear, currentCalendarMonth + 1, 0).getDate();
+            const daysInPrevMonth = new Date(currentCalendarYear, currentCalendarMonth, 0).getDate();
+            
+            const grid = document.getElementById('calendarGrid');
+            grid.innerHTML = '';
+            
+            // Add day headers
+            const dayHeaders = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+            dayHeaders.forEach(day => {
+                const header = document.createElement('div');
+                header.className = 'calendar-day-header';
+                header.textContent = day;
+                grid.appendChild(header);
+            });
+            
+            // Add previous month's trailing days
+            for (let i = firstDay - 1; i >= 0; i--) {
+                const day = document.createElement('div');
+                day.className = 'calendar-day other-month';
+                day.innerHTML = `<div class="calendar-day-number">${daysInPrevMonth - i}</div>`;
+                grid.appendChild(day);
+            }
+            
+            // Add current month's days
+            const today = new Date();
+            const todayString = getDateString(today);
+            
+            for (let day = 1; day <= daysInMonth; day++) {
+                const dayElement = document.createElement('div');
+                dayElement.className = 'calendar-day';
+                
+                const currentDate = new Date(currentCalendarYear, currentCalendarMonth, day);
+                const dateString = getDateString(currentDate);
+                
+                // Check if this is today
+                if (dateString === todayString) {
+                    dayElement.classList.add('today');
+                }
+                
+                // Check if we have data for this day
+                if (stats.dailyStats[dateString]) {
+                    dayElement.classList.add('has-data');
+                    const dayStats = stats.dailyStats[dateString];
+                    
+                    // Calculate progress from previous day
+                    const prevDate = new Date(currentDate);
+                    prevDate.setDate(prevDate.getDate() - 1);
+                    const prevDateString = getDateString(prevDate);
+                    
+                    let progressIndicator = '';
+                    if (stats.dailyStats[prevDateString]) {
+                        const progress = calculateProgress(prevDateString, dateString);
+                        if (progress) {
+                            const wpmChange = parseFloat(progress.wpm);
+                            if (wpmChange > 0) {
+                                progressIndicator = `<div class="progress-indicator positive">↑${Math.abs(wpmChange)}%</div>`;
+                            } else if (wpmChange < 0) {
+                                progressIndicator = `<div class="progress-indicator negative">↓${Math.abs(wpmChange)}%</div>`;
+                            }
+                        }
+                    }
+                    
+                    dayElement.innerHTML = `
+                        <div class="calendar-day-number">${day}</div>
+                        <div class="calendar-day-stats">${dayStats.wpm} WPM</div>
+                        ${progressIndicator}
+                    `;
+                } else {
+                    dayElement.innerHTML = `<div class="calendar-day-number">${day}</div>`;
+                }
+                
+                dayElement.onclick = () => showDayStats(dateString, day);
+                grid.appendChild(dayElement);
+            }
+            
+            // Add next month's leading days
+            const totalCells = grid.children.length - 7; // Subtract header row
+            const remainingCells = 35 - totalCells;
+            for (let day = 1; day <= remainingCells; day++) {
+                const dayElement = document.createElement('div');
+                dayElement.className = 'calendar-day other-month';
+                dayElement.innerHTML = `<div class="calendar-day-number">${day}</div>`;
+                grid.appendChild(dayElement);
+            }
+        }
+
+        function previousMonth() {
+            currentCalendarMonth--;
+            if (currentCalendarMonth < 0) {
+                currentCalendarMonth = 11;
+                currentCalendarYear--;
+            }
+            renderCalendar();
+        }
+
+        function nextMonth() {
+            currentCalendarMonth++;
+            if (currentCalendarMonth > 11) {
+                currentCalendarMonth = 0;
+                currentCalendarYear++;
+            }
+            renderCalendar();
+        }
+
+        function showDayStats(dateString, day) {
+            const monthNames = ["January", "February", "March", "April", "May", "June",
+                "July", "August", "September", "October", "November", "December"];
+            
+            const dailyStatsDiv = document.getElementById('dailyStats');
+            const selectedDateDiv = document.getElementById('selectedDate');
+            
+            selectedDateDiv.textContent = `${monthNames[currentCalendarMonth]} ${day}, ${currentCalendarYear}`;
+            
+            const dayStats = stats.dailyStats[dateString];
+            
+            if (dayStats) {
+                const statsGrid = document.getElementById('dailyStatsGrid');
+                statsGrid.innerHTML = `
+                    <div class="daily-stat-item">
+                        <div class="daily-stat-value">${dayStats.wpm}</div>
+                        <div class="daily-stat-label">Avg WPM</div>
+                    </div>
+                    <div class="daily-stat-item">
+                        <div class="daily-stat-value">${dayStats.accuracy}%</div>
+                        <div class="daily-stat-label">Accuracy</div>
+                    </div>
+                    <div class="daily-stat-item">
+                        <div class="daily-stat-value">${dayStats.sessions}</div>
+                        <div class="daily-stat-label">Sessions</div>
+                    </div>
+                    <div class="daily-stat-item">
+                        <div class="daily-stat-value">${dayStats.words}</div>
+                        <div class="daily-stat-label">Words</div>
+                    </div>
+                    <div class="daily-stat-item">
+                        <div class="daily-stat-value">${Math.round(dayStats.time / 60)}</div>
+                        <div class="daily-stat-label">Minutes</div>
+                    </div>
+                    <div class="daily-stat-item">
+                        <div class="daily-stat-value">${dayStats.bestWpm}</div>
+                        <div class="daily-stat-label">Best WPM</div>
+                    </div>
+                `;
+                
+                // Show progress comparison
+                const prevDate = new Date(currentCalendarYear, currentCalendarMonth, day - 1);
+                const prevDateString = getDateString(prevDate);
+                const progressDiv = document.getElementById('progressComparison');
+                
+                if (stats.dailyStats[prevDateString]) {
+                    const progress = calculateProgress(prevDateString, dateString);
+                    if (progress) {
+                        const wpmArrow = progress.wpmValue >= 0 ? '📈' : '📉';
+                        const accArrow = progress.accuracyValue >= 0 ? '📈' : '📉';
+                        
+                        progressDiv.innerHTML = `
+                            <div style="text-align: center; width: 100%;">
+                                <strong>Progress from Previous Day:</strong><br>
+                                <span style="margin: 5px;">WPM: ${wpmArrow} ${progress.wpmValue >= 0 ? '+' : ''}${progress.wpmValue} (${progress.wpm >= 0 ? '+' : ''}${progress.wpm}%)</span><br>
+                                <span style="margin: 5px;">Accuracy: ${accArrow} ${progress.accuracyValue >= 0 ? '+' : ''}${progress.accuracyValue}% (${progress.accuracy >= 0 ? '+' : ''}${progress.accuracy}%)</span>
+                            </div>
+                        `;
+                    } else {
+                        progressDiv.innerHTML = '';
+                    }
+                } else {
+                    progressDiv.innerHTML = '<div style="text-align: center; color: #666;">No previous day data for comparison</div>';
+                }
+            } else {
+                const statsGrid = document.getElementById('dailyStatsGrid');
+                statsGrid.innerHTML = '<div style="grid-column: 1/-1; text-align: center; color: #666;">No activity recorded for this day</div>';
+                document.getElementById('progressComparison').innerHTML = '';
+            }
+            
+            dailyStatsDiv.style.display = 'block';
+        }
+
+        // Load progress from localStorage
+        function loadProgress() {
+            const saved = localStorage.getItem('typingGameProgress');
+            if (saved) {
+                const data = JSON.parse(saved);
+                currentLevel = data.currentLevel || 1;
+                stats = data.stats || stats;
+                
+                // Ensure dailyStats exists
+                if (!stats.dailyStats) {
+                    stats.dailyStats = {};
+                }
+                
+                updateUI();
+            }
+        }
+
+        // Save progress to localStorage
+        function saveProgress() {
+            const data = {
+                currentLevel: currentLevel,
+                stats: stats
+            };
+            localStorage.setItem('typingGameProgress', JSON.stringify(data));
+        }
+
+        // Update UI elements
+        function updateUI() {
+            document.getElementById('currentLevel').textContent = currentLevel;
+            const progress = (currentLevel / 20) * 100;
+            document.getElementById('progressBar').style.width = progress + '%';
+            document.getElementById('progressText').textContent = Math.round(progress) + '%';
+        }
+
+        // Start typing session
+        function startTyping() {
+            if (isTyping) return;
+            
+            currentText = texts[currentLevel - 1];
+            userInput = '';
+            correctChars = 0;
+            totalChars = 0;
+            isTyping = true;
+            
+            displayText();
+            
+            document.getElementById('typeInput').value = '';
+            document.getElementById('typeInput').disabled = false;
+            document.getElementById('typeInput').focus();
+            
+            // Scroll to input on mobile
+            if (window.innerWidth <= 600) {
+                setTimeout(() => {
+                    document.getElementById('typeInput').scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }, 100);
+            }
+            
+            startTime = Date.now();
+            startTimer();
+        }
+
+        // Display text with formatting
+        function displayText() {
+            const display = document.getElementById('textDisplay');
+            display.innerHTML = '';
+            
+            for (let i = 0; i < currentText.length; i++) {
+                const span = document.createElement('span');
+                span.textContent = currentText[i];
+                
+                if (i < userInput.length) {
+                    if (userInput[i] === currentText[i]) {
+                        span.classList.add('correct');
+                    } else {
+                        span.classList.add('incorrect');
+                    }
+                } else if (i === userInput.length) {
+                    span.classList.add('current');
+                }
+                
+                display.appendChild(span);
+            }
+
+            // Auto-scroll to current position on mobile
+            if (window.innerWidth <= 600 && userInput.length > 0) {
+                const current = display.querySelector('.current');
+                if (current) {
+                    current.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+                }
+            }
+        }
+
+        // Start timer
+        function startTimer() {
+            timerInterval = setInterval(() => {
+                const elapsed = Math.floor((Date.now() - startTime) / 1000);
+                document.getElementById('timer').textContent = elapsed;
+                
+                // Calculate WPM
+                if (elapsed > 0) {
+                    const words = correctChars / 5;
+                    const minutes = elapsed / 60;
+                    const wpm = Math.round(words / minutes);
+                    document.getElementById('wpm').textContent = wpm;
+                }
+            }, 100);
+        }
+
+        // Stop timer
+        function stopTimer() {
+            clearInterval(timerInterval);
+            timerInterval = null;
+        }
+
+        // Handle input
+        document.getElementById('typeInput').addEventListener('input', function(e) {
+            if (!isTyping) return;
+            
+            userInput = e.target.value;
+            totalChars++;
+            
+            // Check if character is correct
+            if (userInput[userInput.length - 1] === currentText[userInput.length - 1]) {
+                correctChars++;
+            }
+            
+            // Update accuracy
+            const accuracy = totalChars > 0 ? Math.round((correctChars / totalChars) * 100) : 100;
+            document.getElementById('accuracy').textContent = accuracy;
+            
+            displayText();
+            
+            // Check if level is complete
+            if (userInput === currentText) {
+                completeLevel();
+            }
+        });
+
+        // Complete level
+        function completeLevel() {
+            stopTimer();
+            isTyping = false;
+            
+            const elapsed = Math.floor((Date.now() - startTime) / 1000);
+            const words = currentText.split(' ').length;
+            const minutes = elapsed / 60;
+            const wpm = Math.round(words / minutes);
+            const accuracy = Math.round((correctChars / totalChars) * 100);
+            
+            // Update daily statistics
+            updateDailyStats(wpm, accuracy, words, elapsed);
+            
+            // Update overall statistics
+            stats.totalTime += elapsed;
+            stats.totalWords += words;
+            stats.totalSessions++;
+            
+            if (wpm > stats.bestWpm) {
+                stats.bestWpm = wpm;
+            }
+            
+            if (!stats.completedLevels.includes(currentLevel)) {
+                stats.completedLevels.push(currentLevel);
+            }
+            
+            // Calculate averages
+            stats.avgWpm = Math.round(stats.totalWords / (stats.totalTime / 60));
+            stats.avgAccuracy = Math.round((stats.avgAccuracy * (stats.totalSessions - 1) + accuracy) / stats.totalSessions);
+            
+            // Check achievements
+            checkAchievements(wpm, accuracy);
+            
+            // Save progress
+            saveProgress();
+            
+            // Show completion message
+            showLevelComplete(currentLevel, wpm, accuracy, elapsed);
+            
+            // Move to next level
+            if (currentLevel < 20) {
+                currentLevel++;
+                updateUI();
+                saveProgress();
+            }
+            
+            resetLevel();
+        }
+
+        // Check and award achievements
+        function checkAchievements(wpm, accuracy) {
+            if (wpm >= 60 && !stats.achievements.includes('speed_demon')) {
+                stats.achievements.push('speed_demon');
+            }
+            if (accuracy >= 95 && !stats.achievements.includes('perfectionist')) {
+                stats.achievements.push('perfectionist');
+            }
+            if (stats.completedLevels.length >= 10 && !stats.achievements.includes('halfway_there')) {
+                stats.achievements.push('halfway_there');
+            }
+            if (stats.completedLevels.length === 20 && !stats.achievements.includes('master_typist')) {
+                stats.achievements.push('master_typist');
+            }
+        }
+
+        // Reset current level
+        function resetLevel() {
+            stopTimer();
+            isTyping = false;
+            userInput = '';
+            document.getElementById('typeInput').value = '';
+            document.getElementById('typeInput').disabled = true;
+            document.getElementById('timer').textContent = '0';
+            document.getElementById('wpm').textContent = '0';
+            document.getElementById('accuracy').textContent = '100';
+            document.getElementById('textDisplay').innerHTML = 'Click "Start" to begin!';
+        }
+
+        // Show statistics modal
+        function showStats() {
+            document.getElementById('totalTime').textContent = Math.round(stats.totalTime / 60);
+            document.getElementById('avgWpm').textContent = stats.avgWpm || 0;
+            document.getElementById('avgAccuracy').textContent = stats.avgAccuracy || 0;
+            document.getElementById('completedLevels').textContent = stats.completedLevels.length;
+            document.getElementById('totalWords').textContent = stats.totalWords;
+            document.getElementById('bestWpm').textContent = stats.bestWpm;
+            
+            // Display achievements
+            const achievementsDiv = document.getElementById('achievements');
+            achievementsDiv.innerHTML = '';
+            
+            const achievementsList = [
+                { id: 'speed_demon', name: 'Speed Demon', desc: 'Achieve 60+ WPM' },
+                { id: 'perfectionist', name: 'Perfectionist', desc: 'Get 95%+ accuracy' },
+                { id: 'halfway_there', name: 'Halfway There', desc: 'Complete 10 levels' },
+                { id: 'master_typist', name: 'Master Typist', desc: 'Complete all 20 levels' }
+            ];
+            
+            achievementsList.forEach(ach => {
+                if (stats.achievements.includes(ach.id)) {
+                    const div = document.createElement('div');
+                    div.className = 'achievement';
+                    div.innerHTML = `<div><strong>${ach.name}</strong><br><small>${ach.desc}</small></div>`;
+                    achievementsDiv.appendChild(div);
+                }
+            });
+            
+            if (stats.achievements.length === 0) {
+                achievementsDiv.innerHTML = '<p style="text-align: center; color: #666;">No achievements yet. Keep practicing!</p>';
+            }
+            
+            document.getElementById('statsModal').style.display = 'block';
+        }
+
+        // Close statistics modal
+        function closeStats() {
+            document.getElementById('statsModal').style.display = 'none';
+        }
+
+        // Clear all progress
+        function clearProgress() {
+            localStorage.removeItem('typingGameProgress');
+            currentLevel = 1;
+            stats = {
+                totalTime: 0,
+                totalWords: 0,
+                totalSessions: 0,
+                avgWpm: 0,
+                avgAccuracy: 0,
+                bestWpm: 0,
+                completedLevels: [],
+                achievements: [],
+                dailyStats: {}
+            };
+            updateUI();
+            closeStats();
+            showAlert('Progress Cleared', 'All your progress has been reset!', '✅');
+        }
+
+        // Close modal when clicking outside
+        window.onclick = function(event) {
+            const modal = document.getElementById('statsModal');
+            const calendarModal = document.getElementById('calendarModal');
+            const overlay = document.getElementById('dialogOverlay');
+            
+            if (event.target === modal) {
+                closeStats();
+            }
+            
+            if (event.target === calendarModal) {
+                closeCalendar();
+            }
+            
+            // Don't close dialog on overlay click for mobile (prevents accidental closes)
+            if (window.innerWidth > 600 && event.target === overlay) {
+                closeDialog();
+            }
+        }
+
+        // Initialize on load
+        window.onload = function() {
+            loadProgress();
+            updateUI();
+            
+            // Prevent zoom on double tap for iOS
+            let lastTouchEnd = 0;
+            document.addEventListener('touchend', function(event) {
+                const now = Date.now();
+                if (now - lastTouchEnd <= 300) {
+                    event.preventDefault();
+                }
+                lastTouchEnd = now;
+            }, false);
+        };
+
+        // Prevent cheating with paste
+        document.getElementById('typeInput').addEventListener('paste', function(e) {
+            e.preventDefault();
+            showAlert('No Pasting!', 'Pasting is not allowed! Type it yourself to improve your skills! 😊', '⚠️');
+        });
+
+        // Handle orientation change
+        window.addEventListener('orientationchange', function() {
+            setTimeout(() => {
+                if (isTyping) {
+                    document.getElementById('typeInput').scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }
+            }, 100);
+        });
+
+        // Prevent pull-to-refresh on mobile
+        let touchStartY = 0;
+        document.addEventListener('touchstart', function(e) {
+            touchStartY = e.touches[0].clientY;
+        }, { passive: false });
+
+        document.addEventListener('touchmove', function(e) {
+            const touchY = e.touches[0].clientY;
+            const touchDiff = touchY - touchStartY;
+            
+            if (touchDiff > 0 && window.scrollY === 0) {
+                e.preventDefault();
+            }
+        }, { passive: false });
+    </script>
+</body>
+</html>
