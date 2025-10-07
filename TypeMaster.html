@@ -69,6 +69,23 @@ Copyright (c) 2025 Valentyn Kolesnikov <0009-0003-9608-3364@orcid.org>
             color: #666;
         }
 
+        .keyboard-shortcuts {
+            text-align: center;
+            margin-top: 10px;
+            font-size: 0.8em;
+            color: #999;
+        }
+
+        .keyboard-shortcuts kbd {
+            background: #f0f0f0;
+            padding: 2px 6px;
+            border-radius: 3px;
+            border: 1px solid #ccc;
+            font-family: monospace;
+            font-size: 0.9em;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+        }
+
         .level-info {
             display: flex;
             flex-direction: column;
@@ -187,6 +204,24 @@ Copyright (c) 2025 Valentyn Kolesnikov <0009-0003-9608-3364@orcid.org>
             text-transform: uppercase;
             letter-spacing: 0.5px;
             touch-action: manipulation;
+            position: relative;
+        }
+
+        button .shortcut-hint {
+            position: absolute;
+            top: -8px;
+            right: -8px;
+            background: #333;
+            color: white;
+            font-size: 0.7em;
+            padding: 2px 5px;
+            border-radius: 10px;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        button:hover .shortcut-hint {
+            opacity: 0.9;
         }
 
         .btn-primary {
@@ -236,6 +271,66 @@ Copyright (c) 2025 Valentyn Kolesnikov <0009-0003-9608-3364@orcid.org>
 
         .btn-danger:hover, .btn-danger:active {
             background: #c82333;
+        }
+
+        .btn-info {
+            background: #17a2b8;
+            color: white;
+        }
+
+        .btn-info:hover, .btn-info:active {
+            background: #138496;
+            transform: translateY(-2px);
+        }
+
+        /* Help Modal */
+        .help-content {
+            line-height: 1.8;
+        }
+
+        .help-section {
+            margin-bottom: 20px;
+        }
+
+        .help-section h3 {
+            color: #764ba2;
+            margin-bottom: 10px;
+            font-size: 1.1em;
+        }
+
+        .shortcut-list {
+            display: grid;
+            gap: 8px;
+        }
+
+        .shortcut-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px;
+            background: #f8f9fa;
+            border-radius: 8px;
+        }
+
+        .shortcut-key {
+            display: flex;
+            gap: 5px;
+            align-items: center;
+        }
+
+        .shortcut-key kbd {
+            background: white;
+            padding: 3px 8px;
+            border-radius: 4px;
+            border: 1px solid #ddd;
+            font-family: monospace;
+            font-weight: bold;
+            box-shadow: 0 2px 3px rgba(0,0,0,0.1);
+        }
+
+        .shortcut-description {
+            color: #666;
+            font-size: 0.9em;
         }
 
         /* Calendar Styles */
@@ -484,6 +579,15 @@ Copyright (c) 2025 Valentyn Kolesnikov <0009-0003-9608-3364@orcid.org>
             padding: 8px 20px;
         }
 
+        .dialog-buttons button.dialog-primary {
+            animation: subtlePulse 2s infinite;
+        }
+
+        @keyframes subtlePulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.02); }
+        }
+
         /* Modal Styles */
         .modal {
             display: none;
@@ -627,6 +731,10 @@ Copyright (c) 2025 Valentyn Kolesnikov <0009-0003-9608-3364@orcid.org>
             .header p {
                 font-size: 0.8em;
             }
+
+            .keyboard-shortcuts {
+                display: none;
+            }
             
             .text-display {
                 font-size: 1em;
@@ -649,9 +757,13 @@ Copyright (c) 2025 Valentyn Kolesnikov <0009-0003-9608-3364@orcid.org>
                 font-size: 0.85em;
             }
 
+            button .shortcut-hint {
+                display: none;
+            }
+
             #typeInput {
                 padding: 10px;
-                font-size: 16px; /* Prevents zoom on iOS */
+                font-size: 16px;
             }
 
             .modal-content {
@@ -728,6 +840,10 @@ Copyright (c) 2025 Valentyn Kolesnikov <0009-0003-9608-3364@orcid.org>
                 font-size: 1.3em;
                 margin-bottom: 2px;
             }
+
+            .keyboard-shortcuts {
+                display: none;
+            }
         }
 
         /* Touch device optimizations */
@@ -752,8 +868,11 @@ Copyright (c) 2025 Valentyn Kolesnikov <0009-0003-9608-3364@orcid.org>
 <body>
     <div class="container">
         <div class="header">
-            <h1>⌨️ TypeMaster Pro</h1>
+            <h1>⌨️ TypeMaster</h1>
             <p>Master your typing skills level by level!</p>
+            <div class="keyboard-shortcuts">
+                Press <kbd>?</kbd> for help • <kbd>Enter</kbd> to start • <kbd>Esc</kbd> to close dialogs
+            </div>
         </div>
 
         <div class="level-info">
@@ -772,7 +891,7 @@ Copyright (c) 2025 Valentyn Kolesnikov <0009-0003-9608-3364@orcid.org>
         </div>
 
         <div class="text-display" id="textDisplay">
-            Click "Start Typing" to begin!
+            Click "Start" or press Enter to begin!
         </div>
 
         <div class="input-area">
@@ -780,11 +899,30 @@ Copyright (c) 2025 Valentyn Kolesnikov <0009-0003-9608-3364@orcid.org>
         </div>
 
         <div class="buttons">
-            <button class="btn-primary" onclick="startTyping()">Start</button>
-            <button class="btn-secondary" onclick="resetLevel()">Reset</button>
-            <button class="btn-warning" onclick="confirmRestart()">🔄 Restart</button>
-            <button class="btn-success" onclick="showStats()">📊 Stats</button>
-            <button class="btn-primary" onclick="showCalendar()">📅 Calendar</button>
+            <button class="btn-primary" id="startBtn" onclick="startTyping()">
+                Start
+                <span class="shortcut-hint">Enter</span>
+            </button>
+            <button class="btn-secondary" onclick="resetLevel()">
+                Reset
+                <span class="shortcut-hint">Alt+R</span>
+            </button>
+            <button class="btn-warning" onclick="confirmRestart()">
+                🔄 Restart
+                <span class="shortcut-hint">Alt+N</span>
+            </button>
+            <button class="btn-success" onclick="showStats()">
+                📊 Stats
+                <span class="shortcut-hint">Alt+S</span>
+            </button>
+            <button class="btn-primary" onclick="showCalendar()">
+                📅 Calendar
+                <span class="shortcut-hint">Alt+C</span>
+            </button>
+            <button class="btn-info" onclick="showHelp()">
+                ❓ Help
+                <span class="shortcut-hint">?</span>
+            </button>
         </div>
     </div>
 
@@ -799,7 +937,117 @@ Copyright (c) 2025 Valentyn Kolesnikov <0009-0003-9608-3364@orcid.org>
                 Content goes here
             </div>
             <div class="dialog-buttons" id="dialogButtons">
-                <button class="btn-primary" onclick="closeDialog()">OK</button>
+                <button class="btn-primary dialog-primary" onclick="closeDialog()">OK</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Help Modal -->
+    <div id="helpModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeHelp()">&times;</span>
+            <h2 style="color: #764ba2; margin-bottom: 15px; font-size: 1.5em;">❓ Help & Keyboard Shortcuts</h2>
+            
+            <div class="help-content">
+                <div class="help-section">
+                    <h3>🎮 Game Controls</h3>
+                    <div class="shortcut-list">
+                        <div class="shortcut-item">
+                            <span class="shortcut-description">Start typing session</span>
+                            <div class="shortcut-key">
+                                <kbd>Enter</kbd>
+                            </div>
+                        </div>
+                        <div class="shortcut-item">
+                            <span class="shortcut-description">Reset current level</span>
+                            <div class="shortcut-key">
+                                <kbd>Alt</kbd> + <kbd>R</kbd>
+                            </div>
+                        </div>
+                        <div class="shortcut-item">
+                            <span class="shortcut-description">Restart from Level 1</span>
+                            <div class="shortcut-key">
+                                <kbd>Alt</kbd> + <kbd>N</kbd>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="help-section">
+                    <h3>📊 Navigation</h3>
+                    <div class="shortcut-list">
+                        <div class="shortcut-item">
+                            <span class="shortcut-description">Open Statistics</span>
+                            <div class="shortcut-key">
+                                <kbd>Alt</kbd> + <kbd>S</kbd>
+                            </div>
+                        </div>
+                        <div class="shortcut-item">
+                            <span class="shortcut-description">Open Calendar</span>
+                            <div class="shortcut-key">
+                                <kbd>Alt</kbd> + <kbd>C</kbd>
+                            </div>
+                        </div>
+                        <div class="shortcut-item">
+                            <span class="shortcut-description">Show this help</span>
+                            <div class="shortcut-key">
+                                <kbd>?</kbd>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="help-section">
+                    <h3>🗓️ Calendar Navigation</h3>
+                    <div class="shortcut-list">
+                        <div class="shortcut-item">
+                            <span class="shortcut-description">Previous month</span>
+                            <div class="shortcut-key">
+                                <kbd>←</kbd>
+                            </div>
+                        </div>
+                        <div class="shortcut-item">
+                            <span class="shortcut-description">Next month</span>
+                            <div class="shortcut-key">
+                                <kbd>→</kbd>
+                            </div>
+                        </div>
+                        <div class="shortcut-item">
+                            <span class="shortcut-description">Today</span>
+                            <div class="shortcut-key">
+                                <kbd>T</kbd>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="help-section">
+                    <h3>🚪 General</h3>
+                    <div class="shortcut-list">
+                        <div class="shortcut-item">
+                            <span class="shortcut-description">Close dialog/modal</span>
+                            <div class="shortcut-key">
+                                <kbd>Esc</kbd>
+                            </div>
+                        </div>
+                        <div class="shortcut-item">
+                            <span class="shortcut-description">Confirm dialog (OK button)</span>
+                            <div class="shortcut-key">
+                                <kbd>Enter</kbd>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="help-section">
+                    <h3>💡 Tips</h3>
+                    <ul style="margin-left: 20px; color: #666;">
+                        <li>Focus on accuracy first, speed will come naturally</li>
+                        <li>Practice daily to see consistent improvement</li>
+                        <li>Use the calendar to track your progress over time</li>
+                        <li>Complete all 20 levels to become a TypeMaster!</li>
+                    </ul>
+                </div>
             </div>
         </div>
     </div>
@@ -914,6 +1162,7 @@ Copyright (c) 2025 Valentyn Kolesnikov <0009-0003-9608-3364@orcid.org>
         let totalChars = 0;
         let isTyping = false;
         let dialogCallback = null;
+        let currentOpenModal = null;
 
         // Calendar state
         let currentCalendarMonth = new Date().getMonth();
@@ -930,11 +1179,104 @@ Copyright (c) 2025 Valentyn Kolesnikov <0009-0003-9608-3364@orcid.org>
             bestWpm: 0,
             completedLevels: [],
             achievements: [],
-            dailyStats: {} // Format: "YYYY-MM-DD": { wpm, accuracy, words, time, sessions, levels }
+            dailyStats: {}
         };
 
+        // Keyboard shortcuts handler
+        document.addEventListener('keydown', function(e) {
+            // Don't trigger shortcuts when typing
+            if (document.activeElement === document.getElementById('typeInput') && isTyping) {
+                return;
+            }
+
+            // Global shortcuts
+            if (e.key === 'Escape') {
+                // Close any open modal or dialog
+                if (document.getElementById('dialogOverlay').style.display === 'block') {
+                    closeDialog();
+                } else if (document.getElementById('statsModal').style.display === 'block') {
+                    closeStats();
+                } else if (document.getElementById('calendarModal').style.display === 'block') {
+                    closeCalendar();
+                } else if (document.getElementById('helpModal').style.display === 'block') {
+                    closeHelp();
+                }
+                return;
+            }
+
+            // Enter key handling
+            if (e.key === 'Enter') {
+                // If dialog is open, trigger OK button
+                if (document.getElementById('dialogOverlay').style.display === 'block') {
+                    const primaryBtn = document.querySelector('.dialog-buttons .dialog-primary');
+                    if (primaryBtn) {
+                        primaryBtn.click();
+                    }
+                    return;
+                }
+                
+                // If no modal is open and not typing, start typing
+                if (!isTyping && !currentOpenModal) {
+                    e.preventDefault();
+                    startTyping();
+                    return;
+                }
+            }
+
+            // Help shortcut
+            if (e.key === '?' || (e.shiftKey && e.key === '/')) {
+                e.preventDefault();
+                showHelp();
+                return;
+            }
+
+            // Alt key combinations
+            if (e.altKey) {
+                switch(e.key.toLowerCase()) {
+                    case 'r':
+                        e.preventDefault();
+                        resetLevel();
+                        break;
+                    case 'n':
+                        e.preventDefault();
+                        confirmRestart();
+                        break;
+                    case 's':
+                        e.preventDefault();
+                        showStats();
+                        break;
+                    case 'c':
+                        e.preventDefault();
+                        showCalendar();
+                        break;
+                }
+            }
+
+            // Calendar navigation shortcuts (when calendar is open)
+            if (document.getElementById('calendarModal').style.display === 'block') {
+                switch(e.key) {
+                    case 'ArrowLeft':
+                        e.preventDefault();
+                        previousMonth();
+                        break;
+                    case 'ArrowRight':
+                        e.preventDefault();
+                        nextMonth();
+                        break;
+                    case 't':
+                    case 'T':
+                        e.preventDefault();
+                        // Go to today
+                        currentCalendarMonth = new Date().getMonth();
+                        currentCalendarYear = new Date().getFullYear();
+                        renderCalendar();
+                        break;
+                }
+            }
+        });
+
         // Custom dialog functions
-        function showDialog(title, content, icon = '📢', buttons = [{text: 'OK', action: closeDialog, style: 'btn-primary'}]) {
+        function showDialog(title, content, icon = '📢', buttons = [{text: 'OK', action: closeDialog, style: 'btn-primary dialog-primary'}]) {
             const overlay = document.getElementById('dialogOverlay');
             document.getElementById('dialogTitle').textContent = title;
             document.getElementById('dialogIcon').textContent = icon;
@@ -948,15 +1290,26 @@ Copyright (c) 2025 Valentyn Kolesnikov <0009-0003-9608-3364@orcid.org>
             
             const buttonsDiv = document.getElementById('dialogButtons');
             buttonsDiv.innerHTML = '';
-            buttons.forEach(btn => {
+            buttons.forEach((btn, index) => {
                 const button = document.createElement('button');
                 button.className = btn.style || 'btn-primary';
+                if (index === 0) {
+                    button.classList.add('dialog-primary');
+                }
                 button.textContent = btn.text;
                 button.onclick = btn.action;
                 buttonsDiv.appendChild(button);
             });
             
             overlay.style.display = 'block';
+            
+            // Focus the primary button for Enter key
+            setTimeout(() => {
+                const primaryBtn = document.querySelector('.dialog-buttons .dialog-primary');
+                if (primaryBtn) {
+                    primaryBtn.focus();
+                }
+            }, 100);
         }
 
         function closeDialog() {
@@ -1003,7 +1356,7 @@ Copyright (c) 2025 Valentyn Kolesnikov <0009-0003-9608-3364@orcid.org>
                 '🔄',
                 [
                     {text: 'Cancel', action: closeDialog, style: 'btn-secondary'},
-                    {text: 'Restart', action: () => { restartFromLevel1(); closeDialog(); }, style: 'btn-warning'}
+                    {text: 'Restart', action: () => { restartFromLevel1(); closeDialog(); }, style: 'btn-warning dialog-primary'}
                 ]
             );
         }
@@ -1023,9 +1376,20 @@ Copyright (c) 2025 Valentyn Kolesnikov <0009-0003-9608-3364@orcid.org>
                 '⚠️',
                 [
                     {text: 'Cancel', action: closeDialog, style: 'btn-secondary'},
-                    {text: 'Clear', action: () => { clearProgress(); closeDialog(); }, style: 'btn-danger'}
+                    {text: 'Clear', action: () => { clearProgress(); closeDialog(); }, style: 'btn-danger dialog-primary'}
                 ]
             );
+        }
+
+        // Show help modal
+        function showHelp() {
+            currentOpenModal = 'help';
+            document.getElementById('helpModal').style.display = 'block';
+        }
+
+        function closeHelp() {
+            currentOpenModal = null;
+            document.getElementById('helpModal').style.display = 'none';
         }
 
         // Get today's date string
@@ -1054,7 +1418,6 @@ Copyright (c) 2025 Valentyn Kolesnikov <0009-0003-9608-3364@orcid.org>
             todayStats.words += words;
             todayStats.time += time;
             
-            // Calculate weighted average for WPM and accuracy
             todayStats.wpm = Math.round((todayStats.wpm * (todayStats.sessions - 1) + wpm) / todayStats.sessions);
             todayStats.accuracy = Math.round((todayStats.accuracy * (todayStats.sessions - 1) + accuracy) / todayStats.sessions);
             
@@ -1087,11 +1450,13 @@ Copyright (c) 2025 Valentyn Kolesnikov <0009-0003-9608-3364@orcid.org>
 
         // Show calendar
         function showCalendar() {
+            currentOpenModal = 'calendar';
             renderCalendar();
             document.getElementById('calendarModal').style.display = 'block';
         }
 
         function closeCalendar() {
+            currentOpenModal = null;
             document.getElementById('calendarModal').style.display = 'none';
         }
 
@@ -1108,7 +1473,6 @@ Copyright (c) 2025 Valentyn Kolesnikov <0009-0003-9608-3364@orcid.org>
             const grid = document.getElementById('calendarGrid');
             grid.innerHTML = '';
             
-            // Add day headers
             const dayHeaders = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
             dayHeaders.forEach(day => {
                 const header = document.createElement('div');
@@ -1117,7 +1481,6 @@ Copyright (c) 2025 Valentyn Kolesnikov <0009-0003-9608-3364@orcid.org>
                 grid.appendChild(header);
             });
             
-            // Add previous month's trailing days
             for (let i = firstDay - 1; i >= 0; i--) {
                 const day = document.createElement('div');
                 day.className = 'calendar-day other-month';
@@ -1125,7 +1488,6 @@ Copyright (c) 2025 Valentyn Kolesnikov <0009-0003-9608-3364@orcid.org>
                 grid.appendChild(day);
             }
             
-            // Add current month's days
             const today = new Date();
             const todayString = getDateString(today);
             
@@ -1136,17 +1498,14 @@ Copyright (c) 2025 Valentyn Kolesnikov <0009-0003-9608-3364@orcid.org>
                 const currentDate = new Date(currentCalendarYear, currentCalendarMonth, day);
                 const dateString = getDateString(currentDate);
                 
-                // Check if this is today
                 if (dateString === todayString) {
                     dayElement.classList.add('today');
                 }
                 
-                // Check if we have data for this day
                 if (stats.dailyStats[dateString]) {
                     dayElement.classList.add('has-data');
                     const dayStats = stats.dailyStats[dateString];
                     
-                    // Calculate progress from previous day
                     const prevDate = new Date(currentDate);
                     prevDate.setDate(prevDate.getDate() - 1);
                     const prevDateString = getDateString(prevDate);
@@ -1177,8 +1536,7 @@ Copyright (c) 2025 Valentyn Kolesnikov <0009-0003-9608-3364@orcid.org>
                 grid.appendChild(dayElement);
             }
             
-            // Add next month's leading days
-            const totalCells = grid.children.length - 7; // Subtract header row
+            const totalCells = grid.children.length - 7;
             const remainingCells = 35 - totalCells;
             for (let day = 1; day <= remainingCells; day++) {
                 const dayElement = document.createElement('div');
@@ -1246,7 +1604,6 @@ Copyright (c) 2025 Valentyn Kolesnikov <0009-0003-9608-3364@orcid.org>
                     </div>
                 `;
                 
-                // Show progress comparison
                 const prevDate = new Date(currentCalendarYear, currentCalendarMonth, day - 1);
                 const prevDateString = getDateString(prevDate);
                 const progressDiv = document.getElementById('progressComparison');
@@ -1287,7 +1644,6 @@ Copyright (c) 2025 Valentyn Kolesnikov <0009-0003-9608-3364@orcid.org>
                 currentLevel = data.currentLevel || 1;
                 stats = data.stats || stats;
                 
-                // Ensure dailyStats exists
                 if (!stats.dailyStats) {
                     stats.dailyStats = {};
                 }
@@ -1329,7 +1685,6 @@ Copyright (c) 2025 Valentyn Kolesnikov <0009-0003-9608-3364@orcid.org>
             document.getElementById('typeInput').disabled = false;
             document.getElementById('typeInput').focus();
             
-            // Scroll to input on mobile
             if (window.innerWidth <= 600) {
                 setTimeout(() => {
                     document.getElementById('typeInput').scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -1362,7 +1717,6 @@ Copyright (c) 2025 Valentyn Kolesnikov <0009-0003-9608-3364@orcid.org>
                 display.appendChild(span);
             }
 
-            // Auto-scroll to current position on mobile
             if (window.innerWidth <= 600 && userInput.length > 0) {
                 const current = display.querySelector('.current');
                 if (current) {
@@ -1377,7 +1731,6 @@ Copyright (c) 2025 Valentyn Kolesnikov <0009-0003-9608-3364@orcid.org>
                 const elapsed = Math.floor((Date.now() - startTime) / 1000);
                 document.getElementById('timer').textContent = elapsed;
                 
-                // Calculate WPM
                 if (elapsed > 0) {
                     const words = correctChars / 5;
                     const minutes = elapsed / 60;
@@ -1400,18 +1753,15 @@ Copyright (c) 2025 Valentyn Kolesnikov <0009-0003-9608-3364@orcid.org>
             userInput = e.target.value;
             totalChars++;
             
-            // Check if character is correct
             if (userInput[userInput.length - 1] === currentText[userInput.length - 1]) {
                 correctChars++;
             }
             
-            // Update accuracy
             const accuracy = totalChars > 0 ? Math.round((correctChars / totalChars) * 100) : 100;
             document.getElementById('accuracy').textContent = accuracy;
             
             displayText();
             
-            // Check if level is complete
             if (userInput === currentText) {
                 completeLevel();
             }
@@ -1428,10 +1778,8 @@ Copyright (c) 2025 Valentyn Kolesnikov <0009-0003-9608-3364@orcid.org>
             const wpm = Math.round(words / minutes);
             const accuracy = Math.round((correctChars / totalChars) * 100);
             
-            // Update daily statistics
             updateDailyStats(wpm, accuracy, words, elapsed);
             
-            // Update overall statistics
             stats.totalTime += elapsed;
             stats.totalWords += words;
             stats.totalSessions++;
@@ -1444,20 +1792,15 @@ Copyright (c) 2025 Valentyn Kolesnikov <0009-0003-9608-3364@orcid.org>
                 stats.completedLevels.push(currentLevel);
             }
             
-            // Calculate averages
             stats.avgWpm = Math.round(stats.totalWords / (stats.totalTime / 60));
             stats.avgAccuracy = Math.round((stats.avgAccuracy * (stats.totalSessions - 1) + accuracy) / stats.totalSessions);
             
-            // Check achievements
             checkAchievements(wpm, accuracy);
             
-            // Save progress
             saveProgress();
             
-            // Show completion message
             showLevelComplete(currentLevel, wpm, accuracy, elapsed);
             
-            // Move to next level
             if (currentLevel < 20) {
                 currentLevel++;
                 updateUI();
@@ -1493,11 +1836,12 @@ Copyright (c) 2025 Valentyn Kolesnikov <0009-0003-9608-3364@orcid.org>
             document.getElementById('timer').textContent = '0';
             document.getElementById('wpm').textContent = '0';
             document.getElementById('accuracy').textContent = '100';
-            document.getElementById('textDisplay').innerHTML = 'Click "Start" to begin!';
+            document.getElementById('textDisplay').innerHTML = 'Click "Start" or press Enter to begin!';
         }
 
         // Show statistics modal
         function showStats() {
+            currentOpenModal = 'stats';
             document.getElementById('totalTime').textContent = Math.round(stats.totalTime / 60);
             document.getElementById('avgWpm').textContent = stats.avgWpm || 0;
             document.getElementById('avgAccuracy').textContent = stats.avgAccuracy || 0;
@@ -1505,7 +1849,6 @@ Copyright (c) 2025 Valentyn Kolesnikov <0009-0003-9608-3364@orcid.org>
             document.getElementById('totalWords').textContent = stats.totalWords;
             document.getElementById('bestWpm').textContent = stats.bestWpm;
             
-            // Display achievements
             const achievementsDiv = document.getElementById('achievements');
             achievementsDiv.innerHTML = '';
             
@@ -1534,6 +1877,7 @@ Copyright (c) 2025 Valentyn Kolesnikov <0009-0003-9608-3364@orcid.org>
 
         // Close statistics modal
         function closeStats() {
+            currentOpenModal = null;
             document.getElementById('statsModal').style.display = 'none';
         }
 
@@ -1561,6 +1905,7 @@ Copyright (c) 2025 Valentyn Kolesnikov <0009-0003-9608-3364@orcid.org>
         window.onclick = function(event) {
             const modal = document.getElementById('statsModal');
             const calendarModal = document.getElementById('calendarModal');
+            const helpModal = document.getElementById('helpModal');
             const overlay = document.getElementById('dialogOverlay');
             
             if (event.target === modal) {
@@ -1571,7 +1916,10 @@ Copyright (c) 2025 Valentyn Kolesnikov <0009-0003-9608-3364@orcid.org>
                 closeCalendar();
             }
             
-            // Don't close dialog on overlay click for mobile (prevents accidental closes)
+            if (event.target === helpModal) {
+                closeHelp();
+            }
+            
             if (window.innerWidth > 600 && event.target === overlay) {
                 closeDialog();
             }
@@ -1582,7 +1930,6 @@ Copyright (c) 2025 Valentyn Kolesnikov <0009-0003-9608-3364@orcid.org>
             loadProgress();
             updateUI();
             
-            // Prevent zoom on double tap for iOS
             let lastTouchEnd = 0;
             document.addEventListener('touchend', function(event) {
                 const now = Date.now();
