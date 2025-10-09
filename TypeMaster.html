@@ -69,6 +69,46 @@ Copyright (c) 2025 Valentyn Kolesnikov <0009-0003-9608-3364@orcid.org>
             color: #666;
         }
 
+        .language-selector {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin: 10px 0;
+        }
+
+        .language-btn {
+            padding: 8px 16px;
+            border: 2px solid #764ba2;
+            background: white;
+            color: #764ba2;
+            border-radius: 20px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-weight: 600;
+            font-size: 0.9em;
+            position: relative;
+        }
+
+        .language-btn .lang-shortcut {
+            text-decoration: underline;
+            text-decoration-color: #764ba2;
+            text-underline-offset: 2px;
+        }
+
+        .language-btn.active {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .language-btn.active .lang-shortcut {
+            text-decoration-color: white;
+        }
+
+        .language-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(118, 75, 162, 0.3);
+        }
+
         .keyboard-shortcuts {
             text-align: center;
             margin-top: 10px;
@@ -367,6 +407,13 @@ Copyright (c) 2025 Valentyn Kolesnikov <0009-0003-9608-3364@orcid.org>
             background: rgba(255,255,255,0.3);
         }
 
+        .calendar-language-indicator {
+            font-size: 0.9em;
+            background: rgba(255,255,255,0.2);
+            padding: 5px 10px;
+            border-radius: 15px;
+        }
+
         .calendar-grid {
             display: grid;
             grid-template-columns: repeat(7, 1fr);
@@ -407,7 +454,7 @@ Copyright (c) 2025 Valentyn Kolesnikov <0009-0003-9608-3364@orcid.org>
 
         .calendar-day.today {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
+            color: #316b88;
             font-weight: bold;
         }
 
@@ -817,6 +864,16 @@ Copyright (c) 2025 Valentyn Kolesnikov <0009-0003-9608-3364@orcid.org>
             .daily-stats-grid {
                 grid-template-columns: repeat(2, 1fr);
             }
+
+            .language-selector {
+                flex-direction: column;
+                align-items: center;
+            }
+
+            .language-btn {
+                width: 100%;
+                max-width: 200px;
+            }
         }
 
         /* Landscape mode adjustments */
@@ -870,8 +927,19 @@ Copyright (c) 2025 Valentyn Kolesnikov <0009-0003-9608-3364@orcid.org>
         <div class="header">
             <h1>⌨️ TypeMaster</h1>
             <p>Master your typing skills level by level!</p>
+            <div class="language-selector">
+                <button class="language-btn active" onclick="switchLanguage('en')" id="langEnBtn">
+                    🇬🇧 <span class="lang-shortcut">E</span>nglish
+                </button>
+                <button class="language-btn" onclick="switchLanguage('uk')" id="langUkBtn">
+                    🇺🇦 <span class="lang-shortcut">U</span>kraїнська
+                </button>
+                <button class="language-btn" onclick="switchLanguage('ru')" id="langRuBtn">
+                    🇷🇺 <span class="lang-shortcut">R</span>усский
+                </button>
+            </div>
             <div class="keyboard-shortcuts">
-                Press <kbd>?</kbd> for help • <kbd>Enter</kbd> to start • <kbd>Esc</kbd> to close dialogs
+                Press <kbd>?</kbd> for help • <kbd>Enter</kbd> to start • <kbd>Alt+E/U/R</kbd> to switch language
             </div>
         </div>
 
@@ -879,7 +947,8 @@ Copyright (c) 2025 Valentyn Kolesnikov <0009-0003-9608-3364@orcid.org>
             <div class="level-badge">Level <span id="currentLevel">1</span> / 20</div>
             <div class="stats-row">
                 <div class="stat-item">⏱️ <span id="timer">0</span>s</div>
-                <div class="stat-item">⚡ <span id="wpm">0</span> WPM</div>
+                <div class="stat-item">⚡ <span id="cpm">0</span> CPM</div>
+                <div class="stat-item">📝 <span id="wpm">0</span> WPM</div>
                 <div class="stat-item">🎯 <span id="accuracy">100</span>%</div>
             </div>
         </div>
@@ -974,6 +1043,30 @@ Copyright (c) 2025 Valentyn Kolesnikov <0009-0003-9608-3364@orcid.org>
                 </div>
 
                 <div class="help-section">
+                    <h3>🌐 Language Selection</h3>
+                    <div class="shortcut-list">
+                        <div class="shortcut-item">
+                            <span class="shortcut-description">Switch to English</span>
+                            <div class="shortcut-key">
+                                <kbd>Alt</kbd> + <kbd>E</kbd>
+                            </div>
+                        </div>
+                        <div class="shortcut-item">
+                            <span class="shortcut-description">Switch to Ukrainian</span>
+                            <div class="shortcut-key">
+                                <kbd>Alt</kbd> + <kbd>U</kbd>
+                            </div>
+                        </div>
+                        <div class="shortcut-item">
+                            <span class="shortcut-description">Switch to Russian</span>
+                            <div class="shortcut-key">
+                                <kbd>Alt</kbd> + <kbd>R</kbd>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="help-section">
                     <h3>📊 Navigation</h3>
                     <div class="shortcut-list">
                         <div class="shortcut-item">
@@ -1046,6 +1139,8 @@ Copyright (c) 2025 Valentyn Kolesnikov <0009-0003-9608-3364@orcid.org>
                         <li>Practice daily to see consistent improvement</li>
                         <li>Use the calendar to track your progress over time</li>
                         <li>Complete all 20 levels to become a TypeMaster!</li>
+                        <li>CPM (Characters Per Minute) is the primary metric</li>
+                        <li>WPM (Words Per Minute) is calculated as CPM ÷ 5</li>
                     </ul>
                 </div>
             </div>
@@ -1063,6 +1158,7 @@ Copyright (c) 2025 Valentyn Kolesnikov <0009-0003-9608-3364@orcid.org>
                     <button onclick="previousMonth()">◀</button>
                     <div class="calendar-nav">
                         <span id="currentMonth">January 2024</span>
+                        <span class="calendar-language-indicator" id="calendarLangIndicator">🇬🇧 English</span>
                     </div>
                     <button onclick="nextMonth()">▶</button>
                 </div>
@@ -1099,6 +1195,10 @@ Copyright (c) 2025 Valentyn Kolesnikov <0009-0003-9608-3364@orcid.org>
                     <div class="stat-label">Total Time (min)</div>
                 </div>
                 <div class="stat-card">
+                    <div class="stat-value" id="avgCpm">0</div>
+                    <div class="stat-label">Average CPM</div>
+                </div>
+                <div class="stat-card">
                     <div class="stat-value" id="avgWpm">0</div>
                     <div class="stat-label">Average WPM</div>
                 </div>
@@ -1111,8 +1211,16 @@ Copyright (c) 2025 Valentyn Kolesnikov <0009-0003-9608-3364@orcid.org>
                     <div class="stat-label">Levels Done</div>
                 </div>
                 <div class="stat-card">
+                    <div class="stat-value" id="totalChars">0</div>
+                    <div class="stat-label">Characters Typed</div>
+                </div>
+                <div class="stat-card">
                     <div class="stat-value" id="totalWords">0</div>
                     <div class="stat-label">Words Typed</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="bestCpm">0</div>
+                    <div class="stat-label">Best CPM</div>
                 </div>
                 <div class="stat-card">
                     <div class="stat-value" id="bestWpm">0</div>
@@ -1128,8 +1236,8 @@ Copyright (c) 2025 Valentyn Kolesnikov <0009-0003-9608-3364@orcid.org>
     </div>
 
     <script>
-        // 20 predefined texts for different levels
-        const texts = [
+        // Language texts
+        const textsEn = [
             "The quick brown fox jumps over the lazy dog near the river.",
             "Practice makes perfect when you dedicate time every single day.",
             "Technology is rapidly changing how we communicate with each other daily.",
@@ -1152,7 +1260,54 @@ Copyright (c) 2025 Valentyn Kolesnikov <0009-0003-9608-3364@orcid.org>
             "The complexity of quantum physics challenges our understanding of reality itself."
         ];
 
+        const textsUk = [
+            "Швидка коричнева лисиця стрибає через ледачого пса біля річки.",
+            "Практика робить досконалим коли ви присвячуєте час кожного дня.",
+            "Технології швидко змінюють те як ми спілкуємося один з одним щодня.",
+            "Успіх приходить до тих хто наполегливо працює і ніколи не здається.",
+            "Навчання швидкого друку заощадить вам незліченні години в майбутньому.",
+            "Прекрасний захід сонця розфарбував небо відтінками помаранчевого та рожевого.",
+            "Читання книг розширює ваш словниковий запас та покращує навички письма.",
+            "Кав'ярні забезпечують ідеальну атмосферу для продуктивних робочих сесій.",
+            "Альпінізм вимагає як фізичної сили так і ментальної рішучості для успіху.",
+            "Мови програмування допомагають нам передавати інструкції комп'ютерам ефективно.",
+            "Стародавня бібліотека містила тисячі рукописів з різних цивілізацій.",
+            "Здорові звички харчування разом з регулярними вправами ведуть до кращого життя.",
+            "Дослідження космосу продовжує розкривати таємниці нашого величезного всесвіту.",
+            "Музика має силу викликати емоції та об'єднувати людей гармонійно.",
+            "Охорона навколишнього середовища є вирішальною для збереження планети для майбутніх поколінь.",
+            "Штучний інтелект трансформує індустрії та створює нові можливості у всьому світі.",
+            "Період Ренесансу ознаменував значні досягнення в мистецтві науці та культурі.",
+            "Ефективні навички комунікації є необхідними для успіху в професійному середовищі.",
+            "Подорожі до різних країн розширюють перспективи та створюють незабутні спогади.",
+            "Складність квантової фізики кидає виклик нашому розумінню самої реальності."
+        ];
+
+        const textsRu = [
+            "Быстрая коричневая лиса прыгает через ленивую собаку возле реки.",
+            "Практика делает совершенным когда вы посвящаете время каждый день.",
+            "Технологии быстро меняют то как мы общаемся друг с другом ежедневно.",
+            "Успех приходит к тем кто усердно работает и никогда не сдается.",
+            "Обучение быстрой печати сэкономит вам бесчисленные часы в будущем.",
+            "Прекрасный закат раскрасил небо оттенками оранжевого и розового.",
+            "Чтение книг расширяет ваш словарный запас и улучшает навыки письма.",
+            "Кофейни обеспечивают идеальную атмосферу для продуктивных рабочих сессий.",
+            "Альпинизм требует как физической силы так и ментальной решимости для успеха.",
+            "Языки программирования помогают нам передавать инструкции компьютерам эффективно.",
+            "Древняя библиотека содержала тысячи рукописей из разных цивилизаций.",
+            "Здоровые привычки питания вместе с регулярными упражнениями ведут к лучшей жизни.",
+            "Исследование космоса продолжает раскрывать тайны нашей огромной вселенной.",
+            "Музыка имеет силу вызывать эмоции и объединять людей гармонично.",
+            "Охрана окружающей среды имеет решающее значение для сохранения планеты для будущих поколений.",
+            "Искусственный интеллект трансформирует индустрии и создает новые возможности во всем мире.",
+            "Период Ренессанса ознаменовал значительные достижения в искусстве науке и культуре.",
+            "Эффективные навыки коммуникации необходимы для успеха в профессиональной среде.",
+            "Путешествия в разные страны расширяют перспективы и создают незабываемые воспоминания.",
+            "Сложность квантовой физики бросает вызов нашему пониманию самой реальности."
+        ];
+
         // Game state
+        let currentLanguage = 'en';
         let currentLevel = 1;
         let currentText = '';
         let userInput = '';
@@ -1163,24 +1318,85 @@ Copyright (c) 2025 Valentyn Kolesnikov <0009-0003-9608-3364@orcid.org>
         let isTyping = false;
         let dialogCallback = null;
         let currentOpenModal = null;
+        let accuracy = 100;
 
         // Calendar state
         let currentCalendarMonth = new Date().getMonth();
         let currentCalendarYear = new Date().getFullYear();
         let selectedDateData = null;
 
-        // Statistics
+        // Statistics - now tracking both CPM and WPM with language-specific daily stats
         let stats = {
             totalTime: 0,
+            totalChars: 0,
             totalWords: 0,
             totalSessions: 0,
+            avgCpm: 0,
             avgWpm: 0,
             avgAccuracy: 0,
+            bestCpm: 0,
             bestWpm: 0,
             completedLevels: [],
             achievements: [],
-            dailyStats: {}
+            dailyStats: {
+                en: {},
+                uk: {},
+                ru: {}
+            },
+            languageStats: {
+                en: { sessions: 0, totalChars: 0, totalWords: 0, avgCpm: 0, avgWpm: 0 },
+                uk: { sessions: 0, totalChars: 0, totalWords: 0, avgCpm: 0, avgWpm: 0 },
+                ru: { sessions: 0, totalChars: 0, totalWords: 0, avgCpm: 0, avgWpm: 0 }
+            }
         };
+
+        // Switch language
+        function switchLanguage(lang) {
+            if (isTyping) {
+                showAlert('Cannot Switch', 'Please finish or reset the current level before switching language.', '⚠️');
+                return;
+            }
+            
+            currentLanguage = lang;
+            
+            // Update button states
+            document.getElementById('langEnBtn').classList.toggle('active', lang === 'en');
+            document.getElementById('langUkBtn').classList.toggle('active', lang === 'uk');
+            document.getElementById('langRuBtn').classList.toggle('active', lang === 'ru');
+            
+            resetLevel();
+            saveProgress();
+        }
+
+        // Get current texts based on language
+        function getCurrentTexts() {
+            switch(currentLanguage) {
+                case 'en': return textsEn;
+                case 'uk': return textsUk;
+                case 'ru': return textsRu;
+                default: return textsEn;
+            }
+        }
+
+        // Get language display name
+        function getLanguageDisplayName(lang) {
+            switch(lang) {
+                case 'en': return '🇬🇧 English';
+                case 'uk': return '🇺🇦 Українська';
+                case 'ru': return '🇷🇺 Русский';
+                default: return '🇬🇧 English';
+            }
+        }
+
+        // Get metric label based on language (WPM for English, CPM for Ukrainian/Russian)
+        function getMetricLabel(lang) {
+            return lang === 'en' ? 'WPM' : 'CPM';
+        }
+
+        // Get metric value based on language
+        function getMetricValue(cpm, wpm, lang) {
+            return lang === 'en' ? wpm : cpm;
+        }
 
         // Keyboard shortcuts handler
         document.addEventListener('keydown', function(e) {
@@ -1233,9 +1449,21 @@ Copyright (c) 2025 Valentyn Kolesnikov <0009-0003-9608-3364@orcid.org>
             // Alt key combinations
             if (e.altKey) {
                 switch(e.key.toLowerCase()) {
+                    case 'e':
+                        e.preventDefault();
+                        switchLanguage('en');
+                        break;
+                    case 'u':
+                        e.preventDefault();
+                        switchLanguage('uk');
+                        break;
                     case 'r':
                         e.preventDefault();
-                        resetLevel();
+                        if (!isTyping) {
+                            switchLanguage('ru');
+                        } else {
+                            resetLevel();
+                        }
                         break;
                     case 'n':
                         e.preventDefault();
@@ -1324,12 +1552,16 @@ Copyright (c) 2025 Valentyn Kolesnikov <0009-0003-9608-3364@orcid.org>
             showDialog(title, message, icon);
         }
 
-        function showLevelComplete(level, wpm, accuracy, time) {
+        function showLevelComplete(level, cpm, wpm, accuracy, time) {
             const content = document.createElement('div');
             content.innerHTML = `
                 <div class="dialog-stats">
                     <div class="dialog-stat-row">
-                        <span>⚡ WPM:</span>
+                        <span>⚡ CPM:</span>
+                        <strong>${cpm}</strong>
+                    </div>
+                    <div class="dialog-stat-row">
+                        <span>📝 WPM:</span>
                         <strong>${wpm}</strong>
                     </div>
                     <div class="dialog-stat-row">
@@ -1397,29 +1629,39 @@ Copyright (c) 2025 Valentyn Kolesnikov <0009-0003-9608-3364@orcid.org>
             return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
         }
 
-        // Update daily statistics
-        function updateDailyStats(wpm, accuracy, words, time) {
+        // Update daily statistics - now language-specific
+        function updateDailyStats(cpm, wpm, chars, words, time, acc) {
             const today = getDateString();
+            const langDailyStats = stats.dailyStats[currentLanguage];
             
-            if (!stats.dailyStats[today]) {
-                stats.dailyStats[today] = {
+            if (!langDailyStats[today]) {
+                langDailyStats[today] = {
+                    cpm: 0,
                     wpm: 0,
                     accuracy: 0,
+                    chars: 0,
                     words: 0,
                     time: 0,
                     sessions: 0,
                     levels: [],
+                    bestCpm: 0,
                     bestWpm: 0
                 };
             }
             
-            const todayStats = stats.dailyStats[today];
+            const todayStats = langDailyStats[today];
             todayStats.sessions++;
+            todayStats.chars += chars;
             todayStats.words += words;
             todayStats.time += time;
             
+            todayStats.cpm = Math.round((todayStats.cpm * (todayStats.sessions - 1) + cpm) / todayStats.sessions);
             todayStats.wpm = Math.round((todayStats.wpm * (todayStats.sessions - 1) + wpm) / todayStats.sessions);
-            todayStats.accuracy = Math.round((todayStats.accuracy * (todayStats.sessions - 1) + accuracy) / todayStats.sessions);
+            todayStats.accuracy = Math.round((todayStats.accuracy * (todayStats.sessions - 1) + acc) / todayStats.sessions);
+            
+            if (cpm > todayStats.bestCpm) {
+                todayStats.bestCpm = cpm;
+            }
             
             if (wpm > todayStats.bestWpm) {
                 todayStats.bestWpm = wpm;
@@ -1430,19 +1672,23 @@ Copyright (c) 2025 Valentyn Kolesnikov <0009-0003-9608-3364@orcid.org>
             }
         }
 
-        // Calculate progress between days
-        function calculateProgress(date1, date2) {
-            const stats1 = stats.dailyStats[date1];
-            const stats2 = stats.dailyStats[date2];
+        // Calculate progress between days - now language-specific
+        function calculateProgress(date1, date2, lang) {
+            const langDailyStats = stats.dailyStats[lang];
+            const stats1 = langDailyStats[date1];
+            const stats2 = langDailyStats[date2];
             
             if (!stats1 || !stats2) return null;
             
-            const wpmChange = ((stats2.wpm - stats1.wpm) / stats1.wpm * 100).toFixed(1);
-            const accuracyChange = ((stats2.accuracy - stats1.accuracy) / stats1.accuracy * 100).toFixed(1);
+            const cpmChange = stats1.cpm > 0 ? ((stats2.cpm - stats1.cpm) / stats1.cpm * 100).toFixed(1) : 0;
+            const wpmChange = stats1.wpm > 0 ? ((stats2.wpm - stats1.wpm) / stats1.wpm * 100).toFixed(1) : 0;
+            const accuracyChange = stats1.accuracy > 0 ? ((stats2.accuracy - stats1.accuracy) / stats1.accuracy * 100).toFixed(1) : 0;
             
             return {
+                cpm: cpmChange,
                 wpm: wpmChange,
                 accuracy: accuracyChange,
+                cpmValue: stats2.cpm - stats1.cpm,
                 wpmValue: stats2.wpm - stats1.wpm,
                 accuracyValue: stats2.accuracy - stats1.accuracy
             };
@@ -1451,6 +1697,7 @@ Copyright (c) 2025 Valentyn Kolesnikov <0009-0003-9608-3364@orcid.org>
         // Show calendar
         function showCalendar() {
             currentOpenModal = 'calendar';
+            document.getElementById('calendarLangIndicator').textContent = getLanguageDisplayName(currentLanguage);
             renderCalendar();
             document.getElementById('calendarModal').style.display = 'block';
         }
@@ -1490,6 +1737,7 @@ Copyright (c) 2025 Valentyn Kolesnikov <0009-0003-9608-3364@orcid.org>
             
             const today = new Date();
             const todayString = getDateString(today);
+            const langDailyStats = stats.dailyStats[currentLanguage];
             
             for (let day = 1; day <= daysInMonth; day++) {
                 const dayElement = document.createElement('div');
@@ -1502,30 +1750,35 @@ Copyright (c) 2025 Valentyn Kolesnikov <0009-0003-9608-3364@orcid.org>
                     dayElement.classList.add('today');
                 }
                 
-                if (stats.dailyStats[dateString]) {
+                if (langDailyStats[dateString]) {
                     dayElement.classList.add('has-data');
-                    const dayStats = stats.dailyStats[dateString];
+                    const dayStats = langDailyStats[dateString];
                     
                     const prevDate = new Date(currentDate);
                     prevDate.setDate(prevDate.getDate() - 1);
                     const prevDateString = getDateString(prevDate);
                     
                     let progressIndicator = '';
-                    if (stats.dailyStats[prevDateString]) {
-                        const progress = calculateProgress(prevDateString, dateString);
+                    if (langDailyStats[prevDateString]) {
+                        const progress = calculateProgress(prevDateString, dateString, currentLanguage);
                         if (progress) {
-                            const wpmChange = parseFloat(progress.wpm);
-                            if (wpmChange > 0) {
-                                progressIndicator = `<div class="progress-indicator positive">↑${Math.abs(wpmChange)}%</div>`;
-                            } else if (wpmChange < 0) {
-                                progressIndicator = `<div class="progress-indicator negative">↓${Math.abs(wpmChange)}%</div>`;
+                            // Use appropriate metric based on language
+                            const metricChange = currentLanguage === 'en' ? parseFloat(progress.wpm) : parseFloat(progress.cpm);
+                            if (metricChange > 0) {
+                                progressIndicator = `<div class="progress-indicator positive">↑${Math.abs(metricChange)}%</div>`;
+                            } else if (metricChange < 0) {
+                                progressIndicator = `<div class="progress-indicator negative">↓${Math.abs(metricChange)}%</div>`;
                             }
                         }
                     }
                     
+                    // Display WPM for English, CPM for Ukrainian/Russian
+                    const metricValue = getMetricValue(dayStats.cpm, dayStats.wpm, currentLanguage);
+                    const metricLabel = getMetricLabel(currentLanguage);
+                    
                     dayElement.innerHTML = `
                         <div class="calendar-day-number">${day}</div>
-                        <div class="calendar-day-stats">${dayStats.wpm} WPM</div>
+                        <div class="calendar-day-stats">${metricValue} ${metricLabel}</div>
                         ${progressIndicator}
                     `;
                 } else {
@@ -1573,11 +1826,16 @@ Copyright (c) 2025 Valentyn Kolesnikov <0009-0003-9608-3364@orcid.org>
             
             selectedDateDiv.textContent = `${monthNames[currentCalendarMonth]} ${day}, ${currentCalendarYear}`;
             
-            const dayStats = stats.dailyStats[dateString];
+            const langDailyStats = stats.dailyStats[currentLanguage];
+            const dayStats = langDailyStats[dateString];
             
             if (dayStats) {
                 const statsGrid = document.getElementById('dailyStatsGrid');
                 statsGrid.innerHTML = `
+                    <div class="daily-stat-item">
+                        <div class="daily-stat-value">${dayStats.cpm}</div>
+                        <div class="daily-stat-label">Avg CPM</div>
+                    </div>
                     <div class="daily-stat-item">
                         <div class="daily-stat-value">${dayStats.wpm}</div>
                         <div class="daily-stat-label">Avg WPM</div>
@@ -1591,12 +1849,20 @@ Copyright (c) 2025 Valentyn Kolesnikov <0009-0003-9608-3364@orcid.org>
                         <div class="daily-stat-label">Sessions</div>
                     </div>
                     <div class="daily-stat-item">
+                        <div class="daily-stat-value">${dayStats.chars}</div>
+                        <div class="daily-stat-label">Characters</div>
+                    </div>
+                    <div class="daily-stat-item">
                         <div class="daily-stat-value">${dayStats.words}</div>
                         <div class="daily-stat-label">Words</div>
                     </div>
                     <div class="daily-stat-item">
                         <div class="daily-stat-value">${Math.round(dayStats.time / 60)}</div>
                         <div class="daily-stat-label">Minutes</div>
+                    </div>
+                    <div class="daily-stat-item">
+                        <div class="daily-stat-value">${dayStats.bestCpm}</div>
+                        <div class="daily-stat-label">Best CPM</div>
                     </div>
                     <div class="daily-stat-item">
                         <div class="daily-stat-value">${dayStats.bestWpm}</div>
@@ -1608,15 +1874,17 @@ Copyright (c) 2025 Valentyn Kolesnikov <0009-0003-9608-3364@orcid.org>
                 const prevDateString = getDateString(prevDate);
                 const progressDiv = document.getElementById('progressComparison');
                 
-                if (stats.dailyStats[prevDateString]) {
-                    const progress = calculateProgress(prevDateString, dateString);
+                if (langDailyStats[prevDateString]) {
+                    const progress = calculateProgress(prevDateString, dateString, currentLanguage);
                     if (progress) {
+                        const cpmArrow = progress.cpmValue >= 0 ? '📈' : '📉';
                         const wpmArrow = progress.wpmValue >= 0 ? '📈' : '📉';
                         const accArrow = progress.accuracyValue >= 0 ? '📈' : '📉';
                         
                         progressDiv.innerHTML = `
                             <div style="text-align: center; width: 100%;">
                                 <strong>Progress from Previous Day:</strong><br>
+                                <span style="margin: 5px;">CPM: ${cpmArrow} ${progress.cpmValue >= 0 ? '+' : ''}${progress.cpmValue} (${progress.cpm >= 0 ? '+' : ''}${progress.cpm}%)</span><br>
                                 <span style="margin: 5px;">WPM: ${wpmArrow} ${progress.wpmValue >= 0 ? '+' : ''}${progress.wpmValue} (${progress.wpm >= 0 ? '+' : ''}${progress.wpm}%)</span><br>
                                 <span style="margin: 5px;">Accuracy: ${accArrow} ${progress.accuracyValue >= 0 ? '+' : ''}${progress.accuracyValue}% (${progress.accuracy >= 0 ? '+' : ''}${progress.accuracy}%)</span>
                             </div>
@@ -1642,11 +1910,30 @@ Copyright (c) 2025 Valentyn Kolesnikov <0009-0003-9608-3364@orcid.org>
             if (saved) {
                 const data = JSON.parse(saved);
                 currentLevel = data.currentLevel || 1;
+                currentLanguage = data.currentLanguage || 'en';
                 stats = data.stats || stats;
                 
-                if (!stats.dailyStats) {
-                    stats.dailyStats = {};
+                // Ensure language-specific daily stats structure exists
+                if (!stats.dailyStats || typeof stats.dailyStats !== 'object' || !stats.dailyStats.en) {
+                    stats.dailyStats = {
+                        en: {},
+                        uk: {},
+                        ru: {}
+                    };
                 }
+                
+                if (!stats.languageStats) {
+                    stats.languageStats = {
+                        en: { sessions: 0, totalChars: 0, totalWords: 0, avgCpm: 0, avgWpm: 0 },
+                        uk: { sessions: 0, totalChars: 0, totalWords: 0, avgCpm: 0, avgWpm: 0 },
+                        ru: { sessions: 0, totalChars: 0, totalWords: 0, avgCpm: 0, avgWpm: 0 }
+                    };
+                }
+                
+                // Update language buttons
+                document.getElementById('langEnBtn').classList.toggle('active', currentLanguage === 'en');
+                document.getElementById('langUkBtn').classList.toggle('active', currentLanguage === 'uk');
+                document.getElementById('langRuBtn').classList.toggle('active', currentLanguage === 'ru');
                 
                 updateUI();
             }
@@ -1656,6 +1943,7 @@ Copyright (c) 2025 Valentyn Kolesnikov <0009-0003-9608-3364@orcid.org>
         function saveProgress() {
             const data = {
                 currentLevel: currentLevel,
+                currentLanguage: currentLanguage,
                 stats: stats
             };
             localStorage.setItem('typingGameProgress', JSON.stringify(data));
@@ -1673,10 +1961,12 @@ Copyright (c) 2025 Valentyn Kolesnikov <0009-0003-9608-3364@orcid.org>
         function startTyping() {
             if (isTyping) return;
             
+            const texts = getCurrentTexts();
             currentText = texts[currentLevel - 1];
             userInput = '';
             correctChars = 0;
             totalChars = 0;
+            accuracy = 100;
             isTyping = true;
             
             displayText();
@@ -1725,16 +2015,21 @@ Copyright (c) 2025 Valentyn Kolesnikov <0009-0003-9608-3364@orcid.org>
             }
         }
 
-        // Start timer
+        // Start timer - now calculating both CPM and WPM
         function startTimer() {
             timerInterval = setInterval(() => {
                 const elapsed = Math.floor((Date.now() - startTime) / 1000);
                 document.getElementById('timer').textContent = elapsed;
                 
                 if (elapsed > 0) {
-                    const words = correctChars / 5;
                     const minutes = elapsed / 60;
-                    const wpm = Math.round(words / minutes);
+                    
+                    // Calculate CPM (Characters Per Minute)
+                    const cpm = Math.round(correctChars / minutes);
+                    document.getElementById('cpm').textContent = cpm;
+                    
+                    // Calculate WPM (Words Per Minute) - standard is CPM / 5
+                    const wpm = Math.round(cpm / 5);
                     document.getElementById('wpm').textContent = wpm;
                 }
             }, 100);
@@ -1757,7 +2052,7 @@ Copyright (c) 2025 Valentyn Kolesnikov <0009-0003-9608-3364@orcid.org>
                 correctChars++;
             }
             
-            const accuracy = totalChars > 0 ? Math.round((correctChars / totalChars) * 100) : 100;
+            accuracy = totalChars > 0 ? Math.round((correctChars / totalChars) * 100) : 100;
             document.getElementById('accuracy').textContent = accuracy;
             
             displayText();
@@ -1767,22 +2062,43 @@ Copyright (c) 2025 Valentyn Kolesnikov <0009-0003-9608-3364@orcid.org>
             }
         });
 
-        // Complete level
+        // Complete level - now tracking both CPM and WPM
         function completeLevel() {
             stopTimer();
             isTyping = false;
             
             const elapsed = Math.floor((Date.now() - startTime) / 1000);
+            const chars = currentText.length;
             const words = currentText.split(' ').length;
             const minutes = elapsed / 60;
+            
+            // Calculate CPM (Characters Per Minute)
+            const cpm = Math.round(chars / minutes);
+            
+            // Calculate WPM (Words Per Minute)
             const wpm = Math.round(words / minutes);
-            const accuracy = Math.round((correctChars / totalChars) * 100);
             
-            updateDailyStats(wpm, accuracy, words, elapsed);
+            // Update daily stats with language specificity
+            updateDailyStats(cpm, wpm, chars, words, elapsed, accuracy);
             
+            // Update overall stats
             stats.totalTime += elapsed;
+            stats.totalChars += chars;
             stats.totalWords += words;
             stats.totalSessions++;
+            
+            // Update language-specific stats
+            const langStats = stats.languageStats[currentLanguage];
+            langStats.sessions++;
+            langStats.totalChars += chars;
+            langStats.totalWords += words;
+            langStats.avgCpm = Math.round(langStats.totalChars / (stats.totalTime / 60));
+            langStats.avgWpm = Math.round(langStats.totalWords / (stats.totalTime / 60));
+            
+            // Update best scores
+            if (cpm > stats.bestCpm) {
+                stats.bestCpm = cpm;
+            }
             
             if (wpm > stats.bestWpm) {
                 stats.bestWpm = wpm;
@@ -1792,14 +2108,16 @@ Copyright (c) 2025 Valentyn Kolesnikov <0009-0003-9608-3364@orcid.org>
                 stats.completedLevels.push(currentLevel);
             }
             
+            // Calculate averages
+            stats.avgCpm = Math.round(stats.totalChars / (stats.totalTime / 60));
             stats.avgWpm = Math.round(stats.totalWords / (stats.totalTime / 60));
             stats.avgAccuracy = Math.round((stats.avgAccuracy * (stats.totalSessions - 1) + accuracy) / stats.totalSessions);
             
-            checkAchievements(wpm, accuracy);
+            checkAchievements(cpm, wpm, accuracy);
             
             saveProgress();
             
-            showLevelComplete(currentLevel, wpm, accuracy, elapsed);
+            showLevelComplete(currentLevel, cpm, wpm, accuracy, elapsed);
             
             if (currentLevel < 20) {
                 currentLevel++;
@@ -1810,12 +2128,15 @@ Copyright (c) 2025 Valentyn Kolesnikov <0009-0003-9608-3364@orcid.org>
             resetLevel();
         }
 
-        // Check and award achievements
-        function checkAchievements(wpm, accuracy) {
-            if (wpm >= 60 && !stats.achievements.includes('speed_demon')) {
-                stats.achievements.push('speed_demon');
+        // Check and award achievements - updated for CPM
+        function checkAchievements(cpm, wpm, acc) {
+            if (cpm >= 300 && !stats.achievements.includes('speed_demon_cpm')) {
+                stats.achievements.push('speed_demon_cpm');
             }
-            if (accuracy >= 95 && !stats.achievements.includes('perfectionist')) {
+            if (wpm >= 60 && !stats.achievements.includes('speed_demon_wpm')) {
+                stats.achievements.push('speed_demon_wpm');
+            }
+            if (acc >= 95 && !stats.achievements.includes('perfectionist')) {
                 stats.achievements.push('perfectionist');
             }
             if (stats.completedLevels.length >= 10 && !stats.achievements.includes('halfway_there')) {
@@ -1824,6 +2145,19 @@ Copyright (c) 2025 Valentyn Kolesnikov <0009-0003-9608-3364@orcid.org>
             if (stats.completedLevels.length === 20 && !stats.achievements.includes('master_typist')) {
                 stats.achievements.push('master_typist');
             }
+            
+            // Check for multilingual achievement
+            let languagesUsed = 0;
+            if (stats.languageStats.en.sessions > 0) languagesUsed++;
+            if (stats.languageStats.uk.sessions > 0) languagesUsed++;
+            if (stats.languageStats.ru.sessions > 0) languagesUsed++;
+            
+            if (languagesUsed >= 2 && !stats.achievements.includes('bilingual')) {
+                stats.achievements.push('bilingual');
+            }
+            if (languagesUsed === 3 && !stats.achievements.includes('trilingual')) {
+                stats.achievements.push('trilingual');
+            }
         }
 
         // Reset current level
@@ -1831,32 +2165,40 @@ Copyright (c) 2025 Valentyn Kolesnikov <0009-0003-9608-3364@orcid.org>
             stopTimer();
             isTyping = false;
             userInput = '';
+            accuracy = 100;
             document.getElementById('typeInput').value = '';
             document.getElementById('typeInput').disabled = true;
             document.getElementById('timer').textContent = '0';
+            document.getElementById('cpm').textContent = '0';
             document.getElementById('wpm').textContent = '0';
             document.getElementById('accuracy').textContent = '100';
             document.getElementById('textDisplay').innerHTML = 'Click "Start" or press Enter to begin!';
         }
 
-        // Show statistics modal
+        // Show statistics modal - updated for CPM and WPM
         function showStats() {
             currentOpenModal = 'stats';
             document.getElementById('totalTime').textContent = Math.round(stats.totalTime / 60);
+            document.getElementById('avgCpm').textContent = stats.avgCpm || 0;
             document.getElementById('avgWpm').textContent = stats.avgWpm || 0;
             document.getElementById('avgAccuracy').textContent = stats.avgAccuracy || 0;
             document.getElementById('completedLevels').textContent = stats.completedLevels.length;
+            document.getElementById('totalChars').textContent = stats.totalChars;
             document.getElementById('totalWords').textContent = stats.totalWords;
+            document.getElementById('bestCpm').textContent = stats.bestCpm;
             document.getElementById('bestWpm').textContent = stats.bestWpm;
             
             const achievementsDiv = document.getElementById('achievements');
             achievementsDiv.innerHTML = '';
             
             const achievementsList = [
-                { id: 'speed_demon', name: 'Speed Demon', desc: 'Achieve 60+ WPM' },
+                { id: 'speed_demon_cpm', name: 'Speed Demon (CPM)', desc: 'Achieve 300+ CPM' },
+                { id: 'speed_demon_wpm', name: 'Speed Demon (WPM)', desc: 'Achieve 60+ WPM' },
                 { id: 'perfectionist', name: 'Perfectionist', desc: 'Get 95%+ accuracy' },
                 { id: 'halfway_there', name: 'Halfway There', desc: 'Complete 10 levels' },
-                { id: 'master_typist', name: 'Master Typist', desc: 'Complete all 20 levels' }
+                { id: 'master_typist', name: 'Master Typist', desc: 'Complete all 20 levels' },
+                { id: 'bilingual', name: 'Bilingual Typist', desc: 'Practice in two languages' },
+                { id: 'trilingual', name: 'Trilingual Typist', desc: 'Practice in all three languages' }
             ];
             
             achievementsList.forEach(ach => {
@@ -1885,17 +2227,35 @@ Copyright (c) 2025 Valentyn Kolesnikov <0009-0003-9608-3364@orcid.org>
         function clearProgress() {
             localStorage.removeItem('typingGameProgress');
             currentLevel = 1;
+            currentLanguage = 'en';
             stats = {
                 totalTime: 0,
+                totalChars: 0,
                 totalWords: 0,
                 totalSessions: 0,
+                avgCpm: 0,
                 avgWpm: 0,
                 avgAccuracy: 0,
+                bestCpm: 0,
                 bestWpm: 0,
                 completedLevels: [],
                 achievements: [],
-                dailyStats: {}
+                dailyStats: {
+                    en: {},
+                    uk: {},
+                    ru: {}
+                },
+                languageStats: {
+                    en: { sessions: 0, totalChars: 0, totalWords: 0, avgCpm: 0, avgWpm: 0 },
+                    uk: { sessions: 0, totalChars: 0, totalWords: 0, avgCpm: 0, avgWpm: 0 },
+                    ru: { sessions: 0, totalChars: 0, totalWords: 0, avgCpm: 0, avgWpm: 0 }
+                }
             };
+            
+            document.getElementById('langEnBtn').classList.add('active');
+            document.getElementById('langUkBtn').classList.remove('active');
+            document.getElementById('langRuBtn').classList.remove('active');
+            
             updateUI();
             closeStats();
             showAlert('Progress Cleared', 'All your progress has been reset!', '✅');
