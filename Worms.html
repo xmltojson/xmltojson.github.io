@@ -1,0 +1,1419 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Multiplayer Worms Battle</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        #gameContainer {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            padding: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            max-width: 1200px;
+            width: 95%;
+        }
+
+        #menuScreen {
+            text-align: center;
+            padding: 40px;
+        }
+
+        h1 {
+            color: #764ba2;
+            font-size: 3em;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .subtitle {
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 1.2em;
+        }
+
+        .menu-section {
+            margin: 30px 0;
+        }
+
+        .menu-section h3 {
+            color: #555;
+            margin-bottom: 15px;
+        }
+
+        input[type="text"] {
+            padding: 12px 20px;
+            font-size: 16px;
+            border: 2px solid #ddd;
+            border-radius: 10px;
+            width: 250px;
+            margin: 10px;
+            transition: all 0.3s;
+        }
+
+        input[type="text"]:focus {
+            outline: none;
+            border-color: #764ba2;
+            transform: scale(1.05);
+        }
+
+        .time-buttons {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin: 20px 0;
+            flex-wrap: wrap;
+        }
+
+        .time-btn {
+            padding: 15px 30px;
+            font-size: 18px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .time-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+        }
+
+        .time-btn.selected {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            transform: scale(1.1);
+        }
+
+        .action-buttons {
+            margin-top: 30px;
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+        }
+
+        .btn-primary {
+            padding: 15px 40px;
+            font-size: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 15px;
+            cursor: pointer;
+            transition: all 0.3s;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .btn-primary:hover:not(:disabled) {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+        }
+
+        .btn-primary:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        #gameScreen {
+            display: none;
+            position: relative;
+        }
+
+        #gameCanvas {
+            border: 3px solid #764ba2;
+            border-radius: 15px;
+            display: block;
+            margin: 0 auto;
+            background: linear-gradient(to bottom, #87CEEB 0%, #87CEEB 60%, #8B7355 60%, #654321 100%);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+        }
+
+        #gameInfo {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px;
+            background: rgba(118, 75, 162, 0.1);
+            border-radius: 10px;
+            margin-bottom: 15px;
+        }
+
+        .info-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 18px;
+            font-weight: bold;
+        }
+
+        .timer {
+            font-size: 24px;
+            color: #f5576c;
+        }
+
+        .player-info {
+            display: flex;
+            gap: 30px;
+        }
+
+        .player-card {
+            padding: 10px 20px;
+            border-radius: 10px;
+            color: white;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+        }
+
+        .player1 {
+            background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+        }
+
+        .player2 {
+            background: linear-gradient(135deg, #30cfd0 0%, #330867 100%);
+        }
+
+        .controls-info {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            background: rgba(255, 255, 255, 0.9);
+            padding: 15px;
+            border-radius: 10px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+        }
+
+        .controls-info h4 {
+            margin-bottom: 10px;
+            color: #764ba2;
+        }
+
+        .control-item {
+            margin: 5px 0;
+            font-size: 14px;
+        }
+
+        #waitingRoom {
+            display: none;
+            text-align: center;
+            padding: 40px;
+        }
+
+        .loader {
+            border: 5px solid #f3f3f3;
+            border-top: 5px solid #764ba2;
+            border-radius: 50%;
+            width: 60px;
+            height: 60px;
+            animation: spin 1s linear infinite;
+            margin: 30px auto;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .room-code {
+            font-size: 36px;
+            font-weight: bold;
+            color: #764ba2;
+            margin: 20px 0;
+            padding: 20px;
+            background: rgba(118, 75, 162, 0.1);
+            border-radius: 15px;
+            letter-spacing: 5px;
+        }
+
+        .weapon-selector {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: rgba(255, 255, 255, 0.9);
+            padding: 15px;
+            border-radius: 10px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+        }
+
+        .weapon-btn {
+            display: block;
+            width: 100%;
+            padding: 10px;
+            margin: 5px 0;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .weapon-btn:hover {
+            transform: scale(1.05);
+        }
+
+        .weapon-btn.active {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+        }
+
+        .power-bar {
+            position: absolute;
+            bottom: 100px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 300px;
+            height: 30px;
+            background: rgba(255, 255, 255, 0.9);
+            border: 3px solid #764ba2;
+            border-radius: 15px;
+            overflow: hidden;
+            display: none;
+        }
+
+        .power-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea 0%, #f5576c 100%);
+            width: 0%;
+            transition: width 0.1s;
+        }
+
+        #gameOverScreen {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.8);
+            z-index: 1000;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .game-over-content {
+            background: white;
+            padding: 40px;
+            border-radius: 20px;
+            text-align: center;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        }
+
+        .winner-text {
+            font-size: 48px;
+            color: #764ba2;
+            margin-bottom: 20px;
+        }
+
+        .final-score {
+            font-size: 24px;
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body>
+    <div id="gameContainer">
+        <!-- Menu Screen -->
+        <div id="menuScreen">
+            <h1>🎮 Worms Battle Arena</h1>
+            <p class="subtitle">Multiplayer Artillery Combat Game</p>
+            
+            <div class="menu-section">
+                <h3>Enter Your Name</h3>
+                <input type="text" id="playerName" placeholder="Your Name" maxlength="15">
+            </div>
+
+            <div class="menu-section">
+                <h3>Select Game Duration</h3>
+                <div class="time-buttons">
+                    <button class="time-btn" data-time="2">2 min</button>
+                    <button class="time-btn selected" data-time="3">3 min</button>
+                    <button class="time-btn" data-time="5">5 min</button>
+                    <button class="time-btn" data-time="8">8 min</button>
+                    <button class="time-btn" data-time="13">13 min</button>
+                </div>
+            </div>
+
+            <div class="menu-section">
+                <h3>Room Code (Leave empty to create new room)</h3>
+                <input type="text" id="roomCode" placeholder="Enter Room Code" maxlength="6">
+            </div>
+
+            <div class="action-buttons">
+                <button class="btn-primary" id="createRoomBtn">Create Room</button>
+                <button class="btn-primary" id="joinRoomBtn">Join Room</button>
+            </div>
+        </div>
+
+        <!-- Waiting Room -->
+        <div id="waitingRoom">
+            <h2>Waiting for Opponent...</h2>
+            <div class="loader"></div>
+            <p>Share this room code with your friend:</p>
+            <div class="room-code" id="roomCodeDisplay">XXXXX</div>
+            <button class="btn-primary" id="cancelBtn">Cancel</button>
+        </div>
+
+        <!-- Game Screen -->
+        <div id="gameScreen">
+            <div id="gameInfo">
+                <div class="player-info">
+                    <div class="player-card player1">
+                        <span id="player1Name">Player 1</span>
+                        <span id="player1Health">❤️ 100</span>
+                    </div>
+                    <div class="player-card player2">
+                        <span id="player2Name">Player 2</span>
+                        <span id="player2Health">❤️ 100</span>
+                    </div>
+                </div>
+                <div class="info-item timer">
+                    ⏱️ <span id="gameTimer">3:00</span>
+                </div>
+                <div class="info-item">
+                    <span id="currentTurn">Your Turn</span>
+                </div>
+            </div>
+            
+            <canvas id="gameCanvas" width="1000" height="600"></canvas>
+            
+            <div class="controls-info">
+                <h4>Controls</h4>
+                <div class="control-item">⬅️➡️ Move</div>
+                <div class="control-item">⬆️⬇️ Aim</div>
+                <div class="control-item">Space: Charge & Fire</div>
+                <div class="control-item">1-3: Change Weapon</div>
+            </div>
+
+            <div class="weapon-selector">
+                <h4>Weapons</h4>
+                <button class="weapon-btn active" data-weapon="bazooka">🚀 Bazooka</button>
+                <button class="weapon-btn" data-weapon="grenade">💣 Grenade</button>
+                <button class="weapon-btn" data-weapon="shotgun">🔫 Shotgun</button>
+            </div>
+
+            <div class="power-bar" id="powerBar">
+                <div class="power-fill" id="powerFill"></div>
+            </div>
+        </div>
+
+        <!-- Game Over Screen -->
+        <div id="gameOverScreen" style="display: none;">
+            <div class="game-over-content">
+                <h2 class="winner-text" id="winnerText">Game Over!</h2>
+                <div class="final-score" id="finalScore"></div>
+                <button class="btn-primary" onclick="location.reload()">Play Again</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Firebase SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/12.4.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/12.4.0/firebase-database-compat.js"></script>
+
+    <script>
+        // Firebase Configuration - Replace with your own config
+        const firebaseConfig = {
+            apiKey: "AIzaSyA38Vpdz1AbbTmRYvL11af-l7OCxLmPCo8",
+            authDomain: "worms-1fb3b.firebaseapp.com",
+            projectId: "worms-1fb3b",
+            storageBucket: "worms-1fb3b.firebasestorage.app",
+            messagingSenderId: "492750465845",
+            appId: "1:492750465845:web:2705b0af201f5465773a7c",
+            measurementId: "G-7KG25B85Z3"
+        };
+
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+        const database = firebase.database();
+
+        // Game Variables
+        let canvas, ctx;
+        let gameState = {
+            players: {},
+            projectiles: [],
+            explosions: [],
+            terrain: [],
+            currentTurn: null,
+            gameTime: 180,
+            timeLeft: 180,
+            roomCode: null,
+            isHost: false,
+            myPlayerId: null,
+            selectedWeapon: 'bazooka',
+            windSpeed: 0,
+            gravity: 0.3
+        };
+
+        // Worm Class
+        class Worm {
+            constructor(x, y, playerId, color) {
+                this.x = x;
+                this.y = y;
+                this.playerId = playerId;
+                this.color = color;
+                this.health = 100;
+                this.angle = -45;
+                this.power = 0;
+                this.isCharging = false;
+                this.width = 30;
+                this.height = 30;
+                this.velocityY = 0;
+                this.isGrounded = false;
+                this.facingRight = true;
+            }
+
+            update() {
+                // Apply gravity
+                if (!this.isGrounded) {
+                    this.velocityY += gameState.gravity;
+                    this.y += this.velocityY;
+                }
+
+                // Check ground collision
+                this.checkGroundCollision();
+            }
+
+            checkGroundCollision() {
+                const terrainHeight = getTerrainHeight(this.x);
+                if (this.y + this.height >= terrainHeight) {
+                    this.y = terrainHeight - this.height;
+                    this.velocityY = 0;
+                    this.isGrounded = true;
+                } else {
+                    this.isGrounded = false;
+                }
+            }
+
+            draw() {
+                ctx.save();
+                
+                // Draw worm body
+                ctx.fillStyle = this.color;
+                ctx.beginPath();
+                ctx.ellipse(this.x + this.width/2, this.y + this.height/2, 
+                           this.width/2, this.height/2, 0, 0, Math.PI * 2);
+                ctx.fill();
+                
+                // Draw eyes
+                ctx.fillStyle = 'white';
+                ctx.beginPath();
+                ctx.arc(this.x + this.width/2 - 5, this.y + 10, 4, 0, Math.PI * 2);
+                ctx.arc(this.x + this.width/2 + 5, this.y + 10, 4, 0, Math.PI * 2);
+                ctx.fill();
+                
+                ctx.fillStyle = 'black';
+                ctx.beginPath();
+                ctx.arc(this.x + this.width/2 - 5, this.y + 10, 2, 0, Math.PI * 2);
+                ctx.arc(this.x + this.width/2 + 5, this.y + 10, 2, 0, Math.PI * 2);
+                ctx.fill();
+                
+                // Draw aiming line
+                if (gameState.currentTurn === this.playerId) {
+                    ctx.strokeStyle = 'rgba(255, 255, 255, 0.5)';
+                    ctx.lineWidth = 2;
+                    ctx.setLineDash([5, 5]);
+                    ctx.beginPath();
+                    ctx.moveTo(this.x + this.width/2, this.y + this.height/2);
+                    const aimLength = 50 + this.power * 2;
+                    const radians = this.angle * Math.PI / 180;
+                    ctx.lineTo(
+                        this.x + this.width/2 + Math.cos(radians) * aimLength,
+                        this.y + this.height/2 + Math.sin(radians) * aimLength
+                    );
+                    ctx.stroke();
+                    ctx.setLineDash([]);
+                }
+                
+                // Draw health bar
+                ctx.fillStyle = 'red';
+                ctx.fillRect(this.x, this.y - 15, this.width, 5);
+                ctx.fillStyle = 'green';
+                ctx.fillRect(this.x, this.y - 15, this.width * (this.health / 100), 5);
+                
+                // Draw name
+                ctx.fillStyle = 'white';
+                ctx.font = 'bold 12px Arial';
+                ctx.textAlign = 'center';
+                ctx.fillText(this.playerId.split('_')[0], this.x + this.width/2, this.y - 20);
+                
+                ctx.restore();
+            }
+
+            move(direction) {
+                const speed = 2;
+                this.x += direction * speed;
+                this.facingRight = direction > 0;
+                
+                // Keep worm on screen
+                this.x = Math.max(0, Math.min(canvas.width - this.width, this.x));
+            }
+
+            aim(direction) {
+                this.angle += direction * 2;
+                this.angle = Math.max(-90, Math.min(90, this.angle));
+            }
+
+            startCharging() {
+                this.isCharging = true;
+                this.power = 0;
+            }
+
+            charge() {
+                if (this.isCharging) {
+                    this.power = Math.min(this.power + 2, 100);
+                    updatePowerBar(this.power);
+                }
+            }
+
+            fire() {
+                if (!this.isCharging) return;
+                
+                this.isCharging = false;
+                const projectile = createProjectile(this);
+                gameState.projectiles.push(projectile);
+                
+                // Sync to Firebase
+                if (gameState.roomCode) {
+                    database.ref(`games/${gameState.roomCode}/projectiles`).push(projectile);
+                }
+                
+                updatePowerBar(0);
+                endTurn();
+            }
+
+            takeDamage(damage) {
+                this.health = Math.max(0, this.health - damage);
+                updateHealthDisplay();
+                
+                if (this.health <= 0) {
+                    this.die();
+                }
+            }
+
+            die() {
+                // Create death explosion
+                createExplosion(this.x + this.width/2, this.y + this.height/2, 30);
+                
+                // Check for game over
+                checkGameOver();
+            }
+        }
+
+        // Projectile Class
+        class Projectile {
+            constructor(x, y, velocityX, velocityY, type, owner) {
+                this.x = x;
+                this.y = y;
+                this.velocityX = velocityX;
+                this.velocityY = velocityY;
+                this.type = type;
+                this.owner = owner;
+                this.radius = 5;
+                this.exploded = false;
+                
+                // Weapon-specific properties
+                switch(type) {
+                    case 'bazooka':
+                        this.damage = 50;
+                        this.explosionRadius = 60;
+                        this.color = '#ff6b6b';
+                        break;
+                    case 'grenade':
+                        this.damage = 40;
+                        this.explosionRadius = 50;
+                        this.color = '#4ecdc4';
+                        this.bounces = 3;
+                        this.timer = 180; // 3 seconds at 60fps
+                        break;
+                    case 'shotgun':
+                        this.damage = 20;
+                        this.explosionRadius = 20;
+                        this.color = '#ffe66d';
+                        break;
+                }
+            }
+
+            update() {
+                // Apply physics
+                this.velocityY += gameState.gravity;
+                this.velocityX += gameState.windSpeed * 0.01;
+                
+                this.x += this.velocityX;
+                this.y += this.velocityY;
+                
+                // Grenade timer
+                if (this.type === 'grenade') {
+                    this.timer--;
+                    if (this.timer <= 0) {
+                        this.explode();
+                        return;
+                    }
+                }
+                
+                // Check collisions
+                if (this.checkTerrainCollision() || this.checkWormCollision()) {
+                    if (this.type === 'grenade' && this.bounces > 0) {
+                        this.bounce();
+                    } else {
+                        this.explode();
+                    }
+                }
+                
+                // Remove if out of bounds
+                if (this.x < -50 || this.x > canvas.width + 50 || this.y > canvas.height + 50) {
+                    this.exploded = true;
+                }
+            }
+
+            bounce() {
+                this.velocityY *= -0.6;
+                this.velocityX *= 0.8;
+                this.bounces--;
+                this.y -= 5;
+            }
+
+            checkTerrainCollision() {
+                const terrainHeight = getTerrainHeight(this.x);
+                return this.y + this.radius >= terrainHeight;
+            }
+
+            checkWormCollision() {
+                for (let playerId in gameState.players) {
+                    const worm = gameState.players[playerId];
+                    if (worm.playerId === this.owner) continue;
+                    
+                    const dx = this.x - (worm.x + worm.width/2);
+                    const dy = this.y - (worm.y + worm.height/2);
+                    const distance = Math.sqrt(dx * dx + dy * dy);
+                    
+                    if (distance < this.radius + worm.width/2) {
+                        return true;
+                    }
+                }
+                return false;
+            }
+
+            explode() {
+                this.exploded = true;
+                createExplosion(this.x, this.y, this.explosionRadius);
+                
+                // Deal damage to nearby worms
+                for (let playerId in gameState.players) {
+                    const worm = gameState.players[playerId];
+                    const dx = this.x - (worm.x + worm.width/2);
+                    const dy = this.y - (worm.y + worm.height/2);
+                    const distance = Math.sqrt(dx * dx + dy * dy);
+                    
+                    if (distance < this.explosionRadius) {
+                        const damageMultiplier = 1 - (distance / this.explosionRadius);
+                        const damage = Math.floor(this.damage * damageMultiplier);
+                        worm.takeDamage(damage);
+                        
+                        // Apply knockback
+                        const knockback = damageMultiplier * 10;
+                        worm.velocityY = -knockback;
+                        worm.isGrounded = false;
+                    }
+                }
+                
+                // Deform terrain
+                deformTerrain(this.x, this.explosionRadius);
+            }
+
+            draw() {
+                ctx.save();
+                
+                // Draw projectile
+                ctx.fillStyle = this.color;
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+                ctx.fill();
+                
+                // Draw trail
+                ctx.strokeStyle = this.color;
+                ctx.globalAlpha = 0.3;
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.moveTo(this.x, this.y);
+                ctx.lineTo(this.x - this.velocityX * 2, this.y - this.velocityY * 2);
+                ctx.stroke();
+                
+                ctx.restore();
+            }
+        }
+
+        // Explosion Effect
+        class Explosion {
+            constructor(x, y, radius) {
+                this.x = x;
+                this.y = y;
+                this.radius = radius;
+                this.maxRadius = radius;
+                this.opacity = 1;
+                this.particles = [];
+                
+                // Create particles
+                for (let i = 0; i < 20; i++) {
+                    const angle = (Math.PI * 2 * i) / 20;
+                    this.particles.push({
+                        x: x,
+                        y: y,
+                        vx: Math.cos(angle) * Math.random() * 5,
+                        vy: Math.sin(angle) * Math.random() * 5,
+                        size: Math.random() * 5 + 2,
+                        color: `hsl(${Math.random() * 60}, 100%, 50%)`
+                    });
+                }
+            }
+
+            update() {
+                this.opacity -= 0.05;
+                this.radius += 2;
+                
+                // Update particles
+                this.particles.forEach(p => {
+                    p.x += p.vx;
+                    p.y += p.vy;
+                    p.vy += 0.2;
+                    p.size *= 0.95;
+                });
+                
+                return this.opacity > 0;
+            }
+
+            draw() {
+                ctx.save();
+                
+                // Draw explosion circle
+                ctx.globalAlpha = this.opacity;
+                const gradient = ctx.createRadialGradient(this.x, this.y, 0, this.x, this.y, this.radius);
+                gradient.addColorStop(0, 'rgba(255, 255, 0, 1)');
+                gradient.addColorStop(0.5, 'rgba(255, 100, 0, 0.8)');
+                gradient.addColorStop(1, 'rgba(255, 0, 0, 0)');
+                
+                ctx.fillStyle = gradient;
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+                ctx.fill();
+                
+                // Draw particles
+                this.particles.forEach(p => {
+                    ctx.fillStyle = p.color;
+                    ctx.beginPath();
+                    ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+                    ctx.fill();
+                });
+                
+                ctx.restore();
+            }
+        }
+
+        // Terrain Generation
+        function generateTerrain() {
+            gameState.terrain = [];
+            const points = 100;
+            const amplitude = 100;
+            const frequency = 0.02;
+            const baseHeight = canvas.height * 0.7;
+            
+            for (let i = 0; i <= points; i++) {
+                const x = (canvas.width / points) * i;
+                const noise = Math.sin(x * frequency) * amplitude;
+                const y = baseHeight + noise + Math.random() * 20;
+                gameState.terrain.push({ x, y });
+            }
+        }
+
+        function getTerrainHeight(x) {
+            for (let i = 0; i < gameState.terrain.length - 1; i++) {
+                if (x >= gameState.terrain[i].x && x <= gameState.terrain[i + 1].x) {
+                    const t = (x - gameState.terrain[i].x) / (gameState.terrain[i + 1].x - gameState.terrain[i].x);
+                    return gameState.terrain[i].y + t * (gameState.terrain[i + 1].y - gameState.terrain[i].y);
+                }
+            }
+            return canvas.height;
+        }
+
+        function deformTerrain(x, radius) {
+            gameState.terrain.forEach(point => {
+                const distance = Math.abs(point.x - x);
+                if (distance < radius) {
+                    const deformation = (1 - distance / radius) * radius * 0.5;
+                    point.y = Math.min(canvas.height, point.y + deformation);
+                }
+            });
+        }
+
+        function drawTerrain() {
+            ctx.save();
+            
+            // Draw terrain
+            ctx.fillStyle = '#8B7355';
+            ctx.beginPath();
+            ctx.moveTo(0, canvas.height);
+            
+            gameState.terrain.forEach(point => {
+                ctx.lineTo(point.x, point.y);
+            });
+            
+            ctx.lineTo(canvas.width, canvas.height);
+            ctx.closePath();
+            ctx.fill();
+            
+            // Draw grass on top
+            ctx.strokeStyle = '#228B22';
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            gameState.terrain.forEach((point, i) => {
+                if (i === 0) ctx.moveTo(point.x, point.y);
+                else ctx.lineTo(point.x, point.y);
+            });
+            ctx.stroke();
+            
+            ctx.restore();
+        }
+
+        // Helper Functions
+        function createProjectile(worm) {
+            const radians = worm.angle * Math.PI / 180;
+            const velocity = worm.power * 0.3;
+            
+            let projectiles = [];
+            
+            if (gameState.selectedWeapon === 'shotgun') {
+                // Create multiple pellets for shotgun
+                for (let i = 0; i < 5; i++) {
+                    const spread = (Math.random() - 0.5) * 0.3;
+                    projectiles.push({
+                        x: worm.x + worm.width/2,
+                        y: worm.y + worm.height/2,
+                        velocityX: Math.cos(radians + spread) * velocity,
+                        velocityY: Math.sin(radians + spread) * velocity,
+                        type: gameState.selectedWeapon,
+                        owner: worm.playerId
+                    });
+                }
+            } else {
+                projectiles.push({
+                    x: worm.x + worm.width/2,
+                    y: worm.y + worm.height/2,
+                    velocityX: Math.cos(radians) * velocity,
+                    velocityY: Math.sin(radians) * velocity,
+                    type: gameState.selectedWeapon,
+                    owner: worm.playerId
+                });
+            }
+            
+            return projectiles;
+        }
+
+        function createExplosion(x, y, radius) {
+            gameState.explosions.push(new Explosion(x, y, radius));
+        }
+
+        function updatePowerBar(power) {
+            const powerBar = document.getElementById('powerBar');
+            const powerFill = document.getElementById('powerFill');
+            
+            if (power > 0) {
+                powerBar.style.display = 'block';
+                powerFill.style.width = power + '%';
+            } else {
+                powerBar.style.display = 'none';
+            }
+        }
+
+        function updateHealthDisplay() {
+            for (let playerId in gameState.players) {
+                const worm = gameState.players[playerId];
+                const healthElement = document.getElementById(playerId.includes('1') ? 'player1Health' : 'player2Health');
+                if (healthElement) {
+                    healthElement.textContent = `❤️ ${worm.health}`;
+                }
+            }
+        }
+
+        function endTurn() {
+            // Switch turns
+            const playerIds = Object.keys(gameState.players);
+            const currentIndex = playerIds.indexOf(gameState.currentTurn);
+            gameState.currentTurn = playerIds[(currentIndex + 1) % playerIds.length];
+            
+            // Update UI
+            const turnElement = document.getElementById('currentTurn');
+            turnElement.textContent = gameState.currentTurn === gameState.myPlayerId ? 'Your Turn' : "Opponent's Turn";
+            
+            // Sync to Firebase
+            if (gameState.roomCode) {
+                database.ref(`games/${gameState.roomCode}/currentTurn`).set(gameState.currentTurn);
+            }
+        }
+
+        function checkGameOver() {
+            const alivePlayers = Object.values(gameState.players).filter(w => w.health > 0);
+            
+            if (alivePlayers.length <= 1 || gameState.timeLeft <= 0) {
+                let winner = null;
+                if (alivePlayers.length === 1) {
+                    winner = alivePlayers[0].playerId;
+                } else {
+                    // Determine winner by health
+                    winner = Object.values(gameState.players).reduce((a, b) => 
+                        a.health > b.health ? a : b
+                    ).playerId;
+                }
+                
+                showGameOver(winner);
+            }
+        }
+
+        function showGameOver(winner) {
+            const gameOverScreen = document.getElementById('gameOverScreen');
+            const winnerText = document.getElementById('winnerText');
+            const finalScore = document.getElementById('finalScore');
+            
+            gameOverScreen.style.display = 'flex';
+            winnerText.textContent = winner === gameState.myPlayerId ? '🎉 You Win! 🎉' : '💔 You Lose 💔';
+            
+            let scoreText = '';
+            for (let playerId in gameState.players) {
+                const worm = gameState.players[playerId];
+                scoreText += `${playerId}: ${worm.health} HP\n`;
+            }
+            finalScore.textContent = scoreText;
+        }
+
+        // Game Loop
+        function gameLoop() {
+            if (!canvas || !ctx) return;
+            
+            // Clear canvas
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            // Draw sky gradient
+            const gradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
+            gradient.addColorStop(0, '#87CEEB');
+            gradient.addColorStop(0.6, '#98D8E8');
+            gradient.addColorStop(1, '#F0E68C');
+            ctx.fillStyle = gradient;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            // Draw clouds
+            drawClouds();
+            
+            // Draw terrain
+            drawTerrain();
+            
+            // Update and draw worms
+            for (let playerId in gameState.players) {
+                gameState.players[playerId].update();
+                gameState.players[playerId].draw();
+            }
+            
+            // Update and draw projectiles
+            gameState.projectiles = gameState.projectiles.filter(projectile => {
+                if (projectile instanceof Projectile) {
+                    projectile.update();
+                    if (!projectile.exploded) {
+                        projectile.draw();
+                        return true;
+                    }
+                }
+                return false;
+            });
+            
+            // Update and draw explosions
+            gameState.explosions = gameState.explosions.filter(explosion => {
+                const stillActive = explosion.update();
+                if (stillActive) {
+                    explosion.draw();
+                }
+                return stillActive;
+            });
+            
+            // Draw wind indicator
+            drawWindIndicator();
+            
+            requestAnimationFrame(gameLoop);
+        }
+
+        function drawClouds() {
+            ctx.save();
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
+            
+            // Simple cloud shapes
+            const clouds = [
+                { x: 100, y: 50, size: 40 },
+                { x: 300, y: 80, size: 60 },
+                { x: 500, y: 40, size: 50 },
+                { x: 700, y: 70, size: 45 },
+                { x: 900, y: 60, size: 55 }
+            ];
+            
+            clouds.forEach(cloud => {
+                ctx.beginPath();
+                ctx.arc(cloud.x, cloud.y, cloud.size, 0, Math.PI * 2);
+                ctx.arc(cloud.x - cloud.size * 0.5, cloud.y, cloud.size * 0.8, 0, Math.PI * 2);
+                ctx.arc(cloud.x + cloud.size * 0.5, cloud.y, cloud.size * 0.8, 0, Math.PI * 2);
+                ctx.fill();
+            });
+            
+            ctx.restore();
+        }
+
+        function drawWindIndicator() {
+            ctx.save();
+            
+            const x = canvas.width / 2;
+            const y = 30;
+            
+            // Draw wind text
+            ctx.fillStyle = 'white';
+            ctx.font = 'bold 16px Arial';
+            ctx.textAlign = 'center';
+            ctx.fillText(`Wind: ${gameState.windSpeed.toFixed(1)}`, x, y - 10);
+            
+            // Draw wind arrow
+            ctx.strokeStyle = 'white';
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            ctx.moveTo(x - 30, y);
+            ctx.lineTo(x + 30, y);
+            
+            // Arrow head
+            if (gameState.windSpeed > 0) {
+                ctx.lineTo(x + 25, y - 5);
+                ctx.moveTo(x + 30, y);
+                ctx.lineTo(x + 25, y + 5);
+            } else if (gameState.windSpeed < 0) {
+                ctx.moveTo(x - 30, y);
+                ctx.lineTo(x - 25, y - 5);
+                ctx.moveTo(x - 30, y);
+                ctx.lineTo(x - 25, y + 5);
+            }
+            
+            ctx.stroke();
+            ctx.restore();
+        }
+
+        // Input Handling
+        function setupInputHandlers() {
+            document.addEventListener('keydown', (e) => {
+                if (!gameState.myPlayerId || gameState.currentTurn !== gameState.myPlayerId) return;
+                
+                const myWorm = gameState.players[gameState.myPlayerId];
+                if (!myWorm) return;
+                
+                switch(e.key) {
+                    case 'ArrowLeft':
+                        myWorm.move(-1);
+                        syncWormPosition(myWorm);
+                        break;
+                    case 'ArrowRight':
+                        myWorm.move(1);
+                        syncWormPosition(myWorm);
+                        break;
+                    case 'ArrowUp':
+                        myWorm.aim(-1);
+                        syncWormPosition(myWorm);
+                        break;
+                    case 'ArrowDown':
+                        myWorm.aim(1);
+                        syncWormPosition(myWorm);
+                        break;
+                    case ' ':
+                        e.preventDefault();
+                        if (!myWorm.isCharging) {
+                            myWorm.startCharging();
+                        }
+                        break;
+                    case '1':
+                        selectWeapon('bazooka');
+                        break;
+                    case '2':
+                        selectWeapon('grenade');
+                        break;
+                    case '3':
+                        selectWeapon('shotgun');
+                        break;
+                }
+            });
+            
+            document.addEventListener('keyup', (e) => {
+                if (!gameState.myPlayerId || gameState.currentTurn !== gameState.myPlayerId) return;
+                
+                const myWorm = gameState.players[gameState.myPlayerId];
+                if (!myWorm) return;
+                
+                if (e.key === ' ') {
+                    myWorm.fire();
+                    syncWormPosition(myWorm);
+                }
+            });
+            
+            // Charging power while space is held
+            setInterval(() => {
+                if (gameState.myPlayerId && gameState.currentTurn === gameState.myPlayerId) {
+                    const myWorm = gameState.players[gameState.myPlayerId];
+                    if (myWorm && myWorm.isCharging) {
+                        myWorm.charge();
+                    }
+                }
+            }, 50);
+        }
+
+        function selectWeapon(weapon) {
+            gameState.selectedWeapon = weapon;
+            
+            // Update UI
+            document.querySelectorAll('.weapon-btn').forEach(btn => {
+                btn.classList.remove('active');
+                if (btn.dataset.weapon === weapon) {
+                    btn.classList.add('active');
+                }
+            });
+        }
+
+        // Firebase Sync Functions
+        function syncWormPosition(worm) {
+            if (gameState.roomCode) {
+                database.ref(`games/${gameState.roomCode}/players/${worm.playerId}`).update({
+                    x: worm.x,
+                    y: worm.y,
+                    angle: worm.angle,
+                    health: worm.health,
+                    power: worm.power
+                });
+            }
+        }
+
+        function createRoom() {
+            const playerName = document.getElementById('playerName').value || 'Player';
+            const roomCode = generateRoomCode();
+            const gameTime = getSelectedGameTime();
+            
+            gameState.roomCode = roomCode;
+            gameState.isHost = true;
+            gameState.myPlayerId = playerName + '_1';
+            gameState.gameTime = gameTime * 60;
+            gameState.timeLeft = gameTime * 60;
+            
+            // Create game in Firebase
+            const gameData = {
+                host: gameState.myPlayerId,
+                gameTime: gameState.gameTime,
+                currentTurn: gameState.myPlayerId,
+                windSpeed: (Math.random() - 0.5) * 5,
+                created: Date.now(),
+                players: {
+                    [gameState.myPlayerId]: {
+                        name: playerName,
+                        x: 200,
+                        y: 300,
+                        health: 100,
+                        angle: -45,
+                        color: '#ff6b6b'
+                    }
+                }
+            };
+            
+            database.ref(`games/${roomCode}`).set(gameData);
+            
+            // Show waiting room
+            document.getElementById('menuScreen').style.display = 'none';
+            document.getElementById('waitingRoom').style.display = 'block';
+            document.getElementById('roomCodeDisplay').textContent = roomCode;
+            
+            // Listen for second player
+            database.ref(`games/${roomCode}/players`).on('value', (snapshot) => {
+                const players = snapshot.val();
+                if (players && Object.keys(players).length === 2) {
+                    startGame();
+                }
+            });
+        }
+
+        function joinRoom() {
+            const playerName = document.getElementById('playerName').value || 'Player';
+            const roomCode = document.getElementById('roomCode').value.toUpperCase();
+            
+            if (!roomCode) {
+                alert('Please enter a room code');
+                return;
+            }
+            
+            gameState.roomCode = roomCode;
+            gameState.myPlayerId = playerName + '_2';
+            
+            // Check if room exists
+            database.ref(`games/${roomCode}`).once('value', (snapshot) => {
+                const gameData = snapshot.val();
+                if (gameData && Object.keys(gameData.players).length < 2) {
+                    // Join the game
+                    database.ref(`games/${roomCode}/players/${gameState.myPlayerId}`).set({
+                        name: playerName,
+                        x: 800,
+                        y: 300,
+                        health: 100,
+                        angle: -135,
+                        color: '#4ecdc4'
+                    });
+                    
+                    gameState.gameTime = gameData.gameTime;
+                    gameState.timeLeft = gameData.gameTime;
+                    gameState.windSpeed = gameData.windSpeed;
+                    
+                    startGame();
+                } else {
+                    alert('Room not found or full');
+                }
+            });
+        }
+
+        function startGame() {
+            // Hide menu and waiting room
+            document.getElementById('menuScreen').style.display = 'none';
+            document.getElementById('waitingRoom').style.display = 'none';
+            document.getElementById('gameScreen').style.display = 'block';
+            
+            // Initialize canvas
+            canvas = document.getElementById('gameCanvas');
+            ctx = canvas.getContext('2d');
+            
+            // Generate terrain
+            generateTerrain();
+            
+            // Load players from Firebase
+            database.ref(`games/${gameState.roomCode}/players`).on('value', (snapshot) => {
+                const playersData = snapshot.val();
+                for (let playerId in playersData) {
+                    if (!gameState.players[playerId]) {
+                        const data = playersData[playerId];
+                        gameState.players[playerId] = new Worm(data.x, data.y, playerId, data.color);
+                        gameState.players[playerId].health = data.health;
+                        gameState.players[playerId].angle = data.angle;
+                        
+                        // Update UI
+                        const playerNum = playerId.includes('1') ? '1' : '2';
+                        document.getElementById(`player${playerNum}Name`).textContent = data.name;
+                    } else {
+                        // Update existing player
+                        const worm = gameState.players[playerId];
+                        const data = playersData[playerId];
+                        if (playerId !== gameState.myPlayerId) {
+                            worm.x = data.x;
+                            worm.y = data.y;
+                            worm.angle = data.angle;
+                            worm.health = data.health;
+                        }
+                    }
+                }
+            });
+            
+            // Listen for turn changes
+            database.ref(`games/${gameState.roomCode}/currentTurn`).on('value', (snapshot) => {
+                gameState.currentTurn = snapshot.val();
+                const turnElement = document.getElementById('currentTurn');
+                turnElement.textContent = gameState.currentTurn === gameState.myPlayerId ? 'Your Turn' : "Opponent's Turn";
+            });
+            
+            // Listen for projectiles
+            database.ref(`games/${gameState.roomCode}/projectiles`).on('child_added', (snapshot) => {
+                const data = snapshot.val();
+                if (data && data.owner !== gameState.myPlayerId) {
+                    const projectile = new Projectile(data.x, data.y, data.velocityX, data.velocityY, data.type, data.owner);
+                    gameState.projectiles.push(projectile);
+                }
+            });
+            
+            // Setup input handlers
+            setupInputHandlers();
+            
+            // Setup weapon buttons
+            document.querySelectorAll('.weapon-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    selectWeapon(btn.dataset.weapon);
+                });
+            });
+            
+            // Start game timer
+            startGameTimer();
+            
+            // Start game loop
+            gameLoop();
+        }
+
+        function startGameTimer() {
+            setInterval(() => {
+                if (gameState.timeLeft > 0) {
+                    gameState.timeLeft--;
+                    const minutes = Math.floor(gameState.timeLeft / 60);
+                    const seconds = gameState.timeLeft % 60;
+                    document.getElementById('gameTimer').textContent = 
+                        `${minutes}:${seconds.toString().padStart(2, '0')}`;
+                    
+                    if (gameState.timeLeft === 0) {
+                        checkGameOver();
+                    }
+                }
+            }, 1000);
+        }
+
+        function generateRoomCode() {
+            const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+            let code = '';
+            for (let i = 0; i < 5; i++) {
+                code += chars.charAt(Math.floor(Math.random() * chars.length));
+            }
+            return code;
+        }
+
+        function getSelectedGameTime() {
+            const selected = document.querySelector('.time-btn.selected');
+            return parseInt(selected.dataset.time);
+        }
+
+        // Initialize UI
+        document.addEventListener('DOMContentLoaded', () => {
+            // Time selection buttons
+            document.querySelectorAll('.time-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    document.querySelectorAll('.time-btn').forEach(b => b.classList.remove('selected'));
+                    btn.classList.add('selected');
+                });
+            });
+            
+            // Create/Join buttons
+            document.getElementById('createRoomBtn').addEventListener('click', createRoom);
+            document.getElementById('joinRoomBtn').addEventListener('click', joinRoom);
+            
+            // Cancel button
+            document.getElementById('cancelBtn').addEventListener('click', () => {
+                location.reload();
+            });
+        });
+
+        // Note: For production use, you need to:
+        // 1. Replace Firebase configuration with your own
+        // 2. Set up Firebase Realtime Database rules
+        // 3. Add proper error handling
+        // 4. Implement room cleanup when players disconnect
+    </script>
+</body>
+</html>
