@@ -1,0 +1,1283 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Zip Puzzle Game">
+    <link rel="icon" type="image/x-icon" href="Zip.ico"/>
+    <title>Zip Puzzle Game</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            max-width: 700px;
+            width: 100%;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        h1 {
+            color: #333;
+            font-size: 32px;
+        }
+
+        .level-info {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 10px 20px;
+            border-radius: 25px;
+            font-weight: bold;
+        }
+
+        .game-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin: 20px 0;
+        }
+
+        .game-board {
+            background: #f5f5f5;
+            border-radius: 20px;
+            padding: 20px;
+            display: inline-block;
+            position: relative;
+        }
+
+        .grid {
+            display: grid;
+            gap: 0;
+            background: transparent;
+            position: relative;
+        }
+
+        .cell {
+            width: 45px;
+            height: 45px;
+            background: white;
+            border: 1px solid #e0e0e0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            position: relative;
+            user-select: none;
+        }
+
+        .cell:hover:not(.wall):not(.number-cell) {
+            background: #e3f2fd;
+        }
+
+        .cell.wall {
+            background: #333;
+            cursor: default;
+            border-color: #333;
+        }
+
+        .cell.path {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            animation: fillAnimation 0.2s ease;
+        }
+
+        .cell.path-1 { background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); }
+        .cell.path-2 { background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); }
+        .cell.path-3 { background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%); }
+        .cell.path-4 { background: linear-gradient(135deg, #fa709a 0%, #fee140 100%); }
+        .cell.path-5 { background: linear-gradient(135deg, #30cfd0 0%, #330867 100%); }
+        .cell.path-6 { background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%); }
+        .cell.path-7 { background: linear-gradient(135deg, #ff9a9e 0%, #fecfef 100%); }
+
+        @keyframes fillAnimation {
+            0% {
+                transform: scale(0.9);
+            }
+            100% {
+                transform: scale(1);
+            }
+        }
+
+        .number {
+            width: 35px;
+            height: 35px;
+            background: #333;
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-weight: bold;
+            font-size: 16px;
+            z-index: 10;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+            pointer-events: none;
+            position: relative;
+        }
+
+        .cell.number-cell {
+            cursor: pointer;
+        }
+
+        .number.pair-1 { background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); }
+        .number.pair-2 { background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); }
+        .number.pair-3 { background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%); }
+        .number.pair-4 { background: linear-gradient(135deg, #fa709a 0%, #fee140 100%); }
+        .number.pair-5 { background: linear-gradient(135deg, #30cfd0 0%, #330867 100%); }
+        .number.pair-6 { background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%); }
+        .number.pair-7 { background: linear-gradient(135deg, #ff9a9e 0%, #fecfef 100%); }
+
+        .controls {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            margin-top: 20px;
+            flex-wrap: wrap;
+        }
+
+        button {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 25px;
+            font-size: 14px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-secondary {
+            background: #f5f5f5;
+            color: #333;
+        }
+
+        .btn-secondary:hover {
+            background: #e0e0e0;
+        }
+
+        .btn-success {
+            background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+            color: white;
+        }
+
+        .btn-success:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(17, 153, 142, 0.4);
+        }
+
+        .instructions {
+            background: #fff3cd;
+            border-left: 4px solid #ffc107;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 20px;
+        }
+
+        .instructions h3 {
+            color: #856404;
+            margin-bottom: 10px;
+        }
+
+        .instructions p {
+            color: #856404;
+            line-height: 1.6;
+            margin: 0;
+        }
+
+        .success-message {
+            background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 15px;
+            text-align: center;
+            margin-top: 20px;
+            animation: slideIn 0.5s ease;
+            display: none;
+        }
+
+        .success-message.show {
+            display: block;
+        }
+
+        .success-message h2 {
+            margin-bottom: 10px;
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateY(-20px);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        .level-select {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(50px, 1fr));
+            gap: 8px;
+            margin-top: 15px;
+        }
+
+        .level-btn {
+            padding: 12px;
+            border-radius: 10px;
+            background: #f5f5f5;
+            border: 2px solid transparent;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: bold;
+        }
+
+        .level-btn:hover {
+            background: #e0e0e0;
+            transform: scale(1.05);
+        }
+
+        .level-btn.completed {
+            background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+            color: white;
+        }
+
+        .level-btn.current {
+            border-color: #667eea;
+            background: #e3f2fd;
+        }
+
+        .stats {
+            display: flex;
+            justify-content: space-around;
+            margin: 20px 0;
+            padding: 15px;
+            background: #f5f5f5;
+            border-radius: 10px;
+            gap: 20px;
+        }
+
+        .stat-item {
+            text-align: center;
+            flex: 1;
+        }
+
+        .stat-value {
+            font-size: 24px;
+            font-weight: bold;
+            color: #667eea;
+        }
+
+        .stat-label {
+            font-size: 12px;
+            color: #666;
+            text-transform: uppercase;
+            margin-top: 5px;
+        }
+
+        details {
+            margin-top: 20px;
+        }
+
+        summary {
+            cursor: pointer;
+            padding: 12px;
+            background: #f5f5f5;
+            border-radius: 8px;
+            font-weight: bold;
+            user-select: none;
+            transition: background 0.3s ease;
+        }
+
+        summary:hover {
+            background: #e0e0e0;
+        }
+
+        /* Dialog Styles */
+        .dialog-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.6);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .dialog-overlay.show {
+            display: flex;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+            }
+            to {
+                opacity: 1;
+            }
+        }
+
+        .dialog {
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            max-width: 400px;
+            width: 90%;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+            animation: slideUp 0.3s ease;
+        }
+
+        @keyframes slideUp {
+            from {
+                transform: translateY(50px);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        .dialog-icon {
+            font-size: 48px;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .dialog-title {
+            font-size: 24px;
+            font-weight: bold;
+            color: #333;
+            text-align: center;
+            margin-bottom: 15px;
+        }
+
+        .dialog-message {
+            font-size: 16px;
+            color: #666;
+            text-align: center;
+            line-height: 1.6;
+            margin-bottom: 25px;
+        }
+
+        .dialog-buttons {
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+        }
+
+        .dialog-btn {
+            padding: 10px 24px;
+            border: none;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+        }
+
+        .dialog-btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .dialog-btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .dialog-btn-success {
+            background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+            color: white;
+        }
+
+        .dialog-btn-success:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(17, 153, 142, 0.4);
+        }
+
+        .dialog-btn-secondary {
+            background: #f5f5f5;
+            color: #333;
+        }
+
+        .dialog-btn-secondary:hover {
+            background: #e0e0e0;
+        }
+
+        @media (max-width: 600px) {
+            .container {
+                padding: 20px;
+            }
+
+            h1 {
+                font-size: 24px;
+            }
+
+            .cell {
+                width: 35px;
+                height: 35px;
+            }
+
+            .number {
+                width: 28px;
+                height: 28px;
+                font-size: 14px;
+            }
+
+            button {
+                padding: 10px 18px;
+                font-size: 12px;
+            }
+
+            .dialog {
+                padding: 20px;
+            }
+
+            .dialog-title {
+                font-size: 20px;
+            }
+
+            .dialog-message {
+                font-size: 14px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🎮 Zip Puzzle</h1>
+            <div class="level-info">Level <span id="currentLevel">1</span>/20</div>
+        </div>
+
+        <div class="stats">
+            <div class="stat-item">
+                <div class="stat-value" id="completedLevels">0</div>
+                <div class="stat-label">Completed</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value" id="currentMoves">0</div>
+                <div class="stat-label">Moves</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value" id="pairsConnected">0</div>
+                <div class="stat-label">Pairs</div>
+            </div>
+        </div>
+
+        <div class="game-container">
+            <div class="game-board" id="gameBoard"></div>
+        </div>
+
+        <div class="success-message" id="successMessage">
+            <h2>🎉 Excellent!</h2>
+            <p>Level completed! Moving to next level...</p>
+        </div>
+
+        <div class="controls">
+            <button class="btn-secondary" onclick="resetLevel()">🔄 Reset</button>
+            <button class="btn-secondary" onclick="clearPaths()">🗑️ Clear All</button>
+            <button class="btn-success" onclick="checkSolution()">✓ Check</button>
+            <button class="btn-primary" onclick="nextLevel()">→ Next</button>
+        </div>
+
+        <div class="instructions">
+            <h3>📖 How to Play:</h3>
+            <p>
+                1. Click and drag from a numbered circle to its matching pair<br>
+                2. Connect all pairs with paths<br>
+                3. Fill the entire grid without crossing paths<br>
+                4. Avoid black walls<br>
+                5. Each pair has its own color
+            </p>
+        </div>
+
+        <details>
+            <summary>🎯 Level Selection</summary>
+            <div class="level-select" id="levelSelect"></div>
+        </details>
+    </div>
+
+    <!-- Dialog Overlay -->
+    <div class="dialog-overlay" id="dialogOverlay">
+        <div class="dialog" id="dialog">
+            <div class="dialog-icon" id="dialogIcon"></div>
+            <div class="dialog-title" id="dialogTitle"></div>
+            <div class="dialog-message" id="dialogMessage"></div>
+            <div class="dialog-buttons" id="dialogButtons"></div>
+        </div>
+    </div>
+
+    <script>
+        // Game state
+        let currentLevel = 1;
+        let paths = {}; // Store paths for each pair
+        let isDrawing = false;
+        let currentPair = null;
+        let moves = 0;
+        let gridSize = 0;
+
+        // Dialog functions
+        function showDialog(options) {
+            const overlay = document.getElementById('dialogOverlay');
+            const dialog = document.getElementById('dialog');
+            const icon = document.getElementById('dialogIcon');
+            const title = document.getElementById('dialogTitle');
+            const message = document.getElementById('dialogMessage');
+            const buttons = document.getElementById('dialogButtons');
+
+            icon.textContent = options.icon || '💬';
+            title.textContent = options.title || 'Message';
+            message.textContent = options.message || '';
+            
+            buttons.innerHTML = '';
+            
+            // Add buttons (in reverse order so OK is on the right)
+            if (options.buttons) {
+                options.buttons.reverse().forEach(btn => {
+                    const button = document.createElement('button');
+                    button.className = `dialog-btn ${btn.class || 'dialog-btn-primary'}`;
+                    button.textContent = btn.text;
+                    button.onclick = () => {
+                        hideDialog();
+                        if (btn.onClick) btn.onClick();
+                    };
+                    buttons.appendChild(button);
+                });
+            } else {
+                // Default OK button
+                const button = document.createElement('button');
+                button.className = 'dialog-btn dialog-btn-primary';
+                button.textContent = 'OK';
+                button.onclick = hideDialog;
+                buttons.appendChild(button);
+            }
+
+            overlay.classList.add('show');
+        }
+
+        function hideDialog() {
+            const overlay = document.getElementById('dialogOverlay');
+            overlay.classList.remove('show');
+        }
+
+        // Close dialog when clicking outside
+        document.getElementById('dialogOverlay').addEventListener('click', (e) => {
+            if (e.target.id === 'dialogOverlay') {
+                hideDialog();
+            }
+        });
+
+        // 20 levels with increasing difficulty
+        const levels = [
+            // Level 1 - Tutorial
+            {
+                size: 6,
+                pairs: [
+                    { start: [2, 1], end: [2, 4], number: 1 }
+                ],
+                walls: []
+            },
+            // Level 2 - Two pairs
+            {
+                size: 6,
+                pairs: [
+                    { start: [1, 1], end: [1, 4], number: 1 },
+                    { start: [4, 1], end: [4, 4], number: 2 }
+                ],
+                walls: []
+            },
+            // Level 3 - With walls
+            {
+                size: 7,
+                pairs: [
+                    { start: [1, 1], end: [5, 5], number: 1 },
+                    { start: [1, 5], end: [5, 1], number: 2 }
+                ],
+                walls: [[3, 3]]
+            },
+            // Level 4 - Three pairs
+            {
+                size: 7,
+                pairs: [
+                    { start: [1, 1], end: [5, 1], number: 1 },
+                    { start: [1, 5], end: [5, 5], number: 2 },
+                    { start: [3, 3], end: [3, 4], number: 3 }
+                ],
+                walls: []
+            },
+            // Level 5 - Complex walls
+            {
+                size: 8,
+                pairs: [
+                    { start: [1, 1], end: [6, 6], number: 1 },
+                    { start: [1, 6], end: [6, 1], number: 2 }
+                ],
+                walls: [[2, 3], [3, 2], [4, 5], [5, 4]]
+            },
+            // Level 6 - Four pairs
+            {
+                size: 8,
+                pairs: [
+                    { start: [1, 1], end: [6, 1], number: 1 },
+                    { start: [1, 6], end: [6, 6], number: 2 },
+                    { start: [3, 3], end: [4, 3], number: 3 },
+                    { start: [3, 4], end: [4, 4], number: 4 }
+                ],
+                walls: []
+            },
+            // Level 7 - Maze
+            {
+                size: 8,
+                pairs: [
+                    { start: [1, 1], end: [6, 6], number: 1 },
+                    { start: [1, 6], end: [6, 1], number: 2 },
+                    { start: [3, 3], end: [4, 4], number: 3 }
+                ],
+                walls: [[2, 2], [2, 5], [5, 2], [5, 5]]
+            },
+            // Level 8 - Cross pattern
+            {
+                size: 9,
+                pairs: [
+                    { start: [1, 4], end: [7, 4], number: 1 },
+                    { start: [4, 1], end: [4, 7], number: 2 },
+                    { start: [2, 2], end: [6, 6], number: 3 }
+                ],
+                walls: [[3, 3], [5, 5]]
+            },
+            // Level 9 - Five pairs
+            {
+                size: 9,
+                pairs: [
+                    { start: [1, 1], end: [7, 1], number: 1 },
+                    { start: [1, 7], end: [7, 7], number: 2 },
+                    { start: [1, 4], end: [3, 4], number: 3 },
+                    { start: [5, 4], end: [7, 4], number: 4 },
+                    { start: [4, 2], end: [4, 6], number: 5 }
+                ],
+                walls: []
+            },
+            // Level 10 - Complex
+            {
+                size: 9,
+                pairs: [
+                    { start: [1, 1], end: [7, 7], number: 1 },
+                    { start: [1, 7], end: [7, 1], number: 2 },
+                    { start: [4, 2], end: [4, 6], number: 3 },
+                    { start: [2, 4], end: [6, 4], number: 4 }
+                ],
+                walls: [[3, 3], [5, 5], [3, 5], [5, 3]]
+            },
+            // Level 11 - Tight spaces
+            {
+                size: 9,
+                pairs: [
+                    { start: [2, 2], end: [6, 6], number: 1 },
+                    { start: [2, 6], end: [6, 2], number: 2 },
+                    { start: [4, 1], end: [4, 7], number: 3 }
+                ],
+                walls: [[1, 4], [3, 4], [5, 4], [7, 4]]
+            },
+            // Level 12 - Six pairs
+            {
+                size: 10,
+                pairs: [
+                    { start: [1, 1], end: [8, 1], number: 1 },
+                    { start: [1, 8], end: [8, 8], number: 2 },
+                    { start: [1, 4], end: [3, 4], number: 3 },
+                    { start: [6, 4], end: [8, 4], number: 4 },
+                    { start: [4, 2], end: [4, 3], number: 5 },
+                    { start: [5, 6], end: [5, 7], number: 6 }
+                ],
+                walls: [[4, 5], [5, 4]]
+            },
+            // Level 13 - Advanced
+            {
+                size: 10,
+                pairs: [
+                    { start: [1, 1], end: [8, 8], number: 1 },
+                    { start: [1, 8], end: [8, 1], number: 2 },
+                    { start: [4, 4], end: [5, 5], number: 3 },
+                    { start: [2, 4], end: [7, 4], number: 4 }
+                ],
+                walls: [[3, 3], [6, 6], [3, 6], [6, 3]]
+            },
+            // Level 14 - Expert
+            {
+                size: 10,
+                pairs: [
+                    { start: [2, 2], end: [7, 7], number: 1 },
+                    { start: [2, 7], end: [7, 2], number: 2 },
+                    { start: [1, 4], end: [4, 1], number: 3 },
+                    { start: [8, 4], end: [4, 8], number: 4 },
+                    { start: [4, 4], end: [5, 5], number: 5 }
+                ],
+                walls: []
+            },
+            // Level 15 - Master
+            {
+                size: 10,
+                pairs: [
+                    { start: [1, 1], end: [8, 8], number: 1 },
+                    { start: [1, 8], end: [8, 1], number: 2 },
+                    { start: [1, 4], end: [4, 1], number: 3 },
+                    { start: [8, 4], end: [4, 8], number: 4 },
+                    { start: [3, 3], end: [6, 6], number: 5 }
+                ],
+                walls: [[4, 4], [5, 5], [4, 5], [5, 4]]
+            },
+            // Level 16 - Seven pairs
+            {
+                size: 11,
+                pairs: [
+                    { start: [1, 1], end: [9, 1], number: 1 },
+                    { start: [1, 9], end: [9, 9], number: 2 },
+                    { start: [1, 5], end: [3, 5], number: 3 },
+                    { start: [7, 5], end: [9, 5], number: 4 },
+                    { start: [5, 1], end: [5, 3], number: 5 },
+                    { start: [5, 7], end: [5, 9], number: 6 },
+                    { start: [4, 4], end: [6, 6], number: 7 }
+                ],
+                walls: []
+            },
+            // Level 17 - Challenge
+            {
+                size: 11,
+                pairs: [
+                    { start: [2, 2], end: [8, 8], number: 1 },
+                    { start: [2, 8], end: [8, 2], number: 2 },
+                    { start: [5, 1], end: [5, 9], number: 3 },
+                    { start: [1, 5], end: [9, 5], number: 4 },
+                    { start: [3, 3], end: [7, 7], number: 5 }
+                ],
+                walls: [[4, 4], [6, 6], [4, 6], [6, 4]]
+            },
+            // Level 18 - Epic
+            {
+                size: 11,
+                pairs: [
+                    { start: [1, 1], end: [9, 9], number: 1 },
+                    { start: [1, 9], end: [9, 1], number: 2 },
+                    { start: [1, 5], end: [5, 1], number: 3 },
+                    { start: [9, 5], end: [5, 9], number: 4 },
+                    { start: [3, 5], end: [7, 5], number: 5 },
+                    { start: [5, 3], end: [5, 7], number: 6 }
+                ],
+                walls: [[5, 4], [5, 6], [4, 5], [6, 5]]
+            },
+            // Level 19 - Legendary
+            {
+                size: 12,
+                pairs: [
+                    { start: [1, 1], end: [10, 10], number: 1 },
+                    { start: [1, 10], end: [10, 1], number: 2 },
+                    { start: [1, 5], end: [5, 1], number: 3 },
+                    { start: [10, 5], end: [5, 10], number: 4 },
+                    { start: [3, 5], end: [8, 5], number: 5 },
+                    { start: [5, 3], end: [5, 8], number: 6 }
+                ],
+                walls: [[5, 5], [6, 6], [5, 6], [6, 5]]
+            },
+            // Level 20 - Ultimate
+            {
+                size: 12,
+                pairs: [
+                    { start: [1, 1], end: [10, 10], number: 1 },
+                    { start: [1, 10], end: [10, 1], number: 2 },
+                    { start: [1, 5], end: [5, 1], number: 3 },
+                    { start: [10, 5], end: [5, 10], number: 4 },
+                    { start: [3, 5], end: [8, 5], number: 5 },
+                    { start: [5, 3], end: [5, 8], number: 6 },
+                    { start: [4, 4], end: [7, 7], number: 7 }
+                ],
+                walls: [[5, 5], [6, 6]]
+            }
+        ];
+
+        // Initialize game
+        function initGame() {
+            loadProgress();
+            loadLevel(currentLevel);
+            updateLevelSelect();
+            updateStats();
+        }
+
+        // Load level
+        function loadLevel(levelNum) {
+            currentLevel = levelNum;
+            paths = {};
+            currentPair = null;
+            isDrawing = false;
+            moves = 0;
+            
+            document.getElementById('currentLevel').textContent = levelNum;
+            document.getElementById('successMessage').classList.remove('show');
+            
+            const level = levels[levelNum - 1];
+            gridSize = level.size;
+            const board = document.getElementById('gameBoard');
+            board.innerHTML = '';
+            
+            const grid = document.createElement('div');
+            grid.className = 'grid';
+            grid.style.gridTemplateColumns = `repeat(${level.size}, 45px)`;
+            
+            // Initialize paths object
+            level.pairs.forEach(pair => {
+                paths[pair.number] = [];
+            });
+            
+            // Create cells
+            for (let row = 0; row < level.size; row++) {
+                for (let col = 0; col < level.size; col++) {
+                    const cell = document.createElement('div');
+                    cell.className = 'cell';
+                    cell.dataset.row = row;
+                    cell.dataset.col = col;
+                    cell.dataset.key = `${row},${col}`;
+                    
+                    // Check if wall
+                    if (level.walls.some(w => w[0] === row && w[1] === col)) {
+                        cell.classList.add('wall');
+                    }
+                    
+                    // Check if number position
+                    level.pairs.forEach(pair => {
+                        if (pair.start[0] === row && pair.start[1] === col) {
+                            const num = document.createElement('div');
+                            num.className = `number pair-${pair.number}`;
+                            num.textContent = pair.number;
+                            num.dataset.pair = pair.number;
+                            num.dataset.type = 'start';
+                            cell.appendChild(num);
+                            cell.classList.add('number-cell');
+                            cell.dataset.pairNumber = pair.number;
+                        }
+                        if (pair.end[0] === row && pair.end[1] === col) {
+                            const num = document.createElement('div');
+                            num.className = `number pair-${pair.number}`;
+                            num.textContent = pair.number;
+                            num.dataset.pair = pair.number;
+                            num.dataset.type = 'end';
+                            cell.appendChild(num);
+                            cell.classList.add('number-cell');
+                            cell.dataset.pairNumber = pair.number;
+                        }
+                    });
+                    
+                    // Add event listeners
+                    cell.addEventListener('mousedown', handleCellMouseDown);
+                    cell.addEventListener('mouseenter', handleCellMouseEnter);
+                    cell.addEventListener('touchstart', handleCellTouchStart, { passive: false });
+                    cell.addEventListener('touchmove', handleCellTouchMove, { passive: false });
+                    
+                    grid.appendChild(cell);
+                }
+            }
+            
+            board.appendChild(grid);
+            updateStats();
+        }
+
+        // Get cell by coordinates
+        function getCell(row, col) {
+            return document.querySelector(`.cell[data-key="${row},${col}"]`);
+        }
+
+        // Check if cells are adjacent
+        function areAdjacent(pos1, pos2) {
+            return Math.abs(pos1.row - pos2.row) + Math.abs(pos1.col - pos2.col) === 1;
+        }
+
+        // Handle mouse down
+        function handleCellMouseDown(e) {
+            e.preventDefault();
+            const cell = e.currentTarget;
+            
+            // Check if clicking on a number cell
+            if (cell.classList.contains('number-cell')) {
+                const pairNum = parseInt(cell.dataset.pairNumber);
+                isDrawing = true;
+                currentPair = pairNum;
+                
+                // Clear existing path for this pair
+                clearPath(pairNum);
+                
+                // Start new path
+                paths[pairNum] = [{
+                    row: parseInt(cell.dataset.row),
+                    col: parseInt(cell.dataset.col)
+                }];
+                
+                moves++;
+                updateStats();
+            }
+        }
+
+        // Handle mouse enter
+        function handleCellMouseEnter(e) {
+            if (!isDrawing || currentPair === null) return;
+            
+            const cell = e.currentTarget;
+            const row = parseInt(cell.dataset.row);
+            const col = parseInt(cell.dataset.col);
+            
+            if (cell.classList.contains('wall')) return;
+            
+            const path = paths[currentPair];
+            const lastPos = path[path.length - 1];
+            
+            // Check if adjacent
+            if (areAdjacent(lastPos, { row, col })) {
+                // Check if cell is already in current path (allow backtracking)
+                const existingIndex = path.findIndex(p => p.row === row && p.col === col);
+                
+                if (existingIndex !== -1) {
+                    // Backtrack - remove cells after this one
+                    const removed = path.splice(existingIndex + 1);
+                    removed.forEach(pos => {
+                        const c = getCell(pos.row, pos.col);
+                        if (c && !c.classList.contains('number-cell')) {
+                            c.classList.remove('path', `path-${currentPair}`);
+                        }
+                    });
+                } else {
+                    // Check if cell is occupied by another path
+                    let occupied = false;
+                    for (let pairNum in paths) {
+                        if (parseInt(pairNum) !== currentPair) {
+                            if (paths[pairNum].some(p => p.row === row && p.col === col)) {
+                                occupied = true;
+                                break;
+                            }
+                        }
+                    }
+                    
+                    if (!occupied) {
+                        path.push({ row, col });
+                        
+                        if (!cell.classList.contains('number-cell')) {
+                            cell.classList.add('path', `path-${currentPair}`);
+                        }
+                        
+                        // Check if reached end
+                        if (cell.classList.contains('number-cell') && 
+                            parseInt(cell.dataset.pairNumber) === currentPair) {
+                            const number = cell.querySelector('.number');
+                            if (number && number.dataset.type === 'end') {
+                                isDrawing = false;
+                                currentPair = null;
+                                updateStats();
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        // Handle touch start
+        function handleCellTouchStart(e) {
+            e.preventDefault();
+            handleCellMouseDown(e);
+        }
+
+        // Handle touch move
+        function handleCellTouchMove(e) {
+            e.preventDefault();
+            if (!isDrawing) return;
+            
+            const touch = e.touches[0];
+            const element = document.elementFromPoint(touch.clientX, touch.clientY);
+            
+            if (element && element.classList.contains('cell')) {
+                handleCellMouseEnter({ currentTarget: element });
+            }
+        }
+
+        // Clear path for a specific pair
+        function clearPath(pairNum) {
+            const path = paths[pairNum];
+            if (path) {
+                path.forEach(pos => {
+                    const cell = getCell(pos.row, pos.col);
+                    if (cell && !cell.classList.contains('number-cell')) {
+                        cell.classList.remove('path', `path-${pairNum}`);
+                    }
+                });
+                paths[pairNum] = [];
+            }
+        }
+
+        // Clear all paths
+        function clearPaths() {
+            const level = levels[currentLevel - 1];
+            level.pairs.forEach(pair => {
+                clearPath(pair.number);
+            });
+            moves = 0;
+            updateStats();
+        }
+
+        // Reset level
+        function resetLevel() {
+            loadLevel(currentLevel);
+        }
+
+        // Check solution
+        function checkSolution() {
+            const level = levels[currentLevel - 1];
+            
+            // Check if all pairs are connected
+            let allConnected = true;
+            let unconnectedPairs = [];
+            
+            for (let pair of level.pairs) {
+                const path = paths[pair.number];
+                if (!path || path.length < 2) {
+                    allConnected = false;
+                    unconnectedPairs.push(pair.number);
+                    continue;
+                }
+                
+                // Check if path connects start to end
+                const start = path[0];
+                const end = path[path.length - 1];
+                
+                const pairStart = pair.start;
+                const pairEnd = pair.end;
+                
+                const validConnection = 
+                    (start.row === pairStart[0] && start.col === pairStart[1] &&
+                     end.row === pairEnd[0] && end.col === pairEnd[1]) ||
+                    (start.row === pairEnd[0] && start.col === pairEnd[1] &&
+                     end.row === pairStart[0] && end.col === pairStart[1]);
+                
+                if (!validConnection) {
+                    allConnected = false;
+                    unconnectedPairs.push(pair.number);
+                }
+            }
+            
+            if (!allConnected) {
+                showDialog({
+                    icon: '❌',
+                    title: 'Incomplete',
+                    message: `Not all pairs are connected! Please connect all numbered pairs.${unconnectedPairs.length > 0 ? '\n\nUnconnected pairs: ' + unconnectedPairs.join(', ') : ''}`,
+                    buttons: [
+                        { text: 'OK', class: 'dialog-btn-primary' }
+                    ]
+                });
+                return;
+            }
+            
+            // Count filled cells
+            const cells = document.querySelectorAll('.cell');
+            let totalCells = level.size * level.size;
+            let wallCells = level.walls.length;
+            let numberCells = level.pairs.length * 2;
+            let requiredFilled = totalCells - wallCells - numberCells;
+            
+            let filledCount = 0;
+            cells.forEach(cell => {
+                if (cell.classList.contains('path')) {
+                    filledCount++;
+                }
+            });
+            
+            if (filledCount === requiredFilled) {
+                // Success!
+                document.getElementById('successMessage').classList.add('show');
+                markLevelCompleted(currentLevel);
+                updateStats();
+                
+                setTimeout(() => {
+                    document.getElementById('successMessage').classList.remove('show');
+                    if (currentLevel < levels.length) {
+                        showDialog({
+                            icon: '🎉',
+                            title: 'Level Complete!',
+                            message: `Congratulations! You completed level ${currentLevel}!\n\nReady for the next challenge?`,
+                            buttons: [
+                                { text: 'Next Level', class: 'dialog-btn-success', onClick: nextLevel }
+                            ]
+                        });
+                    } else {
+                        showDialog({
+                            icon: '🏆',
+                            title: 'Game Complete!',
+                            message: 'Congratulations! You completed all 20 levels!\n\nYou are a Zip Puzzle Master!',
+                            buttons: [
+                                { text: 'Play Again', class: 'dialog-btn-success', onClick: () => loadLevel(1) }
+                            ]
+                        });
+                    }
+                }, 1500);
+            } else {
+                showDialog({
+                    icon: '⚠️',
+                    title: 'Not Complete',
+                    message: `Not all cells are filled!\n\nYou need to fill ${requiredFilled} cells, but only ${filledCount} are filled.\n\nMake sure to cover the entire grid with your paths.`,
+                    buttons: [
+                        { text: 'OK', class: 'dialog-btn-primary' }
+                    ]
+                });
+            }
+        }
+
+        // Next level
+        function nextLevel() {
+            if (currentLevel < levels.length) {
+                loadLevel(currentLevel + 1);
+                updateLevelSelect();
+            }
+        }
+
+        // Update level select
+        function updateLevelSelect() {
+            const container = document.getElementById('levelSelect');
+            container.innerHTML = '';
+            
+            levels.forEach((_, index) => {
+                const btn = document.createElement('button');
+                btn.className = 'level-btn';
+                btn.textContent = index + 1;
+                
+                if (isLevelCompleted(index + 1)) {
+                    btn.classList.add('completed');
+                }
+                if (index + 1 === currentLevel) {
+                    btn.classList.add('current');
+                }
+                
+                btn.onclick = () => {
+                    loadLevel(index + 1);
+                    updateLevelSelect();
+                };
+                
+                container.appendChild(btn);
+            });
+        }
+
+        // Update stats
+        function updateStats() {
+            document.getElementById('completedLevels').textContent = getCompletedLevels().length;
+            document.getElementById('currentMoves').textContent = moves;
+            
+            // Count connected pairs
+            const level = levels[currentLevel - 1];
+            let connectedPairs = 0;
+            
+            level.pairs.forEach(pair => {
+                const path = paths[pair.number];
+                if (path && path.length >= 2) {
+                    const start = path[0];
+                    const end = path[path.length - 1];
+                    const pairStart = pair.start;
+                    const pairEnd = pair.end;
+                    
+                    const validConnection = 
+                        (start.row === pairStart[0] && start.col === pairStart[1] &&
+                         end.row === pairEnd[0] && end.col === pairEnd[1]) ||
+                        (start.row === pairEnd[0] && start.col === pairEnd[1] &&
+                         end.row === pairStart[0] && end.col === pairStart[1]);
+                    
+                    if (validConnection) {
+                        connectedPairs++;
+                    }
+                }
+            });
+            
+            document.getElementById('pairsConnected').textContent = `${connectedPairs}/${level.pairs.length}`;
+        }
+
+        // Local storage functions
+        function saveProgress() {
+            const progress = {
+                currentLevel,
+                completedLevels: getCompletedLevels()
+            };
+            localStorage.setItem('zipGameProgress', JSON.stringify(progress));
+        }
+
+        function loadProgress() {
+            const saved = localStorage.getItem('zipGameProgress');
+            if (saved) {
+                const progress = JSON.parse(saved);
+                currentLevel = progress.currentLevel || 1;
+            }
+        }
+
+        function markLevelCompleted(level) {
+            let completed = getCompletedLevels();
+            if (!completed.includes(level)) {
+                completed.push(level);
+                localStorage.setItem('zipCompletedLevels', JSON.stringify(completed));
+            }
+            saveProgress();
+        }
+
+        function getCompletedLevels() {
+            const saved = localStorage.getItem('zipCompletedLevels');
+            return saved ? JSON.parse(saved) : [];
+        }
+
+        function isLevelCompleted(level) {
+            return getCompletedLevels().includes(level);
+        }
+
+        // Global mouse up handler
+        document.addEventListener('mouseup', () => {
+            isDrawing = false;
+            currentPair = null;
+        });
+
+        document.addEventListener('touchend', () => {
+            isDrawing = false;
+            currentPair = null;
+        });
+
+        // Initialize on load
+        window.onload = initGame;
+    </script>
+</body>
+</html>
