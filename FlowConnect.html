@@ -1,0 +1,2102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Flow Connect">
+    <link rel="icon" type="image/x-icon" href="FlowConnect.ico"/>
+    <title>Flow Connect</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 10px;
+            overflow: hidden;
+        }
+
+        .container {
+            background: white;
+            border-radius: 15px;
+            padding: 15px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            max-width: 650px;
+            width: 100%;
+            max-height: 98vh;
+            overflow-y: auto;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 10px;
+        }
+
+        h1 {
+            color: #333;
+            font-size: 22px;
+            margin-bottom: 5px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .difficulty {
+            display: inline-block;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 5px 15px;
+            border-radius: 15px;
+            font-size: 12px;
+            color: white;
+            font-weight: 600;
+        }
+
+        .level-info {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+            padding: 8px;
+            background: #f9f9f9;
+            border-radius: 8px;
+        }
+
+        .info-buttons {
+            display: flex;
+            gap: 8px;
+            justify-content: center;
+            margin-bottom: 10px;
+        }
+
+        .info-btn {
+            padding: 6px 12px;
+            background: #f0f0f0;
+            color: #666;
+            border: none;
+            border-radius: 6px;
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .info-btn:hover {
+            background: #e0e0e0;
+            transform: translateY(-1px);
+        }
+
+        .difficulty-tabs {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 6px;
+            margin-bottom: 10px;
+        }
+
+        .difficulty-btn {
+            padding: 8px;
+            background: #f0f0f0;
+            color: #333;
+            font-size: 12px;
+            border: 2px solid transparent;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-weight: 600;
+        }
+
+        .difficulty-btn.active {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-color: #764ba2;
+        }
+
+        .level-selector {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 6px;
+            margin-bottom: 10px;
+        }
+
+        .level-btn {
+            padding: 8px 4px;
+            background: #f0f0f0;
+            color: #333;
+            font-size: 11px;
+            border: 2px solid transparent;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+            position: relative;
+            font-weight: 600;
+        }
+
+        .level-btn.active {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-color: #764ba2;
+        }
+
+        .level-btn.completed::after {
+            content: '✓';
+            position: absolute;
+            top: 2px;
+            right: 2px;
+            background: #4caf50;
+            color: white;
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            font-size: 9px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .game-board {
+            background: #fafafa;
+            border-radius: 10px;
+            padding: 10px;
+            margin-bottom: 10px;
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .grid-container {
+            position: relative;
+            display: inline-block;
+        }
+
+        .grid {
+            display: grid;
+            gap: 0;
+            background: #ddd;
+            border: 3px solid #999;
+            border-radius: 8px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .cell {
+            width: 45px;
+            height: 45px;
+            background: white;
+            position: relative;
+            cursor: pointer;
+            transition: all 0.1s;
+            border: 1px solid #e0e0e0;
+        }
+
+        /* Adjust cell size for larger grids */
+        .grid.size-8 .cell {
+            width: 40px;
+            height: 40px;
+        }
+
+        .grid.size-9 .cell {
+            width: 35px;
+            height: 35px;
+        }
+
+        .grid.size-10 .cell {
+            width: 32px;
+            height: 32px;
+        }
+
+        .cell.filled {
+            background: #ff9800;
+            border-color: #f57c00;
+        }
+
+        .cell.active-path {
+            background: #ffa726;
+        }
+
+        .cell .number {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 28px;
+            height: 28px;
+            background: #000;
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 12px;
+            z-index: 10;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+        }
+
+        .grid.size-8 .cell .number {
+            width: 25px;
+            height: 25px;
+            font-size: 11px;
+        }
+
+        .grid.size-9 .cell .number {
+            width: 22px;
+            height: 22px;
+            font-size: 10px;
+        }
+
+        .grid.size-10 .cell .number {
+            width: 20px;
+            height: 20px;
+            font-size: 9px;
+        }
+
+        .cell.start .number {
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: translate(-50%, -50%) scale(1); }
+            50% { transform: translate(-50%, -50%) scale(1.1); }
+        }
+
+        canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            pointer-events: none;
+            z-index: 5;
+        }
+
+        .controls {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 8px;
+            margin-bottom: 10px;
+        }
+
+        button {
+            padding: 10px 15px;
+            border: none;
+            border-radius: 8px;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-transform: uppercase;
+        }
+
+        .btn-reset {
+            background: #f44336;
+            color: white;
+        }
+
+        .btn-reset:hover:not(:disabled) {
+            background: #d32f2f;
+            transform: translateY(-1px);
+        }
+
+        .btn-undo {
+            background: #f0f0f0;
+            color: #666;
+        }
+
+        .btn-undo:hover:not(:disabled) {
+            background: #e0e0e0;
+            transform: translateY(-1px);
+        }
+
+        .btn-hint {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-hint:hover:not(:disabled) {
+            transform: translateY(-1px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .status {
+            text-align: center;
+            padding: 10px;
+            background: #f0f0f0;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            font-weight: 600;
+            font-size: 13px;
+        }
+
+        .status.success {
+            background: #4caf50;
+            color: white;
+            animation: celebrate 0.5s;
+        }
+
+        @keyframes celebrate {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+
+        .progress {
+            text-align: center;
+            font-size: 14px;
+            color: #666;
+            font-weight: 600;
+        }
+
+        .timer {
+            font-size: 16px;
+            color: #667eea;
+            font-weight: bold;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            animation: fadeIn 0.3s;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        .modal.active {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .modal-content {
+            background: white;
+            border-radius: 15px;
+            padding: 20px;
+            max-width: 600px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+            position: relative;
+            animation: slideIn 0.3s;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateY(-50px);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .modal-header h2 {
+            color: #333;
+            font-size: 20px;
+        }
+
+        .close-btn {
+            background: #f44336;
+            color: white;
+            border: none;
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 18px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s;
+        }
+
+        .close-btn:hover {
+            background: #d32f2f;
+            transform: rotate(90deg);
+        }
+
+        .dialog {
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            max-width: 450px;
+            width: 90%;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            animation: slideIn 0.3s;
+            text-align: center;
+        }
+
+        .congrats-icon {
+            font-size: 64px;
+            margin-bottom: 15px;
+            animation: bounce 1s ease-in-out;
+        }
+
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-20px); }
+        }
+
+        .congrats-title {
+            font-size: 28px;
+            font-weight: bold;
+            color: #667eea;
+            margin-bottom: 15px;
+        }
+
+        .congrats-message {
+            color: #333;
+            font-size: 16px;
+            margin-bottom: 20px;
+            line-height: 1.6;
+        }
+
+        .time-stats {
+            background: #f9f9f9;
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 20px;
+        }
+
+        .time-stat {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 0;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        .time-stat:last-child {
+            border-bottom: none;
+        }
+
+        .time-label {
+            font-weight: 600;
+            color: #666;
+        }
+
+        .time-value {
+            font-size: 18px;
+            font-weight: bold;
+            color: #667eea;
+        }
+
+        .dialog-buttons {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+        }
+
+        .dialog-btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-transform: uppercase;
+        }
+
+        .dialog-btn-next {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .dialog-btn-next:hover {
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+            transform: translateY(-2px);
+        }
+
+        .dialog-btn-restart {
+            background: #4caf50;
+            color: white;
+        }
+
+        .dialog-btn-restart:hover {
+            background: #45a049;
+            transform: translateY(-2px);
+        }
+
+        .dialog-btn-stay {
+            background: #f0f0f0;
+            color: #666;
+        }
+
+        .dialog-btn-stay:hover {
+            background: #e0e0e0;
+        }
+
+        .leaderboard {
+            background: #f9f9f9;
+            padding: 15px;
+            border-radius: 8px;
+            max-height: 500px;
+            overflow-y: auto;
+        }
+
+        .difficulty-section {
+            margin-bottom: 20px;
+        }
+
+        .difficulty-section:last-child {
+            margin-bottom: 0;
+        }
+
+        .difficulty-header {
+            display: inline-block;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 6px 15px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 700;
+            margin-bottom: 10px;
+        }
+
+        .difficulty-header.easy {
+            background: linear-gradient(135deg, #4caf50 0%, #45a049 100%);
+        }
+
+        .difficulty-header.medium {
+            background: linear-gradient(135deg, #ff9800 0%, #f57c00 100%);
+        }
+
+        .difficulty-header.hard {
+            background: linear-gradient(135deg, #f44336 0%, #d32f2f 100%);
+        }
+
+        .difficulty-header.expert {
+            background: linear-gradient(135deg, #9c27b0 0%, #7b1fa2 100%);
+        }
+
+        .level-leaderboard {
+            margin-bottom: 15px;
+        }
+
+        .level-leaderboard-title {
+            font-weight: 600;
+            color: #555;
+            margin-bottom: 8px;
+            font-size: 13px;
+        }
+
+        .leaderboard-entry {
+            display: grid;
+            grid-template-columns: 35px 1fr 110px;
+            gap: 8px;
+            padding: 10px;
+            background: white;
+            border-radius: 6px;
+            margin-bottom: 8px;
+            align-items: center;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            font-size: 13px;
+        }
+
+        .leaderboard-entry.top-1 {
+            background: linear-gradient(135deg, #ffd700 0%, #ffed4e 100%);
+            font-weight: bold;
+        }
+
+        .leaderboard-entry.top-2 {
+            background: linear-gradient(135deg, #c0c0c0 0%, #e8e8e8 100%);
+        }
+
+        .leaderboard-entry.top-3 {
+            background: linear-gradient(135deg, #cd7f32 0%, #e6a672 100%);
+        }
+
+        .rank {
+            font-weight: bold;
+            font-size: 16px;
+            color: #667eea;
+        }
+
+        .time-display {
+            color: #666;
+            font-size: 13px;
+        }
+
+        .date-display {
+            color: #999;
+            font-size: 11px;
+            text-align: right;
+        }
+
+        .no-records {
+            text-align: center;
+            color: #999;
+            padding: 15px;
+            font-style: italic;
+        }
+
+        .instructions {
+            background: #f9f9f9;
+            padding: 15px;
+            border-radius: 8px;
+        }
+
+        .instructions h3 {
+            margin-bottom: 12px;
+            color: #333;
+            font-size: 16px;
+        }
+
+        .instructions ol {
+            margin-left: 18px;
+            color: #666;
+            line-height: 1.8;
+            font-size: 14px;
+        }
+
+        .instructions li {
+            margin-bottom: 8px;
+        }
+
+        .instructions strong {
+            color: #667eea;
+        }
+
+        @media (max-width: 600px) {
+            .cell {
+                width: 38px;
+                height: 38px;
+            }
+            
+            .cell .number {
+                width: 24px;
+                height: 24px;
+                font-size: 11px;
+            }
+
+            .grid.size-8 .cell {
+                width: 35px;
+                height: 35px;
+            }
+
+            .grid.size-8 .cell .number {
+                width: 22px;
+                height: 22px;
+                font-size: 10px;
+            }
+
+            .grid.size-9 .cell {
+                width: 31px;
+                height: 31px;
+            }
+
+            .grid.size-9 .cell .number {
+                width: 20px;
+                height: 20px;
+                font-size: 9px;
+            }
+
+            .grid.size-10 .cell {
+                width: 28px;
+                height: 28px;
+            }
+
+            .grid.size-10 .cell .number {
+                width: 18px;
+                height: 18px;
+                font-size: 8px;
+            }
+            
+            .level-selector {
+                grid-template-columns: repeat(4, 1fr);
+            }
+
+            h1 {
+                font-size: 18px;
+            }
+
+            .leaderboard-entry {
+                grid-template-columns: 30px 1fr 100px;
+                font-size: 12px;
+            }
+
+            .congrats-title {
+                font-size: 22px;
+            }
+
+            .congrats-icon {
+                font-size: 48px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🔗 Flow Connect</h1>
+            <div class="difficulty">Difficulty: <span id="difficultyLabel">Easy</span></div>
+        </div>
+
+        <div class="info-buttons">
+            <button class="info-btn" onclick="openModal('instructions')">📖 How to Play</button>
+            <button class="info-btn" onclick="openModal('leaderboard')">🏆 Leaderboard</button>
+        </div>
+
+        <div class="difficulty-tabs">
+            <button class="difficulty-btn active" onclick="filterLevelsByDifficulty('Easy', this)">Easy</button>
+            <button class="difficulty-btn" onclick="filterLevelsByDifficulty('Medium', this)">Medium</button>
+            <button class="difficulty-btn" onclick="filterLevelsByDifficulty('Hard', this)">Hard</button>
+            <button class="difficulty-btn" onclick="filterLevelsByDifficulty('Expert', this)">Expert</button>
+        </div>
+
+        <div class="level-selector" id="levelSelector"></div>
+
+        <div class="level-info">
+            <div class="progress" id="progress">Coverage: 0%</div>
+            <div class="timer" id="timer">⏱ 00:00</div>
+        </div>
+
+        <div class="status" id="status">Connect numbers in order and fill all cells!</div>
+
+        <div class="game-board">
+            <div class="grid-container">
+                <canvas id="pathCanvas"></canvas>
+                <div class="grid" id="grid"></div>
+            </div>
+        </div>
+
+        <div class="controls">
+            <button class="btn-reset" onclick="resetLevel()">🔄 Reset</button>
+            <button class="btn-undo" onclick="undo()">↶ Undo</button>
+            <button class="btn-hint" onclick="showHint()">💡 Hint</button>
+        </div>
+    </div>
+
+    <div id="instructionsModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>📖 How to Play</h2>
+                <button class="close-btn" onclick="closeModal('instructions')">×</button>
+            </div>
+            <div class="instructions">
+                <ol>
+                    <li><strong>Connect numbers in sequential order</strong> (1→2→3...)</li>
+                    <li><strong>Click or drag</strong> through adjacent cells (horizontal/vertical only)</li>
+                    <li><strong>Fill every cell</strong> in the grid to complete the level</li>
+                    <li><strong>Use Hint button</strong> to automatically fill the next cell using the optimal path</li>
+                    <li><strong>Complete levels faster</strong> to get better times on the leaderboard</li>
+                    <li><strong>20 unique levels</strong> across 4 difficulty levels await you!</li>
+                    <li><strong>Track your progress</strong> - completed levels are marked with a ✓</li>
+                </ol>
+            </div>
+        </div>
+    </div>
+
+    <div id="leaderboardModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>🏆 Leaderboard</h2>
+                <button class="close-btn" onclick="closeModal('leaderboard')">×</button>
+            </div>
+            <div class="leaderboard" id="leaderboardList"></div>
+        </div>
+    </div>
+
+    <div id="dialogModal" class="modal">
+        <div class="dialog" id="congratsDialog"></div>
+    </div>
+
+    <script>
+        const levels = [
+            // EASY LEVELS - Strategic placements for 5x5 and 6x6 grids
+            {
+                size: 5,
+                numbers: [
+                    {num: 1, row: 0, col: 2},
+                    {num: 2, row: 2, col: 0},
+                    {num: 3, row: 4, col: 2},
+                    {num: 4, row: 2, col: 4},
+                    {num: 5, row: 1, col: 2},
+                    {num: 6, row: 2, col: 1},
+                    {num: 7, row: 3, col: 2},
+                    {num: 8, row: 2, col: 3},
+                    {num: 9, row: 2, col: 2}
+                ],
+                difficulty: "Easy",
+                name: "Level 1"
+            },
+            {
+                size: 5,
+                numbers: [
+                    {num: 1, row: 0, col: 0},
+                    {num: 2, row: 0, col: 4},
+                    {num: 3, row: 2, col: 4},
+                    {num: 4, row: 4, col: 4},
+                    {num: 5, row: 4, col: 2},
+                    {num: 6, row: 4, col: 0},
+                    {num: 7, row: 2, col: 0},
+                    {num: 8, row: 1, col: 2},
+                    {num: 9, row: 3, col: 2}
+                ],
+                difficulty: "Easy",
+                name: "Level 2"
+            },
+            {
+                size: 5,
+                numbers: [
+                    {num: 1, row: 4, col: 4},
+                    {num: 2, row: 2, col: 4},
+                    {num: 3, row: 0, col: 4},
+                    {num: 4, row: 0, col: 2},
+                    {num: 5, row: 0, col: 0},
+                    {num: 6, row: 2, col: 0},
+                    {num: 7, row: 4, col: 0},
+                    {num: 8, row: 3, col: 2},
+                    {num: 9, row: 1, col: 2}
+                ],
+                difficulty: "Easy",
+                name: "Level 3"
+            },
+            {
+                size: 6,
+                numbers: [
+                    {num: 1, row: 0, col: 0},
+                    {num: 2, row: 0, col: 5},
+                    {num: 3, row: 2, col: 5},
+                    {num: 4, row: 5, col: 5},
+                    {num: 5, row: 5, col: 3},
+                    {num: 6, row: 5, col: 0},
+                    {num: 7, row: 3, col: 0},
+                    {num: 8, row: 1, col: 2},
+                    {num: 9, row: 2, col: 2},
+                    {num: 10, row: 3, col: 3},
+                    {num: 11, row: 4, col: 3}
+                ],
+                difficulty: "Easy",
+                name: "Level 4"
+            },
+            {
+                size: 6,
+                numbers: [
+                    {num: 1, row: 5, col: 5},
+                    {num: 2, row: 3, col: 5},
+                    {num: 3, row: 0, col: 5},
+                    {num: 4, row: 0, col: 3},
+                    {num: 5, row: 0, col: 0},
+                    {num: 6, row: 2, col: 0},
+                    {num: 7, row: 5, col: 0},
+                    {num: 8, row: 4, col: 2},
+                    {num: 9, row: 3, col: 2},
+                    {num: 10, row: 2, col: 3},
+                    {num: 11, row: 1, col: 3}
+                ],
+                difficulty: "Easy",
+                name: "Level 5"
+            },
+            // MEDIUM LEVELS - 7x7 grids with strategic placements
+            {
+                size: 7,
+                numbers: [
+                    {num: 1, row: 2, col: 6},
+                    {num: 2, row: 0, col: 3},
+                    {num: 3, row: 2, col: 0},
+                    {num: 4, row: 4, col: 0},
+                    {num: 5, row: 6, col: 3},
+                    {num: 6, row: 4, col: 6},
+                    {num: 7, row: 4, col: 5},
+                    {num: 8, row: 5, col: 3},
+                    {num: 9, row: 4, col: 1},
+                    {num: 10, row: 2, col: 1},
+                    {num: 11, row: 1, col: 3},
+                    {num: 12, row: 2, col: 5},
+                    {num: 13, row: 2, col: 4},
+                    {num: 14, row: 2, col: 3},
+                    {num: 15, row: 2, col: 2},
+                    {num: 16, row: 4, col: 2},
+                    {num: 17, row: 4, col: 3},
+                    {num: 18, row: 4, col: 4},
+                    {num: 19, row: 3, col: 3}
+                ],
+                difficulty: "Medium",
+                name: "Level 6"
+            },
+            {
+                size: 7,
+                numbers: [
+                    {num: 1, row: 0, col: 6},
+                    {num: 2, row: 6, col: 6},
+                    {num: 3, row: 6, col: 0},
+                    {num: 4, row: 0, col: 0},
+                    {num: 5, row: 1, col: 5},
+                    {num: 6, row: 5, col: 5},
+                    {num: 7, row: 5, col: 1},
+                    {num: 8, row: 1, col: 1},
+                    {num: 9, row: 2, col: 3},
+                    {num: 10, row: 3, col: 4},
+                    {num: 11, row: 4, col: 3},
+                    {num: 12, row: 3, col: 2},
+                    {num: 13, row: 3, col: 3}
+                ],
+                difficulty: "Medium",
+                name: "Level 7"
+            },
+            {
+                size: 7,
+                numbers: [
+                    {num: 1, row: 6, col: 4},
+                    {num: 2, row: 3, col: 6},
+                    {num: 3, row: 0, col: 4},
+                    {num: 4, row: 0, col: 2},
+                    {num: 5, row: 3, col: 0},
+                    {num: 6, row: 6, col: 2},
+                    {num: 7, row: 5, col: 2},
+                    {num: 8, row: 3, col: 1},
+                    {num: 9, row: 1, col: 2},
+                    {num: 10, row: 1, col: 4},
+                    {num: 11, row: 3, col: 5},
+                    {num: 12, row: 5, col: 4},
+                    {num: 13, row: 4, col: 4},
+                    {num: 14, row: 3, col: 4},
+                    {num: 15, row: 2, col: 4},
+                    {num: 16, row: 2, col: 2},
+                    {num: 17, row: 3, col: 2},
+                    {num: 18, row: 4, col: 2},
+                    {num: 19, row: 3, col: 3}
+                ],
+                difficulty: "Medium",
+                name: "Level 8"
+            },
+            {
+                size: 7,
+                numbers: [
+                    {num: 1, row: 0, col: 6},
+                    {num: 2, row: 0, col: 0},
+                    {num: 3, row: 6, col: 0},
+                    {num: 4, row: 6, col: 6},
+                    {num: 5, row: 1, col: 5},
+                    {num: 6, row: 1, col: 1},
+                    {num: 7, row: 5, col: 1},
+                    {num: 8, row: 5, col: 5},
+                    {num: 9, row: 3, col: 4},
+                    {num: 10, row: 2, col: 3},
+                    {num: 11, row: 3, col: 2},
+                    {num: 12, row: 4, col: 3},
+                    {num: 13, row: 3, col: 3}
+                ],
+                difficulty: "Medium",
+                name: "Level 9"
+            },
+            {
+                size: 7,
+                numbers: [
+                    {num: 1, row: 0, col: 0},
+                    {num: 2, row: 6, col: 0},
+                    {num: 3, row: 6, col: 6},
+                    {num: 4, row: 0, col: 6},
+                    {num: 5, row: 1, col: 1},
+                    {num: 6, row: 5, col: 1},
+                    {num: 7, row: 5, col: 5},
+                    {num: 8, row: 1, col: 5},
+                    {num: 9, row: 2, col: 3},
+                    {num: 10, row: 3, col: 2},
+                    {num: 11, row: 4, col: 3},
+                    {num: 12, row: 3, col: 4},
+                    {num: 13, row: 3, col: 3}
+                ],
+                difficulty: "Medium",
+                name: "Level 10"
+            },
+            // HARD LEVELS - 8x8 grids with complex patterns
+            {
+                size: 8,
+                numbers: [
+                    {num: 1, row: 0, col: 0},
+                    {num: 2, row: 7, col: 0},
+                    {num: 3, row: 7, col: 7},
+                    {num: 4, row: 0, col: 7},
+                    {num: 5, row: 1, col: 1},
+                    {num: 6, row: 6, col: 1},
+                    {num: 7, row: 6, col: 6},
+                    {num: 8, row: 1, col: 6},
+                    {num: 9, row: 2, col: 3},
+                    {num: 10, row: 3, col: 2},
+                    {num: 11, row: 4, col: 3},
+                    {num: 12, row: 3, col: 4},
+                    {num: 13, row: 4, col: 4},
+                    {num: 14, row: 4, col: 5},
+                    {num: 15, row: 3, col: 5}
+                ],
+                difficulty: "Hard",
+                name: "Level 11"
+            },
+            {
+                size: 8,
+                numbers: [
+                    {num: 1, row: 0, col: 7},
+                    {num: 2, row: 7, col: 7},
+                    {num: 3, row: 7, col: 0},
+                    {num: 4, row: 0, col: 0},
+                    {num: 5, row: 1, col: 6},
+                    {num: 6, row: 6, col: 6},
+                    {num: 7, row: 6, col: 1},
+                    {num: 8, row: 1, col: 1},
+                    {num: 9, row: 2, col: 4},
+                    {num: 10, row: 3, col: 4},
+                    {num: 11, row: 4, col: 4},
+                    {num: 12, row: 4, col: 3},
+                    {num: 13, row: 3, col: 3},
+                    {num: 14, row: 2, col: 3},
+                    {num: 15, row: 3, col: 2}
+                ],
+                difficulty: "Hard",
+                name: "Level 12"
+            },
+            {
+                size: 8,
+                numbers: [
+                    {num: 1, row: 7, col: 7},
+                    {num: 2, row: 7, col: 0},
+                    {num: 3, row: 0, col: 0},
+                    {num: 4, row: 0, col: 7},
+                    {num: 5, row: 6, col: 6},
+                    {num: 6, row: 6, col: 1},
+                    {num: 7, row: 1, col: 1},
+                    {num: 8, row: 1, col: 6},
+                    {num: 9, row: 4, col: 3},
+                    {num: 10, row: 4, col: 4},
+                    {num: 11, row: 3, col: 4},
+                    {num: 12, row: 2, col: 4},
+                    {num: 13, row: 2, col: 3},
+                    {num: 14, row: 3, col: 3},
+                    {num: 15, row: 3, col: 2}
+                ],
+                difficulty: "Hard",
+                name: "Level 13"
+            },
+            {
+                size: 8,
+                numbers: [
+                    {num: 1, row: 0, col: 0},
+                    {num: 2, row: 0, col: 7},
+                    {num: 3, row: 7, col: 7},
+                    {num: 4, row: 7, col: 0},
+                    {num: 5, row: 2, col: 2},
+                    {num: 6, row: 5, col: 2},
+                    {num: 7, row: 5, col: 5},
+                    {num: 8, row: 2, col: 5},
+                    {num: 9, row: 2, col: 3},
+                    {num: 10, row: 3, col: 3},
+                    {num: 11, row: 4, col: 3},
+                    {num: 12, row: 4, col: 4},
+                    {num: 13, row: 3, col: 4},
+                    {num: 14, row: 2, col: 4},
+                    {num: 15, row: 3, col: 5}
+                ],
+                difficulty: "Hard",
+                name: "Level 14"
+            },
+            {
+                size: 8,
+                numbers: [
+                    {num: 1, row: 0, col: 0},
+                    {num: 2, row: 7, col: 0},
+                    {num: 3, row: 7, col: 7},
+                    {num: 4, row: 0, col: 7},
+                    {num: 5, row: 2, col: 1},
+                    {num: 6, row: 5, col: 1},
+                    {num: 7, row: 5, col: 6},
+                    {num: 8, row: 2, col: 6},
+                    {num: 9, row: 3, col: 2},
+                    {num: 10, row: 3, col: 3},
+                    {num: 11, row: 4, col: 3},
+                    {num: 12, row: 4, col: 4},
+                    {num: 13, row: 3, col: 4},
+                    {num: 14, row: 2, col: 4},
+                    {num: 15, row: 2, col: 3}
+                ],
+                difficulty: "Hard",
+                name: "Level 15"
+            },
+            // EXPERT LEVELS - 9x9 and 10x10 grids with very complex patterns
+            {
+                size: 9,
+                numbers: [
+                    {num: 1, row: 0, col: 0},
+                    {num: 2, row: 0, col: 8},
+                    {num: 3, row: 4, col: 8},
+                    {num: 4, row: 8, col: 8},
+                    {num: 5, row: 8, col: 4},
+                    {num: 6, row: 8, col: 0},
+                    {num: 7, row: 4, col: 0},
+                    {num: 8, row: 2, col: 4},
+                    {num: 9, row: 3, col: 4},
+                    {num: 10, row: 4, col: 3},
+                    {num: 11, row: 5, col: 4},
+                    {num: 12, row: 6, col: 4},
+                    {num: 13, row: 4, col: 5},
+                    {num: 14, row: 4, col: 4},
+                    {num: 15, row: 3, col: 3},
+                    {num: 16, row: 5, col: 5}
+                ],
+                difficulty: "Expert",
+                name: "Level 16"
+            },
+            {
+                size: 9,
+                numbers: [
+                    {num: 1, row: 8, col: 8},
+                    {num: 2, row: 8, col: 0},
+                    {num: 3, row: 4, col: 0},
+                    {num: 4, row: 0, col: 0},
+                    {num: 5, row: 0, col: 4},
+                    {num: 6, row: 0, col: 8},
+                    {num: 7, row: 4, col: 8},
+                    {num: 8, row: 6, col: 4},
+                    {num: 9, row: 5, col: 4},
+                    {num: 10, row: 4, col: 5},
+                    {num: 11, row: 3, col: 4},
+                    {num: 12, row: 2, col: 4},
+                    {num: 13, row: 4, col: 3},
+                    {num: 14, row: 4, col: 4},
+                    {num: 15, row: 5, col: 3},
+                    {num: 16, row: 3, col: 5}
+                ],
+                difficulty: "Expert",
+                name: "Level 17"
+            },
+            {
+                size: 9,
+                numbers: [
+                    {num: 1, row: 4, col: 4},
+                    {num: 2, row: 0, col: 4},
+                    {num: 3, row: 0, col: 0},
+                    {num: 4, row: 4, col: 0},
+                    {num: 5, row: 8, col: 0},
+                    {num: 6, row: 8, col: 4},
+                    {num: 7, row: 8, col: 8},
+                    {num: 8, row: 4, col: 8},
+                    {num: 9, row: 0, col: 8},
+                    {num: 10, row: 2, col: 2},
+                    {num: 11, row: 2, col: 6},
+                    {num: 12, row: 6, col: 6},
+                    {num: 13, row: 6, col: 2},
+                    {num: 14, row: 3, col: 4},
+                    {num: 15, row: 5, col: 4},
+                    {num: 16, row: 4, col: 3},
+                    {num: 17, row: 4, col: 5}
+                ],
+                difficulty: "Expert",
+                name: "Level 18"
+            },
+            {
+                size: 10,
+                numbers: [
+                    {num: 1, row: 0, col: 0},
+                    {num: 2, row: 0, col: 9},
+                    {num: 3, row: 4, col: 9},
+                    {num: 4, row: 9, col: 9},
+                    {num: 5, row: 9, col: 5},
+                    {num: 6, row: 9, col: 0},
+                    {num: 7, row: 5, col: 0},
+                    {num: 8, row: 2, col: 4},
+                    {num: 9, row: 3, col: 4},
+                    {num: 10, row: 4, col: 5},
+                    {num: 11, row: 5, col: 5},
+                    {num: 12, row: 6, col: 4},
+                    {num: 13, row: 7, col: 4},
+                    {num: 14, row: 5, col: 4},
+                    {num: 15, row: 4, col: 4},
+                    {num: 16, row: 3, col: 5},
+                    {num: 17, row: 6, col: 5}
+                ],
+                difficulty: "Expert",
+                name: "Level 19"
+            },
+            {
+                size: 10,
+                numbers: [
+                    {num: 1, row: 9, col: 9},
+                    {num: 2, row: 9, col: 0},
+                    {num: 3, row: 5, col: 0},
+                    {num: 4, row: 0, col: 0},
+                    {num: 5, row: 0, col: 4},
+                    {num: 6, row: 0, col: 9},
+                    {num: 7, row: 4, col: 9},
+                    {num: 8, row: 7, col: 5},
+                    {num: 9, row: 6, col: 5},
+                    {num: 10, row: 5, col: 4},
+                    {num: 11, row: 4, col: 4},
+                    {num: 12, row: 3, col: 5},
+                    {num: 13, row: 2, col: 5},
+                    {num: 14, row: 4, col: 5},
+                    {num: 15, row: 5, col: 5},
+                    {num: 16, row: 6, col: 4},
+                    {num: 17, row: 3, col: 4}
+                ],
+                difficulty: "Expert",
+                name: "Level 20"
+            }
+        ];
+
+        let currentLevel = 0;
+        let currentDifficulty = 'Easy';
+        let gridSize = 5;
+        let cells = [];
+        let path = [];
+        let currentNumber = 1;
+        let maxNumber = 0;
+        let isDrawing = false;
+        let history = [];
+        let numberPositions = {};
+        let startTime = null;
+        let timerInterval = null;
+        let completedLevels = new Set();
+        let leaderboard = [];
+        let levelStartTimes = {};
+        let totalGameTime = 0;
+
+        function init() {
+            loadGame();
+            renderLevelSelector();
+            setupGrid();
+            updateProgress();
+        }
+
+        function renderLevelSelector() {
+            const selector = document.getElementById('levelSelector');
+            selector.innerHTML = '';
+            
+            levels.forEach((level, index) => {
+                if (level.difficulty === currentDifficulty) {
+                    const btn = document.createElement('button');
+                    btn.className = 'level-btn';
+                    if (index === currentLevel) btn.classList.add('active');
+                    if (completedLevels.has(index)) btn.classList.add('completed');
+                    btn.textContent = level.name;
+                    btn.onclick = () => changeLevel(index);
+                    selector.appendChild(btn);
+                }
+            });
+        }
+
+        function filterLevelsByDifficulty(difficulty, btnEl) {
+            currentDifficulty = difficulty;
+            document.querySelectorAll('.difficulty-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            if (btnEl) btnEl.classList.add('active');
+            
+            const firstLevelIndex = levels.findIndex(l => l.difficulty === difficulty);
+            if (firstLevelIndex !== -1) {
+                changeLevel(firstLevelIndex);
+            }
+            
+            renderLevelSelector();
+        }
+
+        function setupGrid() {
+            const level = levels[currentLevel];
+            gridSize = level.size;
+            const grid = document.getElementById('grid');
+            grid.innerHTML = '';
+            grid.style.gridTemplateColumns = `repeat(${gridSize}, 1fr)`;
+            
+            // Add size class for responsive styling
+            grid.className = 'grid';
+            if (gridSize >= 8) {
+                grid.classList.add(`size-${gridSize}`);
+            }
+            
+            cells = [];
+            path = [];
+            currentNumber = 1;
+            numberPositions = {};
+            history = [];
+            
+            startTimer();
+            
+            for (let row = 0; row < gridSize; row++) {
+                cells[row] = [];
+                for (let col = 0; col < gridSize; col++) {
+                    const cell = document.createElement('div');
+                    cell.className = 'cell';
+                    cell.dataset.row = row;
+                    cell.dataset.col = col;
+                    
+                    cell.addEventListener('mousedown', (e) => {
+                        e.preventDefault();
+                        startDrawing(row, col);
+                    });
+                    cell.addEventListener('mouseenter', () => continueDrawing(row, col));
+                    cell.addEventListener('mouseup', stopDrawing);
+                    
+                    cell.addEventListener('touchstart', (e) => {
+                        e.preventDefault();
+                        startDrawing(row, col);
+                    });
+                    cell.addEventListener('touchmove', (e) => {
+                        e.preventDefault();
+                        const touch = e.touches[0];
+                        const element = document.elementFromPoint(touch.clientX, touch.clientY);
+                        if (element && element.classList.contains('cell')) {
+                            continueDrawing(parseInt(element.dataset.row), parseInt(element.dataset.col));
+                        }
+                    });
+                    cell.addEventListener('touchend', (e) => {
+                        e.preventDefault();
+                        stopDrawing();
+                    });
+                    
+                    grid.appendChild(cell);
+                    cells[row][col] = {element: cell, number: null, filled: false};
+                }
+            }
+            
+            maxNumber = 0;
+            level.numbers.forEach(({num, row, col}) => {
+                const numberDiv = document.createElement('div');
+                numberDiv.className = 'number';
+                numberDiv.textContent = num;
+                cells[row][col].element.appendChild(numberDiv);
+                cells[row][col].number = num;
+                numberPositions[num] = {row, col};
+                if (num > maxNumber) maxNumber = num;
+            });
+            
+            const start = numberPositions[1];
+            if (start) {
+                cells[start.row][start.col].element.classList.add('start');
+            }
+            
+            document.getElementById('difficultyLabel').textContent = level.difficulty;
+            setupCanvas();
+            updateStatus();
+        }
+
+        function setupCanvas() {
+            const canvas = document.getElementById('pathCanvas');
+            const grid = document.getElementById('grid');
+            canvas.width = grid.offsetWidth;
+            canvas.height = grid.offsetHeight;
+        }
+
+        function drawPath() {
+            const canvas = document.getElementById('pathCanvas');
+            const ctx = canvas.getContext('2d');
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            if (path.length < 2) return;
+            
+            const cellWidth = canvas.width / gridSize;
+            const cellHeight = canvas.height / gridSize;
+            
+            ctx.strokeStyle = '#f57c00';
+            ctx.lineWidth = cellWidth * 0.3;
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+            
+            ctx.beginPath();
+            const first = path[0];
+            ctx.moveTo(
+                (first.col + 0.5) * cellWidth,
+                (first.row + 0.5) * cellHeight
+            );
+            
+            for (let i = 1; i < path.length; i++) {
+                const point = path[i];
+                ctx.lineTo(
+                    (point.col + 0.5) * cellWidth,
+                    (point.row + 0.5) * cellHeight
+                );
+            }
+            
+            ctx.stroke();
+        }
+
+        function startTimer() {
+            if (timerInterval) clearInterval(timerInterval);
+            startTime = Date.now();
+            levelStartTimes[currentLevel] = startTime;
+            timerInterval = setInterval(updateTimer, 1000);
+            updateTimer();
+        }
+
+        function updateTimer() {
+            if (!startTime) return;
+            const elapsed = Math.floor((Date.now() - startTime) / 1000);
+            const minutes = Math.floor(elapsed / 60).toString().padStart(2, '0');
+            const seconds = (elapsed % 60).toString().padStart(2, '0');
+            document.getElementById('timer').textContent = `⏱ ${minutes}:${seconds}`;
+        }
+
+        function stopTimer() {
+            if (timerInterval) {
+                clearInterval(timerInterval);
+                timerInterval = null;
+            }
+            return startTime ? Math.floor((Date.now() - startTime) / 1000) : 0;
+        }
+
+        function startDrawing(row, col) {
+            const cell = cells[row][col];
+            
+            if (path.length === 0) {
+                if (cell.number === 1) {
+                    isDrawing = true;
+                    addToPath(row, col);
+                }
+            } else {
+                const lastCell = path[path.length - 1];
+                if (lastCell.row === row && lastCell.col === col) {
+                    isDrawing = true;
+                }
+            }
+        }
+
+        function continueDrawing(row, col) {
+            if (!isDrawing) return;
+            
+            if (path.length > 0) {
+                const lastCell = path[path.length - 1];
+                
+                const distance = Math.abs(row - lastCell.row) + Math.abs(col - lastCell.col);
+                if (distance !== 1) return;
+                
+                if (path.length >= 2) {
+                    const secondLast = path[path.length - 2];
+                    if (secondLast.row === row && secondLast.col === col) {
+                        removeFromPath();
+                        return;
+                    }
+                }
+                
+                const cell = cells[row][col];
+                if (cell.filled && cell.number !== currentNumber) return;
+                
+                addToPath(row, col);
+            }
+        }
+
+        function stopDrawing() {
+            isDrawing = false;
+            saveGame();
+        }
+
+        function addToPath(row, col) {
+            const cell = cells[row][col];
+            
+            if (path.length > 0) {
+                history.push({
+                    path: JSON.parse(JSON.stringify(path)),
+                    currentNumber: currentNumber,
+                    filledCells: getFilledCells()
+                });
+            }
+            
+            if (cell.number === currentNumber) {
+                currentNumber++;
+            }
+            
+            path.push({row, col});
+            cell.filled = true;
+            cell.element.classList.add('filled', 'active-path');
+            
+            updateProgress();
+            updateStatus();
+            drawPath();
+            
+            checkWin();
+        }
+
+        function removeFromPath() {
+            if (path.length === 0) return;
+            
+            const last = path.pop();
+            const cell = cells[last.row][last.col];
+            
+            if (cell.number === null) {
+                cell.filled = false;
+                cell.element.classList.remove('filled', 'active-path');
+            }
+            
+            if (cell.number === currentNumber - 1) {
+                currentNumber--;
+            }
+            
+            updateProgress();
+            updateStatus();
+            drawPath();
+        }
+
+        function getFilledCells() {
+            const filled = [];
+            for (let row = 0; row < gridSize; row++) {
+                for (let col = 0; col < gridSize; col++) {
+                    if (cells[row][col].filled) {
+                        filled.push({row, col});
+                    }
+                }
+            }
+            return filled;
+        }
+
+        function updateProgress() {
+            const totalCells = gridSize * gridSize;
+            const filledCells = path.length;
+            const percentage = Math.round((filledCells / totalCells) * 100);
+            document.getElementById('progress').textContent = `Coverage: ${percentage}%`;
+        }
+
+        function updateStatus() {
+            const status = document.getElementById('status');
+            if (currentNumber > maxNumber) {
+                status.textContent = "All numbers connected! Fill remaining cells!";
+                status.className = 'status';
+            } else {
+                status.textContent = `Next number: ${currentNumber}`;
+                status.className = 'status';
+            }
+        }
+
+        function checkWin() {
+            const totalCells = gridSize * gridSize;
+            if (path.length === totalCells && currentNumber > maxNumber) {
+                const timeElapsed = stopTimer();
+                const status = document.getElementById('status');
+                status.textContent = `🎉 Level Complete! Time: ${formatTime(timeElapsed)} 🎉`;
+                status.className = 'status success';
+                
+                completedLevels.add(currentLevel);
+                addToLeaderboard(currentLevel, timeElapsed);
+                saveGame();
+                
+                renderLevelSelector();
+                
+                setTimeout(() => {
+                    showCongratsDialog(timeElapsed);
+                }, 500);
+            }
+        }
+
+        function showCongratsDialog(timeElapsed) {
+            const level = levels[currentLevel];
+            const isLastLevel = currentLevel === levels.length - 1;
+            const isLastLevelInDifficulty = !levels.some((l, i) => i > currentLevel && l.difficulty === currentDifficulty);
+            
+            const dialog = document.getElementById('congratsDialog');
+            
+            let html = `
+                <div class="congrats-icon">🎉</div>
+                <div class="congrats-title">Congratulations!</div>
+                <div class="congrats-message">
+                    You completed <strong>${level.name}</strong>!
+                </div>
+                <div class="time-stats">
+                    <div class="time-stat">
+                        <span class="time-label">Level Time:</span>
+                        <span class="time-value">${formatTime(timeElapsed)}</span>
+                    </div>
+            `;
+            
+            if (isLastLevel) {
+                const total = calculateTotalTime();
+                html += `
+                    <div class="time-stat">
+                        <span class="time-label">Total Game Time:</span>
+                        <span class="time-value">${formatTime(total)}</span>
+                    </div>
+                `;
+            }
+            
+            html += `</div>`;
+            
+            if (isLastLevel) {
+                html += `
+                    <div class="congrats-message">
+                        🏆 Amazing! You've completed all 20 levels! 🏆
+                    </div>
+                    <div class="dialog-buttons">
+                        <button class="dialog-btn dialog-btn-stay" onclick="closeCongratsDialog()">Stay Here</button>
+                        <button class="dialog-btn dialog-btn-restart" onclick="restartGame()">Start Over</button>
+                    </div>
+                `;
+            } else if (isLastLevelInDifficulty) {
+                const nextDifficulty = getNextDifficulty();
+                if (nextDifficulty) {
+                    html += `
+                        <div class="congrats-message">
+                            You completed all ${currentDifficulty} levels!<br>
+                            Ready for <strong>${nextDifficulty}</strong>?
+                        </div>
+                        <div class="dialog-buttons">
+                            <button class="dialog-btn dialog-btn-stay" onclick="closeCongratsDialog()">Stay Here</button>
+                            <button class="dialog-btn dialog-btn-next" onclick="moveToNextDifficulty()">Continue to ${nextDifficulty}</button>
+                        </div>
+                    `;
+                } else {
+                    html += `
+                        <div class="dialog-buttons">
+                            <button class="dialog-btn dialog-btn-next" onclick="closeCongratsDialog()">OK</button>
+                        </div>
+                    `;
+                }
+            } else {
+                html += `
+                    <div class="dialog-buttons">
+                        <button class="dialog-btn dialog-btn-stay" onclick="closeCongratsDialog()">Stay Here</button>
+                        <button class="dialog-btn dialog-btn-next" onclick="playNextLevel()">Next Level</button>
+                    </div>
+                `;
+            }
+            
+            dialog.innerHTML = html;
+            document.getElementById('dialogModal').classList.add('active');
+        }
+
+        function getNextDifficulty() {
+            const difficulties = ['Easy', 'Medium', 'Hard', 'Expert'];
+            const currentIndex = difficulties.indexOf(currentDifficulty);
+            return currentIndex < difficulties.length - 1 ? difficulties[currentIndex + 1] : null;
+        }
+
+        function moveToNextDifficulty() {
+            const nextDiff = getNextDifficulty();
+            if (nextDiff) {
+                closeCongratsDialog();
+                const nextLevelIndex = levels.findIndex(l => l.difficulty === nextDiff);
+                if (nextLevelIndex !== -1) {
+                    changeLevel(nextLevelIndex);
+                }
+            }
+        }
+
+        function playNextLevel() {
+            closeCongratsDialog();
+            let nextLevel = currentLevel + 1;
+            
+            // Find next level in same difficulty
+            while (nextLevel < levels.length && levels[nextLevel].difficulty !== currentDifficulty) {
+                nextLevel++;
+            }
+            
+            // If no more levels in this difficulty, stay at current
+            if (nextLevel >= levels.length || levels[nextLevel].difficulty !== currentDifficulty) {
+                nextLevel = currentLevel;
+            }
+            
+            changeLevel(nextLevel);
+        }
+
+        function restartGame() {
+            closeCongratsDialog();
+            changeLevel(0);
+        }
+
+        function closeCongratsDialog() {
+            document.getElementById('dialogModal').classList.remove('active');
+        }
+
+        function calculateTotalTime() {
+            let total = 0;
+            leaderboard.forEach(entry => {
+                total += entry.time;
+            });
+            return total;
+        }
+
+        function formatTime(seconds) {
+            const minutes = Math.floor(seconds / 60);
+            const secs = seconds % 60;
+            return `${minutes}:${secs.toString().padStart(2, '0')}`;
+        }
+
+        function addToLeaderboard(levelIndex, time) {
+            const level = levels[levelIndex];
+            const entry = {
+                level: levelIndex,
+                levelName: level.name,
+                difficulty: level.difficulty,
+                time: time,
+                date: new Date().toISOString()
+            };
+            
+            leaderboard.push(entry);
+            leaderboard.sort((a, b) => {
+                if (a.level !== b.level) return a.level - b.level;
+                return a.time - b.time;
+            });
+            
+            localStorage.setItem('flowConnectLeaderboard', JSON.stringify(leaderboard));
+        }
+
+        function renderLeaderboard() {
+            const list = document.getElementById('leaderboardList');
+            list.innerHTML = '';
+            
+            const difficulties = ['Easy', 'Medium', 'Hard', 'Expert'];
+            
+            difficulties.forEach(difficulty => {
+                const section = document.createElement('div');
+                section.className = 'difficulty-section';
+                
+                const header = document.createElement('div');
+                header.className = `difficulty-header ${difficulty.toLowerCase()}`;
+                header.textContent = `${difficulty} Levels`;
+                section.appendChild(header);
+                
+                const difficultyLevels = levels
+                    .map((level, index) => ({...level, index}))
+                    .filter(level => level.difficulty === difficulty);
+                
+                let hasRecords = false;
+                
+                difficultyLevels.forEach(level => {
+                    const levelEntries = leaderboard
+                        .filter(entry => entry.level === level.index)
+                        .slice(0, 10);
+                    
+                    if (levelEntries.length > 0) {
+                        hasRecords = true;
+                        
+                        const levelLeaderboard = document.createElement('div');
+                        levelLeaderboard.className = 'level-leaderboard';
+                        
+                        const title = document.createElement('div');
+                        title.className = 'level-leaderboard-title';
+                        title.textContent = level.name;
+                        levelLeaderboard.appendChild(title);
+                        
+                        levelEntries.forEach((entry, index) => {
+                            const date = new Date(entry.date);
+                            const dateStr = date.toLocaleDateString();
+                            const timeStr = date.toLocaleTimeString();
+                            
+                            let rankClass = '';
+                            if (index === 0) rankClass = 'top-1';
+                            else if (index === 1) rankClass = 'top-2';
+                            else if (index === 2) rankClass = 'top-3';
+                            
+                            const entryDiv = document.createElement('div');
+                            entryDiv.className = `leaderboard-entry ${rankClass}`;
+                            entryDiv.innerHTML = `
+                                <div class="rank">#${index + 1}</div>
+                                <div class="time-display">⏱ ${formatTime(entry.time)}</div>
+                                <div class="date-display">${dateStr}<br>${timeStr}</div>
+                            `;
+                            levelLeaderboard.appendChild(entryDiv);
+                        });
+                        
+                        section.appendChild(levelLeaderboard);
+                    }
+                });
+                
+                if (!hasRecords) {
+                    const noRecords = document.createElement('div');
+                    noRecords.className = 'no-records';
+                    noRecords.textContent = 'No records yet';
+                    section.appendChild(noRecords);
+                }
+                
+                list.appendChild(section);
+            });
+        }
+
+        function undo() {
+            if (history.length === 0) {
+                resetLevel();
+                return;
+            }
+            
+            const lastState = history.pop();
+            
+            for (let row = 0; row < gridSize; row++) {
+                for (let col = 0; col < gridSize; col++) {
+                    if (cells[row][col].number === null) {
+                        cells[row][col].filled = false;
+                        cells[row][col].element.classList.remove('filled', 'active-path');
+                    }
+                }
+            }
+            
+            path = lastState.path;
+            currentNumber = lastState.currentNumber;
+            
+            path.forEach(({row, col}) => {
+                cells[row][col].filled = true;
+                cells[row][col].element.classList.add('filled', 'active-path');
+            });
+            
+            updateProgress();
+            updateStatus();
+            drawPath();
+            saveGame();
+        }
+
+        function resetLevel() {
+            history = [];
+            path = [];
+            currentNumber = 1;
+            
+            for (let row = 0; row < gridSize; row++) {
+                for (let col = 0; col < gridSize; col++) {
+                    if (cells[row][col].number === null) {
+                        cells[row][col].filled = false;
+                        cells[row][col].element.classList.remove('filled', 'active-path');
+                    }
+                }
+            }
+            
+            const start = numberPositions[1];
+            if (start) {
+                cells[start.row][start.col].element.classList.add('start');
+            }
+            
+            startTimer();
+            updateProgress();
+            updateStatus();
+            drawPath();
+            saveGame();
+        }
+
+        function showHint() {
+            if (path.length === 0) {
+                const start = numberPositions[1];
+                if (start) {
+                    addToPath(start.row, start.col);
+                    saveGame();
+                }
+                return;
+            }
+            
+            const solution = solvePuzzle();
+            
+            if (solution && solution.length > path.length) {
+                const nextCell = solution[path.length];
+                addToPath(nextCell.row, nextCell.col);
+                saveGame();
+            }
+        }
+
+        function solvePuzzle() {
+            const totalCells = gridSize * gridSize;
+            const visited = Array(gridSize).fill(null).map(() => Array(gridSize).fill(false));
+            
+            path.forEach(p => visited[p.row][p.col] = true);
+            
+            const solution = [...path];
+            const lastCell = path[path.length - 1];
+            let nextNum = currentNumber;
+            
+            if (solve(lastCell.row, lastCell.col, nextNum, visited, solution, totalCells)) {
+                return solution;
+            }
+            
+            return null;
+        }
+
+        function solve(row, col, nextNum, visited, solution, totalCells) {
+            if (solution.length === totalCells) {
+                return nextNum > maxNumber;
+            }
+            
+            const directions = [
+                {dr: -1, dc: 0},
+                {dr: 1, dc: 0},
+                {dr: 0, dc: -1},
+                {dr: 0, dc: 1}
+            ];
+            
+            if (nextNum <= maxNumber) {
+                const target = numberPositions[nextNum];
+                
+                directions.sort((a, b) => {
+                    const newRowA = row + a.dr;
+                    const newColA = col + a.dc;
+                    const newRowB = row + b.dr;
+                    const newColB = col + b.dc;
+                    
+                    if (newRowA < 0 || newRowA >= gridSize || newColA < 0 || newColA >= gridSize) return 1;
+                    if (newRowB < 0 || newRowB >= gridSize || newColB < 0 || newColB >= gridSize) return -1;
+                    
+                    const distA = Math.abs(target.row - newRowA) + Math.abs(target.col - newColA);
+                    const distB = Math.abs(target.row - newRowB) + Math.abs(target.col - newColB);
+                    
+                    return distA - distB;
+                });
+            }
+            
+            for (const {dr, dc} of directions) {
+                const newRow = row + dr;
+                const newCol = col + dc;
+                
+                if (newRow < 0 || newRow >= gridSize || newCol < 0 || newCol >= gridSize) continue;
+                
+                if (visited[newRow][newCol]) continue;
+                
+                const cell = cells[newRow][newCol];
+                
+                if (cell.number !== null && cell.number !== nextNum) continue;
+                
+                visited[newRow][newCol] = true;
+                solution.push({row: newRow, col: newCol});
+                
+                let newNextNum = nextNum;
+                if (cell.number === nextNum) {
+                    newNextNum++;
+                }
+                
+                if (solve(newRow, newCol, newNextNum, visited, solution, totalCells)) {
+                    return true;
+                }
+                
+                visited[newRow][newCol] = false;
+                solution.pop();
+            }
+            
+            return false;
+        }
+
+        function changeLevel(level) {
+            stopTimer();
+            currentLevel = level;
+            currentDifficulty = levels[level].difficulty;
+            
+            document.querySelectorAll('.difficulty-btn').forEach(btn => {
+                btn.classList.toggle('active', btn.textContent === currentDifficulty);
+            });
+            
+            history = [];
+            renderLevelSelector();
+            setupGrid();
+            saveGame();
+        }
+
+        function openModal(type) {
+            if (type === 'leaderboard') {
+                renderLeaderboard();
+                document.getElementById('leaderboardModal').classList.add('active');
+            } else if (type === 'instructions') {
+                document.getElementById('instructionsModal').classList.add('active');
+            }
+        }
+
+        function closeModal(type) {
+            if (type === 'leaderboard') {
+                document.getElementById('leaderboardModal').classList.remove('active');
+            } else if (type === 'instructions') {
+                document.getElementById('instructionsModal').classList.remove('active');
+            }
+        }
+
+        document.getElementById('leaderboardModal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeModal('leaderboard');
+            }
+        });
+
+        document.getElementById('instructionsModal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeModal('instructions');
+            }
+        });
+
+        document.getElementById('dialogModal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeCongratsDialog();
+            }
+        });
+
+        function saveGame() {
+            const gameState = {
+                level: currentLevel,
+                path: path,
+                currentNumber: currentNumber,
+                completedLevels: Array.from(completedLevels),
+                difficulty: currentDifficulty,
+                filledCells: getFilledCells(),
+                timerStart: startTime
+            };
+            localStorage.setItem('flowConnectGame', JSON.stringify(gameState));
+        }
+
+        function loadGame() {
+            const savedLeaderboard = localStorage.getItem('flowConnectLeaderboard');
+            if (savedLeaderboard) {
+                try {
+                    leaderboard = JSON.parse(savedLeaderboard);
+                } catch (e) {
+                    console.error('Error loading leaderboard:', e);
+                }
+            }
+            
+            const saved = localStorage.getItem('flowConnectGame');
+            if (saved) {
+                try {
+                    const gameState = JSON.parse(saved);
+                    currentLevel = gameState.level || 0;
+                    currentDifficulty = gameState.difficulty || 'Easy';
+                    
+                    if (gameState.completedLevels) {
+                        completedLevels = new Set(gameState.completedLevels);
+                    }
+                    
+                    document.querySelectorAll('.difficulty-btn').forEach(btn => {
+                        btn.classList.toggle('active', btn.textContent === currentDifficulty);
+                    });
+                    
+                    setupGrid();
+                    
+                    if (gameState.path && gameState.path.length > 0) {
+                        gameState.path.forEach(({row, col}) => {
+                            const cell = cells[row][col];
+                            cell.filled = true;
+                            cell.element.classList.add('filled', 'active-path');
+                        });
+                        path = gameState.path;
+                        currentNumber = gameState.currentNumber || 1;
+                        
+                        if (gameState.timerStart) {
+                            startTime = gameState.timerStart;
+                        }
+                        
+                        updateProgress();
+                        updateStatus();
+                        drawPath();
+                    }
+                } catch (e) {
+                    console.error('Error loading game:', e);
+                }
+            }
+        }
+
+        document.addEventListener('mouseup', stopDrawing);
+        window.addEventListener('resize', () => {
+            setupCanvas();
+            drawPath();
+        });
+
+        init();
+    </script>
+</body>
+</html>
