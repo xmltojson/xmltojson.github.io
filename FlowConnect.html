@@ -345,9 +345,21 @@ Copyright (c) 2025 Valentyn Kolesnikov <0009-0003-9608-3364@orcid.org>
             animation: celebrate 0.5s;
         }
 
+        .status.error {
+            background: #ff9800;
+            color: white;
+            animation: shake 0.5s;
+        }
+
         @keyframes celebrate {
             0%, 100% { transform: scale(1); }
             50% { transform: scale(1.05); }
+        }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-5px); }
+            75% { transform: translateX(5px); }
         }
 
         .progress {
@@ -1895,6 +1907,7 @@ Copyright (c) 2025 Valentyn Kolesnikov <0009-0003-9608-3364@orcid.org>
         }
 
         function showHint() {
+            // If no path started, start at number 1
             if (path.length === 0) {
                 const start = numberPositions[1];
                 if (start) {
@@ -1904,12 +1917,28 @@ Copyright (c) 2025 Valentyn Kolesnikov <0009-0003-9608-3364@orcid.org>
                 return;
             }
             
+            // Try to find solution with timeout protection
             const solution = solvePuzzle();
             
             if (solution && solution.length > path.length) {
+                // Found a solution, add next step
                 const nextCell = solution[path.length];
                 addToPath(nextCell.row, nextCell.col);
                 saveGame();
+            } else {
+                // No solution found - inform user
+                const status = document.getElementById('status');
+                const originalText = status.textContent;
+                const originalClass = status.className;
+                
+                status.textContent = "⚠️ Can't find solution from current position. Try Undo or Reset!";
+                status.className = 'status error';
+                
+                // Reset status after 3 seconds
+                setTimeout(() => {
+                    status.textContent = originalText;
+                    status.className = originalClass;
+                }, 3000);
             }
         }
 
@@ -1917,31 +1946,47 @@ Copyright (c) 2025 Valentyn Kolesnikov <0009-0003-9608-3364@orcid.org>
             const totalCells = gridSize * gridSize;
             const visited = Array(gridSize).fill(null).map(() => Array(gridSize).fill(false));
             
+            // Mark current path as visited
             path.forEach(p => visited[p.row][p.col] = true);
             
             const solution = [...path];
             const lastCell = path[path.length - 1];
             let nextNum = currentNumber;
             
-            if (solve(lastCell.row, lastCell.col, nextNum, visited, solution, totalCells)) {
+            // Add timeout protection - max iterations
+            const maxIterations = totalCells * totalCells * 10; // Reasonable limit
+            let iterationCount = 0;
+            
+            const solveResult = solve(lastCell.row, lastCell.col, nextNum, visited, solution, totalCells, maxIterations, iterationCount);
+            
+            if (solveResult.found) {
                 return solution;
             }
             
             return null;
         }
 
-        function solve(row, col, nextNum, visited, solution, totalCells) {
+        function solve(row, col, nextNum, visited, solution, totalCells, maxIterations, iterationCount) {
+            // Check iteration limit to prevent infinite loops
+            if (iterationCount >= maxIterations) {
+                return { found: false, iterations: iterationCount };
+            }
+            
+            iterationCount++;
+            
+            // Check if puzzle is complete
             if (solution.length === totalCells) {
-                return nextNum > maxNumber;
+                return { found: nextNum > maxNumber, iterations: iterationCount };
             }
             
             const directions = [
-                {dr: -1, dc: 0},
-                {dr: 1, dc: 0},
-                {dr: 0, dc: -1},
-                {dr: 0, dc: 1}
+                {dr: -1, dc: 0},  // up
+                {dr: 1, dc: 0},   // down
+                {dr: 0, dc: -1},  // left
+                {dr: 0, dc: 1}    // right
             ];
             
+            // If we need a specific number, prioritize moving toward it
             if (nextNum <= maxNumber) {
                 const target = numberPositions[nextNum];
                 
@@ -1951,9 +1996,11 @@ Copyright (c) 2025 Valentyn Kolesnikov <0009-0003-9608-3364@orcid.org>
                     const newRowB = row + b.dr;
                     const newColB = col + b.dc;
                     
+                    // Check bounds
                     if (newRowA < 0 || newRowA >= gridSize || newColA < 0 || newColA >= gridSize) return 1;
                     if (newRowB < 0 || newRowB >= gridSize || newColB < 0 || newColB >= gridSize) return -1;
                     
+                    // Sort by Manhattan distance to target
                     const distA = Math.abs(target.row - newRowA) + Math.abs(target.col - newColA);
                     const distB = Math.abs(target.row - newRowB) + Math.abs(target.col - newColB);
                     
@@ -1961,18 +2008,23 @@ Copyright (c) 2025 Valentyn Kolesnikov <0009-0003-9608-3364@orcid.org>
                 });
             }
             
+            // Try each direction
             for (const {dr, dc} of directions) {
                 const newRow = row + dr;
                 const newCol = col + dc;
                 
+                // Check bounds
                 if (newRow < 0 || newRow >= gridSize || newCol < 0 || newCol >= gridSize) continue;
                 
+                // Check if already visited
                 if (visited[newRow][newCol]) continue;
                 
                 const cell = cells[newRow][newCol];
                 
+                // Can only move to empty cells or the next number
                 if (cell.number !== null && cell.number !== nextNum) continue;
                 
+                // Mark as visited
                 visited[newRow][newCol] = true;
                 solution.push({row: newRow, col: newCol});
                 
@@ -1981,15 +2033,22 @@ Copyright (c) 2025 Valentyn Kolesnikov <0009-0003-9608-3364@orcid.org>
                     newNextNum++;
                 }
                 
-                if (solve(newRow, newCol, newNextNum, visited, solution, totalCells)) {
-                    return true;
+                // Recursive call with iteration tracking
+                const result = solve(newRow, newCol, newNextNum, visited, solution, totalCells, maxIterations, iterationCount);
+                
+                if (result.found) {
+                    return result;
                 }
                 
+                // Update iteration count
+                iterationCount = result.iterations;
+                
+                // Backtrack
                 visited[newRow][newCol] = false;
                 solution.pop();
             }
             
-            return false;
+            return { found: false, iterations: iterationCount };
         }
 
         function changeLevel(level) {
