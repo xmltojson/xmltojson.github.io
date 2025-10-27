@@ -1946,109 +1946,122 @@ Copyright (c) 2025 Valentyn Kolesnikov <0009-0003-9608-3364@orcid.org>
             const totalCells = gridSize * gridSize;
             const visited = Array(gridSize).fill(null).map(() => Array(gridSize).fill(false));
             
-            // Mark current path as visited
             path.forEach(p => visited[p.row][p.col] = true);
             
             const solution = [...path];
-            const lastCell = path[path.length - 1];
+            const lastCell = path[path.length - 1] || { row: numberPositions[1]?.row, col: numberPositions[1]?.col };
             let nextNum = currentNumber;
             
-            // Add timeout protection - max iterations
-            const maxIterations = totalCells * totalCells * 100;
+            const maxIterations = totalCells * totalCells * totalCells * 100; // Increased for larger grids
             let iterationCount = 0;
             
-            const solveResult = solve(lastCell.row, lastCell.col, nextNum, visited, solution, totalCells, maxIterations, iterationCount);
+            const solveResult = solve(lastCell?.row, lastCell?.col, nextNum, visited, solution, totalCells, maxIterations, iterationCount);
+
+            return solveResult.found ? solution : null;
+        }
+
+        function canReachAllRemaining(newRow, newCol, visited, remainingCells) {
+            if (remainingCells <= 0) return true;
+            const queue = [{ row: newRow, col: newCol }];
+            const localVisited = visited.map(row => [...row]);
+            localVisited[newRow][newCol] = true;
+            let reached = 0;
             
-            if (solveResult.found) {
-                return solution;
+            while (queue.length > 0) {
+                const { row, col } = queue.shift();
+                reached++;
+
+                const directions = [
+                    { dr: -1, dc: 0 }, { dr: 1, dc: 0 },
+                    { dr: 0, dc: -1 }, { dr: 0, dc: 1 }
+                ];
+
+                for (const dir of directions) {
+                    const nextRow = row + dir.dr;
+                    const nextCol = col + dir.dc;
+
+                    if (nextRow >= 0 && nextRow < gridSize && nextCol >= 0 && nextCol < gridSize) {
+                        if (!localVisited[nextRow][nextCol] && !visited[nextRow][nextCol]) {
+                            localVisited[nextRow][nextCol] = true;
+                            queue.push({ row: nextRow, col: nextCol });
+                        }
+                    }
+                }
             }
             
-            return null;
+            return reached >= remainingCells;
         }
 
         function solve(row, col, nextNum, visited, solution, totalCells, maxIterations, iterationCount) {
-            // Check iteration limit to prevent infinite loops
-            if (iterationCount >= maxIterations) {
-                return { found: false, iterations: iterationCount };
-            }
-            
+            if (iterationCount >= maxIterations) return { found: false, iterations: iterationCount };
             iterationCount++;
             
-            // Check if puzzle is complete
             if (solution.length === totalCells) {
                 return { found: nextNum > maxNumber, iterations: iterationCount };
             }
+
+            const directions = getPrioritizedDirections(row, col, nextNum);
             
-            const directions = [
-                {dr: -1, dc: 0},  // up
-                {dr: 1, dc: 0},   // down
-                {dr: 0, dc: -1},  // left
-                {dr: 0, dc: 1}    // right
-            ];
-            
-            // If we need a specific number, prioritize moving toward it
-            if (nextNum <= maxNumber) {
-                const target = numberPositions[nextNum];
-                
-                directions.sort((a, b) => {
-                    const newRowA = row + a.dr;
-                    const newColA = col + a.dc;
-                    const newRowB = row + b.dr;
-                    const newColB = col + b.dc;
-                    
-                    // Check bounds
-                    if (newRowA < 0 || newRowA >= gridSize || newColA < 0 || newColA >= gridSize) return 1;
-                    if (newRowB < 0 || newRowB >= gridSize || newColB < 0 || newColB >= gridSize) return -1;
-                    
-                    // Sort by Manhattan distance to target
-                    const distA = Math.abs(target.row - newRowA) + Math.abs(target.col - newColA);
-                    const distB = Math.abs(target.row - newRowB) + Math.abs(target.col - newColB);
-                    
-                    return distA - distB;
-                });
-            }
-            
-            // Try each direction
-            for (const {dr, dc} of directions) {
+            for (const { dr, dc } of directions) {
                 const newRow = row + dr;
                 const newCol = col + dc;
                 
-                // Check bounds
-                if (newRow < 0 || newRow >= gridSize || newCol < 0 || newCol >= gridSize) continue;
+                if (isInvalidCell(newRow, newCol, visited)) continue;
+                if (isBlockedNumberCell(newRow, newCol, nextNum)) continue;
                 
-                // Check if already visited
-                if (visited[newRow][newCol]) continue;
-                
-                const cell = cells[newRow][newCol];
-                
-                // Can only move to empty cells or the next number
-                if (cell.number !== null && cell.number !== nextNum) continue;
-                
-                // Mark as visited
                 visited[newRow][newCol] = true;
-                solution.push({row: newRow, col: newCol});
+                solution.push({ row: newRow, col: newCol });
+                const newNextNum = updateNextNumber(newRow, newCol, nextNum);
                 
-                let newNextNum = nextNum;
-                if (cell.number === nextNum) {
-                    newNextNum++;
+                const remainingCells = totalCells - solution.length;
+                if (remainingCells > 0 && !canReachAllRemaining(newRow, newCol, visited, remainingCells)) {
+                    visited[newRow][newCol] = false;
+                    solution.pop();
+                    continue;
                 }
                 
-                // Recursive call with iteration tracking
                 const result = solve(newRow, newCol, newNextNum, visited, solution, totalCells, maxIterations, iterationCount);
+                if (result.found) return result;
                 
-                if (result.found) {
-                    return result;
-                }
-                
-                // Update iteration count
                 iterationCount = result.iterations;
-                
-                // Backtrack
                 visited[newRow][newCol] = false;
                 solution.pop();
             }
             
             return { found: false, iterations: iterationCount };
+        }
+
+        function getPrioritizedDirections(row, col, nextNum) {
+            const directions = [
+                { dr: -1, dc: 0 }, { dr: 1, dc: 0 },
+                { dr: 0, dc: -1 }, { dr: 0, dc: 1 }
+            ];
+
+            if (nextNum > maxNumber) return directions; // No prioritization needed
+
+            const target = numberPositions[nextNum];
+            return directions.sort((a, b) => {
+                const na = { row: row + a.dr, col: col + a.dc };
+                const nb = { row: row + b.dr, col: col + b.dc };
+                return manhattanDistance(na, target) - manhattanDistance(nb, target);
+            });
+        }
+
+        function manhattanDistance(a, b) {
+            return Math.abs(a.row - b.row) + Math.abs(a.col - b.col);
+        }
+
+        function isInvalidCell(row, col, visited) {
+            return row < 0 || row >= gridSize || col < 0 || col >= gridSize || visited[row][col];
+        }
+
+        function isBlockedNumberCell(row, col, nextNum) {
+            const cellNum = cells[row][col].number;
+            return cellNum !== null && cellNum !== nextNum;
+        }
+
+        function updateNextNumber(row, col, nextNum) {
+            return cells[row][col].number === nextNum ? nextNum + 1 : nextNum;
         }
 
         function changeLevel(level) {
