@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Animated Christmas Tree</title>
+    <style>
+        /* --- General Setup --- */
+        :root {
+            --bg-color: #0f172a;
+            --tree-green: #14532d;
+            --tree-light-green: #166534;
+            --star-gold: #fbbf24;
+            --trunk-brown: #451a03;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            background: radial-gradient(circle at bottom, #1e293b, var(--bg-color));
+            overflow: hidden;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            color: white;
+        }
+
+        /* --- Snow Effect --- */
+        .snowflake {
+            position: absolute;
+            top: -10px;
+            background: white;
+            border-radius: 50%;
+            opacity: 0.8;
+            pointer-events: none;
+            animation: fall linear forwards;
+        }
+
+        @keyframes fall {
+            to {
+                transform: translateY(110vh);
+            }
+        }
+
+        /* --- The Tree Container --- */
+        .tree-container {
+            position: relative;
+            height: 400px;
+            width: 300px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            z-index: 10;
+        }
+
+        /* --- The Star --- */
+        .star {
+            position: relative;
+            top: 25px;
+            width: 0;
+            height: 0;
+            border-left: 20px solid transparent;
+            border-right: 20px solid transparent;
+            border-bottom: 40px solid var(--star-gold);
+            z-index: 5;
+            filter: drop-shadow(0 0 10px rgba(251, 191, 36, 0.8));
+            animation: glow 2s infinite alternate;
+        }
+        
+        .star:after {
+            content: '';
+            position: absolute;
+            top: 40px;
+            left: -20px;
+            width: 0;
+            height: 0;
+            border-left: 20px solid transparent;
+            border-right: 20px solid transparent;
+            border-top: 40px solid var(--star-gold);
+        }
+
+        @keyframes glow {
+            from { filter: drop-shadow(0 0 5px rgba(251, 191, 36, 0.5)); }
+            to { filter: drop-shadow(0 0 20px rgba(251, 191, 36, 1)); }
+        }
+
+        /* --- Tree Layers --- */
+        .layer {
+            position: relative;
+            width: 0;
+            height: 0;
+            border-left: solid transparent;
+            border-right: solid transparent;
+            border-bottom: solid var(--tree-green);
+            filter: drop-shadow(0 5px 5px rgba(0,0,0,0.3));
+        }
+
+        .layer::after {
+            /* Adds texture/gradient effect */
+            content: '';
+            position: absolute;
+            left: 50%;
+            transform: translateX(-50%);
+            top: 0;
+            width: 0;
+            height: 0;
+            border-left: inherit;
+            border-right: inherit;
+            border-bottom: inherit;
+            border-bottom-color: var(--tree-light-green);
+            opacity: 0.3;
+            clip-path: polygon(50% 0%, 100% 100%, 50% 100%);
+        }
+
+        .top-layer {
+            border-left-width: 60px;
+            border-right-width: 60px;
+            border-bottom-width: 80px;
+            z-index: 3;
+        }
+
+        .middle-layer {
+            border-left-width: 90px;
+            border-right-width: 90px;
+            border-bottom-width: 110px;
+            margin-top: -30px;
+            z-index: 2;
+        }
+
+        .bottom-layer {
+            border-left-width: 120px;
+            border-right-width: 120px;
+            border-bottom-width: 140px;
+            margin-top: -40px;
+            z-index: 1;
+        }
+
+        /* --- Trunk --- */
+        .trunk {
+            width: 40px;
+            height: 60px;
+            background: var(--trunk-brown);
+            margin-top: -10px;
+            border-radius: 0 0 5px 5px;
+            z-index: 0;
+        }
+
+        /* --- Lights (Ornaments) --- */
+        .light {
+            position: absolute;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background-color: #333; /* Off state */
+            box-shadow: inset -2px -2px 5px rgba(0,0,0,0.5);
+            transition: all 0.3s ease;
+        }
+
+        /* Lights On State */
+        .lights-on .light {
+            animation: twinkle 1.5s infinite alternate;
+        }
+
+        .lights-on .light.red { background-color: #ef4444; box-shadow: 0 0 10px #ef4444; animation-delay: 0s; }
+        .lights-on .light.blue { background-color: #3b82f6; box-shadow: 0 0 10px #3b82f6; animation-delay: 0.5s; }
+        .lights-on .light.gold { background-color: #eab308; box-shadow: 0 0 10px #eab308; animation-delay: 1s; }
+        .lights-on .light.white { background-color: #fff; box-shadow: 0 0 10px #fff; animation-delay: 0.2s; }
+
+        @keyframes twinkle {
+            0% { opacity: 0.6; transform: scale(0.9); }
+            100% { opacity: 1; transform: scale(1.1); }
+        }
+
+        /* --- Controls --- */
+        .controls {
+            margin-top: 50px;
+            z-index: 20;
+            background: rgba(255, 255, 255, 0.1);
+            padding: 15px 25px;
+            border-radius: 30px;
+            backdrop-filter: blur(5px);
+            border: 1px solid rgba(255,255,255,0.2);
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 50px;
+            height: 24px;
+        }
+
+        .switch input { opacity: 0; width: 0; height: 0; }
+
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background-color: #475569;
+            transition: .4s;
+            border-radius: 34px;
+        }
+
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 16px;
+            width: 16px;
+            left: 4px;
+            bottom: 4px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+
+        input:checked + .slider { background-color: #22c55e; }
+        input:checked + .slider:before { transform: translateX(26px); }
+
+        .label { font-size: 14px; font-weight: 600; letter-spacing: 0.5px; }
+
+    </style>
+</head>
+<body>
+
+    <div class="tree-container lights-on" id="tree">
+        <div class="star"></div>
+        
+        <div class="layer top-layer">
+            <div class="light red" style="top: 40px; left: -10px;"></div>
+            <div class="light gold" style="top: 55px; left: 15px;"></div>
+        </div>
+
+        <div class="layer middle-layer">
+            <div class="light blue" style="top: 60px; left: -30px;"></div>
+            <div class="light white" style="top: 80px; left: 0px;"></div>
+            <div class="light red" style="top: 70px; left: 35px;"></div>
+            <div class="light gold" style="top: 40px; left: -15px;"></div>
+        </div>
+
+        <div class="layer bottom-layer">
+            <div class="light gold" style="top: 80px; left: -60px;"></div>
+            <div class="light red" style="top: 100px; left: -20px;"></div>
+            <div class="light blue" style="top: 90px; left: 40px;"></div>
+            <div class="light white" style="top: 60px; left: 60px;"></div>
+            <div class="light red" style="top: 50px; left: -40px;"></div>
+        </div>
+
+        <div class="trunk"></div>
+    </div>
+
+    <div class="controls">
+        <span class="label">Christmas Lights</span>
+        <label class="switch">
+            <input type="checkbox" checked id="lightSwitch">
+            <span class="slider"></span>
+        </label>
+    </div>
+
+    <script>
+        // --- Snow Generation ---
+        function createSnow() {
+            const snowflake = document.createElement('div');
+            snowflake.classList.add('snowflake');
+            
+            // Randomize position, size, and animation duration
+            snowflake.style.left = Math.random() * 100 + 'vw';
+            snowflake.style.animationDuration = Math.random() * 3 + 2 + 's'; // between 2 and 5s
+            snowflake.style.opacity = Math.random();
+            
+            const size = Math.random() * 5 + 2 + 'px';
+            snowflake.style.width = size;
+            snowflake.style.height = size;
+
+            document.body.appendChild(snowflake);
+
+            // Remove snowflake after animation to prevent memory leak
+            setTimeout(() => {
+                snowflake.remove();
+            }, 5000);
+        }
+
+        // Create snow continuously
+        setInterval(createSnow, 100);
+
+        // --- Light Switch Logic ---
+        const switchBtn = document.getElementById('lightSwitch');
+        const treeContainer = document.getElementById('tree');
+
+        switchBtn.addEventListener('change', (e) => {
+            if (e.target.checked) {
+                treeContainer.classList.add('lights-on');
+            } else {
+                treeContainer.classList.remove('lights-on');
+            }
+        });
+    </script>
+</body>
+</html>
