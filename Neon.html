@@ -1,0 +1,750 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Neon Void - Persistent Arcade Shooter</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&display=swap');
+
+        body {
+            margin: 0;
+            overflow: hidden;
+            background-color: #050505;
+            font-family: 'Orbitron', sans-serif;
+            user-select: none;
+            touch-action: none;
+        }
+
+        canvas {
+            display: block;
+        }
+
+        #ui-layer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+
+        .hud {
+            display: flex;
+            justify-content: space-between;
+            color: #fff;
+            text-shadow: 0 0 10px #0ff;
+            font-size: 20px;
+        }
+
+        #main-menu, #pause-menu, #game-over {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.85);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            pointer-events: auto;
+            backdrop-filter: blur(5px);
+            z-index: 10;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        h1 {
+            font-size: 60px;
+            color: #fff;
+            text-transform: uppercase;
+            letter-spacing: 5px;
+            margin-bottom: 10px;
+            text-shadow: 
+                0 0 10px #f0f,
+                0 0 20px #f0f,
+                0 0 40px #f0f;
+            animation: pulse 2s infinite;
+        }
+
+        button {
+            background: transparent;
+            color: #0ff;
+            border: 2px solid #0ff;
+            padding: 15px 40px;
+            font-size: 24px;
+            font-family: 'Orbitron', sans-serif;
+            cursor: pointer;
+            margin: 10px;
+            transition: all 0.2s;
+            box-shadow: 0 0 10px #0ff;
+            text-transform: uppercase;
+        }
+
+        button:hover {
+            background: #0ff;
+            color: #000;
+            box-shadow: 0 0 30px #0ff;
+        }
+
+        .score-big {
+            font-size: 40px;
+            color: #fff;
+            margin-bottom: 30px;
+        }
+
+        .sub-text {
+            color: #888;
+            margin-top: 20px;
+            font-size: 14px;
+        }
+
+        @keyframes pulse {
+            0% { text-shadow: 0 0 10px #f0f, 0 0 20px #f0f; transform: scale(1); }
+            50% { text-shadow: 0 0 20px #f0f, 0 0 40px #f0f; transform: scale(1.05); }
+            100% { text-shadow: 0 0 10px #f0f, 0 0 20px #f0f; transform: scale(1); }
+        }
+
+        /* Mobile controls hint */
+        #mobile-hint {
+            position: absolute;
+            bottom: 50px;
+            width: 100%;
+            text-align: center;
+            color: rgba(255,255,255,0.3);
+            pointer-events: none;
+        }
+    </style>
+</head>
+<body>
+
+    <canvas id="gameCanvas"></canvas>
+
+    <div id="ui-layer">
+        <div class="hud">
+            <div id="score-display">SCORE: 0</div>
+            <div id="highscore-display">HI: 0</div>
+        </div>
+    </div>
+
+    <!-- MAIN MENU -->
+    <div id="main-menu">
+        <h1>Neon Void</h1>
+        <button id="btn-start">New Game</button>
+        <button id="btn-resume" class="hidden">Resume</button>
+        <div class="sub-text">Move with Mouse/Touch • Click/Tap to Pause</div>
+    </div>
+
+    <!-- PAUSE MENU -->
+    <div id="pause-menu" class="hidden">
+        <h1>Paused</h1>
+        <button id="btn-continue">Continue</button>
+        <button id="btn-quit">Quit to Menu</button>
+    </div>
+
+    <!-- GAME OVER -->
+    <div id="game-over" class="hidden">
+        <h1 style="color:#ff0055; text-shadow: 0 0 20px #ff0055;">Game Over</h1>
+        <div class="score-big" id="final-score">0</div>
+        <button id="btn-restart">Try Again</button>
+    </div>
+
+<script>
+/**
+ * GAME ENGINE & LOGIC
+ */
+
+const canvas = document.getElementById('gameCanvas');
+const ctx = canvas.getContext('2d', { alpha: false }); // Optimize for no transparency on base
+let width, height;
+
+// UI Elements
+const uiScore = document.getElementById('score-display');
+const uiHigh = document.getElementById('highscore-display');
+const menuMain = document.getElementById('main-menu');
+const menuPause = document.getElementById('pause-menu');
+const menuOver = document.getElementById('game-over');
+const btnStart = document.getElementById('btn-start');
+const btnResume = document.getElementById('btn-resume');
+const btnContinue = document.getElementById('btn-continue');
+const btnQuit = document.getElementById('btn-quit');
+const btnRestart = document.getElementById('btn-restart');
+const finalScoreDisplay = document.getElementById('final-score');
+
+// State
+let gameState = 'MENU'; // MENU, PLAYING, PAUSED, GAMEOVER
+let score = 0;
+let highScore = 0;
+let frames = 0;
+let difficultyMultiplier = 1;
+
+// Entities
+let player;
+let bullets = [];
+let enemies = [];
+let particles = [];
+let stars = [];
+
+// Screen Shake
+let shakeIntensity = 0;
+
+// Input
+const mouse = { x: 0, y: 0, down: false };
+
+/* --- LOCAL STORAGE MANAGEMENT --- */
+const STORAGE_KEY = 'neon_void_save_v1';
+
+function saveGame() {
+    if (gameState === 'GAMEOVER') {
+        clearSave();
+        saveHighScore();
+        return;
+    }
+
+    const state = {
+        score,
+        highScore,
+        difficultyMultiplier,
+        player: { x: player.x, y: player.y, hp: player.hp },
+        // We serialize essential data only
+        enemies: enemies.map(e => ({ x: e.x, y: e.y, vx: e.vx, vy: e.vy, size: e.size, hp: e.hp, type: e.type })),
+        bullets: bullets.map(b => ({ x: b.x, y: b.y, vx: b.vx, vy: b.vy })),
+        hasActiveGame: gameState === 'PLAYING' || gameState === 'PAUSED'
+    };
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+}
+
+function saveHighScore() {
+    // Only save high score, keeping existing save data if valid, or creating partial
+    let existing = localStorage.getItem(STORAGE_KEY);
+    let data = existing ? JSON.parse(existing) : {};
+    data.highScore = Math.max(score, data.highScore || 0);
+    data.hasActiveGame = false; // Mark game as finished
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+}
+
+function loadGame() {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return false;
+    
+    const data = JSON.parse(raw);
+    highScore = data.highScore || 0;
+    uiHigh.innerText = `HI: ${highScore}`;
+
+    if (data.hasActiveGame) {
+        // Restore State
+        score = data.score;
+        difficultyMultiplier = data.difficultyMultiplier;
+        
+        // Reconstruct Player
+        player.x = data.player.x;
+        player.y = data.player.y;
+        player.hp = data.player.hp;
+
+        // Reconstruct Enemies
+        enemies = data.enemies.map(e => {
+            const enemy = new Enemy(e.x, e.y);
+            enemy.vx = e.vx;
+            enemy.vy = e.vy;
+            enemy.size = e.size;
+            enemy.hp = e.hp;
+            enemy.type = e.type;
+            enemy.color = enemy.type === 'chaser' ? '#ff0055' : '#ffaa00';
+            return enemy;
+        });
+
+        // Reconstruct Bullets
+        bullets = data.bullets.map(b => {
+            const bull = new Bullet(b.x, b.y);
+            bull.vx = b.vx;
+            bull.vy = b.vy;
+            return bull;
+        });
+
+        uiScore.innerText = `SCORE: ${score}`;
+        return true;
+    }
+    return false;
+}
+
+function clearSave() {
+    // Keep high score, clear game state
+    let existing = localStorage.getItem(STORAGE_KEY);
+    let data = existing ? JSON.parse(existing) : {};
+    data.hasActiveGame = false;
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+}
+
+/* --- SETUP --- */
+
+function resize() {
+    width = canvas.width = window.innerWidth;
+    height = canvas.height = window.innerHeight;
+    // Reset stars on resize to fill screen
+    initStars(); 
+}
+window.addEventListener('resize', resize);
+
+function initStars() {
+    stars = [];
+    for(let i=0; i<150; i++) {
+        stars.push({
+            x: Math.random() * width,
+            y: Math.random() * height,
+            size: Math.random() * 2,
+            speed: Math.random() * 0.5 + 0.1
+        });
+    }
+}
+
+class Player {
+    constructor() {
+        this.x = width / 2;
+        this.y = height - 100;
+        this.size = 20;
+        this.hp = 100;
+        this.color = '#00ffff';
+        this.lastShot = 0;
+        this.shootDelay = 8; // frames
+    }
+
+    update() {
+        // Lerp towards mouse
+        this.x += (mouse.x - this.x) * 0.15;
+        this.y += (mouse.y - this.y) * 0.15;
+
+        // Boundaries
+        if(this.x < this.size) this.x = this.size;
+        if(this.x > width - this.size) this.x = width - this.size;
+        if(this.y < this.size) this.y = this.size;
+        if(this.y > height - this.size) this.y = height - this.size;
+
+        // Auto shoot
+        if (frames - this.lastShot > this.shootDelay) {
+            bullets.push(new Bullet(this.x, this.y - 15));
+            bullets.push(new Bullet(this.x - 10, this.y - 10, -1));
+            bullets.push(new Bullet(this.x + 10, this.y - 10, 1));
+            this.lastShot = frames;
+        }
+    }
+
+    draw() {
+        ctx.save();
+        ctx.translate(this.x, this.y);
+        ctx.shadowBlur = 20;
+        ctx.shadowColor = this.color;
+        ctx.fillStyle = '#fff';
+        
+        // Draw Ship
+        ctx.beginPath();
+        ctx.moveTo(0, -this.size);
+        ctx.lineTo(-this.size, this.size);
+        ctx.lineTo(0, this.size/2);
+        ctx.lineTo(this.size, this.size);
+        ctx.closePath();
+        ctx.fill();
+
+        // Engine flame
+        ctx.shadowBlur = 10;
+        ctx.shadowColor = '#ff0055';
+        ctx.fillStyle = '#ff0055';
+        ctx.beginPath();
+        ctx.moveTo(-5, this.size/1.5);
+        ctx.lineTo(5, this.size/1.5);
+        ctx.lineTo(0, this.size * 1.5 + (Math.random() * 10));
+        ctx.closePath();
+        ctx.fill();
+        
+        ctx.restore();
+    }
+}
+
+class Bullet {
+    constructor(x, y, vxOffset = 0) {
+        this.x = x;
+        this.y = y;
+        this.vx = vxOffset;
+        this.vy = -15;
+        this.size = 4;
+        this.active = true;
+    }
+
+    update() {
+        this.x += this.vx;
+        this.y += this.vy;
+        if (this.y < 0) this.active = false;
+    }
+
+    draw() {
+        ctx.save();
+        ctx.shadowBlur = 10;
+        ctx.shadowColor = '#0ff';
+        ctx.fillStyle = '#fff';
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, this.size, 0, Math.PI*2);
+        ctx.fill();
+        ctx.restore();
+    }
+}
+
+class Enemy {
+    constructor(x, y) {
+        this.x = x;
+        this.y = y;
+        this.size = 20 + Math.random() * 15;
+        this.hp = this.size;
+        
+        // Determine type
+        if (Math.random() > 0.8) {
+            this.type = 'chaser';
+            this.color = '#ff0055';
+            this.speed = 3 + (difficultyMultiplier * 0.5);
+        } else {
+            this.type = 'basic';
+            this.color = '#ffaa00';
+            this.speed = 2 + (difficultyMultiplier * 0.5);
+        }
+
+        this.vx = (Math.random() - 0.5) * 2;
+        this.vy = this.speed;
+        this.active = true;
+    }
+
+    update() {
+        if (this.type === 'chaser') {
+            // Simple homing
+            const dx = player.x - this.x;
+            this.vx = dx * 0.02;
+        }
+
+        this.x += this.vx;
+        this.y += this.vy;
+
+        if (this.y > height + 50) this.active = false;
+    }
+
+    draw() {
+        ctx.save();
+        ctx.translate(this.x, this.y);
+        ctx.rotate(frames * 0.05);
+        ctx.shadowBlur = 15;
+        ctx.shadowColor = this.color;
+        ctx.strokeStyle = this.color;
+        ctx.lineWidth = 3;
+
+        ctx.beginPath();
+        if(this.type === 'chaser') {
+            ctx.moveTo(0, -this.size);
+            ctx.lineTo(this.size, 0);
+            ctx.lineTo(0, this.size);
+            ctx.lineTo(-this.size, 0);
+        } else {
+            const sides = 6;
+            for(let i=0; i<sides; i++) {
+                const angle = (i / sides) * Math.PI * 2;
+                const lx = Math.cos(angle) * this.size;
+                const ly = Math.sin(angle) * this.size;
+                if(i===0) ctx.moveTo(lx, ly);
+                else ctx.lineTo(lx, ly);
+            }
+        }
+        ctx.closePath();
+        ctx.stroke();
+        
+        // Inner core
+        ctx.fillStyle = '#fff';
+        ctx.globalAlpha = 0.5;
+        ctx.fill();
+        
+        ctx.restore();
+    }
+}
+
+class Particle {
+    constructor(x, y, color) {
+        this.x = x;
+        this.y = y;
+        const angle = Math.random() * Math.PI * 2;
+        const speed = Math.random() * 5;
+        this.vx = Math.cos(angle) * speed;
+        this.vy = Math.sin(angle) * speed;
+        this.alpha = 1;
+        this.color = color;
+        this.decay = 0.02 + Math.random() * 0.03;
+    }
+
+    update() {
+        this.x += this.vx;
+        this.y += this.vy;
+        this.vx *= 0.95;
+        this.vy *= 0.95;
+        this.alpha -= this.decay;
+    }
+
+    draw() {
+        ctx.save();
+        ctx.globalAlpha = this.alpha;
+        ctx.fillStyle = this.color;
+        ctx.fillRect(this.x, this.y, 3, 3);
+        ctx.restore();
+    }
+}
+
+/* --- GAME LOOPS --- */
+
+function startNewGame() {
+    score = 0;
+    difficultyMultiplier = 1;
+    bullets = [];
+    enemies = [];
+    particles = [];
+    player = new Player();
+    uiScore.innerText = "SCORE: 0";
+    
+    gameState = 'PLAYING';
+    menuMain.classList.add('hidden');
+    menuOver.classList.add('hidden');
+    menuPause.classList.add('hidden');
+    
+    // Reset Mouse to center to prevent jump
+    mouse.x = width/2;
+    mouse.y = height - 100;
+    
+    loop();
+}
+
+function resumeGame() {
+    gameState = 'PLAYING';
+    menuMain.classList.add('hidden');
+    menuPause.classList.add('hidden');
+    loop();
+}
+
+function togglePause() {
+    if (gameState === 'PLAYING') {
+        gameState = 'PAUSED';
+        menuPause.classList.remove('hidden');
+        saveGame();
+    } else if (gameState === 'PAUSED') {
+        gameState = 'PLAYING';
+        menuPause.classList.add('hidden');
+        loop();
+    }
+}
+
+function gameOver() {
+    gameState = 'GAMEOVER';
+    if (score > highScore) {
+        highScore = score;
+        uiHigh.innerText = `HI: ${highScore}`;
+    }
+    
+    // Add screen shake
+    shakeIntensity = 20;
+    
+    // Save highscore, clear state
+    saveGame(); 
+
+    finalScoreDisplay.innerText = score;
+    menuOver.classList.remove('hidden');
+}
+
+function spawnEnemies() {
+    // Spawn rate based on score
+    let spawnRate = 60 - Math.min(50, difficultyMultiplier * 5); 
+    if (frames % Math.floor(spawnRate) === 0) {
+        enemies.push(new Enemy(Math.random() * (width - 40) + 20, -50));
+    }
+    
+    // Increase difficulty slowly
+    if (frames % 600 === 0) {
+        difficultyMultiplier += 0.1;
+    }
+}
+
+function createExplosion(x, y, color, count = 10) {
+    for(let i=0; i<count; i++) {
+        particles.push(new Particle(x, y, color));
+    }
+}
+
+function update() {
+    // Screen Shake decay
+    if (shakeIntensity > 0) shakeIntensity *= 0.9;
+    if (shakeIntensity < 0.5) shakeIntensity = 0;
+
+    player.update();
+
+    // Bullets
+    bullets = bullets.filter(b => b.active);
+    bullets.forEach(b => b.update());
+
+    // Enemies
+    enemies = enemies.filter(e => e.active);
+    enemies.forEach(e => {
+        e.update();
+        
+        // Collision Player vs Enemy
+        const dist = Math.hypot(player.x - e.x, player.y - e.y);
+        if (dist < player.size + e.size) {
+            createExplosion(player.x, player.y, '#0ff', 50);
+            gameOver();
+        }
+    });
+
+    // Bullet Collision
+    bullets.forEach(b => {
+        enemies.forEach(e => {
+            if (!b.active || !e.active) return;
+            const dist = Math.hypot(b.x - e.x, b.y - e.y);
+            if (dist < e.size + b.size) {
+                b.active = false;
+                e.hp -= 10; // Bullet damage
+                createExplosion(b.x, b.y, '#fff', 2);
+                if (e.hp <= 0) {
+                    e.active = false;
+                    createExplosion(e.x, e.y, e.color, 15);
+                    score += (e.type === 'chaser' ? 200 : 100);
+                    uiScore.innerText = `SCORE: ${score}`;
+                    shakeIntensity = 5;
+                }
+            }
+        });
+    });
+
+    // Particles
+    particles = particles.filter(p => p.alpha > 0);
+    particles.forEach(p => p.update());
+
+    // Stars
+    stars.forEach(s => {
+        s.y += s.speed + (difficultyMultiplier * 0.5);
+        if (s.y > height) {
+            s.y = 0;
+            s.x = Math.random() * width;
+        }
+    });
+    
+    spawnEnemies();
+    frames++;
+}
+
+function draw() {
+    // Background
+    ctx.fillStyle = '#050505';
+    ctx.fillRect(0, 0, width, height);
+
+    // Shake transform
+    ctx.save();
+    if (shakeIntensity > 0) {
+        const dx = (Math.random() - 0.5) * shakeIntensity;
+        const dy = (Math.random() - 0.5) * shakeIntensity;
+        ctx.translate(dx, dy);
+    }
+
+    // Draw Stars
+    ctx.fillStyle = '#ffffff';
+    stars.forEach(s => {
+        ctx.globalAlpha = Math.random() * 0.5 + 0.3;
+        ctx.fillRect(s.x, s.y, s.size, s.size);
+    });
+    ctx.globalAlpha = 1.0;
+
+    // Draw Entities
+    // Use lighter composite for glowing effect intersection
+    ctx.globalCompositeOperation = 'lighter';
+    
+    player.draw();
+    bullets.forEach(b => b.draw());
+    enemies.forEach(e => e.draw());
+    particles.forEach(p => p.draw());
+    
+    ctx.restore(); // End Shake
+}
+
+function loop() {
+    if (gameState !== 'PLAYING') return;
+    
+    update();
+    draw();
+    requestAnimationFrame(loop);
+}
+
+/* --- EVENT LISTENERS --- */
+
+canvas.addEventListener('mousemove', e => {
+    mouse.x = e.clientX;
+    mouse.y = e.clientY;
+});
+
+canvas.addEventListener('touchmove', e => {
+    e.preventDefault(); // Stop scroll
+    mouse.x = e.touches[0].clientX;
+    mouse.y = e.touches[0].clientY;
+}, {passive: false});
+
+// Pause on click
+canvas.addEventListener('mousedown', () => {
+    // Optional: togglePause(); // Removed to allow pure mouse movement, use ESC or UI button
+});
+
+window.addEventListener('keydown', e => {
+    if (e.key === 'Escape' || e.key === 'p') {
+        togglePause();
+    }
+});
+
+// UI Buttons
+btnStart.addEventListener('click', startNewGame);
+
+btnResume.addEventListener('click', () => {
+    resumeGame();
+});
+
+btnContinue.addEventListener('click', () => {
+    togglePause();
+});
+
+btnQuit.addEventListener('click', () => {
+    saveGame();
+    gameState = 'MENU';
+    menuPause.classList.add('hidden');
+    menuMain.classList.remove('hidden');
+    
+    // Check if resume is available (it was just saved)
+    checkSave(); 
+});
+
+btnRestart.addEventListener('click', startNewGame);
+
+// Save on close
+window.addEventListener('beforeunload', () => {
+    if (gameState === 'PLAYING' || gameState === 'PAUSED') {
+        saveGame();
+    }
+});
+
+/* --- INITIALIZATION --- */
+
+function checkSave() {
+    // Helper to see if we should show resume button
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if(raw) {
+        const data = JSON.parse(raw);
+        if(data.highScore) {
+             highScore = data.highScore;
+             uiHigh.innerText = `HI: ${highScore}`;
+        }
+        if(data.hasActiveGame) {
+            btnResume.classList.remove('hidden');
+            // Load data into memory just in case user clicks resume
+            // If they click New Game, this gets overwritten
+            player = new Player(); // Temp in
