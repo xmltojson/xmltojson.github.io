@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Garden Grower</title>
+<style>
+    * {
+        box-sizing: border-box;
+        font-family: "Poppins", "Segoe UI", sans-serif;
+    }
+    body {
+        margin: 0;
+        background: linear-gradient(135deg, #98d8c0, #f1e4c8);
+        color: #2f2f2f;
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    .game-container {
+        background: #fff;
+        width: min(90vw, 700px);
+        padding: 2.5rem;
+        border-radius: 24px;
+        box-shadow: 0 20px 70px rgba(0,0,0,0.2);
+    }
+    h1 {
+        text-align: center;
+        margin-top: 0;
+        color: #4a7c59;
+    }
+    .stats {
+        display: flex;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        margin-bottom: 1.5rem;
+    }
+    .stat-card {
+        background: #f6fff8;
+        border: 1px solid #d7f3e3;
+        border-radius: 14px;
+        padding: 0.9rem 1.2rem;
+        flex: 1 1 140px;
+        margin: 0.4rem;
+    }
+    .stat-card span {
+        display: block;
+        font-weight: 600;
+        color: #4a7c59;
+        font-size: 0.85rem;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+    }
+    .value {
+        font-size: 1.8rem;
+        font-weight: 700;
+        margin-top: 0.3rem;
+    }
+    .garden {
+        margin: 2rem 0;
+        text-align: center;
+    }
+    .garden img {
+        width: min(55vw, 260px);
+        transition: transform 0.25s ease;
+        filter: drop-shadow(0 20px 30px rgba(0,0,0,0.15));
+    }
+    .garden img:hover {
+        transform: scale(1.05);
+        cursor: pointer;
+    }
+    button {
+        width: 100%;
+        padding: 0.9rem 1rem;
+        border: none;
+        border-radius: 12px;
+        background: #4a7c59;
+        color: white;
+        font-size: 1rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+    button:disabled {
+        background: #9bbd9d;
+        cursor: not-allowed;
+    }
+    button:not(:disabled):hover {
+        transform: translateY(-2px);
+        box-shadow: 0 10px 20px rgba(74,124,89,0.3);
+    }
+    .upgrades {
+        margin-top: 2rem;
+        border-top: 1px solid #eee;
+        padding-top: 1rem;
+    }
+    .upgrade-card {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        background: #f9f9f9;
+        border-radius: 14px;
+        padding: 1rem;
+        margin-bottom: 1.2rem;
+        border: 1px solid #ececec;
+    }
+    .upgrade-card h3 {
+        margin: 0;
+        color: #4a7c59;
+    }
+    .upgrade-card small {
+        display: block;
+        font-size: 0.85rem;
+        color: #7f8d7c;
+    }
+    .upgrade-card button {
+        width: auto;
+        padding: 0.6rem 1.4rem;
+        font-size: 0.95rem;
+    }
+    .actions {
+        display: flex;
+        gap: 1rem;
+        margin-top: 1rem;
+        flex-wrap: wrap;
+    }
+    .actions button {
+        flex: 1;
+    }
+    .instructions {
+        margin-top: 2rem;
+        background: #fff9e9;
+        padding: 1rem;
+        border-radius: 12px;
+        border: 1px solid #ffe5a5;
+        font-size: 0.95rem;
+        line-height: 1.5;
+    }
+</style>
+</head>
+<body>
+<div class="game-container">
+    <h1>🌱 Garden Grower</h1>
+    <div class="stats">
+        <div class="stat-card">
+            <span>Coins</span>
+            <div class="value" id="coins">0</div>
+        </div>
+        <div class="stat-card">
+            <span>Garden Level</span>
+            <div class="value" id="level">1</div>
+        </div>
+        <div class="stat-card">
+            <span>Per Click</span>
+            <div class="value" id="perClick">1</div>
+        </div>
+    </div>
+
+    <div class="garden">
+        <img id="gardenImage" src="https://cdn.jsdelivr.net/gh/encharm/Font-Awesome-SVG-PNG/black/png/64/pagelines.png" alt="Garden">
+        <p>Tap the garden to harvest coins!</p>
+    </div>
+
+    <button id="levelUpBtn">Level Up Garden (Cost: 50)</button>
+
+    <div class="upgrades">
+        <h2>Upgrades</h2>
+        <div id="upgradeList"></div>
+    </div>
+
+    <div class="actions">
+        <button id="saveBtn">Save Now</button>
+        <button id="resetBtn" style="background:#b04545">Reset Progress</button>
+    </div>
+
+    <div class="instructions">
+        <strong>How to Play:</strong><br>
+        • Click the garden to earn coins. <br>
+        • Upgrade the garden to earn more per click and unlock new visuals. <br>
+        • Buy tools to increase your earnings. Progress is saved automatically in your browser.
+    </div>
+</div>
+
+<script>
+(function() {
+    const defaultState = {
+        coins: 0,
+        level: 1,
+        perClick: 1,
+        upgradePrices: {
+            wateringCan: 30,
+            fertilizer: 100,
+            greenhouse: 300
+        },
+        upgradesOwned: {
+            wateringCan: 0,
+            fertilizer: 0,
+            greenhouse: 0
+        }
+    };
+
+    const STORAGE_KEY = "gardenGrowerState";
+
+    function loadState() {
+        const saved = localStorage.getItem(STORAGE_KEY);
+        if (saved) {
+            try {
+                const parsed = JSON.parse(saved);
+                return {...defaultState, ...parsed};
+            } catch(e) {
+                console.warn("Failed to parse saved data, resetting.", e);
+            }
+        }
+        return {...defaultState};
+    }
+
+    function saveState() {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+        animateButton(document.getElementById("saveBtn"));
+    }
+
+    function resetState() {
+        if(confirm("Reset all progress?")) {
+            localStorage.removeItem(STORAGE_KEY);
+            state = {...defaultState};
+            updateUI();
+        }
+    }
+
+    function updateUI() {
+        coinsEl.textContent = Math.floor(state.coins);
+        levelEl.textContent = state.level;
+        perClickEl.textContent = state.perClick;
+
+        const cost = levelCost();
+        levelBtn.textContent = `Level Up Garden (Cost: ${cost})`;
+        levelBtn.disabled = state.coins < cost;
+
+        upgradeList.innerHTML = "";
+        upgrades.forEach(up => {
+            const card = document.createElement("div");
+            card.className = "upgrade-card";
+            const cost = state.upgradePrices[up.id];
+            const owned = state.upgradesOwned[up.id];
+            const canAfford = state.coins >= cost;
+
+            card.innerHTML = `
+                <div>
+                    <h3>${up.name} (${owned})</h3>
+                    <small>${up.desc}</small>
+                    <small>Cost: ${cost} coins • +${up.bonus} per click</small>
+                </div>
+            `;
+            const btn = document.createElement("button");
+            btn.textContent = "Buy";
+            btn.disabled = !canAfford;
+            btn.addEventListener("click", () => buyUpgrade(up.id));
+            card.appendChild(btn);
+            upgradeList.appendChild(card);
+        });
+
+        gardenImage.style.transform = `scale(${1 + (state.level - 1)*0.05})`;
+    }
+
+    function levelCost() {
+        return 50 * Math.pow(1.5, state.level - 1) | 0;
+    }
+
+    function levelUp() {
+        const cost = levelCost();
+        if (state.coins >= cost) {
+            state.coins -= cost;
+            state.level += 1;
+            state.perClick += Math.floor(state.level * 0.5);
+            updateUI();
+            saveState();
+        }
+    }
+
+    function harvest() {
+        state.coins += state.perClick;
+        animateGarden();
+        updateUI();
+        saveState();
+    }
+
+    function buyUpgrade(id) {
+        const cost = state.upgradePrices[id];
+        if (state.coins >= cost) {
+            state.coins -= cost;
+            state.upgradesOwned[id] += 1;
+            state.perClick += upgradesById[id].bonus;
+            state.upgradePrices[id] = Math.round(state.upgradePrices[id] * 1.6);
+            updateUI();
+            saveState();
+        }
+    }
+
+    function animateGarden() {
+        gardenImage.style.transform = "scale(1.1)";
+        setTimeout(() => {
+            gardenImage.style.transform = `scale(${1 + (state.level - 1)*0.05})`;
+        }, 150);
+    }
+
+    function animateButton(btn) {
+        btn.style.transform = "scale(0.95)";
+        setTimeout(() => btn.style.transform = "", 120);
+    }
+
+    // Elements
+    const coinsEl = document.getElementById("coins");
+    const levelEl = document.getElementById("level");
+    const perClickEl = document.getElementById("perClick");
+    const gardenImage = document.getElementById("gardenImage");
+    const levelBtn = document.getElementById("levelUpBtn");
+    const upgradeList = document.getElementById("upgradeList");
+    const saveBtn = document.getElementById("saveBtn");
+    const resetBtn = document.getElementById("resetBtn");
+
+    const upgrades = [
+        {id: "wateringCan", name: "Watering Can", desc: "Gentle boost from regular watering.", bonus: 2},
+        {id: "fertilizer", name: "Fertilizer", desc: "Nutrient-rich soil for healthy growth.", bonus: 5},
+        {id: "greenhouse", name: "Greenhouse", desc: "All-year perfect conditions.", bonus: 12}
+    ];
+
+    const upgradesById = Object.fromEntries(upgrades.map(u => [u.id, u]));
+
+    let state = loadState();
+    updateUI();
+
+    // Event listeners
+    gardenImage.addEventListener("click", harvest);
+    levelBtn.addEventListener("click", levelUp);
+    saveBtn.addEventListener("click", saveState);
+    resetBtn.addEventListener("click", resetState);
+
+    window.addEventListener("beforeunload", saveState);
+})();
+</script>
+</body>
+</html>
