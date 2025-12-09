@@ -1,0 +1,1462 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>✨ Snow Globe ✨</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(180deg, #0c1445 0%, #1a237e 30%, #283593 60%, #3949ab 100%);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            overflow: hidden;
+            cursor: grab;
+        }
+
+        body:active {
+            cursor: grabbing;
+        }
+
+        .title {
+            color: #fff;
+            font-size: 2.5rem;
+            text-shadow: 0 0 20px rgba(255, 255, 255, 0.5), 0 0 40px rgba(100, 149, 237, 0.5);
+            margin-bottom: 20px;
+            animation: glow 2s ease-in-out infinite alternate;
+            text-align: center;
+        }
+
+        @keyframes glow {
+            from { text-shadow: 0 0 20px rgba(255, 255, 255, 0.5), 0 0 40px rgba(100, 149, 237, 0.5); }
+            to { text-shadow: 0 0 30px rgba(255, 255, 255, 0.8), 0 0 60px rgba(100, 149, 237, 0.8); }
+        }
+
+        .snow-globe-container {
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .globe {
+            position: relative;
+            width: 400px;
+            height: 400px;
+            border-radius: 50%;
+            background: radial-gradient(ellipse at 30% 30%, rgba(255, 255, 255, 0.4) 0%, rgba(255, 255, 255, 0.1) 30%, transparent 70%),
+                        radial-gradient(circle at 50% 50%, #1a3a5c 0%, #0d2137 100%);
+            box-shadow: 
+                inset 0 0 100px rgba(255, 255, 255, 0.1),
+                inset 20px 20px 60px rgba(255, 255, 255, 0.1),
+                0 20px 60px rgba(0, 0, 0, 0.5),
+                0 0 100px rgba(100, 149, 237, 0.3);
+            overflow: hidden;
+            transition: transform 0.1s ease-out;
+        }
+
+        .globe::before {
+            content: '';
+            position: absolute;
+            top: 5%;
+            left: 10%;
+            width: 30%;
+            height: 20%;
+            background: radial-gradient(ellipse, rgba(255, 255, 255, 0.6) 0%, transparent 70%);
+            border-radius: 50%;
+            z-index: 100;
+            pointer-events: none;
+        }
+
+        .globe::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 30%;
+            background: linear-gradient(180deg, transparent 0%, rgba(255, 255, 255, 0.8) 40%, #fff 100%);
+            border-radius: 0 0 200px 200px;
+            z-index: 5;
+        }
+
+        .scene {
+            position: absolute;
+            bottom: 30%;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 4;
+        }
+
+        /* Ground/Snow */
+        .ground {
+            position: absolute;
+            bottom: 25%;
+            left: 5%;
+            right: 5%;
+            height: 15%;
+            background: linear-gradient(180deg, #e8f4f8 0%, #fff 100%);
+            border-radius: 50% 50% 0 0;
+            z-index: 3;
+        }
+
+        .ground::before {
+            content: '';
+            position: absolute;
+            top: -10px;
+            left: 10%;
+            right: 10%;
+            height: 20px;
+            background: linear-gradient(180deg, transparent 0%, rgba(255, 255, 255, 0.5) 100%);
+            border-radius: 50%;
+        }
+
+        /* Cabin */
+        .cabin {
+            position: relative;
+            width: 80px;
+            height: 60px;
+            margin: 0 auto;
+        }
+
+        .cabin-body {
+            position: absolute;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 70px;
+            height: 45px;
+            background: linear-gradient(135deg, #8b4513 0%, #654321 100%);
+            border-radius: 3px;
+        }
+
+        .cabin-body::before {
+            content: '';
+            position: absolute;
+            top: 5px;
+            left: 5px;
+            right: 5px;
+            bottom: 5px;
+            background: repeating-linear-gradient(
+                0deg,
+                transparent,
+                transparent 8px,
+                rgba(0, 0, 0, 0.2) 8px,
+                rgba(0, 0, 0, 0.2) 9px
+            );
+        }
+
+        .roof {
+            position: absolute;
+            bottom: 40px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 0;
+            height: 0;
+            border-left: 45px solid transparent;
+            border-right: 45px solid transparent;
+            border-bottom: 35px solid #5d4037;
+        }
+
+        .roof::before {
+            content: '';
+            position: absolute;
+            top: 35px;
+            left: -45px;
+            width: 90px;
+            height: 8px;
+            background: linear-gradient(180deg, #fff 0%, #e0e0e0 100%);
+            border-radius: 0 0 3px 3px;
+        }
+
+        .roof-snow {
+            position: absolute;
+            bottom: 70px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 80px;
+            height: 15px;
+            background: #fff;
+            border-radius: 50% 50% 0 0;
+            z-index: 1;
+        }
+
+        .door {
+            position: absolute;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 18px;
+            height: 28px;
+            background: linear-gradient(135deg, #3e2723 0%, #2d1b14 100%);
+            border-radius: 10px 10px 0 0;
+        }
+
+        .door::after {
+            content: '';
+            position: absolute;
+            top: 12px;
+            right: 3px;
+            width: 4px;
+            height: 4px;
+            background: #ffd700;
+            border-radius: 50%;
+        }
+
+        .window {
+            position: absolute;
+            width: 14px;
+            height: 14px;
+            background: linear-gradient(135deg, #fff9c4 0%, #ffeb3b 100%);
+            border: 2px solid #5d4037;
+            border-radius: 2px;
+            box-shadow: 0 0 10px rgba(255, 235, 59, 0.8), inset 0 0 5px rgba(255, 235, 59, 0.5);
+        }
+
+        .window-left {
+            top: 10px;
+            left: 8px;
+        }
+
+        .window-right {
+            top: 10px;
+            right: 8px;
+        }
+
+        .window::before, .window::after {
+            content: '';
+            position: absolute;
+            background: #5d4037;
+        }
+
+        .window::before {
+            top: 50%;
+            left: 0;
+            right: 0;
+            height: 2px;
+            transform: translateY(-50%);
+        }
+
+        .window::after {
+            left: 50%;
+            top: 0;
+            bottom: 0;
+            width: 2px;
+            transform: translateX(-50%);
+        }
+
+        .chimney {
+            position: absolute;
+            bottom: 65px;
+            right: 5px;
+            width: 15px;
+            height: 25px;
+            background: linear-gradient(90deg, #8b4513 0%, #654321 100%);
+        }
+
+        .chimney::before {
+            content: '';
+            position: absolute;
+            top: -5px;
+            left: -3px;
+            width: 21px;
+            height: 8px;
+            background: #fff;
+            border-radius: 2px;
+        }
+
+        /* Smoke */
+        .smoke-container {
+            position: absolute;
+            bottom: 85px;
+            right: 8px;
+            z-index: 10;
+        }
+
+        .smoke {
+            position: absolute;
+            width: 8px;
+            height: 8px;
+            background: rgba(255, 255, 255, 0.6);
+            border-radius: 50%;
+            animation: smoke 3s ease-out infinite;
+        }
+
+        .smoke:nth-child(2) {
+            animation-delay: 1s;
+            left: 5px;
+        }
+
+        .smoke:nth-child(3) {
+            animation-delay: 2s;
+            left: -3px;
+        }
+
+        @keyframes smoke {
+            0% {
+                opacity: 0.8;
+                transform: translateY(0) scale(1);
+            }
+            100% {
+                opacity: 0;
+                transform: translateY(-40px) translateX(10px) scale(2);
+            }
+        }
+
+        /* Pine Trees */
+        .tree {
+            position: absolute;
+            bottom: 0;
+        }
+
+        .tree-left {
+            left: -60px;
+        }
+
+        .tree-right {
+            right: -55px;
+        }
+
+        .tree-far-left {
+            left: -100px;
+            transform: scale(0.7);
+        }
+
+        .tree-far-right {
+            right: -95px;
+            transform: scale(0.8);
+        }
+
+        .tree-trunk {
+            position: absolute;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 10px;
+            height: 15px;
+            background: linear-gradient(90deg, #5d4037 0%, #4e342e 100%);
+        }
+
+        .tree-top {
+            position: relative;
+        }
+
+        .tree-layer {
+            position: absolute;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 0;
+            height: 0;
+            border-left: solid transparent;
+            border-right: solid transparent;
+            border-bottom: solid;
+        }
+
+        .tree-layer-1 {
+            bottom: 55px;
+            border-left-width: 20px;
+            border-right-width: 20px;
+            border-bottom-width: 25px;
+            border-bottom-color: #1b5e20;
+        }
+
+        .tree-layer-2 {
+            bottom: 35px;
+            border-left-width: 25px;
+            border-right-width: 25px;
+            border-bottom-width: 30px;
+            border-bottom-color: #2e7d32;
+        }
+
+        .tree-layer-3 {
+            bottom: 10px;
+            border-left-width: 30px;
+            border-right-width: 30px;
+            border-bottom-width: 35px;
+            border-bottom-color: #388e3c;
+        }
+
+        .tree-snow {
+            position: absolute;
+            background: #fff;
+            border-radius: 50%;
+        }
+
+        /* Snowman */
+        .snowman {
+            position: absolute;
+            bottom: 0;
+            left: 60px;
+        }
+
+        .snowman-bottom {
+            position: absolute;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 35px;
+            height: 35px;
+            background: radial-gradient(circle at 30% 30%, #fff 0%, #e0e0e0 100%);
+            border-radius: 50%;
+        }
+
+        .snowman-middle {
+            position: absolute;
+            bottom: 25px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 28px;
+            height: 28px;
+            background: radial-gradient(circle at 30% 30%, #fff 0%, #e0e0e0 100%);
+            border-radius: 50%;
+        }
+
+        .snowman-head {
+            position: absolute;
+            bottom: 47px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 22px;
+            height: 22px;
+            background: radial-gradient(circle at 30% 30%, #fff 0%, #e0e0e0 100%);
+            border-radius: 50%;
+        }
+
+        .snowman-hat {
+            position: absolute;
+            bottom: 65px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 24px;
+            height: 5px;
+            background: #1a1a1a;
+            border-radius: 2px;
+        }
+
+        .snowman-hat::before {
+            content: '';
+            position: absolute;
+            bottom: 5px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 16px;
+            height: 15px;
+            background: linear-gradient(90deg, #1a1a1a 0%, #333 100%);
+            border-radius: 2px 2px 0 0;
+        }
+
+        .snowman-hat::after {
+            content: '';
+            position: absolute;
+            bottom: 8px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 16px;
+            height: 4px;
+            background: #c62828;
+        }
+
+        .snowman-nose {
+            position: absolute;
+            bottom: 53px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 0;
+            height: 0;
+            border-top: 3px solid transparent;
+            border-bottom: 3px solid transparent;
+            border-left: 12px solid #ff6d00;
+        }
+
+        .snowman-eye {
+            position: absolute;
+            width: 4px;
+            height: 4px;
+            background: #1a1a1a;
+            border-radius: 50%;
+            bottom: 58px;
+        }
+
+        .snowman-eye-left {
+            left: calc(50% - 5px);
+        }
+
+        .snowman-eye-right {
+            left: calc(50% + 2px);
+        }
+
+        .snowman-button {
+            position: absolute;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 4px;
+            height: 4px;
+            background: #1a1a1a;
+            border-radius: 50%;
+        }
+
+        .snowman-button-1 { bottom: 32px; }
+        .snowman-button-2 { bottom: 38px; }
+        .snowman-button-3 { bottom: 44px; }
+
+        .snowman-arm {
+            position: absolute;
+            bottom: 35px;
+            width: 25px;
+            height: 3px;
+            background: #5d4037;
+            border-radius: 2px;
+        }
+
+        .snowman-arm-left {
+            left: -8px;
+            transform: rotate(-30deg);
+        }
+
+        .snowman-arm-right {
+            right: -8px;
+            transform: rotate(30deg);
+        }
+
+        .snowman-scarf {
+            position: absolute;
+            bottom: 45px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 30px;
+            height: 6px;
+            background: #c62828;
+            border-radius: 3px;
+        }
+
+        .snowman-scarf::after {
+            content: '';
+            position: absolute;
+            top: 6px;
+            right: 0;
+            width: 8px;
+            height: 15px;
+            background: #c62828;
+            border-radius: 0 0 3px 3px;
+        }
+
+        /* Snow Particles */
+        .snow-canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 50;
+            pointer-events: none;
+            border-radius: 50%;
+        }
+
+        /* Globe Base */
+        .base {
+            position: relative;
+            width: 200px;
+            height: 60px;
+            margin-top: -20px;
+            z-index: 10;
+        }
+
+        .base-top {
+            position: absolute;
+            top: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 180px;
+            height: 25px;
+            background: linear-gradient(180deg, #b8860b 0%, #8b6914 50%, #6b4f0f 100%);
+            border-radius: 50%;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+        }
+
+        .base-top::before {
+            content: '';
+            position: absolute;
+            top: 3px;
+            left: 10%;
+            right: 10%;
+            height: 8px;
+            background: linear-gradient(90deg, transparent 0%, rgba(255, 215, 0, 0.4) 50%, transparent 100%);
+            border-radius: 50%;
+        }
+
+        .base-middle {
+            position: absolute;
+            top: 15px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 160px;
+            height: 35px;
+            background: linear-gradient(180deg, #8b6914 0%, #654321 50%, #4a3016 100%);
+            border-radius: 0 0 20px 20px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+        }
+
+        .base-decoration {
+            position: absolute;
+            top: 25px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 140px;
+            height: 15px;
+            background: linear-gradient(180deg, #daa520 0%, #b8860b 100%);
+            border-radius: 5px;
+        }
+
+        .base-decoration::before {
+            content: '❄';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 12px;
+            color: #fff;
+        }
+
+        /* Controls Panel */
+        .controls {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 15px;
+            padding: 15px 25px;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 50px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            z-index: 1000;
+        }
+
+        .control-btn {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 5px;
+            background: none;
+            border: none;
+            color: #fff;
+            cursor: pointer;
+            padding: 10px 15px;
+            border-radius: 15px;
+            transition: all 0.3s ease;
+        }
+
+        .control-btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: translateY(-2px);
+        }
+
+        .control-btn:active {
+            transform: scale(0.95);
+        }
+
+        .control-btn span {
+            font-size: 24px;
+        }
+
+        .control-btn small {
+            font-size: 10px;
+            opacity: 0.8;
+        }
+
+        /* Stats Display */
+        .stats {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 15px 20px;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: #fff;
+            font-size: 14px;
+            z-index: 1000;
+        }
+
+        .stats h3 {
+            margin-bottom: 10px;
+            font-size: 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .stat-item {
+            display: flex;
+            justify-content: space-between;
+            margin: 5px 0;
+            gap: 20px;
+        }
+
+        .stat-value {
+            font-weight: bold;
+            color: #90caf9;
+        }
+
+        /* Instructions */
+        .instructions {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            padding: 15px 20px;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: #fff;
+            font-size: 13px;
+            max-width: 200px;
+            z-index: 1000;
+        }
+
+        .instructions h3 {
+            margin-bottom: 10px;
+            font-size: 14px;
+        }
+
+        .instructions p {
+            margin: 5px 0;
+            opacity: 0.9;
+        }
+
+        /* Background Stars */
+        .stars {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: -1;
+        }
+
+        .star {
+            position: absolute;
+            background: #fff;
+            border-radius: 50%;
+            animation: twinkle 2s ease-in-out infinite;
+        }
+
+        @keyframes twinkle {
+            0%, 100% { opacity: 0.3; transform: scale(1); }
+            50% { opacity: 1; transform: scale(1.2); }
+        }
+
+        /* Shake Animation */
+        .globe.shaking {
+            animation: shake 0.5s ease-in-out;
+        }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0) rotate(0); }
+            10% { transform: translateX(-10px) rotate(-3deg); }
+            20% { transform: translateX(10px) rotate(3deg); }
+            30% { transform: translateX(-10px) rotate(-3deg); }
+            40% { transform: translateX(10px) rotate(3deg); }
+            50% { transform: translateX(-5px) rotate(-1deg); }
+            60% { transform: translateX(5px) rotate(1deg); }
+            70% { transform: translateX(-3px) rotate(0); }
+            80% { transform: translateX(3px) rotate(0); }
+            90% { transform: translateX(-1px) rotate(0); }
+        }
+
+        /* Responsive Design */
+        @media (max-width: 500px) {
+            .globe {
+                width: 300px;
+                height: 300px;
+            }
+
+            .title {
+                font-size: 1.8rem;
+            }
+
+            .stats, .instructions {
+                font-size: 12px;
+                padding: 10px 15px;
+            }
+
+            .controls {
+                padding: 10px 15px;
+                gap: 10px;
+            }
+
+            .control-btn span {
+                font-size: 20px;
+            }
+        }
+
+        /* Snow intensity indicator */
+        .intensity-bar {
+            width: 100%;
+            height: 4px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 2px;
+            margin-top: 5px;
+            overflow: hidden;
+        }
+
+        .intensity-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #64b5f6, #e3f2fd);
+            border-radius: 2px;
+            transition: width 0.3s ease;
+        }
+
+        /* Theme toggle */
+        .globe.night-mode {
+            background: radial-gradient(ellipse at 30% 30%, rgba(255, 255, 255, 0.3) 0%, rgba(255, 255, 255, 0.05) 30%, transparent 70%),
+                        radial-gradient(circle at 50% 50%, #0d1b2a 0%, #051014 100%);
+        }
+    </style>
+</head>
+<body>
+    <!-- Background Stars -->
+    <div class="stars" id="stars"></div>
+
+    <h1 class="title">✨ Snow Globe ✨</h1>
+
+    <div class="snow-globe-container">
+        <div class="globe" id="globe">
+            <!-- Snow Canvas -->
+            <canvas class="snow-canvas" id="snowCanvas"></canvas>
+
+            <!-- Ground -->
+            <div class="ground"></div>
+
+            <!-- Scene -->
+            <div class="scene">
+                <!-- Trees -->
+                <div class="tree tree-far-left">
+                    <div class="tree-trunk"></div>
+                    <div class="tree-top">
+                        <div class="tree-layer tree-layer-1"></div>
+                        <div class="tree-layer tree-layer-2"></div>
+                        <div class="tree-layer tree-layer-3"></div>
+                    </div>
+                </div>
+
+                <div class="tree tree-left">
+                    <div class="tree-trunk"></div>
+                    <div class="tree-top">
+                        <div class="tree-layer tree-layer-1"></div>
+                        <div class="tree-layer tree-layer-2"></div>
+                        <div class="tree-layer tree-layer-3"></div>
+                    </div>
+                </div>
+
+                <!-- Cabin -->
+                <div class="cabin">
+                    <div class="roof-snow"></div>
+                    <div class="chimney"></div>
+                    <div class="smoke-container">
+                        <div class="smoke"></div>
+                        <div class="smoke"></div>
+                        <div class="smoke"></div>
+                    </div>
+                    <div class="roof"></div>
+                    <div class="cabin-body">
+                        <div class="window window-left"></div>
+                        <div class="window window-right"></div>
+                        <div class="door"></div>
+                    </div>
+                </div>
+
+                <!-- Trees Right -->
+                <div class="tree tree-right">
+                    <div class="tree-trunk"></div>
+                    <div class="tree-top">
+                        <div class="tree-layer tree-layer-1"></div>
+                        <div class="tree-layer tree-layer-2"></div>
+                        <div class="tree-layer tree-layer-3"></div>
+                    </div>
+                </div>
+
+                <div class="tree tree-far-right">
+                    <div class="tree-trunk"></div>
+                    <div class="tree-top">
+                        <div class="tree-layer tree-layer-1"></div>
+                        <div class="tree-layer tree-layer-2"></div>
+                        <div class="tree-layer tree-layer-3"></div>
+                    </div>
+                </div>
+
+                <!-- Snowman -->
+                <div class="snowman">
+                    <div class="snowman-bottom"></div>
+                    <div class="snowman-middle"></div>
+                    <div class="snowman-scarf"></div>
+                    <div class="snowman-head"></div>
+                    <div class="snowman-hat"></div>
+                    <div class="snowman-nose"></div>
+                    <div class="snowman-eye snowman-eye-left"></div>
+                    <div class="snowman-eye snowman-eye-right"></div>
+                    <div class="snowman-button snowman-button-1"></div>
+                    <div class="snowman-button snowman-button-2"></div>
+                    <div class="snowman-button snowman-button-3"></div>
+                    <div class="snowman-arm snowman-arm-left"></div>
+                    <div class="snowman-arm snowman-arm-right"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Base -->
+        <div class="base">
+            <div class="base-top"></div>
+            <div class="base-middle"></div>
+            <div class="base-decoration"></div>
+        </div>
+    </div>
+
+    <!-- Instructions -->
+    <div class="instructions">
+        <h3>🎄 How to Play</h3>
+        <p>🖱️ Click & drag to shake</p>
+        <p>📱 Or shake your device</p>
+        <p>❄️ Watch the snow fall!</p>
+    </div>
+
+    <!-- Stats -->
+    <div class="stats">
+        <h3>📊 Snow Stats</h3>
+        <div class="stat-item">
+            <span>Shakes:</span>
+            <span class="stat-value" id="shakeCount">0</span>
+        </div>
+        <div class="stat-item">
+            <span>Snowflakes:</span>
+            <span class="stat-value" id="snowflakeCount">0</span>
+        </div>
+        <div class="stat-item">
+            <span>Intensity:</span>
+        </div>
+        <div class="intensity-bar">
+            <div class="intensity-fill" id="intensityFill" style="width: 50%"></div>
+        </div>
+    </div>
+
+    <!-- Controls -->
+    <div class="controls">
+        <button class="control-btn" id="shakeBtn" title="Shake Globe">
+            <span>🌨️</span>
+            <small>Shake</small>
+        </button>
+        <button class="control-btn" id="intensityDownBtn" title="Less Snow">
+            <span>➖</span>
+            <small>Less</small>
+        </button>
+        <button class="control-btn" id="intensityUpBtn" title="More Snow">
+            <span>➕</span>
+            <small>More</small>
+        </button>
+        <button class="control-btn" id="nightModeBtn" title="Toggle Night Mode">
+            <span>🌙</span>
+            <small>Night</small>
+        </button>
+        <button class="control-btn" id="resetBtn" title="Reset Stats">
+            <span>🔄</span>
+            <small>Reset</small>
+        </button>
+    </div>
+
+    <script>
+        // ============================================
+        // Snow Globe Application
+        // ============================================
+
+        class SnowGlobe {
+            constructor() {
+                // DOM Elements
+                this.globe = document.getElementById('globe');
+                this.canvas = document.getElementById('snowCanvas');
+                this.ctx = this.canvas.getContext('2d');
+                
+                // Stats elements
+                this.shakeCountEl = document.getElementById('shakeCount');
+                this.snowflakeCountEl = document.getElementById('snowflakeCount');
+                this.intensityFillEl = document.getElementById('intensityFill');
+                
+                // Control buttons
+                this.shakeBtn = document.getElementById('shakeBtn');
+                this.intensityDownBtn = document.getElementById('intensityDownBtn');
+                this.intensityUpBtn = document.getElementById('intensityUpBtn');
+                this.nightModeBtn = document.getElementById('nightModeBtn');
+                this.resetBtn = document.getElementById('resetBtn');
+
+                // Snowflakes array
+                this.snowflakes = [];
+                
+                // State
+                this.state = this.loadState();
+                
+                // Physics
+                this.gravity = 0.02;
+                this.friction = 0.99;
+                this.turbulence = 0;
+                this.maxTurbulence = 5;
+                
+                // Shake detection
+                this.isDragging = false;
+                this.lastX = 0;
+                this.lastY = 0;
+                this.velocity = { x: 0, y: 0 };
+                
+                // Initialize
+                this.init();
+            }
+
+            // Load state from localStorage
+            loadState() {
+                const defaultState = {
+                    shakeCount: 0,
+                    intensity: 50,
+                    nightMode: false,
+                    totalSnowflakes: 0
+                };
+                
+                try {
+                    const saved = localStorage.getItem('snowGlobeState');
+                    if (saved) {
+                        return { ...defaultState, ...JSON.parse(saved) };
+                    }
+                } catch (e) {
+                    console.warn('Could not load state:', e);
+                }
+                
+                return defaultState;
+            }
+
+            // Save state to localStorage
+            saveState() {
+                try {
+                    localStorage.setItem('snowGlobeState', JSON.stringify(this.state));
+                } catch (e) {
+                    console.warn('Could not save state:', e);
+                }
+            }
+
+            init() {
+                this.setupCanvas();
+                this.createStars();
+                this.createInitialSnowflakes();
+                this.setupEventListeners();
+                this.applyState();
+                this.animate();
+            }
+
+            setupCanvas() {
+                const rect = this.globe.getBoundingClientRect();
+                this.canvas.width = rect.width;
+                this.canvas.height = rect.height;
+                this.centerX = this.canvas.width / 2;
+                this.centerY = this.canvas.height / 2;
+                this.radius = Math.min(this.canvas.width, this.canvas.height) / 2 - 5;
+            }
+
+            createStars() {
+                const starsContainer = document.getElementById('stars');
+                for (let i = 0; i < 100; i++) {
+                    const star = document.createElement('div');
+                    star.className = 'star';
+                    star.style.left = Math.random() * 100 + '%';
+                    star.style.top = Math.random() * 100 + '%';
+                    star.style.width = Math.random() * 3 + 1 + 'px';
+                    star.style.height = star.style.width;
+                    star.style.animationDelay = Math.random() * 2 + 's';
+                    starsContainer.appendChild(star);
+                }
+            }
+
+            createInitialSnowflakes() {
+                const count = Math.floor(this.state.intensity * 2);
+                for (let i = 0; i < count; i++) {
+                    this.createSnowflake(true);
+                }
+            }
+
+            createSnowflake(settled = false) {
+                const angle = Math.random() * Math.PI * 2;
+                const distance = Math.random() * this.radius * 0.9;
+                
+                let x, y;
+                if (settled) {
+                    // Start at random positions, but mostly at bottom
+                    x = this.centerX + Math.cos(angle) * distance;
+                    y = this.centerY + Math.random() * this.radius * 0.3 + this.radius * 0.5;
+                    // Ensure within bounds
+                    const dx = x - this.centerX;
+                    const dy = y - this.centerY;
+                    const dist = Math.sqrt(dx * dx + dy * dy);
+                    if (dist > this.radius * 0.9) {
+                        const scale = (this.radius * 0.9) / dist;
+                        x = this.centerX + dx * scale;
+                        y = this.centerY + dy * scale;
+                    }
+                } else {
+                    // Start from top
+                    x = this.centerX + (Math.random() - 0.5) * this.radius * 1.5;
+                    y = this.centerY - this.radius * 0.8 + Math.random() * 20;
+                }
+
+                const snowflake = {
+                    x: x,
+                    y: y,
+                    vx: (Math.random() - 0.5) * 0.5,
+                    vy: Math.random() * 0.5 + 0.2,
+                    radius: Math.random() * 3 + 1,
+                    opacity: Math.random() * 0.5 + 0.5,
+                    rotation: Math.random() * Math.PI * 2,
+                    rotationSpeed: (Math.random() - 0.5) * 0.02,
+                    type: Math.floor(Math.random() * 3) // Different snowflake types
+                };
+
+                this.snowflakes.push(snowflake);
+                this.state.totalSnowflakes++;
+            }
+
+            setupEventListeners() {
+                // Mouse events for shaking
+                this.globe.addEventListener('mousedown', (e) => this.startDrag(e));
+                document.addEventListener('mousemove', (e) => this.drag(e));
+                document.addEventListener('mouseup', () => this.endDrag());
+
+                // Touch events for mobile
+                this.globe.addEventListener('touchstart', (e) => this.startDrag(e.touches[0]));
+                document.addEventListener('touchmove', (e) => this.drag(e.touches[0]));
+                document.addEventListener('touchend', () => this.endDrag());
+
+                // Device motion for physical shaking
+                if (window.DeviceMotionEvent) {
+                    window.addEventListener('devicemotion', (e) => this.handleDeviceMotion(e));
+                }
+
+                // Control buttons
+                this.shakeBtn.addEventListener('click', () => this.triggerShake());
+                this.intensityDownBtn.addEventListener('click', () => this.adjustIntensity(-10));
+                this.intensityUpBtn.addEventListener('click', () => this.adjustIntensity(10));
+                this.nightModeBtn.addEventListener('click', () => this.toggleNightMode());
+                this.resetBtn.addEventListener('click', () => this.resetStats());
+
+                // Window resize
+                window.addEventListener('resize', () => this.setupCanvas());
+            }
+
+            startDrag(e) {
+                this.isDragging = true;
+                this.lastX = e.clientX;
+                this.lastY = e.clientY;
+            }
+
+            drag(e) {
+                if (!this.isDragging) return;
+
+                const deltaX = e.clientX - this.lastX;
+                const deltaY = e.clientY - this.lastY;
+                
+                this.velocity.x = deltaX * 0.3;
+                this.velocity.y = deltaY * 0.3;
+
+                const speed = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
+                
+                if (speed > 10) {
+                    this.addTurbulence(speed * 0.1);
+                }
+
+                this.lastX = e.clientX;
+                this.lastY = e.clientY;
+            }
+
+            endDrag() {
+                if (this.isDragging && (Math.abs(this.velocity.x) > 2 || Math.abs(this.velocity.y) > 2)) {
+                    this.triggerShake();
+                }
+                this.isDragging = false;
+            }
+
+            handleDeviceMotion(e) {
+                const acceleration = e.accelerationIncludingGravity;
+                if (!acceleration) return;
+
+                const totalAcceleration = Math.sqrt(
+                    acceleration.x * acceleration.x +
+                    acceleration.y * acceleration.y +
+                    acceleration.z * acceleration.z
+                );
+
+                if (totalAcceleration > 20) {
+                    this.triggerShake();
+                    this.velocity.x = acceleration.x * 0.5;
+                    this.velocity.y = acceleration.y * 0.5;
+                }
+            }
+
+            triggerShake() {
+                this.state.shakeCount++;
+                this.saveState();
+                this.updateUI();
+
+                // Add visual shake effect
+                this.globe.classList.add('shaking');
+                setTimeout(() => this.globe.classList.remove('shaking'), 500);
+
+                // Add turbulence to snow
+                this.addTurbulence(this.maxTurbulence);
+
+                // Apply velocity to all snowflakes
+                this.snowflakes.forEach(flake => {
+                    flake.vx += (Math.random() - 0.5) * 8;
+                    flake.vy += (Math.random() - 0.5) * 8 - 3;
+                });
+
+                // Add new snowflakes
+                const newFlakes = Math.floor(this.state.intensity / 5);
+                for (let i = 0; i < newFlakes; i++) {
+                    this.createSnowflake(false);
+                }
+            }
+
+            addTurbulence(amount) {
+                this.turbulence = Math.min(this.turbulence + amount, this.maxTurbulence);
+            }
+
+            adjustIntensity(delta) {
+                this.state.intensity = Math.max(10, Math.min(100, this.state.intensity + delta));
+                this.saveState();
+                this.updateUI();
+
+                // Adjust snowflake count
+                const targetCount = Math.floor(this.state.intensity * 2);
+                while (this.snowflakes.length < targetCount) {
+                    this.createSnowflake(Math.random() > 0.5);
+                }
+                while (this.snowflakes.length > targetCount) {
+                    this.snowflakes.pop();
+                }
+            }
+
+            toggleNightMode() {
+                this.state.nightMode = !this.state.nightMode;
+                this.saveState();
+                this.applyState();
+                
+                // Update button
+                this.nightModeBtn.querySelector('span').textContent = 
+                    this.state.nightMode ? '☀️' : '🌙';
+                this.nightModeBtn.querySelector('small').textContent = 
+                    this.state.nightMode ? 'Day' : 'Night';
+            }
+
+            resetStats() {
+                this.state.shakeCount = 0;
+                this.state.totalSnowflakes = 0;
+                this.saveState();
+                this.updateUI();
+            }
+
+            applyState() {
+                // Apply night mode
+                if (this.state.nightMode) {
+                    this.globe.classList.add('night-mode');
+                } else {
+                    this.globe.classList.remove('night-mode');
+                }
+
+                this.updateUI();
+            }
+
+            updateUI() {
+                this.shakeCountEl.textContent = this.state.shakeCount;
+                this.snowflakeCountEl.textContent = this.snowflakes.length;
+                this.intensityFillEl.style.width = this.state.intensity + '%';
+            }
+
+            updateSnowflakes() {
+                const groundY = this.centerY + this.radius * 0.55;
+
+                this.snowflakes.forEach(flake => {
+                    // Apply turbulence
+                    if (this.turbulence > 0) {
+                        flake.vx += (Math.random() - 0.5) * this.turbulence * 0.2;
+                        flake.vy += (Math.random() - 0.5) * this.turbulence * 0.2;
+                    }
+
+                    // Apply gravity
+                    flake.vy += this.gravity;
+
+                    // Apply friction
+                    flake.vx *= this.friction;
+                    flake.vy *= this.friction;
+
+                    // Add gentle swaying
+                    flake.vx += Math.sin(Date.now() * 0.001 + flake.x) * 0.01;
+
+                    // Update position
+                    flake.x += flake.vx;
+                    flake.y += flake.vy;
+
+                    // Update rotation
+                    flake.rotation += flake.rotationSpeed;
+
+                    // Boundary collision with globe
+                    const dx = flake.x - this.centerX;
+                    const dy = flake.y - this.centerY;
+                    const distance = Math.sqrt(dx * dx + dy * dy);
+
+                    if (distance > this.radius - flake.radius - 5) {
+                        // Bounce off the globe walls
+                        const nx = dx / distance;
+                        const ny = dy / distance;
+                        const dot = flake.vx * nx + flake.vy * ny;
+                        
+                        flake.vx -= 2 * dot * nx * 0.5;
+                        flake.vy -= 2 * dot * ny * 0.5;
+
+                        // Push back inside
+                        const overlap = distance - (this.radius - flake.radius - 5);
+                        flake.x -= nx * overlap;
+                        flake.y -= ny * overlap;
+                    }
+
+                    // Ground collision (settle at bottom)
+                    if (flake.y > groundY && Math.abs(flake.vy) < 0.5) {
+                        flake.y = groundY + (Math.random() - 0.5) * 10;
+                        flake.vy = 0;
+                        flake.vx *= 0.5;
+                    }
+                });
+
+                // Decrease turbulence over time
+                this.turbulence *= 0.98;
+                if (this.turbulence < 0.01) this.turbulence = 0;
+
+                // Occasionally add new snowflakes from top
+                if (Math.random() < 0.05 && this.snowflakes.length < this.state.intensity * 2.5) {
+                    this.createSnowflake(false);
+                }
+
+                // Remove excess snowflakes
+                while (this.snowflakes.length > this.state.intensity * 3) {
+                    this.snowflakes.shift();
+                }
+            }
+
+            drawSnowflakes() {
+                this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+
+                // Create clipping path for globe
+                this.ctx.save();
+                this.ctx.beginPath();
+                this.ctx.arc(this.centerX, this.centerY, this.radius - 2, 0, Math.PI * 2);
+                this.ctx.clip();
+
+                this.snowflakes.forEach(flake => {
+                    this.ctx.save();
+                    this.ctx.translate(flake.x, flake.y);
+                    this.ctx.rotate(flake.rotation);
+                    this.ctx.globalAlpha = flake.opacity;
+
+                    if (flake.type === 0) {
+                        // Simple circle snowflake
+                        this.ctx.beginPath();
+                        this.ctx.arc(0, 0, flake.radius, 0, Math.PI * 2);
+                        this.ctx.fillStyle = '#fff';
+                        this.ctx.fill();
+                    } else if (flake.type === 1) {
+                        // Star snowflake
+                        this.drawStar(0, 0, flake.radius, 6);
+                    } else {
+                        // Crystal snowflake
+                        this.drawCrystal(0, 0, flake.radius);
+                    }
+
+                    this.ctx.restore();
+                });
+
+                this.ctx.restore();
+            }
+
+            drawStar(x, y, radius, points) {
+                this.ctx.beginPath();
+                for (let i = 0; i < points * 2; i++) {
+                    const r = i % 2 === 0 ? radius : radius * 0.4;
+                    const angle = (i * Math.PI) / points - Math.PI / 2;
+                    const px = x + Math.cos(angle) * r;
+                    const py = y + Math.sin(angle) * r;
+                    if (i === 0) {
+                        this.ctx.moveTo(px, py);
+                    } else {
+                        this.ctx.lineTo(px, py);
+                    }
+                }
+                this.ctx.closePath();
+                this.ctx.fillStyle = '#fff';
+                this.ctx.fill();
+            }
+
+            drawCrystal(x, y, radius) {
+                this.ctx.strokeStyle = '#fff';
+                this.ctx.lineWidth = 1;
+                
+                for (let i = 0; i < 6; i++) {
+                    const angle = (i * Math.PI) / 3;
+                    this.ctx.beginPath();
+                    this.ctx.moveTo(x, y);
+                    this.ctx.lineTo(
+                        x + Math.cos(angle) * radius * 2,
+                        y + Math.sin(angle) * radius * 2
+                    );
+                    this.ctx.stroke();
+
+                    // Add branches
+                    const branchX = x + Math.cos(angle) * radius;
+                    const branchY = y + Math.sin(angle) * radius;
+                    
+                    this.ctx.beginPath();
+                    this.ctx.moveTo(branchX, branchY);
+                    this.ctx.lineTo(
+                        branchX + Math.cos(angle + Math.PI / 4) * radius * 0.5,
+                        branchY + Math.sin(angle + Math.PI / 4) * radius * 0.5
+                    );
+                    this.ctx.stroke();
+
+                    this.ctx.beginPath();
+                    this.ctx.moveTo(branchX, branchY);
+                    this.ctx.lineTo(
+                        branchX + Math.cos(angle - Math.PI / 4) * radius * 0.5,
+                        branchY + Math.sin(angle - Math.PI / 4) * radius * 0.5
+                    );
+                    this.ctx.stroke();
+                }
+            }
+
+            animate() {
+                this.updateSnowflakes();
+                this.drawSnowflakes();
+                this.updateUI();
+                requestAnimationFrame(() => this.animate());
+            }
+        }
+
+        // Initialize the snow globe when the page loads
+        document.addEventListener('DOMContentLoaded', () => {
+            new SnowGlobe();
+        });
+    </script>
+</body>
+</html>
