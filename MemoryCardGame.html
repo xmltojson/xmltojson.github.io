@@ -244,6 +244,8 @@
             gap: 10px;
             margin-bottom: 25px;
             z-index: 1;
+            flex-wrap: wrap;
+            justify-content: center;
         }
 
         .difficulty-btn {
@@ -273,27 +275,45 @@
 
         .game-board {
             display: grid;
-            gap: 15px;
-            padding: 25px;
+            gap: 12px;
+            padding: 20px;
             background: rgba(255, 255, 255, 0.05);
             backdrop-filter: blur(10px);
             border: 1px solid rgba(255, 255, 255, 0.1);
             border-radius: 25px;
             box-shadow: 0 25px 50px rgba(0, 0, 0, 0.3);
+            justify-content: center;
+            align-content: center;
         }
 
-        .game-board.easy { grid-template-columns: repeat(4, 1fr); }
-        .game-board.medium { grid-template-columns: repeat(4, 1fr); }
-        .game-board.hard { grid-template-columns: repeat(6, 1fr); }
+        .game-board.easy { 
+            grid-template-columns: repeat(4, 85px);
+            grid-template-rows: repeat(4, 85px);
+        }
+        .game-board.medium { 
+            grid-template-columns: repeat(4, 85px);
+            grid-template-rows: repeat(6, 85px);
+        }
+        .game-board.hard { 
+            grid-template-columns: repeat(6, 85px);
+            grid-template-rows: repeat(6, 85px);
+        }
 
         /* Card Styles */
+        .card-wrapper {
+            width: 85px;
+            height: 85px;
+            perspective: 1000px;
+        }
+
         .card {
-            width: 90px;
-            height: 90px;
+            width: 100%;
+            height: 100%;
             position: relative;
             transform-style: preserve-3d;
             transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
             cursor: pointer;
+            transform-origin: center center;
         }
 
         .card.flipped {
@@ -301,17 +321,18 @@
         }
 
         .card.matched {
-            animation: matchPulse 0.6s ease;
+            animation: matchPulse 0.6s ease forwards;
         }
 
         @keyframes matchPulse {
-            0%, 100% { transform: rotateY(180deg) scale(1); }
-            50% { transform: rotateY(180deg) scale(1.1); }
+            0% { transform: rotateY(180deg) scale(1); }
+            50% { transform: rotateY(180deg) scale(1.08); }
+            100% { transform: rotateY(180deg) scale(1); }
         }
 
         .card.matched .card-front {
             background: linear-gradient(135deg, #00b894, #55efc4);
-            box-shadow: 0 0 30px rgba(0, 184, 148, 0.6);
+            box-shadow: 0 0 20px rgba(0, 184, 148, 0.6);
         }
 
         .card.shake {
@@ -320,36 +341,40 @@
 
         @keyframes shake {
             0%, 100% { transform: rotateY(180deg) translateX(0); }
-            25% { transform: rotateY(180deg) translateX(-10px); }
-            75% { transform: rotateY(180deg) translateX(10px); }
+            20% { transform: rotateY(180deg) translateX(-8px); }
+            40% { transform: rotateY(180deg) translateX(8px); }
+            60% { transform: rotateY(180deg) translateX(-8px); }
+            80% { transform: rotateY(180deg) translateX(8px); }
         }
 
         .card-face {
             position: absolute;
+            top: 0;
+            left: 0;
             width: 100%;
             height: 100%;
             backface-visibility: hidden;
             -webkit-backface-visibility: hidden;
-            border-radius: 15px;
+            border-radius: 12px;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 2.5rem;
+            font-size: 2.2rem;
+            user-select: none;
         }
 
         .card-back {
             background: var(--card-gradient);
-            box-shadow: 0 5px 15px rgba(108, 92, 231, 0.4);
+            box-shadow: 0 4px 15px rgba(108, 92, 231, 0.4);
             position: relative;
             overflow: hidden;
-            z-index: 2;
         }
 
         .card-back::before {
             content: '?';
             font-family: 'Fredoka One', cursive;
             font-size: 2rem;
-            color: rgba(255, 255, 255, 0.5);
+            color: rgba(255, 255, 255, 0.6);
         }
 
         .card-back::after {
@@ -359,7 +384,7 @@
             left: -50%;
             width: 200%;
             height: 200%;
-            background: linear-gradient(45deg, transparent, rgba(255,255,255,0.1), transparent);
+            background: linear-gradient(45deg, transparent, rgba(255,255,255,0.15), transparent);
             animation: shimmer 3s infinite;
         }
 
@@ -369,19 +394,24 @@
         }
 
         .card-front {
-            background: linear-gradient(145deg, #ffffff, #f0f0f0);
+            background: linear-gradient(145deg, #ffffff, #f8f9fa);
             transform: rotateY(180deg);
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
-            z-index: 1;
-            color: #333;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+            border: 2px solid rgba(255, 255, 255, 0.8);
         }
 
-        .card:hover:not(.flipped):not(.matched) {
-            transform: translateY(-5px) rotateY(10deg);
+        .card-front .emoji {
+            font-size: 2.5rem;
+            line-height: 1;
+            text-align: center;
         }
 
-        .card:hover:not(.flipped):not(.matched) .card-back {
-            box-shadow: 0 10px 25px rgba(108, 92, 231, 0.6);
+        .card:not(.flipped):not(.matched):hover {
+            transform: translateY(-3px);
+        }
+
+        .card:not(.flipped):not(.matched):hover .card-back {
+            box-shadow: 0 8px 25px rgba(108, 92, 231, 0.6);
         }
 
         /* High Scores */
@@ -411,6 +441,7 @@
         .score-list li {
             display: flex;
             justify-content: space-between;
+            align-items: center;
             padding: 10px 0;
             border-bottom: 1px solid rgba(255, 255, 255, 0.1);
             color: var(--light);
@@ -425,14 +456,13 @@
             width: 30px;
         }
 
-        .score-list .rank:nth-child(1) { color: #ffd700; }
-
         .score-list .difficulty-tag {
-            font-size: 0.8rem;
-            padding: 2px 8px;
+            font-size: 0.75rem;
+            padding: 3px 10px;
             border-radius: 10px;
             background: var(--gradient-1);
             color: white;
+            text-transform: capitalize;
         }
 
         /* Modal */
@@ -467,6 +497,7 @@
             padding: 40px;
             text-align: center;
             max-width: 400px;
+            margin: 20px;
             animation: modalSlide 0.5s ease;
             box-shadow: 0 25px 50px rgba(0, 0, 0, 0.5);
         }
@@ -537,6 +568,7 @@
             height: 100%;
             pointer-events: none;
             z-index: 999;
+            overflow: hidden;
         }
 
         .confetti-piece {
@@ -572,11 +604,34 @@
             font-size: 1.5rem;
             transition: all 0.3s;
             z-index: 100;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
 
         .theme-toggle:hover {
             background: rgba(255, 255, 255, 0.2);
             transform: scale(1.1);
+        }
+
+        /* Theme indicator */
+        .theme-indicator {
+            position: fixed;
+            top: 80px;
+            right: 20px;
+            background: rgba(255, 255, 255, 0.1);
+            padding: 5px 15px;
+            border-radius: 20px;
+            color: white;
+            font-size: 0.85rem;
+            z-index: 100;
+            text-transform: capitalize;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        .theme-indicator.show {
+            opacity: 1;
         }
 
         /* Responsive Design */
@@ -585,18 +640,40 @@
                 font-size: 2rem;
             }
 
-            .card {
-                width: 70px;
-                height: 70px;
+            .game-board.easy { 
+                grid-template-columns: repeat(4, 70px);
+                grid-template-rows: repeat(4, 70px);
+                gap: 8px;
+                padding: 15px;
+            }
+            .game-board.medium { 
+                grid-template-columns: repeat(4, 70px);
+                grid-template-rows: repeat(6, 70px);
+                gap: 8px;
+                padding: 15px;
+            }
+            .game-board.hard { 
+                grid-template-columns: repeat(6, 55px);
+                grid-template-rows: repeat(6, 55px);
+                gap: 6px;
+                padding: 12px;
+            }
+
+            .card-wrapper {
+                width: 100%;
+                height: 100%;
             }
 
             .card-face {
+                font-size: 1.8rem;
+            }
+
+            .card-front .emoji {
                 font-size: 2rem;
             }
 
-            .game-board {
-                gap: 10px;
-                padding: 15px;
+            .card-back::before {
+                font-size: 1.5rem;
             }
 
             .stats-panel {
@@ -605,66 +682,86 @@
 
             .stat-card {
                 padding: 10px 15px;
-                min-width: 100px;
+                min-width: 80px;
             }
 
             .stat-card .value {
                 font-size: 1.4rem;
             }
 
-            .difficulty-selector {
-                flex-wrap: wrap;
-                justify-content: center;
+            .stat-card .label {
+                font-size: 0.7rem;
             }
         }
 
         @media (max-width: 500px) {
-            .card {
-                width: 60px;
-                height: 60px;
+            .header h1 {
+                font-size: 1.6rem;
+            }
+
+            .game-board.easy { 
+                grid-template-columns: repeat(4, 60px);
+                grid-template-rows: repeat(4, 60px);
+                gap: 6px;
+                padding: 12px;
+            }
+            .game-board.medium { 
+                grid-template-columns: repeat(4, 60px);
+                grid-template-rows: repeat(6, 60px);
+                gap: 6px;
+                padding: 12px;
+            }
+            .game-board.hard { 
+                grid-template-columns: repeat(6, 48px);
+                grid-template-rows: repeat(6, 48px);
+                gap: 5px;
+                padding: 10px;
             }
 
             .card-face {
                 font-size: 1.5rem;
+                border-radius: 8px;
             }
 
-            .game-board.hard {
-                grid-template-columns: repeat(4, 1fr);
+            .card-front .emoji {
+                font-size: 1.6rem;
+            }
+
+            .card-back::before {
+                font-size: 1.2rem;
             }
 
             .btn {
                 padding: 10px 20px;
-                font-size: 0.9rem;
+                font-size: 0.85rem;
             }
 
             .difficulty-btn {
-                padding: 8px 15px;
-                font-size: 0.85rem;
+                padding: 8px 12px;
+                font-size: 0.8rem;
+            }
+
+            .controls {
+                gap: 10px;
             }
         }
 
-        /* Loading Animation */
-        .loading {
-            display: flex;
-            gap: 10px;
-            justify-content: center;
-            padding: 50px;
+        /* Paused state */
+        .game-board.paused {
+            filter: blur(10px);
+            pointer-events: none;
         }
 
-        .loading span {
-            width: 20px;
-            height: 20px;
-            background: var(--gradient-1);
-            border-radius: 50%;
-            animation: loadingBounce 1s infinite;
-        }
-
-        .loading span:nth-child(2) { animation-delay: 0.2s; }
-        .loading span:nth-child(3) { animation-delay: 0.4s; }
-
-        @keyframes loadingBounce {
-            0%, 100% { transform: translateY(0); }
-            50% { transform: translateY(-20px); }
+        .game-board.paused::after {
+            content: 'PAUSED';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-family: 'Fredoka One', cursive;
+            font-size: 2rem;
+            color: white;
+            z-index: 10;
         }
     </style>
 </head>
@@ -685,6 +782,7 @@
 
     <!-- Theme Toggle -->
     <button class="theme-toggle" id="themeToggle" title="Change Card Theme">🎨</button>
+    <div class="theme-indicator" id="themeIndicator">animals</div>
 
     <!-- Header -->
     <header class="header">
@@ -718,9 +816,9 @@
 
     <!-- Difficulty Selector -->
     <div class="difficulty-selector">
-        <button class="difficulty-btn active" data-difficulty="easy">Easy (8 pairs)</button>
-        <button class="difficulty-btn" data-difficulty="medium">Medium (12 pairs)</button>
-        <button class="difficulty-btn" data-difficulty="hard">Hard (18 pairs)</button>
+        <button class="difficulty-btn active" data-difficulty="easy">Easy (8)</button>
+        <button class="difficulty-btn" data-difficulty="medium">Medium (12)</button>
+        <button class="difficulty-btn" data-difficulty="hard">Hard (18)</button>
     </div>
 
     <!-- Controls -->
@@ -773,9 +871,9 @@
         };
 
         const DIFFICULTIES = {
-            easy: { pairs: 8, columns: 4 },
-            medium: { pairs: 12, columns: 4 },
-            hard: { pairs: 18, columns: 6 }
+            easy: { pairs: 8, columns: 4, rows: 4 },
+            medium: { pairs: 12, columns: 4, rows: 6 },
+            hard: { pairs: 18, columns: 6, rows: 6 }
         };
 
         // Game State
@@ -792,7 +890,8 @@
             difficulty: 'easy',
             theme: 'animals',
             hintsUsed: 0,
-            totalPairs: 8
+            totalPairs: 8,
+            isLocked: false
         };
 
         // DOM Elements
@@ -804,6 +903,7 @@
         const highScoresList = document.getElementById('highScores');
         const winModal = document.getElementById('winModal');
         const confettiContainer = document.getElementById('confetti');
+        const themeIndicator = document.getElementById('themeIndicator');
 
         // Initialize Game
         function init() {
@@ -859,8 +959,10 @@
             gameState.isPaused = false;
             gameState.hintsUsed = 0;
             gameState.isComplete = false;
+            gameState.isLocked = false;
 
             gameBoard.className = `game-board ${gameState.difficulty}`;
+            gameBoard.classList.remove('paused');
             
             renderCards();
             updateDisplay();
@@ -898,6 +1000,9 @@
             gameBoard.innerHTML = '';
             
             gameState.cards.forEach((card, index) => {
+                const cardWrapper = document.createElement('div');
+                cardWrapper.className = 'card-wrapper';
+                
                 const cardElement = document.createElement('div');
                 cardElement.className = 'card';
                 cardElement.dataset.index = index;
@@ -911,17 +1016,20 @@
 
                 cardElement.innerHTML = `
                     <div class="card-face card-back"></div>
-                    <div class="card-face card-front">${card.emoji}</div>
+                    <div class="card-face card-front">
+                        <span class="emoji">${card.emoji}</span>
+                    </div>
                 `;
 
                 cardElement.addEventListener('click', () => handleCardClick(index));
-                gameBoard.appendChild(cardElement);
+                cardWrapper.appendChild(cardElement);
+                gameBoard.appendChild(cardWrapper);
             });
         }
 
         // Handle Card Click
         function handleCardClick(index) {
-            if (gameState.isPaused || !gameState.isPlaying) return;
+            if (gameState.isPaused || !gameState.isPlaying || gameState.isLocked) return;
 
             const card = gameState.cards[index];
             
@@ -932,11 +1040,12 @@
             card.isFlipped = true;
             gameState.flippedCards.push(index);
             
-            const cardElement = gameBoard.children[index];
+            const cardElement = gameBoard.querySelectorAll('.card')[index];
             cardElement.classList.add('flipped');
 
             if (gameState.flippedCards.length === 2) {
                 gameState.moves++;
+                gameState.isLocked = true;
                 checkMatch();
             }
 
@@ -949,32 +1058,39 @@
             const [index1, index2] = gameState.flippedCards;
             const card1 = gameState.cards[index1];
             const card2 = gameState.cards[index2];
+            const cardElements = gameBoard.querySelectorAll('.card');
 
             if (card1.emoji === card2.emoji) {
+                // Match found
                 card1.isMatched = true;
                 card2.isMatched = true;
                 gameState.matchedPairs++;
                 gameState.score += calculateMatchScore();
 
-                const cardElements = [gameBoard.children[index1], gameBoard.children[index2]];
-                cardElements.forEach(el => el.classList.add('matched'));
+                setTimeout(() => {
+                    cardElements[index1].classList.add('matched');
+                    cardElements[index2].classList.add('matched');
+                    gameState.flippedCards = [];
+                    gameState.isLocked = false;
 
-                gameState.flippedCards = [];
+                    if (gameState.matchedPairs === gameState.totalPairs) {
+                        gameWon();
+                    }
+                    saveState();
+                }, 300);
 
-                if (gameState.matchedPairs === gameState.totalPairs) {
-                    gameWon();
-                }
             } else {
-                const cardElements = [gameBoard.children[index1], gameBoard.children[index2]];
-                cardElements.forEach(el => el.classList.add('shake'));
+                // No match
+                cardElements[index1].classList.add('shake');
+                cardElements[index2].classList.add('shake');
 
                 setTimeout(() => {
                     card1.isFlipped = false;
                     card2.isFlipped = false;
-                    cardElements.forEach(el => {
-                        el.classList.remove('flipped', 'shake');
-                    });
+                    cardElements[index1].classList.remove('flipped', 'shake');
+                    cardElements[index2].classList.remove('flipped', 'shake');
                     gameState.flippedCards = [];
+                    gameState.isLocked = false;
                     saveState();
                 }, 1000);
             }
@@ -1014,7 +1130,7 @@
             setTimeout(() => {
                 winModal.classList.add('active');
                 createConfetti();
-            }, 500);
+            }, 600);
 
             renderHighScores();
             saveState();
@@ -1027,7 +1143,9 @@
             gameState.timerInterval = setInterval(() => {
                 gameState.timer++;
                 updateTimerDisplay();
-                saveState();
+                if (gameState.timer % 10 === 0) {
+                    saveState();
+                }
             }, 1000);
         }
 
@@ -1047,11 +1165,11 @@
             if (gameState.isPaused) {
                 stopTimer();
                 pauseBtn.textContent = '▶️ Resume';
-                gameBoard.style.filter = 'blur(10px)';
+                gameBoard.classList.add('paused');
             } else {
                 startTimer();
                 pauseBtn.textContent = '⏸️ Pause';
-                gameBoard.style.filter = 'none';
+                gameBoard.classList.remove('paused');
             }
 
             saveState();
@@ -1059,7 +1177,7 @@
 
         // Show Hint
         function showHint() {
-            if (!gameState.isPlaying || gameState.isPaused || gameState.hintsUsed >= 3) return;
+            if (!gameState.isPlaying || gameState.isPaused || gameState.hintsUsed >= 3 || gameState.isLocked) return;
 
             const unmatchedCards = gameState.cards
                 .map((card, index) => ({ ...card, index }))
@@ -1069,16 +1187,22 @@
 
             const emoji = unmatchedCards[0].emoji;
             const pairCards = unmatchedCards.filter(card => card.emoji === emoji).slice(0, 2);
+            const cardElements = gameBoard.querySelectorAll('.card');
+
+            gameState.isLocked = true;
 
             pairCards.forEach(card => {
-                const cardElement = gameBoard.children[card.index];
-                cardElement.classList.add('flipped');
-                setTimeout(() => {
-                    if (!gameState.cards[card.index].isFlipped) {
-                        cardElement.classList.remove('flipped');
-                    }
-                }, 1000);
+                cardElements[card.index].classList.add('flipped');
             });
+
+            setTimeout(() => {
+                pairCards.forEach(card => {
+                    if (!gameState.cards[card.index].isFlipped) {
+                        cardElements[card.index].classList.remove('flipped');
+                    }
+                });
+                gameState.isLocked = false;
+            }, 1000);
 
             gameState.hintsUsed++;
             gameState.score = Math.max(0, gameState.score - 50);
@@ -1091,6 +1215,14 @@
             const themes = Object.keys(CARD_THEMES);
             const currentIndex = themes.indexOf(gameState.theme);
             gameState.theme = themes[(currentIndex + 1) % themes.length];
+            
+            // Show theme indicator
+            themeIndicator.textContent = gameState.theme;
+            themeIndicator.classList.add('show');
+            setTimeout(() => {
+                themeIndicator.classList.remove('show');
+            }, 1500);
+            
             startNewGame();
         }
 
@@ -1137,13 +1269,15 @@
             const highScores = JSON.parse(localStorage.getItem('memoryGameHighScores') || '[]');
 
             if (highScores.length === 0) {
-                highScoresList.innerHTML = '<li>No scores yet. Play to set a record!</li>';
+                highScoresList.innerHTML = '<li style="justify-content: center;">No scores yet!</li>';
                 return;
             }
 
+            const rankIcons = ['🥇', '🥈', '🥉', '4', '5'];
+            
             highScoresList.innerHTML = highScores.slice(0, 5).map((score, index) => `
                 <li>
-                    <span class="rank">${['🥇', '🥈', '🥉', '4.', '5.'][index]}</span>
+                    <span class="rank">${rankIcons[index]}</span>
                     <span>${score.score} pts</span>
                     <span class="difficulty-tag">${score.difficulty}</span>
                 </li>
@@ -1153,16 +1287,20 @@
         // Create Confetti
         function createConfetti() {
             confettiContainer.innerHTML = '';
-            const colors = ['#f093fb', '#f5576c', '#4facfe', '#00f2fe', '#43e97b', '#fa709a', '#fee140'];
+            const colors = ['#f093fb', '#f5576c', '#4facfe', '#00f2fe', '#43e97b', '#fa709a', '#fee140', '#ffd700'];
 
-            for (let i = 0; i < 100; i++) {
+            for (let i = 0; i < 150; i++) {
                 const confetti = document.createElement('div');
                 confetti.className = 'confetti-piece';
                 confetti.style.left = Math.random() * 100 + '%';
                 confetti.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
                 confetti.style.animationDelay = Math.random() * 2 + 's';
                 confetti.style.animationDuration = (Math.random() * 2 + 2) + 's';
-                confetti.style.transform = `rotate(${Math.random() * 360}deg)`;
+                
+                // Random shapes
+                const shapes = ['50%', '0%', '3px'];
+                confetti.style.borderRadius = shapes[Math.floor(Math.random() * shapes.length)];
+                
                 confettiContainer.appendChild(confetti);
             }
 
