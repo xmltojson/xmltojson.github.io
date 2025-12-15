@@ -8,7 +8,6 @@ Key Features:
 • Local storage for progress saving
 • High score leaderboard
 • Responsive design for all devices
-• Web Audio API for sound effects
 
 This project demonstrates modern web development capabilities - no frameworks, just vanilla JavaScript delivering a smooth, engaging user experience.
 
