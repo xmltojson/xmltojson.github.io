@@ -1,0 +1,890 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Matrix Rain</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            overflow: hidden;
+            background: #000;
+            font-family: 'Courier New', monospace;
+        }
+
+        #matrix-canvas {
+            display: block;
+            position: fixed;
+            top: 0;
+            left: 0;
+            z-index: 1;
+        }
+
+        /* Control Panel */
+        .control-panel {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 100;
+            background: rgba(0, 20, 0, 0.85);
+            border: 1px solid #0f0;
+            border-radius: 10px;
+            padding: 20px;
+            min-width: 280px;
+            box-shadow: 0 0 30px rgba(0, 255, 0, 0.3),
+                        inset 0 0 20px rgba(0, 255, 0, 0.1);
+            backdrop-filter: blur(10px);
+            transition: transform 0.3s ease, opacity 0.3s ease;
+        }
+
+        .control-panel.hidden {
+            transform: translateX(320px);
+            opacity: 0;
+        }
+
+        .control-panel h2 {
+            color: #0f0;
+            text-align: center;
+            margin-bottom: 20px;
+            text-shadow: 0 0 10px #0f0;
+            font-size: 1.4em;
+            letter-spacing: 2px;
+        }
+
+        .control-group {
+            margin-bottom: 18px;
+        }
+
+        .control-group label {
+            display: block;
+            color: #0f0;
+            margin-bottom: 8px;
+            font-size: 0.9em;
+            text-shadow: 0 0 5px #0f0;
+        }
+
+        .control-group input[type="range"] {
+            width: 100%;
+            height: 6px;
+            -webkit-appearance: none;
+            appearance: none;
+            background: linear-gradient(90deg, #001a00, #003300);
+            border-radius: 3px;
+            outline: none;
+            cursor: pointer;
+        }
+
+        .control-group input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 18px;
+            height: 18px;
+            background: radial-gradient(circle, #0f0, #060);
+            border-radius: 50%;
+            cursor: pointer;
+            box-shadow: 0 0 15px #0f0;
+            transition: transform 0.2s;
+        }
+
+        .control-group input[type="range"]::-webkit-slider-thumb:hover {
+            transform: scale(1.2);
+        }
+
+        .control-group select {
+            width: 100%;
+            padding: 10px;
+            background: rgba(0, 30, 0, 0.9);
+            border: 1px solid #0f0;
+            color: #0f0;
+            border-radius: 5px;
+            cursor: pointer;
+            font-family: inherit;
+            outline: none;
+        }
+
+        .control-group select:focus {
+            box-shadow: 0 0 10px #0f0;
+        }
+
+        .btn {
+            width: 100%;
+            padding: 12px;
+            margin-top: 8px;
+            background: linear-gradient(180deg, #003300, #001a00);
+            border: 1px solid #0f0;
+            color: #0f0;
+            border-radius: 5px;
+            cursor: pointer;
+            font-family: inherit;
+            font-size: 0.95em;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            transition: all 0.3s ease;
+        }
+
+        .btn:hover {
+            background: linear-gradient(180deg, #004400, #002200);
+            box-shadow: 0 0 20px rgba(0, 255, 0, 0.5);
+            transform: translateY(-2px);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        .btn-danger {
+            border-color: #f00;
+            color: #f00;
+        }
+
+        .btn-danger:hover {
+            box-shadow: 0 0 20px rgba(255, 0, 0, 0.5);
+        }
+
+        /* Toggle Button */
+        .toggle-btn {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 101;
+            width: 50px;
+            height: 50px;
+            background: rgba(0, 20, 0, 0.9);
+            border: 1px solid #0f0;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+            box-shadow: 0 0 20px rgba(0, 255, 0, 0.3);
+        }
+
+        .toggle-btn:hover {
+            box-shadow: 0 0 30px rgba(0, 255, 0, 0.6);
+            transform: scale(1.1);
+        }
+
+        .toggle-btn svg {
+            width: 24px;
+            height: 24px;
+            fill: #0f0;
+            filter: drop-shadow(0 0 5px #0f0);
+        }
+
+        .toggle-btn.panel-open {
+            right: 310px;
+        }
+
+        /* Stats Display */
+        .stats {
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            z-index: 100;
+            color: #0f0;
+            font-size: 0.85em;
+            text-shadow: 0 0 5px #0f0;
+            background: rgba(0, 20, 0, 0.7);
+            padding: 15px;
+            border-radius: 8px;
+            border: 1px solid rgba(0, 255, 0, 0.3);
+        }
+
+        .stats div {
+            margin: 5px 0;
+        }
+
+        /* Color Picker Wrapper */
+        .color-picker-wrapper {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .color-picker-wrapper input[type="color"] {
+            width: 50px;
+            height: 35px;
+            border: 1px solid #0f0;
+            border-radius: 5px;
+            cursor: pointer;
+            background: transparent;
+        }
+
+        .color-presets {
+            display: flex;
+            gap: 5px;
+            flex-wrap: wrap;
+        }
+
+        .color-preset {
+            width: 25px;
+            height: 25px;
+            border-radius: 50%;
+            cursor: pointer;
+            border: 2px solid transparent;
+            transition: all 0.2s;
+        }
+
+        .color-preset:hover {
+            transform: scale(1.2);
+            border-color: #fff;
+        }
+
+        .color-preset.active {
+            border-color: #fff;
+            box-shadow: 0 0 10px currentColor;
+        }
+
+        /* Message Display */
+        .message-input-wrapper {
+            display: flex;
+            gap: 8px;
+        }
+
+        .message-input-wrapper input {
+            flex: 1;
+            padding: 8px;
+            background: rgba(0, 30, 0, 0.9);
+            border: 1px solid #0f0;
+            color: #0f0;
+            border-radius: 5px;
+            font-family: inherit;
+            outline: none;
+        }
+
+        .message-input-wrapper input:focus {
+            box-shadow: 0 0 10px rgba(0, 255, 0, 0.5);
+        }
+
+        .message-input-wrapper button {
+            padding: 8px 15px;
+            background: linear-gradient(180deg, #003300, #001a00);
+            border: 1px solid #0f0;
+            color: #0f0;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .message-input-wrapper button:hover {
+            box-shadow: 0 0 15px rgba(0, 255, 0, 0.5);
+        }
+
+        /* Checkbox styling */
+        .checkbox-wrapper {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .checkbox-wrapper input[type="checkbox"] {
+            width: 20px;
+            height: 20px;
+            cursor: pointer;
+            accent-color: #0f0;
+        }
+
+        /* Loading Screen */
+        .loading-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: #000;
+            z-index: 1000;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            transition: opacity 0.5s ease;
+        }
+
+        .loading-screen.fade-out {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .loading-text {
+            color: #0f0;
+            font-size: 2em;
+            text-shadow: 0 0 20px #0f0;
+            animation: pulse 1s ease-in-out infinite;
+        }
+
+        .loading-bar {
+            width: 300px;
+            height: 4px;
+            background: #001a00;
+            margin-top: 20px;
+            border-radius: 2px;
+            overflow: hidden;
+        }
+
+        .loading-bar-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #0f0, #0a0);
+            width: 0%;
+            animation: load 1.5s ease-out forwards;
+            box-shadow: 0 0 10px #0f0;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        @keyframes load {
+            to { width: 100%; }
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .control-panel {
+                min-width: 250px;
+                padding: 15px;
+                top: 10px;
+                right: 10px;
+            }
+
+            .toggle-btn.panel-open {
+                right: 270px;
+            }
+
+            .stats {
+                font-size: 0.75em;
+                padding: 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Loading Screen -->
+    <div class="loading-screen" id="loading-screen">
+        <div class="loading-text">INITIALIZING MATRIX...</div>
+        <div class="loading-bar">
+            <div class="loading-bar-fill"></div>
+        </div>
+    </div>
+
+    <!-- Main Canvas -->
+    <canvas id="matrix-canvas"></canvas>
+
+    <!-- Toggle Button -->
+    <button class="toggle-btn panel-open" id="toggle-btn" title="Toggle Controls">
+        <svg viewBox="0 0 24 24">
+            <path d="M12 15.5A3.5 3.5 0 0 1 8.5 12 3.5 3.5 0 0 1 12 8.5a3.5 3.5 0 0 1 3.5 3.5 3.5 3.5 0 0 1-3.5 3.5m7.43-2.53c.04-.32.07-.64.07-.97 0-.33-.03-.66-.07-1l2.11-1.63c.19-.15.24-.42.12-.64l-2-3.46c-.12-.22-.39-.31-.61-.22l-2.49 1c-.52-.39-1.06-.73-1.69-.98l-.37-2.65A.506.506 0 0 0 14 2h-4c-.25 0-.46.18-.5.42l-.37 2.65c-.63.25-1.17.59-1.69.98l-2.49-1c-.22-.09-.49 0-.61.22l-2 3.46c-.13.22-.07.49.12.64L4.57 11c-.04.34-.07.67-.07 1 0 .33.03.65.07.97l-2.11 1.66c-.19.15-.25.42-.12.64l2 3.46c.12.22.39.3.61.22l2.49-1.01c.52.4 1.06.74 1.69.99l.37 2.65c.04.24.25.42.5.42h4c.25 0 .46-.18.5-.42l.37-2.65c.63-.26 1.17-.59 1.69-.99l2.49 1.01c.22.08.49 0 .61-.22l2-3.46c.12-.22.07-.49-.12-.64l-2.11-1.66Z"/>
+        </svg>
+    </button>
+
+    <!-- Control Panel -->
+    <div class="control-panel" id="control-panel">
+        <h2>⬡ MATRIX CONTROL ⬡</h2>
+        
+        <div class="control-group">
+            <label>Rain Speed: <span id="speed-value">50</span></label>
+            <input type="range" id="speed" min="10" max="100" value="50">
+        </div>
+
+        <div class="control-group">
+            <label>Column Density: <span id="density-value">20</span></label>
+            <input type="range" id="density" min="10" max="40" value="20">
+        </div>
+
+        <div class="control-group">
+            <label>Font Size: <span id="font-size-value">16</span>px</label>
+            <input type="range" id="font-size" min="10" max="30" value="16">
+        </div>
+
+        <div class="control-group">
+            <label>Trail Length: <span id="trail-value">0.05</span></label>
+            <input type="range" id="trail" min="1" max="15" value="5">
+        </div>
+
+        <div class="control-group">
+            <label>Color Theme</label>
+            <div class="color-picker-wrapper">
+                <input type="color" id="color-picker" value="#00ff00">
+                <div class="color-presets">
+                    <div class="color-preset active" style="background: #00ff00" data-color="#00ff00" title="Classic Green"></div>
+                    <div class="color-preset" style="background: #00ffff" data-color="#00ffff" title="Cyan"></div>
+                    <div class="color-preset" style="background: #ff00ff" data-color="#ff00ff" title="Magenta"></div>
+                    <div class="color-preset" style="background: #ffff00" data-color="#ffff00" title="Yellow"></div>
+                    <div class="color-preset" style="background: #ff6600" data-color="#ff6600" title="Orange"></div>
+                    <div class="color-preset" style="background: #ff0000" data-color="#ff0000" title="Red"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="control-group">
+            <label>Character Set</label>
+            <select id="char-set">
+                <option value="matrix">Matrix (Katakana + Numbers)</option>
+                <option value="binary">Binary (0 & 1)</option>
+                <option value="hex">Hexadecimal</option>
+                <option value="kanji">Japanese Kanji</option>
+                <option value="symbols">Symbols & Glyphs</option>
+                <option value="custom">Custom Message</option>
+            </select>
+        </div>
+
+        <div class="control-group" id="custom-message-group" style="display: none;">
+            <label>Custom Message</label>
+            <div class="message-input-wrapper">
+                <input type="text" id="custom-message" placeholder="Enter text..." maxlength="50">
+                <button id="apply-message">Set</button>
+            </div>
+        </div>
+
+        <div class="control-group">
+            <div class="checkbox-wrapper">
+                <input type="checkbox" id="glow-effect" checked>
+                <label for="glow-effect" style="margin: 0;">Enable Glow Effect</label>
+            </div>
+        </div>
+
+        <div class="control-group">
+            <div class="checkbox-wrapper">
+                <input type="checkbox" id="rainbow-mode">
+                <label for="rainbow-mode" style="margin: 0;">Rainbow Mode</label>
+            </div>
+        </div>
+
+        <button class="btn" id="pause-btn">⏸ Pause</button>
+        <button class="btn" id="screenshot-btn">📷 Screenshot</button>
+        <button class="btn btn-danger" id="reset-btn">↺ Reset to Default</button>
+    </div>
+
+    <!-- Stats Display -->
+    <div class="stats" id="stats">
+        <div>FPS: <span id="fps">0</span></div>
+        <div>Columns: <span id="column-count">0</span></div>
+        <div>Characters: <span id="char-count">0</span></div>
+    </div>
+
+    <script>
+        // Matrix Rain Application
+        class MatrixRain {
+            constructor() {
+                this.canvas = document.getElementById('matrix-canvas');
+                this.ctx = this.canvas.getContext('2d');
+                
+                // Default settings
+                this.defaults = {
+                    speed: 50,
+                    density: 20,
+                    fontSize: 16,
+                    trail: 5,
+                    color: '#00ff00',
+                    charSet: 'matrix',
+                    customMessage: 'MATRIX',
+                    glowEffect: true,
+                    rainbowMode: false,
+                    isPaused: false
+                };
+
+                // Current settings
+                this.settings = { ...this.defaults };
+                
+                // Character sets
+                this.charSets = {
+                    matrix: 'アイウエオカキクケコサシスセソタチツテトナニヌネノハヒフヘホマミムメモヤユヨラリルレロワヲン0123456789',
+                    binary: '01',
+                    hex: '0123456789ABCDEF',
+                    kanji: '日月火水木金土山川田中村森林海空風雨雪花鳥魚虫石草竹米麦豆',
+                    symbols: '∆∇□○●◇◆★☆♠♣♥♦♪♫☀☁☂☃⚡✦✧✩✪✫✬✭✮✯✰'
+                };
+
+                // Rain drops
+                this.drops = [];
+                
+                // Animation
+                this.animationId = null;
+                this.lastTime = 0;
+                this.frameCount = 0;
+                this.fps = 0;
+                this.fpsTime = 0;
+
+                // Initialize
+                this.loadSettings();
+                this.setupCanvas();
+                this.setupEventListeners();
+                this.initDrops();
+                
+                // Start animation after loading screen
+                setTimeout(() => {
+                    document.getElementById('loading-screen').classList.add('fade-out');
+                    setTimeout(() => {
+                        document.getElementById('loading-screen').style.display = 'none';
+                        this.animate();
+                    }, 500);
+                }, 1500);
+            }
+
+            loadSettings() {
+                const saved = localStorage.getItem('matrixRainSettings');
+                if (saved) {
+                    try {
+                        const parsed = JSON.parse(saved);
+                        this.settings = { ...this.defaults, ...parsed };
+                    } catch (e) {
+                        console.error('Error loading settings:', e);
+                    }
+                }
+                this.applySettingsToUI();
+            }
+
+            saveSettings() {
+                localStorage.setItem('matrixRainSettings', JSON.stringify(this.settings));
+            }
+
+            applySettingsToUI() {
+                document.getElementById('speed').value = this.settings.speed;
+                document.getElementById('speed-value').textContent = this.settings.speed;
+                
+                document.getElementById('density').value = this.settings.density;
+                document.getElementById('density-value').textContent = this.settings.density;
+                
+                document.getElementById('font-size').value = this.settings.fontSize;
+                document.getElementById('font-size-value').textContent = this.settings.fontSize;
+                
+                document.getElementById('trail').value = this.settings.trail * 100;
+                document.getElementById('trail-value').textContent = (this.settings.trail).toFixed(2);
+                
+                document.getElementById('color-picker').value = this.settings.color;
+                document.getElementById('char-set').value = this.settings.charSet;
+                document.getElementById('custom-message').value = this.settings.customMessage;
+                document.getElementById('glow-effect').checked = this.settings.glowEffect;
+                document.getElementById('rainbow-mode').checked = this.settings.rainbowMode;
+
+                // Update color presets
+                document.querySelectorAll('.color-preset').forEach(preset => {
+                    preset.classList.toggle('active', preset.dataset.color === this.settings.color);
+                });
+
+                // Show/hide custom message input
+                document.getElementById('custom-message-group').style.display = 
+                    this.settings.charSet === 'custom' ? 'block' : 'none';
+
+                // Update pause button
+                document.getElementById('pause-btn').textContent = 
+                    this.settings.isPaused ? '▶ Resume' : '⏸ Pause';
+            }
+
+            setupCanvas() {
+                this.resize();
+                window.addEventListener('resize', () => this.resize());
+            }
+
+            resize() {
+                this.canvas.width = window.innerWidth;
+                this.canvas.height = window.innerHeight;
+                this.initDrops();
+            }
+
+            initDrops() {
+                const columnWidth = this.settings.density;
+                const columns = Math.ceil(this.canvas.width / columnWidth);
+                
+                this.drops = [];
+                for (let i = 0; i < columns; i++) {
+                    this.drops.push({
+                        x: i * columnWidth,
+                        y: Math.random() * this.canvas.height,
+                        speed: 0.5 + Math.random() * 0.5,
+                        chars: this.generateColumnChars(),
+                        hue: Math.random() * 360
+                    });
+                }
+
+                document.getElementById('column-count').textContent = columns;
+            }
+
+            generateColumnChars() {
+                const chars = [];
+                const length = Math.floor(5 + Math.random() * 20);
+                const charset = this.getCharset();
+                
+                for (let i = 0; i < length; i++) {
+                    chars.push({
+                        char: charset[Math.floor(Math.random() * charset.length)],
+                        brightness: 1 - (i / length)
+                    });
+                }
+                return chars;
+            }
+
+            getCharset() {
+                if (this.settings.charSet === 'custom') {
+                    return this.settings.customMessage || 'MATRIX';
+                }
+                return this.charSets[this.settings.charSet] || this.charSets.matrix;
+            }
+
+            setupEventListeners() {
+                // Toggle panel
+                const toggleBtn = document.getElementById('toggle-btn');
+                const panel = document.getElementById('control-panel');
+                
+                toggleBtn.addEventListener('click', () => {
+                    panel.classList.toggle('hidden');
+                    toggleBtn.classList.toggle('panel-open');
+                });
+
+                // Speed control
+                document.getElementById('speed').addEventListener('input', (e) => {
+                    this.settings.speed = parseInt(e.target.value);
+                    document.getElementById('speed-value').textContent = this.settings.speed;
+                    this.saveSettings();
+                });
+
+                // Density control
+                document.getElementById('density').addEventListener('input', (e) => {
+                    this.settings.density = parseInt(e.target.value);
+                    document.getElementById('density-value').textContent = this.settings.density;
+                    this.initDrops();
+                    this.saveSettings();
+                });
+
+                // Font size control
+                document.getElementById('font-size').addEventListener('input', (e) => {
+                    this.settings.fontSize = parseInt(e.target.value);
+                    document.getElementById('font-size-value').textContent = this.settings.fontSize;
+                    this.saveSettings();
+                });
+
+                // Trail control
+                document.getElementById('trail').addEventListener('input', (e) => {
+                    this.settings.trail = parseInt(e.target.value) / 100;
+                    document.getElementById('trail-value').textContent = this.settings.trail.toFixed(2);
+                    this.saveSettings();
+                });
+
+                // Color picker
+                document.getElementById('color-picker').addEventListener('input', (e) => {
+                    this.settings.color = e.target.value;
+                    document.querySelectorAll('.color-preset').forEach(p => p.classList.remove('active'));
+                    this.saveSettings();
+                });
+
+                // Color presets
+                document.querySelectorAll('.color-preset').forEach(preset => {
+                    preset.addEventListener('click', () => {
+                        this.settings.color = preset.dataset.color;
+                        document.getElementById('color-picker').value = preset.dataset.color;
+                        document.querySelectorAll('.color-preset').forEach(p => p.classList.remove('active'));
+                        preset.classList.add('active');
+                        this.saveSettings();
+                    });
+                });
+
+                // Character set
+                document.getElementById('char-set').addEventListener('change', (e) => {
+                    this.settings.charSet = e.target.value;
+                    document.getElementById('custom-message-group').style.display = 
+                        e.target.value === 'custom' ? 'block' : 'none';
+                    this.drops.forEach(drop => drop.chars = this.generateColumnChars());
+                    this.saveSettings();
+                });
+
+                // Custom message
+                document.getElementById('apply-message').addEventListener('click', () => {
+                    this.settings.customMessage = document.getElementById('custom-message').value || 'MATRIX';
+                    this.drops.forEach(drop => drop.chars = this.generateColumnChars());
+                    this.saveSettings();
+                });
+
+                // Glow effect
+                document.getElementById('glow-effect').addEventListener('change', (e) => {
+                    this.settings.glowEffect = e.target.checked;
+                    this.saveSettings();
+                });
+
+                // Rainbow mode
+                document.getElementById('rainbow-mode').addEventListener('change', (e) => {
+                    this.settings.rainbowMode = e.target.checked;
+                    this.saveSettings();
+                });
+
+                // Pause button
+                document.getElementById('pause-btn').addEventListener('click', () => {
+                    this.settings.isPaused = !this.settings.isPaused;
+                    document.getElementById('pause-btn').textContent = 
+                        this.settings.isPaused ? '▶ Resume' : '⏸ Pause';
+                    
+                    if (!this.settings.isPaused) {
+                        this.lastTime = performance.now();
+                        this.animate();
+                    }
+                    this.saveSettings();
+                });
+
+                // Screenshot button
+                document.getElementById('screenshot-btn').addEventListener('click', () => {
+                    const link = document.createElement('a');
+                    link.download = `matrix-rain-${Date.now()}.png`;
+                    link.href = this.canvas.toDataURL('image/png');
+                    link.click();
+                });
+
+                // Reset button
+                document.getElementById('reset-btn').addEventListener('click', () => {
+                    if (confirm('Reset all settings to default?')) {
+                        this.settings = { ...this.defaults };
+                        this.applySettingsToUI();
+                        this.initDrops();
+                        this.saveSettings();
+                    }
+                });
+
+                // Keyboard shortcuts
+                document.addEventListener('keydown', (e) => {
+                    if (e.code === 'Space') {
+                        e.preventDefault();
+                        document.getElementById('pause-btn').click();
+                    } else if (e.code === 'KeyH') {
+                        toggleBtn.click();
+                    }
+                });
+            }
+
+            hexToRgb(hex) {
+                const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+                return result ? {
+                    r: parseInt(result[1], 16),
+                    g: parseInt(result[2], 16),
+                    b: parseInt(result[3], 16)
+                } : { r: 0, g: 255, b: 0 };
+            }
+
+            hslToRgb(h, s, l) {
+                let r, g, b;
+                if (s === 0) {
+                    r = g = b = l;
+                } else {
+                    const hue2rgb = (p, q, t) => {
+                        if (t < 0) t += 1;
+                        if (t > 1) t -= 1;
+                        if (t < 1/6) return p + (q - p) * 6 * t;
+                        if (t < 1/2) return q;
+                        if (t < 2/3) return p + (q - p) * (2/3 - t) * 6;
+                        return p;
+                    };
+                    const q = l < 0.5 ? l * (1 + s) : l + s - l * s;
+                    const p = 2 * l - q;
+                    r = hue2rgb(p, q, h + 1/3);
+                    g = hue2rgb(p, q, h);
+                    b = hue2rgb(p, q, h - 1/3);
+                }
+                return {
+                    r: Math.round(r * 255),
+                    g: Math.round(g * 255),
+                    b: Math.round(b * 255)
+                };
+            }
+
+            animate(currentTime = 0) {
+                if (this.settings.isPaused) return;
+
+                this.animationId = requestAnimationFrame((t) => this.animate(t));
+
+                // Calculate FPS
+                this.frameCount++;
+                if (currentTime - this.fpsTime >= 1000) {
+                    this.fps = this.frameCount;
+                    this.frameCount = 0;
+                    this.fpsTime = currentTime;
+                    document.getElementById('fps').textContent = this.fps;
+                }
+
+                // Calculate delta time
+                const deltaTime = currentTime - this.lastTime;
+                if (deltaTime < 1000 / this.settings.speed) return;
+                this.lastTime = currentTime;
+
+                // Draw fade effect (trail)
+                this.ctx.fillStyle = `rgba(0, 0, 0, ${this.settings.trail})`;
+                this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+
+                // Set font
+                this.ctx.font = `${this.settings.fontSize}px "MS Gothic", "Courier New", monospace`;
+
+                let totalChars = 0;
+                const charset = this.getCharset();
+
+                // Draw drops
+                this.drops.forEach((drop, index) => {
+                    // Update hue for rainbow mode
+                    if (this.settings.rainbowMode) {
+                        drop.hue = (drop.hue + 1) % 360;
+                    }
+
+                    // Draw each character in the column
+                    drop.chars.forEach((charData, charIndex) => {
+                        const y = drop.y - charIndex * this.settings.fontSize;
+                        
+                        if (y > 0 && y < this.canvas.height + this.settings.fontSize) {
+                            let color;
+                            
+                            if (this.settings.rainbowMode) {
+                                const hue = (drop.hue + charIndex * 10) % 360;
+                                const rgb = this.hslToRgb(hue / 360, 1, 0.5);
+                                color = rgb;
+                            } else {
+                                color = this.hexToRgb(this.settings.color);
+                            }
+
+                            const brightness = charData.brightness;
+                            const alpha = charIndex === 0 ? 1 : brightness;
+
+                            // Glow effect for leading character
+                            if (charIndex === 0 && this.settings.glowEffect) {
+                                this.ctx.shadowBlur = 20;
+                                this.ctx.shadowColor = `rgb(${color.r}, ${color.g}, ${color.b})`;
+                                this.ctx.fillStyle = '#fff';
+                            } else {
+                                this.ctx.shadowBlur = this.settings.glowEffect ? 5 : 0;
+                                this.ctx.shadowColor = `rgba(${color.r}, ${color.g}, ${color.b}, ${alpha})`;
+                                this.ctx.fillStyle = `rgba(${Math.floor(color.r * brightness)}, ${Math.floor(color.g * brightness)}, ${Math.floor(color.b * brightness)}, ${alpha})`;
+                            }
+
+                            // Randomly change character
+                            if (Math.random() < 0.02) {
+                                charData.char = charset[Math.floor(Math.random() * charset.length)];
+                            }
+
+                            this.ctx.fillText(charData.char, drop.x, y);
+                            totalChars++;
+                        }
+                    });
+
+                    // Move drop down
+                    drop.y += this.settings.fontSize * drop.speed;
+
+                    // Reset drop when it goes off screen
+                    if (drop.y - drop.chars.length * this.settings.fontSize > this.canvas.height) {
+                        drop.y = 0;
+                        drop.speed = 0.5 + Math.random() * 0.5;
+                        drop.chars = this.generateColumnChars();
+                    }
+                });
+
+                // Reset shadow
+                this.ctx.shadowBlur = 0;
+
+                // Update character count
+                document.getElementById('char-count').textContent = totalChars;
+            }
+        }
+
+        // Initialize the Matrix Rain
+        const matrix = new MatrixRain();
+    </script>
+</body>
+</html>
