@@ -1,4 +1,4 @@
-# 🧠 Memory Master - Card Matching Game
+# 🧠 Memory Card Game
 
 <div align="center">
 
