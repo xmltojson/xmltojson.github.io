@@ -60,7 +60,6 @@ open index.html
 | New Game | 🔄 Button |
 | Pause | ⏸️ Button |
 | Hint | 💡 Button |
-| Sound | 🔊 Button |
 | Theme | 🎨 Button |
 
 ---
