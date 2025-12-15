@@ -22,7 +22,6 @@ A beautiful memory card matching game with animations and local storage support.
 - **Score Tracking** - Moves, time, and points
 - **High Scores** - Top 10 leaderboard
 - **Local Storage** - Auto-save game progress
-- **Sound Effects** - Audio feedback
 - **Animations** - 3D flip, confetti, and more
 - **Responsive** - Works on all devices
 - **Hint System** - 3 hints per game
