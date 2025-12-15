@@ -329,6 +329,7 @@
             width: 100%;
             height: 100%;
             backface-visibility: hidden;
+            -webkit-backface-visibility: hidden;
             border-radius: 15px;
             display: flex;
             align-items: center;
@@ -341,13 +342,14 @@
             box-shadow: 0 5px 15px rgba(108, 92, 231, 0.4);
             position: relative;
             overflow: hidden;
+            z-index: 2;
         }
 
         .card-back::before {
             content: '?';
             font-family: 'Fredoka One', cursive;
             font-size: 2rem;
-            color: rgba(255, 255, 255, 0.3);
+            color: rgba(255, 255, 255, 0.5);
         }
 
         .card-back::after {
@@ -367,9 +369,11 @@
         }
 
         .card-front {
-            background: linear-gradient(145deg, #2d3436, #636e72);
+            background: linear-gradient(145deg, #ffffff, #f0f0f0);
             transform: rotateY(180deg);
             box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+            z-index: 1;
+            color: #333;
         }
 
         .card:hover:not(.flipped):not(.matched) {
@@ -554,32 +558,11 @@
             }
         }
 
-        /* Sound Toggle */
-        .sound-toggle {
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            background: rgba(255, 255, 255, 0.1);
-            border: none;
-            width: 50px;
-            height: 50px;
-            border-radius: 50%;
-            cursor: pointer;
-            font-size: 1.5rem;
-            transition: all 0.3s;
-            z-index: 100;
-        }
-
-        .sound-toggle:hover {
-            background: rgba(255, 255, 255, 0.2);
-            transform: scale(1.1);
-        }
-
         /* Theme Toggle */
         .theme-toggle {
             position: fixed;
             top: 20px;
-            left: 20px;
+            right: 20px;
             background: rgba(255, 255, 255, 0.1);
             border: none;
             width: 50px;
@@ -628,6 +611,11 @@
             .stat-card .value {
                 font-size: 1.4rem;
             }
+
+            .difficulty-selector {
+                flex-wrap: wrap;
+                justify-content: center;
+            }
         }
 
         @media (max-width: 500px) {
@@ -642,6 +630,16 @@
 
             .game-board.hard {
                 grid-template-columns: repeat(4, 1fr);
+            }
+
+            .btn {
+                padding: 10px 20px;
+                font-size: 0.9rem;
+            }
+
+            .difficulty-btn {
+                padding: 8px 15px;
+                font-size: 0.85rem;
             }
         }
 
@@ -668,12 +666,6 @@
             0%, 100% { transform: translateY(0); }
             50% { transform: translateY(-20px); }
         }
-
-        /* Card Themes */
-        .card-theme-animals .card-front { background: linear-gradient(145deg, #2d3436, #636e72); }
-        .card-theme-food .card-front { background: linear-gradient(145deg, #e17055, #d63031); }
-        .card-theme-nature .card-front { background: linear-gradient(145deg, #00b894, #00cec9); }
-        .card-theme-space .card-front { background: linear-gradient(145deg, #6c5ce7, #a29bfe); }
     </style>
 </head>
 <body>
@@ -690,9 +682,6 @@
         <span></span>
         <span></span>
     </div>
-
-    <!-- Sound Toggle -->
-    <button class="sound-toggle" id="soundToggle" title="Toggle Sound">🔊</button>
 
     <!-- Theme Toggle -->
     <button class="theme-toggle" id="themeToggle" title="Change Card Theme">🎨</button>
@@ -802,83 +791,9 @@
             isPaused: false,
             difficulty: 'easy',
             theme: 'animals',
-            soundEnabled: true,
             hintsUsed: 0,
             totalPairs: 8
         };
-
-        // Audio Context for Sound Effects
-        let audioContext;
-
-        function initAudio() {
-            audioContext = new (window.AudioContext || window.webkitAudioContext)();
-        }
-
-        function playSound(type) {
-            if (!gameState.soundEnabled || !audioContext) return;
-
-            const oscillator = audioContext.createOscillator();
-            const gainNode = audioContext.createGain();
-
-            oscillator.connect(gainNode);
-            gainNode.connect(audioContext.destination);
-
-            switch(type) {
-                case 'flip':
-                    oscillator.frequency.value = 400;
-                    oscillator.type = 'sine';
-                    gainNode.gain.setValueAtTime(0.1, audioContext.currentTime);
-                    gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.1);
-                    oscillator.start();
-                    oscillator.stop(audioContext.currentTime + 0.1);
-                    break;
-                case 'match':
-                    oscillator.frequency.value = 600;
-                    oscillator.type = 'sine';
-                    gainNode.gain.setValueAtTime(0.1, audioContext.currentTime);
-                    setTimeout(() => {
-                        const osc2 = audioContext.createOscillator();
-                        const gain2 = audioContext.createGain();
-                        osc2.connect(gain2);
-                        gain2.connect(audioContext.destination);
-                        osc2.frequency.value = 800;
-                        osc2.type = 'sine';
-                        gain2.gain.setValueAtTime(0.1, audioContext.currentTime);
-                        gain2.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.2);
-                        osc2.start();
-                        osc2.stop(audioContext.currentTime + 0.2);
-                    }, 100);
-                    gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.1);
-                    oscillator.start();
-                    oscillator.stop(audioContext.currentTime + 0.1);
-                    break;
-                case 'mismatch':
-                    oscillator.frequency.value = 200;
-                    oscillator.type = 'sawtooth';
-                    gainNode.gain.setValueAtTime(0.1, audioContext.currentTime);
-                    gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.3);
-                    oscillator.start();
-                    oscillator.stop(audioContext.currentTime + 0.3);
-                    break;
-                case 'win':
-                    const notes = [523, 659, 784, 1047];
-                    notes.forEach((freq, i) => {
-                        setTimeout(() => {
-                            const osc = audioContext.createOscillator();
-                            const gain = audioContext.createGain();
-                            osc.connect(gain);
-                            gain.connect(audioContext.destination);
-                            osc.frequency.value = freq;
-                            osc.type = 'sine';
-                            gain.gain.setValueAtTime(0.1, audioContext.currentTime);
-                            gain.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.3);
-                            osc.start();
-                            osc.stop(audioContext.currentTime + 0.3);
-                        }, i * 150);
-                    });
-                    break;
-            }
-        }
 
         // DOM Elements
         const gameBoard = document.getElementById('gameBoard');
@@ -916,7 +831,6 @@
                 winModal.classList.remove('active');
                 startNewGame();
             });
-            document.getElementById('soundToggle').addEventListener('click', toggleSound);
             document.getElementById('themeToggle').addEventListener('click', cycleTheme);
 
             document.querySelectorAll('.difficulty-btn').forEach(btn => {
@@ -927,11 +841,6 @@
                     startNewGame();
                 });
             });
-
-            // Initialize audio on first user interaction
-            document.addEventListener('click', () => {
-                if (!audioContext) initAudio();
-            }, { once: true });
         }
 
         // Start New Game
@@ -990,7 +899,7 @@
             
             gameState.cards.forEach((card, index) => {
                 const cardElement = document.createElement('div');
-                cardElement.className = `card card-theme-${gameState.theme}`;
+                cardElement.className = 'card';
                 cardElement.dataset.index = index;
                 
                 if (card.isFlipped || card.isMatched) {
@@ -1020,7 +929,6 @@
                 return;
             }
 
-            playSound('flip');
             card.isFlipped = true;
             gameState.flippedCards.push(index);
             
@@ -1043,7 +951,6 @@
             const card2 = gameState.cards[index2];
 
             if (card1.emoji === card2.emoji) {
-                playSound('match');
                 card1.isMatched = true;
                 card2.isMatched = true;
                 gameState.matchedPairs++;
@@ -1058,7 +965,6 @@
                     gameWon();
                 }
             } else {
-                playSound('mismatch');
                 const cardElements = [gameBoard.children[index1], gameBoard.children[index2]];
                 cardElements.forEach(el => el.classList.add('shake'));
 
@@ -1096,7 +1002,6 @@
             stopTimer();
             gameState.isPlaying = false;
             gameState.isComplete = true;
-            playSound('win');
 
             const finalScore = gameState.score;
             const isNewRecord = saveHighScore(finalScore);
@@ -1178,13 +1083,6 @@
             gameState.hintsUsed++;
             gameState.score = Math.max(0, gameState.score - 50);
             updateDisplay();
-            saveState();
-        }
-
-        // Toggle Sound
-        function toggleSound() {
-            gameState.soundEnabled = !gameState.soundEnabled;
-            document.getElementById('soundToggle').textContent = gameState.soundEnabled ? '🔊' : '🔇';
             saveState();
         }
 
@@ -1286,7 +1184,6 @@
                 isPaused: gameState.isPaused,
                 difficulty: gameState.difficulty,
                 theme: gameState.theme,
-                soundEnabled: gameState.soundEnabled,
                 hintsUsed: gameState.hintsUsed,
                 totalPairs: gameState.totalPairs,
                 isComplete: gameState.isComplete
@@ -1304,7 +1201,6 @@
                 document.querySelectorAll('.difficulty-btn').forEach(btn => {
                     btn.classList.toggle('active', btn.dataset.difficulty === gameState.difficulty);
                 });
-                document.getElementById('soundToggle').textContent = gameState.soundEnabled ? '🔊' : '🔇';
             }
         }
 
