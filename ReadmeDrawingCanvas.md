@@ -100,3 +100,72 @@ Simply visit [https://drawingcanvas.github.io](https://drawingcanvas.github.io) 
 1. Clone the repository:
 ```bash
 git clone https://github.com/drawingcanvas/drawingcanvas.github.io.git
+```
+
+2. Navigate to the project directory:
+```bash
+cd drawingcanvas.github.io
+```
+
+3. Open `index.html` in your web browser.
+
+## 🛠️ Technologies Used
+
+- **HTML5** - Structure and Canvas API
+- **CSS3** - Styling with CSS Variables and Flexbox/Grid
+- **Vanilla JavaScript** - No external dependencies
+- **LocalStorage API** - For saving artwork locally
+- **Canvas API** - For all drawing operations
+
+## 📱 Browser Support
+
+- Chrome (recommended)
+- Firefox
+- Safari
+- Edge
+- Opera
+
+Works on both desktop and mobile devices with touch support.
+
+## 📁 Project Structure
+
+```
+drawingcanvas.github.io/
+├── index.html      # Main application file (HTML, CSS, JS)
+├── README.md       # Project documentation
+└── LICENSE         # MIT License
+```
+
+## 🤝 Contributing
+
+Contributions are welcome! Here's how you can help:
+
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
+
+### Ideas for Contributions
+- [ ] Layer support
+- [ ] More brush types
+- [ ] Gradient tool
+- [ ] Selection tool
+- [ ] Copy/paste functionality
+- [ ] Filters and effects
+- [ ] Cloud storage integration
+- [ ] Collaborative drawing
+
+## 📝 License
+
+MIT
+
+## 🔗 Links
+
+- **Repository:** [https://github.com/drawingcanvas/drawingcanvas.github.io](https://github.com/drawingcanvas/drawingcanvas.github.io)
+- **Live Demo:** [https://drawingcanvas.github.io](https://drawingcanvas.github.io)
+- **Issues:** [https://github.com/drawingcanvas/drawingcanvas.github.io/issues](https://github.com/drawingcanvas/drawingcanvas.github.io/issues)
+
+---
+
+<p align="center">Made with ❤️ for artists and creators everywhere</p>
