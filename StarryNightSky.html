@@ -1,0 +1,1083 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Starry Night Sky</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            overflow: hidden;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            touch-action: manipulation;
+        }
+
+        #sky {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: linear-gradient(to bottom, 
+                #0a0a1a 0%, 
+                #0d1033 20%, 
+                #1a1a4a 40%, 
+                #15154a 60%, 
+                #1a0a2e 80%, 
+                #0a0a1a 100%);
+        }
+
+        /* Stars */
+        .star {
+            position: absolute;
+            background: white;
+            border-radius: 50%;
+            animation: twinkle var(--twinkle-duration, 3s) ease-in-out infinite;
+            animation-delay: var(--twinkle-delay, 0s);
+        }
+
+        .star.small {
+            width: 1px;
+            height: 1px;
+            box-shadow: 0 0 2px 1px rgba(255, 255, 255, 0.3);
+        }
+
+        .star.medium {
+            width: 2px;
+            height: 2px;
+            box-shadow: 0 0 4px 2px rgba(255, 255, 255, 0.4);
+        }
+
+        .star.large {
+            width: 3px;
+            height: 3px;
+            box-shadow: 0 0 6px 3px rgba(255, 255, 255, 0.5);
+        }
+
+        .star.bright {
+            width: 4px;
+            height: 4px;
+            box-shadow: 0 0 10px 5px rgba(255, 255, 255, 0.6),
+                        0 0 20px 10px rgba(100, 150, 255, 0.3);
+        }
+
+        @keyframes twinkle {
+            0%, 100% { opacity: var(--base-opacity, 0.5); transform: scale(1); }
+            50% { opacity: 1; transform: scale(1.2); }
+        }
+
+        /* Shooting Stars */
+        .shooting-star {
+            position: absolute;
+            width: 4px;
+            height: 4px;
+            background: linear-gradient(45deg, white, transparent);
+            border-radius: 50%;
+            animation: shoot linear forwards;
+            opacity: 0;
+        }
+
+        .shooting-star::before {
+            content: '';
+            position: absolute;
+            width: 150px;
+            height: 2px;
+            background: linear-gradient(to left, 
+                rgba(255, 255, 255, 0.8), 
+                rgba(100, 150, 255, 0.5), 
+                transparent);
+            transform: translateX(-150px) translateY(1px);
+            border-radius: 50%;
+        }
+
+        @keyframes shoot {
+            0% {
+                opacity: 1;
+                transform: translate(0, 0) rotate(-45deg);
+            }
+            70% {
+                opacity: 1;
+            }
+            100% {
+                opacity: 0;
+                transform: translate(400px, 400px) rotate(-45deg);
+            }
+        }
+
+        /* Constellations */
+        .constellation {
+            position: absolute;
+            pointer-events: auto;
+            cursor: pointer;
+            transition: opacity 0.3s;
+        }
+
+        .constellation-star {
+            position: absolute;
+            width: 6px;
+            height: 6px;
+            background: white;
+            border-radius: 50%;
+            box-shadow: 0 0 10px 5px rgba(255, 255, 255, 0.5),
+                        0 0 20px 10px rgba(100, 150, 255, 0.3);
+            transform: translate(-50%, -50%);
+            animation: constellationTwinkle 2s ease-in-out infinite;
+        }
+
+        @keyframes constellationTwinkle {
+            0%, 100% { opacity: 0.8; }
+            50% { opacity: 1; }
+        }
+
+        .constellation-line {
+            position: absolute;
+            height: 1px;
+            background: linear-gradient(to right, 
+                rgba(100, 150, 255, 0.1), 
+                rgba(100, 150, 255, 0.4), 
+                rgba(100, 150, 255, 0.1));
+            transform-origin: left center;
+            opacity: 0;
+            transition: opacity 0.5s;
+        }
+
+        .constellation:hover .constellation-line,
+        .constellation.active .constellation-line {
+            opacity: 1;
+        }
+
+        .constellation-name {
+            position: absolute;
+            color: rgba(150, 180, 255, 0.8);
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            white-space: nowrap;
+            opacity: 0;
+            transition: opacity 0.5s;
+            text-shadow: 0 0 10px rgba(100, 150, 255, 0.5);
+            pointer-events: none;
+        }
+
+        .constellation:hover .constellation-name,
+        .constellation.active .constellation-name {
+            opacity: 1;
+        }
+
+        /* Control Panel */
+        #controls {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 10px;
+            padding: 15px 20px;
+            background: rgba(10, 10, 30, 0.8);
+            border-radius: 50px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(100, 150, 255, 0.2);
+            z-index: 100;
+            flex-wrap: wrap;
+            justify-content: center;
+            max-width: 90vw;
+        }
+
+        .control-btn {
+            padding: 10px 20px;
+            background: rgba(100, 150, 255, 0.2);
+            border: 1px solid rgba(100, 150, 255, 0.4);
+            color: white;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .control-btn:hover {
+            background: rgba(100, 150, 255, 0.4);
+            transform: scale(1.05);
+        }
+
+        .control-btn.active {
+            background: rgba(100, 150, 255, 0.5);
+            box-shadow: 0 0 15px rgba(100, 150, 255, 0.5);
+        }
+
+        .control-btn svg {
+            width: 18px;
+            height: 18px;
+        }
+
+        /* Info Panel */
+        #info-panel {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 20px;
+            background: rgba(10, 10, 30, 0.8);
+            border-radius: 15px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(100, 150, 255, 0.2);
+            color: white;
+            max-width: 300px;
+            z-index: 100;
+            transform: translateX(0);
+            transition: transform 0.3s;
+        }
+
+        #info-panel.hidden {
+            transform: translateX(calc(100% + 40px));
+        }
+
+        #info-panel h3 {
+            color: rgba(150, 180, 255, 0.9);
+            margin-bottom: 10px;
+            font-size: 18px;
+        }
+
+        #info-panel p {
+            font-size: 14px;
+            line-height: 1.6;
+            color: rgba(200, 210, 255, 0.8);
+        }
+
+        #close-info {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: none;
+            border: none;
+            color: rgba(255, 255, 255, 0.6);
+            cursor: pointer;
+            font-size: 20px;
+            padding: 5px;
+            line-height: 1;
+        }
+
+        #close-info:hover {
+            color: white;
+        }
+
+        /* Stats Display */
+        #stats {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            padding: 15px;
+            background: rgba(10, 10, 30, 0.8);
+            border-radius: 15px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(100, 150, 255, 0.2);
+            color: rgba(200, 210, 255, 0.8);
+            font-size: 12px;
+            z-index: 100;
+        }
+
+        #stats div {
+            margin: 5px 0;
+        }
+
+        #stats span {
+            color: rgba(150, 180, 255, 0.9);
+            font-weight: bold;
+        }
+
+        /* Moon */
+        #moon {
+            position: absolute;
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, 
+                #f5f5dc 0%, 
+                #e8e8c8 50%, 
+                #d4d4a8 100%);
+            box-shadow: 0 0 30px 10px rgba(255, 255, 200, 0.3),
+                        0 0 60px 30px rgba(255, 255, 200, 0.1),
+                        inset -10px -10px 20px rgba(0, 0, 0, 0.2);
+            transition: all 0.5s;
+        }
+
+        #moon.hidden {
+            opacity: 0;
+            transform: scale(0);
+        }
+
+        .moon-crater {
+            position: absolute;
+            border-radius: 50%;
+            background: rgba(180, 180, 160, 0.4);
+        }
+
+        /* Aurora Effect */
+        #aurora {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 40%;
+            opacity: 0;
+            transition: opacity 1s;
+            pointer-events: none;
+        }
+
+        #aurora.active {
+            opacity: 0.6;
+        }
+
+        .aurora-wave {
+            position: absolute;
+            width: 200%;
+            height: 100%;
+            background: linear-gradient(180deg,
+                transparent 0%,
+                rgba(0, 255, 100, 0.1) 20%,
+                rgba(0, 200, 150, 0.2) 40%,
+                rgba(100, 100, 255, 0.1) 60%,
+                transparent 100%);
+            animation: auroraMove 15s ease-in-out infinite;
+            filter: blur(30px);
+        }
+
+        .aurora-wave:nth-child(2) {
+            animation-delay: -5s;
+            opacity: 0.7;
+        }
+
+        .aurora-wave:nth-child(3) {
+            animation-delay: -10s;
+            opacity: 0.5;
+        }
+
+        @keyframes auroraMove {
+            0%, 100% { transform: translateX(-25%) skewX(-5deg); }
+            50% { transform: translateX(0%) skewX(5deg); }
+        }
+
+        /* Nebula */
+        .nebula {
+            position: absolute;
+            border-radius: 50%;
+            filter: blur(50px);
+            opacity: 0.3;
+            pointer-events: none;
+        }
+
+        /* Responsive Styles */
+        @media (max-width: 768px) {
+            #controls {
+                bottom: 10px;
+                padding: 10px 15px;
+                gap: 8px;
+            }
+
+            .control-btn {
+                padding: 8px 12px;
+                font-size: 12px;
+            }
+
+            .control-btn span {
+                display: none;
+            }
+
+            #info-panel {
+                top: auto;
+                bottom: 80px;
+                right: 10px;
+                left: 10px;
+                max-width: none;
+            }
+
+            #stats {
+                top: 10px;
+                left: 10px;
+                padding: 10px;
+                font-size: 10px;
+            }
+
+            #moon {
+                width: 50px;
+                height: 50px;
+            }
+
+            .constellation-name {
+                font-size: 10px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            #controls {
+                border-radius: 20px;
+            }
+
+            .control-btn {
+                padding: 10px;
+                border-radius: 50%;
+            }
+
+            .control-btn svg {
+                width: 20px;
+                height: 20px;
+            }
+        }
+
+        /* Landscape orientation on mobile */
+        @media (max-height: 500px) and (orientation: landscape) {
+            #controls {
+                bottom: 5px;
+                padding: 8px 15px;
+            }
+
+            .control-btn {
+                padding: 6px 10px;
+            }
+
+            #stats {
+                top: 5px;
+                left: 5px;
+            }
+
+            #info-panel {
+                top: 5px;
+                right: 5px;
+                max-width: 250px;
+                max-height: calc(100vh - 60px);
+                overflow-y: auto;
+            }
+
+            #moon {
+                width: 40px;
+                height: 40px;
+            }
+        }
+
+        /* Loading Screen */
+        #loading {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: #0a0a1a;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            transition: opacity 0.5s;
+        }
+
+        #loading.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .loading-star {
+            width: 20px;
+            height: 20px;
+            background: white;
+            border-radius: 50%;
+            box-shadow: 0 0 20px 10px rgba(100, 150, 255, 0.5);
+            animation: loadingPulse 1s ease-in-out infinite;
+        }
+
+        @keyframes loadingPulse {
+            0%, 100% { transform: scale(1); opacity: 0.5; }
+            50% { transform: scale(1.5); opacity: 1; }
+        }
+
+        #loading p {
+            color: rgba(150, 180, 255, 0.8);
+            margin-top: 20px;
+            font-size: 14px;
+            letter-spacing: 2px;
+        }
+    </style>
+</head>
+<body>
+    <!-- Loading Screen -->
+    <div id="loading">
+        <div class="loading-star"></div>
+        <p>LOADING NIGHT SKY...</p>
+    </div>
+
+    <!-- Main Sky Canvas -->
+    <div id="sky">
+        <!-- Aurora Effect -->
+        <div id="aurora">
+            <div class="aurora-wave"></div>
+            <div class="aurora-wave"></div>
+            <div class="aurora-wave"></div>
+        </div>
+
+        <!-- Moon -->
+        <div id="moon">
+            <div class="moon-crater" style="width: 15px; height: 15px; top: 15px; left: 20px;"></div>
+            <div class="moon-crater" style="width: 10px; height: 10px; top: 40px; left: 45px;"></div>
+            <div class="moon-crater" style="width: 8px; height: 8px; top: 55px; left: 25px;"></div>
+            <div class="moon-crater" style="width: 12px; height: 12px; top: 25px; left: 50px;"></div>
+        </div>
+
+        <!-- Stars Container -->
+        <div id="stars-container"></div>
+
+        <!-- Constellations Container -->
+        <div id="constellations-container"></div>
+    </div>
+
+    <!-- Stats Display -->
+    <div id="stats">
+        <div>⭐ Stars: <span id="star-count">0</span></div>
+        <div>☄️ Shooting Stars: <span id="shooting-count">0</span></div>
+        <div>🌟 Constellations: <span id="constellation-count">0</span></div>
+    </div>
+
+    <!-- Info Panel -->
+    <div id="info-panel" class="hidden">
+        <button id="close-info">&times;</button>
+        <h3 id="info-title">Welcome</h3>
+        <p id="info-text">Click on constellations to learn more about them. Use the controls below to customize your night sky experience.</p>
+    </div>
+
+    <!-- Control Panel -->
+    <div id="controls">
+        <button class="control-btn active" id="btn-stars" title="Toggle Stars">
+            <svg viewBox="0 0 24 24" fill="currentColor">
+                <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+            </svg>
+            <span>Stars</span>
+        </button>
+        <button class="control-btn active" id="btn-shooting" title="Toggle Shooting Stars">
+            <svg viewBox="0 0 24 24" fill="currentColor">
+                <path d="M19 9l1.25-2.75L23 5l-2.75-1.25L19 1l-1.25 2.75L15 5l2.75 1.25L19 9zm-7.5.5L9 4 6.5 9.5 1 12l5.5 2.5L9 20l2.5-5.5L17 12l-5.5-2.5z"/>
+            </svg>
+            <span>Shooting</span>
+        </button>
+        <button class="control-btn active" id="btn-constellations" title="Toggle Constellations">
+            <svg viewBox="0 0 24 24" fill="currentColor">
+                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+            </svg>
+            <span>Constellations</span>
+        </button>
+        <button class="control-btn" id="btn-moon" title="Toggle Moon">
+            <svg viewBox="0 0 24 24" fill="currentColor">
+                <path d="M12 3c-4.97 0-9 4.03-9 9s4.03 9 9 9 9-4.03 9-9c0-.46-.04-.92-.1-1.36-.98 1.37-2.58 2.26-4.4 2.26-2.98 0-5.4-2.42-5.4-5.4 0-1.81.89-3.42 2.26-4.4-.44-.06-.9-.1-1.36-.1z"/>
+            </svg>
+            <span>Moon</span>
+        </button>
+        <button class="control-btn" id="btn-aurora" title="Toggle Aurora">
+            <svg viewBox="0 0 24 24" fill="currentColor">
+                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/>
+            </svg>
+            <span>Aurora</span>
+        </button>
+        <button class="control-btn" id="btn-reset" title="Reset">
+            <svg viewBox="0 0 24 24" fill="currentColor">
+                <path d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/>
+            </svg>
+            <span>Reset</span>
+        </button>
+    </div>
+
+    <script>
+        // ==================== STATE MANAGEMENT ====================
+        const defaultState = {
+            showStars: true,
+            showShootingStars: true,
+            showConstellations: true,
+            showMoon: false,
+            showAurora: false,
+            starCount: 200,
+            shootingStarCount: 0,
+            moonPosition: { x: 80, y: 10 }
+        };
+
+        let state = loadState();
+
+        function loadState() {
+            try {
+                const saved = localStorage.getItem('starryNightState');
+                if (saved) {
+                    return { ...defaultState, ...JSON.parse(saved) };
+                }
+            } catch (e) {
+                console.warn('Could not load state from localStorage:', e);
+            }
+            return { ...defaultState };
+        }
+
+        function saveState() {
+            try {
+                localStorage.setItem('starryNightState', JSON.stringify(state));
+            } catch (e) {
+                console.warn('Could not save state to localStorage:', e);
+            }
+        }
+
+        // ==================== CONSTELLATION DATA ====================
+        const constellationsData = [
+            {
+                name: "Ursa Major",
+                description: "The Great Bear, one of the most recognizable constellations. Contains the Big Dipper asterism, used for navigation for centuries.",
+                stars: [
+                    { x: 0, y: 0 },
+                    { x: 30, y: 10 },
+                    { x: 60, y: 5 },
+                    { x: 90, y: 15 },
+                    { x: 100, y: 40 },
+                    { x: 80, y: 60 },
+                    { x: 50, y: 55 }
+                ],
+                connections: [[0,1], [1,2], [2,3], [3,4], [4,5], [5,6], [6,3]]
+            },
+            {
+                name: "Orion",
+                description: "The Hunter, visible from both hemispheres. Features the famous Orion's Belt - three bright stars in a row.",
+                stars: [
+                    { x: 20, y: 0 },
+                    { x: 60, y: 5 },
+                    { x: 0, y: 40 },
+                    { x: 25, y: 50 },
+                    { x: 40, y: 50 },
+                    { x: 55, y: 50 },
+                    { x: 80, y: 40 },
+                    { x: 15, y: 90 },
+                    { x: 65, y: 95 }
+                ],
+                connections: [[0,2], [0,3], [1,6], [1,5], [2,3], [3,4], [4,5], [5,6], [3,7], [5,8]]
+            },
+            {
+                name: "Cassiopeia",
+                description: "The Queen, easily recognized by its distinctive W shape. Named after the vain queen in Greek mythology.",
+                stars: [
+                    { x: 0, y: 20 },
+                    { x: 25, y: 0 },
+                    { x: 50, y: 25 },
+                    { x: 75, y: 5 },
+                    { x: 100, y: 30 }
+                ],
+                connections: [[0,1], [1,2], [2,3], [3,4]]
+            },
+            {
+                name: "Leo",
+                description: "The Lion, a zodiac constellation. The bright star Regulus marks the lion's heart.",
+                stars: [
+                    { x: 0, y: 30 },
+                    { x: 20, y: 10 },
+                    { x: 40, y: 0 },
+                    { x: 60, y: 10 },
+                    { x: 50, y: 30 },
+                    { x: 80, y: 40 },
+                    { x: 100, y: 50 }
+                ],
+                connections: [[0,1], [1,2], [2,3], [3,4], [4,1], [4,5], [5,6]]
+            },
+            {
+                name: "Cygnus",
+                description: "The Swan, also known as the Northern Cross. Contains Deneb, one of the brightest stars visible from Earth.",
+                stars: [
+                    { x: 50, y: 0 },
+                    { x: 50, y: 30 },
+                    { x: 20, y: 50 },
+                    { x: 80, y: 50 },
+                    { x: 50, y: 70 },
+                    { x: 50, y: 100 }
+                ],
+                connections: [[0,1], [1,2], [1,3], [1,4], [4,5]]
+            },
+            {
+                name: "Scorpius",
+                description: "The Scorpion, a zodiac constellation with the red supergiant Antares at its heart.",
+                stars: [
+                    { x: 30, y: 0 },
+                    { x: 20, y: 20 },
+                    { x: 25, y: 40 },
+                    { x: 35, y: 55 },
+                    { x: 50, y: 65 },
+                    { x: 70, y: 70 },
+                    { x: 85, y: 60 },
+                    { x: 100, y: 50 },
+                    { x: 95, y: 35 }
+                ],
+                connections: [[0,1], [1,2], [2,3], [3,4], [4,5], [5,6], [6,7], [7,8]]
+            }
+        ];
+
+        // ==================== DOM ELEMENTS ====================
+        const sky = document.getElementById('sky');
+        const starsContainer = document.getElementById('stars-container');
+        const constellationsContainer = document.getElementById('constellations-container');
+        const moon = document.getElementById('moon');
+        const aurora = document.getElementById('aurora');
+        const loading = document.getElementById('loading');
+        const infoPanel = document.getElementById('info-panel');
+        const infoTitle = document.getElementById('info-title');
+        const infoText = document.getElementById('info-text');
+
+        // Stats elements
+        const starCountEl = document.getElementById('star-count');
+        const shootingCountEl = document.getElementById('shooting-count');
+        const constellationCountEl = document.getElementById('constellation-count');
+
+        // Control buttons
+        const btnStars = document.getElementById('btn-stars');
+        const btnShooting = document.getElementById('btn-shooting');
+        const btnConstellations = document.getElementById('btn-constellations');
+        const btnMoon = document.getElementById('btn-moon');
+        const btnAurora = document.getElementById('btn-aurora');
+        const btnReset = document.getElementById('btn-reset');
+        const closeInfo = document.getElementById('close-info');
+
+        // ==================== STAR GENERATION ====================
+        function createStar() {
+            const star = document.createElement('div');
+            star.className = 'star';
+            
+            // Random size
+            const sizeRand = Math.random();
+            if (sizeRand < 0.6) star.classList.add('small');
+            else if (sizeRand < 0.85) star.classList.add('medium');
+            else if (sizeRand < 0.97) star.classList.add('large');
+            else star.classList.add('bright');
+            
+            // Random position
+            star.style.left = Math.random() * 100 + '%';
+            star.style.top = Math.random() * 100 + '%';
+            
+            // Random twinkle animation
+            star.style.setProperty('--twinkle-duration', (2 + Math.random() * 4) + 's');
+            star.style.setProperty('--twinkle-delay', Math.random() * 5 + 's');
+            star.style.setProperty('--base-opacity', 0.3 + Math.random() * 0.4);
+            
+            // Random color tint
+            const colorRand = Math.random();
+            if (colorRand > 0.9) {
+                star.style.background = '#ffe4c4'; // Warm
+            } else if (colorRand > 0.8) {
+                star.style.background = '#cae1ff'; // Cool blue
+            }
+            
+            return star;
+        }
+
+        function generateStars(count) {
+            starsContainer.innerHTML = '';
+            for (let i = 0; i < count; i++) {
+                starsContainer.appendChild(createStar());
+            }
+            updateStats();
+        }
+
+        // ==================== SHOOTING STARS ====================
+        let shootingStarInterval = null;
+
+        function createShootingStar() {
+            if (!state.showShootingStars) return;
+            
+            const shootingStar = document.createElement('div');
+            shootingStar.className = 'shooting-star';
+            
+            // Random starting position (upper portion of sky)
+            const startX = Math.random() * 70;
+            const startY = Math.random() * 40;
+            
+            shootingStar.style.left = startX + '%';
+            shootingStar.style.top = startY + '%';
+            
+            // Random duration
+            const duration = 0.8 + Math.random() * 0.7;
+            shootingStar.style.animationDuration = duration + 's';
+            
+            sky.appendChild(shootingStar);
+            
+            state.shootingStarCount++;
+            updateStats();
+            saveState();
+            
+            // Remove after animation
+            setTimeout(() => {
+                shootingStar.remove();
+            }, duration * 1000);
+        }
+
+        function startShootingStars() {
+            if (shootingStarInterval) clearInterval(shootingStarInterval);
+            
+            if (state.showShootingStars) {
+                shootingStarInterval = setInterval(() => {
+                    if (Math.random() > 0.6) {
+                        createShootingStar();
+                    }
+                }, 2000);
+            }
+        }
+
+        function stopShootingStars() {
+            if (shootingStarInterval) {
+                clearInterval(shootingStarInterval);
+                shootingStarInterval = null;
+            }
+        }
+
+        // ==================== CONSTELLATIONS ====================
+        function createConstellation(data, index) {
+            const constellation = document.createElement('div');
+            constellation.className = 'constellation';
+            
+            // Calculate bounds
+            const minX = Math.min(...data.stars.map(s => s.x));
+            const maxX = Math.max(...data.stars.map(s => s.x));
+            const minY = Math.min(...data.stars.map(s => s.y));
+            const maxY = Math.max(...data.stars.map(s => s.y));
+            
+            const width = maxX - minX + 20;
+            const height = maxY - minY + 20;
+            
+            constellation.style.width = width + 'px';
+            constellation.style.height = height + 'px';
+            
+            // Position constellation in different areas
+            const positions = [
+                { left: '5%', top: '5%' },
+                { left: '70%', top: '8%' },
+                { left: '40%', top: '15%' },
+                { left: '15%', top: '50%' },
+                { left: '60%', top: '45%' },
+                { left: '35%', top: '65%' }
+            ];
+            
+            const pos = positions[index % positions.length];
+            constellation.style.left = pos.left;
+            constellation.style.top = pos.top;
+            
+            // Create connection lines
+            data.connections.forEach(([from, to]) => {
+                const line = document.createElement('div');
+                line.className = 'constellation-line';
+                
+                const star1 = data.stars[from];
+                const star2 = data.stars[to];
+                
+                const dx = star2.x - star1.x;
+                const dy = star2.y - star1.y;
+                const length = Math.sqrt(dx * dx + dy * dy);
+                const angle = Math.atan2(dy, dx) * 180 / Math.PI;
+                
+                line.style.width = length + 'px';
+                line.style.left = (star1.x - minX + 10) + 'px';
+                line.style.top = (star1.y - minY + 10) + 'px';
+                line.style.transform = `rotate(${angle}deg)`;
+                
+                constellation.appendChild(line);
+            });
+            
+            // Create stars
+            data.stars.forEach(star => {
+                const starEl = document.createElement('div');
+                starEl.className = 'constellation-star';
+                starEl.style.left = (star.x - minX + 10) + 'px';
+                starEl.style.top = (star.y - minY + 10) + 'px';
+                constellation.appendChild(starEl);
+            });
+            
+            // Create name label
+            const name = document.createElement('div');
+            name.className = 'constellation-name';
+            name.textContent = data.name;
+            name.style.left = '50%';
+            name.style.top = '-20px';
+            name.style.transform = 'translateX(-50%)';
+            constellation.appendChild(name);
+            
+            // Click handler
+            constellation.addEventListener('click', () => {
+                showConstellationInfo(data);
+                
+                // Toggle active state
+                document.querySelectorAll('.constellation').forEach(c => c.classList.remove('active'));
+                constellation.classList.add('active');
+            });
+            
+            return constellation;
+        }
+
+        function generateConstellations() {
+            constellationsContainer.innerHTML = '';
+            
+            constellationsData.forEach((data, index) => {
+                const constellation = createConstellation(data, index);
+                constellationsContainer.appendChild(constellation);
+            });
+            
+            updateStats();
+        }
+
+        function showConstellationInfo(data) {
+            infoTitle.textContent = data.name;
+            infoText.textContent = data.description;
+            infoPanel.classList.remove('hidden');
+        }
+
+        // ==================== NEBULA EFFECTS ====================
+        function createNebulae() {
+            const colors = [
+                'rgba(100, 50, 150, 0.3)',
+                'rgba(50, 100, 150, 0.2)',
+                'rgba(150, 50, 100, 0.2)',
+                'rgba(50, 150, 100, 0.15)'
+            ];
+            
+            for (let i = 0; i < 3; i++) {
+                const nebula = document.createElement('div');
+                nebula.className = 'nebula';
+                nebula.style.width = (150 + Math.random() * 200) + 'px';
+                nebula.style.height = (150 + Math.random() * 200) + 'px';
+                nebula.style.left = Math.random() * 80 + '%';
+                nebula.style.top = Math.random() * 80 + '%';
+                nebula.style.background = `radial-gradient(ellipse, ${colors[i % colors.length]}, transparent)`;
+                sky.insertBefore(nebula, starsContainer);
+            }
+        }
+
+        // ==================== UI UPDATES ====================
+        function updateStats() {
+            starCountEl.textContent = state.showStars ? starsContainer.children.length : 0;
+            shootingCountEl.textContent = state.shootingStarCount;
+            constellationCountEl.textContent = state.showConstellations ? constellationsData.length : 0;
+        }
+
+        function updateUI() {
+            // Stars
+            starsContainer.style.display = state.showStars ? 'block' : 'none';
+            btnStars.classList.toggle('active', state.showStars);
+            
+            // Shooting stars
+            btnShooting.classList.toggle('active', state.showShootingStars);
+            if (state.showShootingStars) {
+                startShootingStars();
+            } else {
+                stopShootingStars();
+            }
+            
+            // Constellations
+            constellationsContainer.style.display = state.showConstellations ? 'block' : 'none';
+            btnConstellations.classList.toggle('active', state.showConstellations);
+            
+            // Moon
+            moon.classList.toggle('hidden', !state.showMoon);
+            btnMoon.classList.toggle('active', state.showMoon);
+            moon.style.right = state.moonPosition.x + 'px';
+            moon.style.top = state.moonPosition.y + '%';
+            
+            // Aurora
+            aurora.classList.toggle('active', state.showAurora);
+            btnAurora.classList.toggle('active', state.showAurora);
+            
+            updateStats();
+            saveState();
+        }
+
+        // ==================== EVENT HANDLERS ====================
+        btnStars.addEventListener('click', () => {
+            state.showStars = !state.showStars;
+            updateUI();
+        });
+
+        btnShooting.addEventListener('click', () => {
+            state.showShootingStars = !state.showShootingStars;
+            updateUI();
+        });
+
+        btnConstellations.addEventListener('click', () => {
+            state.showConstellations = !state.showConstellations;
+            updateUI();
+        });
+
+        btnMoon.addEventListener('click', () => {
+            state.showMoon = !state.showMoon;
+            updateUI();
+        });
+
+        btnAurora.addEventListener('click', () => {
+            state.showAurora = !state.showAurora;
+            updateUI();
+        });
+
+        btnReset.addEventListener('click', () => {
+            if (confirm('Reset all settings to default?')) {
+                state = { ...defaultState };
+                state.shootingStarCount = 0;
+                generateStars(state.starCount);
+                generateConstellations();
+                updateUI();
+            }
+        });
+
+        closeInfo.addEventListener('click', () => {
+            infoPanel.classList.add('hidden');
+            document.querySelectorAll('.constellation').forEach(c => c.classList.remove('active'));
+        });
+
+        // Handle orientation change
+        window.addEventListener('orientationchange', () => {
+            setTimeout(() => {
+                // Regenerate stars for new dimensions
+                if (state.showStars) {
+                    generateStars(state.starCount);
+                }
+            }, 100);
+        });
+
+        // Handle resize
+        let resizeTimeout;
+        window.addEventListener('resize', () => {
+            clearTimeout(resizeTimeout);
+            resizeTimeout = setTimeout(() => {
+                if (state.showStars) {
+                    generateStars(state.starCount);
+                }
+            }, 250);
+        });
+
+        // Click on sky to close info panel
+        sky.addEventListener('click', (e) => {
+            if (e.target === sky || e.target.id === 'stars-container') {
+                infoPanel.classList.add('hidden');
+                document.querySelectorAll('.constellation').forEach(c => c.classList.remove('active'));
+            }
+        });
+
+        // ==================== INITIALIZATION ====================
+        function init() {
+            // Create nebulae
+            createNebulae();
+            
+            // Generate stars
+            generateStars(state.starCount);
+            
+            // Generate constellations
+            generateConstellations();
+            
+            // Update UI based on saved state
+            updateUI();
+            
+            // Hide loading screen
+            setTimeout(() => {
+                loading.classList.add('hidden');
+            }, 1000);
+        }
+
+        // Start the application
+        document.addEventListener('DOMContentLoaded', init);
+    </script>
+</body>
+</html>
