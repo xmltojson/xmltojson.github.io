@@ -1,0 +1,867 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Analog Clock</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            /* Default Theme - Midnight */
+            --bg-primary: #0f0f23;
+            --bg-secondary: #1a1a2e;
+            --clock-face: linear-gradient(145deg, #16213e, #0f0f23);
+            --clock-border: #e94560;
+            --clock-shadow: rgba(233, 69, 96, 0.3);
+            --hour-hand: #e94560;
+            --minute-hand: #ffffff;
+            --second-hand: #00d9ff;
+            --tick-major: #e94560;
+            --tick-minor: rgba(255, 255, 255, 0.3);
+            --center-dot: #e94560;
+            --text-primary: #ffffff;
+            --text-secondary: rgba(255, 255, 255, 0.7);
+            --number-color: rgba(255, 255, 255, 0.9);
+            --button-bg: rgba(255, 255, 255, 0.1);
+            --button-hover: rgba(233, 69, 96, 0.3);
+            --glow-color: rgba(233, 69, 96, 0.5);
+        }
+
+        [data-theme="ocean"] {
+            --bg-primary: #0a1628;
+            --bg-secondary: #0d2137;
+            --clock-face: linear-gradient(145deg, #0d2137, #0a1628);
+            --clock-border: #00b4d8;
+            --clock-shadow: rgba(0, 180, 216, 0.3);
+            --hour-hand: #00b4d8;
+            --minute-hand: #90e0ef;
+            --second-hand: #48cae4;
+            --tick-major: #00b4d8;
+            --tick-minor: rgba(144, 224, 239, 0.3);
+            --center-dot: #00b4d8;
+            --text-primary: #caf0f8;
+            --text-secondary: rgba(202, 240, 248, 0.7);
+            --number-color: rgba(202, 240, 248, 0.9);
+            --button-bg: rgba(0, 180, 216, 0.1);
+            --button-hover: rgba(0, 180, 216, 0.3);
+            --glow-color: rgba(0, 180, 216, 0.5);
+        }
+
+        [data-theme="forest"] {
+            --bg-primary: #1a2f1a;
+            --bg-secondary: #2d4a2d;
+            --clock-face: linear-gradient(145deg, #2d4a2d, #1a2f1a);
+            --clock-border: #90be6d;
+            --clock-shadow: rgba(144, 190, 109, 0.3);
+            --hour-hand: #90be6d;
+            --minute-hand: #d8f3dc;
+            --second-hand: #52b788;
+            --tick-major: #90be6d;
+            --tick-minor: rgba(216, 243, 220, 0.3);
+            --center-dot: #90be6d;
+            --text-primary: #d8f3dc;
+            --text-secondary: rgba(216, 243, 220, 0.7);
+            --number-color: rgba(216, 243, 220, 0.9);
+            --button-bg: rgba(144, 190, 109, 0.1);
+            --button-hover: rgba(144, 190, 109, 0.3);
+            --glow-color: rgba(144, 190, 109, 0.5);
+        }
+
+        [data-theme="sunset"] {
+            --bg-primary: #1f1020;
+            --bg-secondary: #3d1a3d;
+            --clock-face: linear-gradient(145deg, #3d1a3d, #1f1020);
+            --clock-border: #ff6b6b;
+            --clock-shadow: rgba(255, 107, 107, 0.3);
+            --hour-hand: #ff6b6b;
+            --minute-hand: #ffd93d;
+            --second-hand: #ff8c42;
+            --tick-major: #ff6b6b;
+            --tick-minor: rgba(255, 217, 61, 0.3);
+            --center-dot: #ff6b6b;
+            --text-primary: #fff5e1;
+            --text-secondary: rgba(255, 245, 225, 0.7);
+            --number-color: rgba(255, 245, 225, 0.9);
+            --button-bg: rgba(255, 107, 107, 0.1);
+            --button-hover: rgba(255, 107, 107, 0.3);
+            --glow-color: rgba(255, 107, 107, 0.5);
+        }
+
+        [data-theme="lavender"] {
+            --bg-primary: #1a1625;
+            --bg-secondary: #2d2640;
+            --clock-face: linear-gradient(145deg, #2d2640, #1a1625);
+            --clock-border: #b388eb;
+            --clock-shadow: rgba(179, 136, 235, 0.3);
+            --hour-hand: #b388eb;
+            --minute-hand: #e0c3fc;
+            --second-hand: #8093f1;
+            --tick-major: #b388eb;
+            --tick-minor: rgba(224, 195, 252, 0.3);
+            --center-dot: #b388eb;
+            --text-primary: #f0e6ff;
+            --text-secondary: rgba(240, 230, 255, 0.7);
+            --number-color: rgba(240, 230, 255, 0.9);
+            --button-bg: rgba(179, 136, 235, 0.1);
+            --button-hover: rgba(179, 136, 235, 0.3);
+            --glow-color: rgba(179, 136, 235, 0.5);
+        }
+
+        [data-theme="minimal"] {
+            --bg-primary: #fafafa;
+            --bg-secondary: #ffffff;
+            --clock-face: linear-gradient(145deg, #ffffff, #f0f0f0);
+            --clock-border: #333333;
+            --clock-shadow: rgba(0, 0, 0, 0.1);
+            --hour-hand: #333333;
+            --minute-hand: #555555;
+            --second-hand: #e74c3c;
+            --tick-major: #333333;
+            --tick-minor: rgba(0, 0, 0, 0.2);
+            --center-dot: #333333;
+            --text-primary: #333333;
+            --text-secondary: rgba(0, 0, 0, 0.6);
+            --number-color: rgba(0, 0, 0, 0.8);
+            --button-bg: rgba(0, 0, 0, 0.05);
+            --button-hover: rgba(0, 0, 0, 0.1);
+            --glow-color: rgba(0, 0, 0, 0.1);
+        }
+
+        [data-theme="gold"] {
+            --bg-primary: #1a1510;
+            --bg-secondary: #2d2418;
+            --clock-face: linear-gradient(145deg, #2d2418, #1a1510);
+            --clock-border: #d4af37;
+            --clock-shadow: rgba(212, 175, 55, 0.3);
+            --hour-hand: #d4af37;
+            --minute-hand: #f5e6a3;
+            --second-hand: #c9a227;
+            --tick-major: #d4af37;
+            --tick-minor: rgba(245, 230, 163, 0.3);
+            --center-dot: #d4af37;
+            --text-primary: #f5e6a3;
+            --text-secondary: rgba(245, 230, 163, 0.7);
+            --number-color: rgba(245, 230, 163, 0.9);
+            --button-bg: rgba(212, 175, 55, 0.1);
+            --button-hover: rgba(212, 175, 55, 0.3);
+            --glow-color: rgba(212, 175, 55, 0.5);
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: var(--bg-primary);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            transition: background 0.5s ease;
+            overflow-x: hidden;
+        }
+
+        .container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 30px;
+            width: 100%;
+            max-width: 600px;
+        }
+
+        .clock-wrapper {
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .clock {
+            position: relative;
+            width: min(350px, 80vw);
+            height: min(350px, 80vw);
+            border-radius: 50%;
+            background: var(--clock-face);
+            border: 4px solid var(--clock-border);
+            box-shadow: 
+                0 0 60px var(--clock-shadow),
+                inset 0 0 40px rgba(0, 0, 0, 0.3),
+                0 20px 40px rgba(0, 0, 0, 0.4);
+            transition: all 0.5s ease;
+        }
+
+        .clock::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 20px;
+            height: 20px;
+            background: var(--center-dot);
+            border-radius: 50%;
+            z-index: 100;
+            box-shadow: 0 0 20px var(--glow-color);
+            transition: all 0.5s ease;
+        }
+
+        .clock::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 8px;
+            height: 8px;
+            background: var(--bg-primary);
+            border-radius: 50%;
+            z-index: 101;
+        }
+
+        .hand {
+            position: absolute;
+            bottom: 50%;
+            left: 50%;
+            transform-origin: bottom center;
+            border-radius: 10px;
+            transition: background 0.5s ease;
+        }
+
+        .hour-hand {
+            width: 8px;
+            height: 25%;
+            background: var(--hour-hand);
+            margin-left: -4px;
+            box-shadow: 0 0 15px var(--glow-color);
+            z-index: 30;
+        }
+
+        .minute-hand {
+            width: 5px;
+            height: 35%;
+            background: var(--minute-hand);
+            margin-left: -2.5px;
+            box-shadow: 0 0 10px rgba(255, 255, 255, 0.3);
+            z-index: 40;
+        }
+
+        .second-hand {
+            width: 2px;
+            height: 40%;
+            background: var(--second-hand);
+            margin-left: -1px;
+            z-index: 50;
+            box-shadow: 0 0 10px var(--second-hand);
+        }
+
+        .second-hand::before {
+            content: '';
+            position: absolute;
+            bottom: -20px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 2px;
+            height: 30px;
+            background: var(--second-hand);
+            border-radius: 10px;
+        }
+
+        .tick {
+            position: absolute;
+            top: 10px;
+            left: 50%;
+            transform-origin: bottom center;
+            width: 3px;
+            border-radius: 2px;
+            transition: background 0.5s ease;
+        }
+
+        .tick.major {
+            height: 20px;
+            background: var(--tick-major);
+            width: 4px;
+            box-shadow: 0 0 5px var(--glow-color);
+        }
+
+        .tick.minor {
+            height: 10px;
+            background: var(--tick-minor);
+        }
+
+        .number {
+            position: absolute;
+            font-size: clamp(14px, 4vw, 20px);
+            font-weight: 600;
+            color: var(--number-color);
+            text-shadow: 0 0 10px var(--glow-color);
+            transition: all 0.5s ease;
+        }
+
+        .digital-time {
+            font-size: clamp(24px, 6vw, 36px);
+            font-weight: 300;
+            color: var(--text-primary);
+            letter-spacing: 4px;
+            text-shadow: 0 0 20px var(--glow-color);
+            transition: all 0.5s ease;
+            font-variant-numeric: tabular-nums;
+        }
+
+        .date-display {
+            font-size: clamp(14px, 3vw, 18px);
+            color: var(--text-secondary);
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            transition: all 0.5s ease;
+        }
+
+        .controls {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            justify-content: center;
+            padding: 20px;
+            background: var(--bg-secondary);
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            transition: all 0.5s ease;
+            width: 100%;
+            max-width: 400px;
+        }
+
+        .theme-btn {
+            width: 45px;
+            height: 45px;
+            border-radius: 50%;
+            border: 3px solid transparent;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .theme-btn:hover {
+            transform: scale(1.15);
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.3);
+        }
+
+        .theme-btn.active {
+            border-color: var(--text-primary);
+            transform: scale(1.1);
+        }
+
+        .theme-btn[data-theme="midnight"] {
+            background: linear-gradient(135deg, #e94560, #0f0f23);
+        }
+
+        .theme-btn[data-theme="ocean"] {
+            background: linear-gradient(135deg, #00b4d8, #0a1628);
+        }
+
+        .theme-btn[data-theme="forest"] {
+            background: linear-gradient(135deg, #90be6d, #1a2f1a);
+        }
+
+        .theme-btn[data-theme="sunset"] {
+            background: linear-gradient(135deg, #ff6b6b, #1f1020);
+        }
+
+        .theme-btn[data-theme="lavender"] {
+            background: linear-gradient(135deg, #b388eb, #1a1625);
+        }
+
+        .theme-btn[data-theme="minimal"] {
+            background: linear-gradient(135deg, #ffffff, #333333);
+        }
+
+        .theme-btn[data-theme="gold"] {
+            background: linear-gradient(135deg, #d4af37, #1a1510);
+        }
+
+        .toggle-btn {
+            padding: 12px 24px;
+            background: var(--button-bg);
+            border: 2px solid var(--clock-border);
+            color: var(--text-primary);
+            border-radius: 30px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .toggle-btn:hover {
+            background: var(--button-hover);
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px var(--clock-shadow);
+        }
+
+        .toggle-btn.active {
+            background: var(--clock-border);
+            color: var(--bg-primary);
+        }
+
+        .settings-row {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            justify-content: center;
+            width: 100%;
+            margin-top: 10px;
+            padding-top: 15px;
+            border-top: 1px solid var(--button-bg);
+        }
+
+        /* Smooth second hand animation */
+        .smooth .second-hand {
+            transition: transform 0.1s linear;
+        }
+
+        /* Tick animation */
+        .tick-mode .second-hand {
+            transition: transform 0.1s cubic-bezier(0.4, 2.08, 0.55, 0.44);
+        }
+
+        /* Pendulum effect */
+        @keyframes pendulum {
+            0%, 100% { transform: rotate(-3deg); }
+            50% { transform: rotate(3deg); }
+        }
+
+        .clock-wrapper::before {
+            content: '';
+            position: absolute;
+            top: -60px;
+            width: 4px;
+            height: 60px;
+            background: var(--clock-border);
+            border-radius: 2px;
+            display: none;
+        }
+
+        .show-pendulum .clock-wrapper::before {
+            display: block;
+            animation: pendulum 1s ease-in-out infinite;
+        }
+
+        /* Glow pulse animation */
+        @keyframes glowPulse {
+            0%, 100% { box-shadow: 0 0 60px var(--clock-shadow); }
+            50% { box-shadow: 0 0 80px var(--clock-shadow), 0 0 100px var(--clock-shadow); }
+        }
+
+        .glow-effect .clock {
+            animation: glowPulse 3s ease-in-out infinite;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 480px) {
+            .container {
+                gap: 20px;
+            }
+
+            .clock {
+                width: min(280px, 75vw);
+                height: min(280px, 75vw);
+            }
+
+            .controls {
+                padding: 15px;
+                gap: 8px;
+            }
+
+            .theme-btn {
+                width: 38px;
+                height: 38px;
+            }
+
+            .toggle-btn {
+                padding: 10px 16px;
+                font-size: 12px;
+            }
+
+            .tick.major {
+                height: 15px;
+            }
+
+            .tick.minor {
+                height: 8px;
+            }
+        }
+
+        @media (max-width: 360px) {
+            .clock {
+                width: min(240px, 70vw);
+                height: min(240px, 70vw);
+            }
+
+            .number {
+                font-size: 12px;
+            }
+        }
+
+        /* Landscape orientation */
+        @media (orientation: landscape) and (max-height: 500px) {
+            body {
+                padding: 10px;
+            }
+
+            .container {
+                flex-direction: row;
+                max-width: 100%;
+                gap: 20px;
+                justify-content: center;
+            }
+
+            .clock {
+                width: min(250px, 40vh);
+                height: min(250px, 40vh);
+            }
+
+            .info-section {
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                gap: 15px;
+            }
+
+            .controls {
+                max-width: 300px;
+            }
+        }
+
+        /* Large screens */
+        @media (min-width: 1200px) {
+            .clock {
+                width: 400px;
+                height: 400px;
+            }
+
+            .number {
+                font-size: 24px;
+            }
+
+            .digital-time {
+                font-size: 48px;
+            }
+        }
+
+        /* Animation for numbers */
+        .number {
+            opacity: 0;
+            animation: fadeInNumber 0.5s ease forwards;
+        }
+
+        @keyframes fadeInNumber {
+            from {
+                opacity: 0;
+                transform: scale(0.5);
+            }
+            to {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+
+        /* Loading animation */
+        .loading .clock {
+            animation: clockLoad 1s ease-out;
+        }
+
+        @keyframes clockLoad {
+            from {
+                transform: scale(0.8) rotate(-10deg);
+                opacity: 0;
+            }
+            to {
+                transform: scale(1) rotate(0);
+                opacity: 1;
+            }
+        }
+
+        /* Hide numbers option */
+        .hide-numbers .number {
+            display: none;
+        }
+
+        /* Roman numerals */
+        .roman-numerals .number {
+            font-family: 'Times New Roman', serif;
+            font-weight: 400;
+        }
+    </style>
+</head>
+<body class="loading glow-effect">
+    <div class="container">
+        <div class="clock-wrapper">
+            <div class="clock" id="clock">
+                <div class="hand hour-hand" id="hourHand"></div>
+                <div class="hand minute-hand" id="minuteHand"></div>
+                <div class="hand second-hand" id="secondHand"></div>
+            </div>
+        </div>
+
+        <div class="info-section">
+            <div class="digital-time" id="digitalTime">00:00:00</div>
+            <div class="date-display" id="dateDisplay">Loading...</div>
+
+            <div class="controls">
+                <button class="theme-btn active" data-theme="midnight" title="Midnight"></button>
+                <button class="theme-btn" data-theme="ocean" title="Ocean"></button>
+                <button class="theme-btn" data-theme="forest" title="Forest"></button>
+                <button class="theme-btn" data-theme="sunset" title="Sunset"></button>
+                <button class="theme-btn" data-theme="lavender" title="Lavender"></button>
+                <button class="theme-btn" data-theme="minimal" title="Minimal"></button>
+                <button class="theme-btn" data-theme="gold" title="Gold"></button>
+
+                <div class="settings-row">
+                    <button class="toggle-btn" id="toggleNumbers">Numbers</button>
+                    <button class="toggle-btn" id="toggleRoman">Roman</button>
+                    <button class="toggle-btn active" id="toggleSmooth">Smooth</button>
+                    <button class="toggle-btn active" id="toggleGlow">Glow</button>
+                    <button class="toggle-btn" id="toggle24h">24H</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // State management
+        const defaultState = {
+            theme: 'midnight',
+            showNumbers: true,
+            romanNumerals: false,
+            smoothSeconds: true,
+            glowEffect: true,
+            use24Hour: false
+        };
+
+        let state = { ...defaultState };
+
+        // Load state from localStorage
+        function loadState() {
+            try {
+                const saved = localStorage.getItem('analogClockState');
+                if (saved) {
+                    state = { ...defaultState, ...JSON.parse(saved) };
+                }
+            } catch (e) {
+                console.warn('Could not load state from localStorage');
+            }
+        }
+
+        // Save state to localStorage
+        function saveState() {
+            try {
+                localStorage.setItem('analogClockState', JSON.stringify(state));
+            } catch (e) {
+                console.warn('Could not save state to localStorage');
+            }
+        }
+
+        // DOM Elements
+        const clock = document.getElementById('clock');
+        const hourHand = document.getElementById('hourHand');
+        const minuteHand = document.getElementById('minuteHand');
+        const secondHand = document.getElementById('secondHand');
+        const digitalTime = document.getElementById('digitalTime');
+        const dateDisplay = document.getElementById('dateDisplay');
+
+        // Create clock face elements
+        function createClockFace() {
+            // Remove existing ticks and numbers
+            document.querySelectorAll('.tick, .number').forEach(el => el.remove());
+
+            const clockSize = clock.offsetWidth;
+            const radius = clockSize / 2;
+
+            // Create ticks
+            for (let i = 0; i < 60; i++) {
+                const tick = document.createElement('div');
+                tick.className = `tick ${i % 5 === 0 ? 'major' : 'minor'}`;
+                const angle = i * 6;
+                tick.style.transform = `translateX(-50%) rotate(${angle}deg)`;
+                tick.style.height = i % 5 === 0 ? `${clockSize * 0.057}px` : `${clockSize * 0.028}px`;
+                tick.style.transformOrigin = `center ${radius - 10}px`;
+                clock.appendChild(tick);
+            }
+
+            // Create numbers
+            const numbers = state.romanNumerals 
+                ? ['XII', 'I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X', 'XI']
+                : ['12', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11'];
+
+            numbers.forEach((num, i) => {
+                const number = document.createElement('div');
+                number.className = 'number';
+                number.textContent = num;
+                
+                const angle = (i * 30 - 90) * (Math.PI / 180);
+                const numberRadius = radius * 0.75;
+                const x = radius + numberRadius * Math.cos(angle);
+                const y = radius + numberRadius * Math.sin(angle);
+                
+                number.style.left = `${x}px`;
+                number.style.top = `${y}px`;
+                number.style.transform = 'translate(-50%, -50%)';
+                number.style.animationDelay = `${i * 0.05}s`;
+                
+                clock.appendChild(number);
+            });
+        }
+
+        // Update clock hands
+        function updateClock() {
+            const now = new Date();
+            const hours = now.getHours();
+            const minutes = now.getMinutes();
+            const seconds = now.getSeconds();
+            const milliseconds = now.getMilliseconds();
+
+            // Calculate angles
+            const secondAngle = state.smoothSeconds 
+                ? (seconds + milliseconds / 1000) * 6 
+                : seconds * 6;
+            const minuteAngle = (minutes + seconds / 60) * 6;
+            const hourAngle = (hours % 12 + minutes / 60) * 30;
+
+            // Apply rotations
+            secondHand.style.transform = `rotate(${secondAngle}deg)`;
+            minuteHand.style.transform = `rotate(${minuteAngle}deg)`;
+            hourHand.style.transform = `rotate(${hourAngle}deg)`;
+
+            // Update digital time
+            const displayHours = state.use24Hour ? hours : hours % 12 || 12;
+            const ampm = state.use24Hour ? '' : (hours >= 12 ? ' PM' : ' AM');
+            digitalTime.textContent = 
+                `${String(displayHours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}${ampm}`;
+
+            // Update date
+            const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+            dateDisplay.textContent = now.toLocaleDateString(undefined, options);
+        }
+
+        // Apply theme
+        function applyTheme(theme) {
+            document.documentElement.setAttribute('data-theme', theme);
+            state.theme = theme;
+            
+            // Update active button
+            document.querySelectorAll('.theme-btn').forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.theme === theme);
+            });
+            
+            saveState();
+        }
+
+        // Toggle settings
+        function toggleSetting(setting, element) {
+            state[setting] = !state[setting];
+            element.classList.toggle('active', state[setting]);
+            saveState();
+            applySettings();
+        }
+
+        // Apply all settings
+        function applySettings() {
+            const body = document.body;
+            
+            // Numbers visibility
+            body.classList.toggle('hide-numbers', !state.showNumbers);
+            document.getElementById('toggleNumbers').classList.toggle('active', state.showNumbers);
+            
+            // Roman numerals
+            body.classList.toggle('roman-numerals', state.romanNumerals);
+            document.getElementById('toggleRoman').classList.toggle('active', state.romanNumerals);
+            if (state.romanNumerals !== (body.classList.contains('roman-numerals-applied'))) {
+                body.classList.toggle('roman-numerals-applied', state.romanNumerals);
+                createClockFace();
+            }
+            
+            // Smooth seconds
+            body.classList.toggle('smooth', state.smoothSeconds);
+            body.classList.toggle('tick-mode', !state.smoothSeconds);
+            document.getElementById('toggleSmooth').classList.toggle('active', state.smoothSeconds);
+            
+            // Glow effect
+            body.classList.toggle('glow-effect', state.glowEffect);
+            document.getElementById('toggleGlow').classList.toggle('active', state.glowEffect);
+            
+            // 24 hour format
+            document.getElementById('toggle24h').classList.toggle('active', state.use24Hour);
+            
+            // Apply theme
+            document.documentElement.setAttribute('data-theme', state.theme);
+            document.querySelectorAll('.theme-btn').forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.theme === state.theme);
+            });
+        }
+
+        // Initialize
+        function init() {
+            loadState();
+            createClockFace();
+            applySettings();
+            
+            // Theme buttons
+            document.querySelectorAll('.theme-btn').forEach(btn => {
+                btn.addEventListener('click', () => applyTheme(btn.dataset.theme));
+            });
+            
+            // Toggle buttons
+            document.getElementById('toggleNumbers').addEventListener('click', function() {
+                toggleSetting('showNumbers', this);
+            });
+            
+            document.getElementById('toggleRoman').addEventListener('click', function() {
+                state.romanNumerals = !state.romanNumerals;
+                this.classList.toggle('active', state.romanNumerals);
+                createClockFace();
+                saveState();
+            });
+            
+            document.getElementById('toggleSmooth').addEventListener('click', function() {
+                toggleSetting('smoothSeconds', this);
+            });
+            
+            document.getElementById('toggleGlow').addEventListener('click', function() {
+                toggleSetting('glowEffect', this);
+            });
+            
+            document.getElementById('toggle24h').addEventListener('click', function() {
+                toggleSetting('use24Hour', this);
+            });
+            
+            // Start clock
+            updateClock();
+            setInterval(updateClock, state.smoothSeconds ? 50 : 1000);
+            
+            // Handle resize
+            let resizeTimeout;
+            window.addEventListener('resize', () => {
+                clearTimeout(resizeTimeout);
+                resizeTimeout = setTimeout(createClockFace, 250);
+            });
+            
+            // Remove loading class after animation
+            setTimeout(() => {
+                document.body.classList.remove('loading');
+            }, 1000);
+        }
+
+        // Start when DOM is ready
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', init);
+        } else {
+            init();
+        }
+    </script>
+</body>
+</html>
