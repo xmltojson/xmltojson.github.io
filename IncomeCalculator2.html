@@ -1,0 +1,2176 @@
+<!DOCTYPE html>
+<!-- MIT License
+Copyright (c) 2025 Valentyn Kolesnikov <0009-0003-9608-3364@orcid.org>
+-->
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Income Calculator">
+    <title>Income Calculator</title>
+    
+    <!-- Favicon - Chart Icon -->
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cdefs%3E%3ClinearGradient id='grad' x1='0%25' y1='0%25' x2='100%25' y2='100%25'%3E%3Cstop offset='0%25' style='stop-color:%236366f1'/%3E%3Cstop offset='100%25' style='stop-color:%2310b981'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='100' height='100' rx='20' fill='url(%23grad)'/%3E%3Crect x='15' y='55' width='16' height='30' rx='4' fill='white' opacity='0.7'/%3E%3Crect x='42' y='35' width='16' height='50' rx='4' fill='white' opacity='0.85'/%3E%3Crect x='69' y='15' width='16' height='70' rx='4' fill='white'/%3E%3C/svg%3E">
+    
+    <!-- Apple Touch Icon -->
+    <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cdefs%3E%3ClinearGradient id='grad' x1='0%25' y1='0%25' x2='100%25' y2='100%25'%3E%3Cstop offset='0%25' style='stop-color:%236366f1'/%3E%3Cstop offset='100%25' style='stop-color:%2310b981'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='100' height='100' rx='20' fill='url(%23grad)'/%3E%3Crect x='15' y='55' width='16' height='30' rx='4' fill='white' opacity='0.7'/%3E%3Crect x='42' y='35' width='16' height='50' rx='4' fill='white' opacity='0.85'/%3E%3Crect x='69' y='15' width='16' height='70' rx='4' fill='white'/%3E%3C/svg%3E">
+    
+    <!-- Theme Color for Mobile Browsers -->
+    <meta name="theme-color" content="#6366f1">
+    
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary: #6366f1;
+            --primary-dark: #4f46e5;
+            --secondary: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --bg-dark: #0f172a;
+            --bg-card: #1e293b;
+            --bg-input: #334155;
+            --text-primary: #f8fafc;
+            --text-secondary: #94a3b8;
+            --border: #475569;
+            --shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, var(--bg-dark) 0%, #1a1a2e 100%);
+            min-height: 100vh;
+            color: var(--text-primary);
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 30px;
+            position: relative;
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 10px;
+        }
+
+        .subtitle {
+            color: var(--text-secondary);
+            font-size: 1rem;
+        }
+
+        /* Settings Button */
+        .settings-btn {
+            position: absolute;
+            right: 0;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 48px;
+            height: 48px;
+            border-radius: 12px;
+            background: var(--bg-card);
+            border: 2px solid var(--border);
+            color: var(--text-primary);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            transition: all 0.3s ease;
+        }
+
+        .settings-btn:hover {
+            border-color: var(--primary);
+            transform: translateY(-50%) scale(1.05);
+        }
+
+        .settings-btn:hover .settings-icon {
+            transform: rotate(90deg);
+        }
+
+        .settings-icon {
+            transition: transform 0.3s ease;
+        }
+
+        .main-content {
+            display: grid;
+            gap: 20px;
+        }
+
+        .calculators-section {
+            display: grid;
+            gap: 20px;
+        }
+
+        .calculator-card {
+            background: var(--bg-card);
+            border-radius: 20px;
+            padding: 25px;
+            box-shadow: var(--shadow);
+            border: 1px solid var(--border);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .calculator-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
+        }
+
+        .calculator-card.compare-mode {
+            border-color: var(--primary);
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .card-title {
+            font-size: 1.2rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .card-title .icon {
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+        }
+
+        .compare-checkbox {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            cursor: pointer;
+        }
+
+        .compare-checkbox input {
+            width: 20px;
+            height: 20px;
+            accent-color: var(--primary);
+            cursor: pointer;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+
+        .form-row-3 {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 15px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            font-weight: 500;
+        }
+
+        input[type="number"],
+        select {
+            width: 100%;
+            padding: 14px 16px;
+            background: var(--bg-input);
+            border: 2px solid var(--border);
+            border-radius: 12px;
+            color: var(--text-primary);
+            font-size: 1rem;
+            transition: border-color 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        input[type="number"]:focus,
+        select:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.2);
+        }
+
+        /* Fixed Rate Slider Styles */
+        .rate-slider-container {
+            margin-top: 10px;
+            padding: 0;
+        }
+
+        input[type="range"] {
+            width: 100%;
+            height: 8px;
+            -webkit-appearance: none;
+            appearance: none;
+            background: var(--bg-input);
+            border-radius: 4px;
+            outline: none;
+            margin: 0;
+            display: block;
+        }
+
+        input[type="range"]::-webkit-slider-runnable-track {
+            width: 100%;
+            height: 8px;
+            background: var(--bg-input);
+            border-radius: 4px;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 24px;
+            height: 24px;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+            border-radius: 50%;
+            cursor: pointer;
+            box-shadow: 0 4px 10px rgba(99, 102, 241, 0.4);
+            margin-top: -8px;
+        }
+
+        input[type="range"]::-moz-range-track {
+            width: 100%;
+            height: 8px;
+            background: var(--bg-input);
+            border-radius: 4px;
+        }
+
+        input[type="range"]::-moz-range-thumb {
+            width: 24px;
+            height: 24px;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+            border-radius: 50%;
+            cursor: pointer;
+            box-shadow: 0 4px 10px rgba(99, 102, 241, 0.4);
+            border: none;
+        }
+
+        .rate-display {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 12px;
+            flex-wrap: nowrap;
+            gap: 10px;
+        }
+
+        .rate-value {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--primary);
+            white-space: nowrap;
+            flex-shrink: 0;
+        }
+
+        .rate-range {
+            color: var(--text-secondary);
+            font-size: 0.85rem;
+            white-space: nowrap;
+            flex-shrink: 0;
+        }
+
+        .btn {
+            padding: 14px 28px;
+            border: none;
+            border-radius: 12px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            color: white;
+            width: 100%;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(99, 102, 241, 0.4);
+        }
+
+        .btn-secondary {
+            background: var(--bg-input);
+            color: var(--text-primary);
+            border: 2px solid var(--border);
+        }
+
+        .btn-secondary:hover {
+            border-color: var(--primary);
+        }
+
+        .btn-compare {
+            background: linear-gradient(135deg, var(--secondary) 0%, #059669 100%);
+            color: white;
+            width: 100%;
+            margin-top: 20px;
+        }
+
+        .results {
+            margin-top: 25px;
+            padding: 20px;
+            background: linear-gradient(135deg, rgba(99, 102, 241, 0.1) 0%, rgba(16, 185, 129, 0.1) 100%);
+            border-radius: 15px;
+            border: 1px solid rgba(99, 102, 241, 0.3);
+        }
+
+        .results-title {
+            font-size: 1rem;
+            color: var(--text-secondary);
+            margin-bottom: 15px;
+        }
+
+        .result-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .result-item:last-child {
+            border-bottom: none;
+        }
+
+        .result-label {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+        }
+
+        .result-value {
+            font-weight: 600;
+            font-size: 1.1rem;
+        }
+
+        .result-value.highlight {
+            color: var(--secondary);
+            font-size: 1.4rem;
+        }
+
+        .result-value.tax {
+            color: var(--warning);
+        }
+
+        .result-value.extra {
+            color: var(--primary);
+        }
+
+        .history-section {
+            background: var(--bg-card);
+            border-radius: 20px;
+            padding: 25px;
+            box-shadow: var(--shadow);
+            border: 1px solid var(--border);
+        }
+
+        .history-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .history-title {
+            font-size: 1.2rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .history-tabs {
+            display: flex;
+            gap: 10px;
+        }
+
+        .tab-btn {
+            padding: 10px 20px;
+            background: var(--bg-input);
+            border: none;
+            border-radius: 10px;
+            color: var(--text-secondary);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 0.9rem;
+        }
+
+        .tab-btn.active {
+            background: var(--primary);
+            color: white;
+        }
+
+        .history-list {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .history-item {
+            background: var(--bg-input);
+            border-radius: 12px;
+            padding: 15px;
+            margin-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: transform 0.2s ease;
+        }
+
+        .history-item:hover {
+            transform: translateX(5px);
+        }
+
+        .history-info {
+            flex: 1;
+        }
+
+        .history-amount {
+            font-weight: 600;
+            font-size: 1.1rem;
+            margin-bottom: 5px;
+        }
+
+        .history-details {
+            color: var(--text-secondary);
+            font-size: 0.85rem;
+        }
+
+        .history-result {
+            text-align: right;
+        }
+
+        .history-income {
+            color: var(--secondary);
+            font-weight: 600;
+            font-size: 1.1rem;
+        }
+
+        .history-date {
+            color: var(--text-secondary);
+            font-size: 0.8rem;
+        }
+
+        .comparison-results {
+            background: var(--bg-card);
+            border-radius: 20px;
+            padding: 25px;
+            box-shadow: var(--shadow);
+            border: 1px solid var(--secondary);
+            margin-top: 20px;
+        }
+
+        .comparison-grid {
+            display: grid;
+            gap: 20px;
+        }
+
+        .comparison-item {
+            background: var(--bg-input);
+            border-radius: 15px;
+            padding: 20px;
+            text-align: center;
+        }
+
+        .comparison-item.best {
+            border: 2px solid var(--secondary);
+            background: linear-gradient(135deg, rgba(16, 185, 129, 0.1) 0%, rgba(16, 185, 129, 0.05) 100%);
+        }
+
+        .comparison-item.best::before {
+            content: '👑 Best Option';
+            display: block;
+            color: var(--secondary);
+            font-weight: 600;
+            margin-bottom: 10px;
+        }
+
+        .comparison-label {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            margin-bottom: 10px;
+        }
+
+        .comparison-value {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: var(--secondary);
+        }
+
+        .clear-btn {
+            background: var(--danger);
+            color: white;
+            padding: 8px 16px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            transition: opacity 0.3s ease;
+        }
+
+        .clear-btn:hover {
+            opacity: 0.8;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 40px;
+            color: var(--text-secondary);
+        }
+
+        .empty-state .icon {
+            font-size: 3rem;
+            margin-bottom: 15px;
+        }
+
+        /* Currency badges */
+        .currency-badge {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 6px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            margin-left: 10px;
+        }
+
+        .currency-badge.uah {
+            background: #fef3c7;
+            color: #92400e;
+        }
+
+        .currency-badge.usd {
+            background: #d1fae5;
+            color: #065f46;
+        }
+
+        .currency-badge.eur {
+            background: #dbeafe;
+            color: #1e40af;
+        }
+
+        /* Extra monthly badge */
+        .extra-badge {
+            display: inline-block;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 0.7rem;
+            font-weight: 600;
+            background: rgba(99, 102, 241, 0.2);
+            color: var(--primary);
+            margin-left: 5px;
+        }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: var(--bg-input);
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--border);
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--primary);
+        }
+
+        /* Modal/Dialog Styles */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(5px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+        }
+
+        .modal-overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .modal {
+            background: var(--bg-card);
+            border-radius: 20px;
+            padding: 30px;
+            max-width: 400px;
+            width: 90%;
+            box-shadow: 0 25px 80px rgba(0, 0, 0, 0.5);
+            border: 1px solid var(--border);
+            transform: scale(0.9) translateY(20px);
+            transition: transform 0.3s ease;
+        }
+
+        .modal-overlay.active .modal {
+            transform: scale(1) translateY(0);
+        }
+
+        .modal-icon {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.8rem;
+            margin: 0 auto 20px;
+        }
+
+        .modal-icon.warning {
+            background: linear-gradient(135deg, rgba(245, 158, 11, 0.2) 0%, rgba(245, 158, 11, 0.1) 100%);
+        }
+
+        .modal-icon.error {
+            background: linear-gradient(135deg, rgba(239, 68, 68, 0.2) 0%, rgba(239, 68, 68, 0.1) 100%);
+        }
+
+        .modal-icon.info {
+            background: linear-gradient(135deg, rgba(99, 102, 241, 0.2) 0%, rgba(99, 102, 241, 0.1) 100%);
+        }
+
+        .modal-icon.success {
+            background: linear-gradient(135deg, rgba(16, 185, 129, 0.2) 0%, rgba(16, 185, 129, 0.1) 100%);
+        }
+
+        .modal-title {
+            font-size: 1.3rem;
+            font-weight: 600;
+            text-align: center;
+            margin-bottom: 10px;
+        }
+
+        .modal-message {
+            color: var(--text-secondary);
+            text-align: center;
+            line-height: 1.6;
+            margin-bottom: 25px;
+        }
+
+        .modal-buttons {
+            display: flex;
+            gap: 12px;
+            justify-content: flex-end;
+        }
+
+        .modal-btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 10px;
+            font-size: 0.95rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            min-width: 100px;
+        }
+
+        .modal-btn-cancel {
+            background: var(--bg-input);
+            color: var(--text-primary);
+            border: 2px solid var(--border);
+        }
+
+        .modal-btn-cancel:hover {
+            border-color: var(--text-secondary);
+        }
+
+        .modal-btn-confirm {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            color: white;
+        }
+
+        .modal-btn-confirm:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(99, 102, 241, 0.4);
+        }
+
+        .modal-btn-danger {
+            background: linear-gradient(135deg, var(--danger) 0%, #dc2626 100%);
+            color: white;
+        }
+
+        .modal-btn-danger:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(239, 68, 68, 0.4);
+        }
+
+        .modal-btn-ok {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            color: white;
+        }
+
+        .modal-btn-ok:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(99, 102, 241, 0.4);
+        }
+
+        /* Settings Modal Styles */
+        .settings-modal {
+            max-width: 450px;
+        }
+
+        .settings-modal .modal-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 25px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .settings-modal .modal-header h2 {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 1.4rem;
+        }
+
+        .settings-modal .close-btn {
+            width: 36px;
+            height: 36px;
+            border-radius: 10px;
+            background: var(--bg-input);
+            border: none;
+            color: var(--text-secondary);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+            transition: all 0.3s ease;
+        }
+
+        .settings-modal .close-btn:hover {
+            background: var(--danger);
+            color: white;
+        }
+
+        .settings-group {
+            margin-bottom: 25px;
+        }
+
+        .settings-group-title {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 15px;
+        }
+
+        .settings-item {
+            background: var(--bg-input);
+            border-radius: 12px;
+            padding: 20px;
+        }
+
+        .settings-item-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .settings-item-label {
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .settings-item-value {
+            font-size: 1.3rem;
+            font-weight: 700;
+            color: var(--warning);
+        }
+
+        .tax-slider-container {
+            margin-top: 10px;
+        }
+
+        .tax-slider-labels {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 8px;
+            color: var(--text-secondary);
+            font-size: 0.8rem;
+        }
+
+        .settings-info {
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+            margin-top: 15px;
+            padding: 12px;
+            background: rgba(99, 102, 241, 0.1);
+            border-radius: 8px;
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+        }
+
+        .settings-info-icon {
+            flex-shrink: 0;
+        }
+
+        .settings-footer {
+            display: flex;
+            gap: 12px;
+            margin-top: 25px;
+            padding-top: 20px;
+            border-top: 1px solid var(--border);
+        }
+
+        .settings-footer .btn {
+            flex: 1;
+        }
+
+        /* Auto-save indicator */
+        .auto-save-indicator {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 0.8rem;
+            color: var(--secondary);
+            margin-top: 10px;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .auto-save-indicator.show {
+            opacity: 1;
+        }
+
+        .auto-save-indicator .checkmark {
+            font-size: 1rem;
+        }
+
+        /* Third calculator - hidden on mobile */
+        .calculator-card.third-calc {
+            display: none;
+        }
+
+        /* Responsive Design */
+        
+        /* Mobile - single column, 2 calculators only, history below */
+        @media (max-width: 767px) {
+            h1 {
+                font-size: 1.8rem;
+            }
+
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+
+            .form-row-3 {
+                grid-template-columns: 1fr;
+            }
+
+            .calculator-card {
+                padding: 20px;
+            }
+
+            .history-header {
+                flex-direction: column;
+                gap: 15px;
+            }
+
+            .main-content {
+                grid-template-columns: 1fr;
+            }
+
+            .calculators-section {
+                grid-template-columns: 1fr;
+            }
+
+            /* Hide third calculator on mobile */
+            .calculator-card.third-calc {
+                display: none !important;
+            }
+
+            .modal-buttons {
+                flex-direction: column-reverse;
+            }
+
+            .modal-btn {
+                width: 100%;
+            }
+
+            .rate-value {
+                font-size: 1.3rem;
+            }
+
+            .rate-range {
+                font-size: 0.8rem;
+            }
+
+            .comparison-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .settings-btn {
+                width: 40px;
+                height: 40px;
+                font-size: 1.2rem;
+            }
+
+            .settings-footer {
+                flex-direction: column;
+            }
+        }
+
+        /* Tablet - 2 columns for calculators, history below */
+        @media (min-width: 768px) and (max-width: 1199px) {
+            .main-content {
+                grid-template-columns: 1fr;
+            }
+
+            .calculators-section {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            /* Show third calculator on tablet, centered on its own row */
+            .calculator-card.third-calc {
+                display: block;
+                grid-column: 1 / -1;
+                max-width: 50%;
+                justify-self: center;
+            }
+
+            .comparison-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .history-section {
+                margin-top: 20px;
+            }
+        }
+
+        /* Desktop - 3 columns for calculators, history on the side */
+        @media (min-width: 1200px) {
+            .main-content {
+                grid-template-columns: 1fr 400px;
+            }
+
+            .calculators-section {
+                grid-template-columns: repeat(3, 1fr);
+            }
+
+            .calculator-card.third-calc {
+                display: block;
+            }
+
+            .comparison-grid {
+                grid-template-columns: repeat(3, 1fr);
+            }
+        }
+
+        /* Landscape mobile */
+        @media (max-height: 500px) and (orientation: landscape) {
+            body {
+                padding: 10px;
+            }
+
+            .calculator-card {
+                padding: 15px;
+            }
+
+            .form-group {
+                margin-bottom: 10px;
+            }
+
+            h1 {
+                font-size: 1.5rem;
+                margin-bottom: 5px;
+            }
+
+            header {
+                margin-bottom: 15px;
+            }
+
+            .modal {
+                padding: 20px;
+                max-height: 90vh;
+                overflow-y: auto;
+            }
+        }
+
+        /* Animation */
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .calculator-card {
+            animation: slideIn 0.5s ease forwards;
+        }
+
+        .calculator-card:nth-child(2) {
+            animation-delay: 0.1s;
+        }
+
+        .calculator-card:nth-child(3) {
+            animation-delay: 0.2s;
+        }
+
+        /* Input helper text */
+        .input-helper {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            margin-top: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>💰 Income Calculator</h1>
+            <p class="subtitle">Calculate and compare your deposit earnings with tax deductions</p>
+            <button class="settings-btn" onclick="openSettings()" title="Settings">
+                <span class="settings-icon">⚙️</span>
+            </button>
+        </header>
+
+        <div class="main-content">
+            <div class="left-section">
+                <div class="calculators-section" id="calculatorsSection">
+                    <!-- Calculator 1 -->
+                    <div class="calculator-card" id="calc1">
+                        <div class="card-header">
+                            <div class="card-title">
+                                <div class="icon">1</div>
+                                <span>Calculator 1</span>
+                            </div>
+                            <label class="compare-checkbox">
+                                <input type="checkbox" id="compare1" checked>
+                                <span>Compare</span>
+                            </label>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Currency</label>
+                            <select id="currency1" onchange="updateRateRange(1)">
+                                <option value="UAH">🇺🇦 UAH - Ukrainian Hryvnia</option>
+                                <option value="USD">🇺🇸 USD - US Dollar</option>
+                                <option value="EUR">🇪🇺 EUR - Euro</option>
+                            </select>
+                        </div>
+
+                        <div class="form-row-3">
+                            <div class="form-group">
+                                <label>Initial Amount</label>
+                                <input type="number" id="amount1" placeholder="Enter amount" min="0" value="10000">
+                            </div>
+                            <div class="form-group">
+                                <label>Monthly Extra</label>
+                                <input type="number" id="monthlyExtra1" placeholder="0" min="0" value="0">
+                                <div class="input-helper">Added each month</div>
+                            </div>
+                            <div class="form-group">
+                                <label>Period (months)</label>
+                                <input type="number" id="period1" placeholder="Months" min="1" max="60" value="12">
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Annual Interest Rate</label>
+                            <div class="rate-slider-container">
+                                <input type="range" id="rate1" min="3" max="19" step="0.1" value="12">
+                            </div>
+                            <div class="rate-display">
+                                <span class="rate-value" id="rateValue1">12%</span>
+                                <span class="rate-range" id="rateRange1">3% - 19%</span>
+                            </div>
+                        </div>
+
+                        <button class="btn btn-primary" onclick="calculate(1)">
+                            📊 Calculate Income
+                        </button>
+
+                        <div class="results" id="results1" style="display: none;">
+                            <div class="results-title">Calculation Results</div>
+                            <div class="result-item">
+                                <span class="result-label">Total Deposited</span>
+                                <span class="result-value" id="totalDeposited1">0</span>
+                            </div>
+                            <div class="result-item">
+                                <span class="result-label">Extra Contributions</span>
+                                <span class="result-value extra" id="extraContributions1">0</span>
+                            </div>
+                            <div class="result-item">
+                                <span class="result-label">Gross Income</span>
+                                <span class="result-value" id="grossIncome1">0</span>
+                            </div>
+                            <div class="result-item">
+                                <span class="result-label" id="taxLabel1">Tax (23%)</span>
+                                <span class="result-value tax" id="tax1">0</span>
+                            </div>
+                            <div class="result-item">
+                                <span class="result-label">Net Income</span>
+                                <span class="result-value highlight" id="netIncome1">0</span>
+                            </div>
+                            <div class="result-item">
+                                <span class="result-label">Total Amount</span>
+                                <span class="result-value highlight" id="totalAmount1">0</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Calculator 2 -->
+                    <div class="calculator-card" id="calc2">
+                        <div class="card-header">
+                            <div class="card-title">
+                                <div class="icon">2</div>
+                                <span>Calculator 2</span>
+                            </div>
+                            <label class="compare-checkbox">
+                                <input type="checkbox" id="compare2" checked>
+                                <span>Compare</span>
+                            </label>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Currency</label>
+                            <select id="currency2" onchange="updateRateRange(2)">
+                                <option value="UAH">🇺🇦 UAH - Ukrainian Hryvnia</option>
+                                <option value="USD">🇺🇸 USD - US Dollar</option>
+                                <option value="EUR">🇪🇺 EUR - Euro</option>
+                            </select>
+                        </div>
+
+                        <div class="form-row-3">
+                            <div class="form-group">
+                                <label>Initial Amount</label>
+                                <input type="number" id="amount2" placeholder="Enter amount" min="0" value="10000">
+                            </div>
+                            <div class="form-group">
+                                <label>Monthly Extra</label>
+                                <input type="number" id="monthlyExtra2" placeholder="0" min="0" value="0">
+                                <div class="input-helper">Added each month</div>
+                            </div>
+                            <div class="form-group">
+                                <label>Period (months)</label>
+                                <input type="number" id="period2" placeholder="Months" min="1" max="60" value="12">
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Annual Interest Rate</label>
+                            <div class="rate-slider-container">
+                                <input type="range" id="rate2" min="3" max="19" step="0.1" value="15">
+                            </div>
+                            <div class="rate-display">
+                                <span class="rate-value" id="rateValue2">15%</span>
+                                <span class="rate-range" id="rateRange2">3% - 19%</span>
+                            </div>
+                        </div>
+
+                        <button class="btn btn-primary" onclick="calculate(2)">
+                            📊 Calculate Income
+                        </button>
+
+                        <div class="results" id="results2" style="display: none;">
+                            <div class="results-title">Calculation Results</div>
+                            <div class="result-item">
+                                <span class="result-label">Total Deposited</span>
+                                <span class="result-value" id="totalDeposited2">0</span>
+                            </div>
+                            <div class="result-item">
+                                <span class="result-label">Extra Contributions</span>
+                                <span class="result-value extra" id="extraContributions2">0</span>
+                            </div>
+                            <div class="result-item">
+                                <span class="result-label">Gross Income</span>
+                                <span class="result-value" id="grossIncome2">0</span>
+                            </div>
+                            <div class="result-item">
+                                <span class="result-label" id="taxLabel2">Tax (23%)</span>
+                                <span class="result-value tax" id="tax2">0</span>
+                            </div>
+                            <div class="result-item">
+                                <span class="result-label">Net Income</span>
+                                <span class="result-value highlight" id="netIncome2">0</span>
+                            </div>
+                            <div class="result-item">
+                                <span class="result-label">Total Amount</span>
+                                <span class="result-value highlight" id="totalAmount2">0</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Calculator 3 -->
+                    <div class="calculator-card third-calc" id="calc3">
+                        <div class="card-header">
+                            <div class="card-title">
+                                <div class="icon">3</div>
+                                <span>Calculator 3</span>
+                            </div>
+                            <label class="compare-checkbox">
+                                <input type="checkbox" id="compare3" checked>
+                                <span>Compare</span>
+                            </label>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Currency</label>
+                            <select id="currency3" onchange="updateRateRange(3)">
+                                <option value="UAH">🇺🇦 UAH - Ukrainian Hryvnia</option>
+                                <option value="USD" selected>🇺🇸 USD - US Dollar</option>
+                                <option value="EUR">🇪🇺 EUR - Euro</option>
+                            </select>
+                        </div>
+
+                        <div class="form-row-3">
+                            <div class="form-group">
+                                <label>Initial Amount</label>
+                                <input type="number" id="amount3" placeholder="Enter amount" min="0" value="1000">
+                            </div>
+                            <div class="form-group">
+                                <label>Monthly Extra</label>
+                                <input type="number" id="monthlyExtra3" placeholder="0" min="0" value="100">
+                                <div class="input-helper">Added each month</div>
+                            </div>
+                            <div class="form-group">
+                                <label>Period (months)</label>
+                                <input type="number" id="period3" placeholder="Months" min="1" max="60" value="12">
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Annual Interest Rate</label>
+                            <div class="rate-slider-container">
+                                <input type="range" id="rate3" min="0.1" max="3" step="0.1" value="2">
+                            </div>
+                            <div class="rate-display">
+                                <span class="rate-value" id="rateValue3">2%</span>
+                                <span class="rate-range" id="rateRange3">0.1% - 3%</span>
+                            </div>
+                        </div>
+
+                        <button class="btn btn-primary" onclick="calculate(3)">
+                            📊 Calculate Income
+                        </button>
+
+                        <div class="results" id="results3" style="display: none;">
+                            <div class="results-title">Calculation Results</div>
+                            <div class="result-item">
+                                <span class="result-label">Total Deposited</span>
+                                <span class="result-value" id="totalDeposited3">0</span>
+                            </div>
+                            <div class="result-item">
+                                <span class="result-label">Extra Contributions</span>
+                                <span class="result-value extra" id="extraContributions3">0</span>
+                            </div>
+                            <div class="result-item">
+                                <span class="result-label">Gross Income</span>
+                                <span class="result-value" id="grossIncome3">0</span>
+                            </div>
+                            <div class="result-item">
+                                <span class="result-label" id="taxLabel3">Tax (23%)</span>
+                                <span class="result-value tax" id="tax3">0</span>
+                            </div>
+                            <div class="result-item">
+                                <span class="result-label">Net Income</span>
+                                <span class="result-value highlight" id="netIncome3">0</span>
+                            </div>
+                            <div class="result-item">
+                                <span class="result-label">Total Amount</span>
+                                <span class="result-value highlight" id="totalAmount3">0</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <button class="btn btn-compare" onclick="compareCalculations()">
+                    ⚖️ Compare Selected Calculations
+                </button>
+
+                <div class="comparison-results" id="comparisonResults" style="display: none;">
+                    <h3 style="margin-bottom: 20px; display: flex; align-items: center; gap: 10px;">
+                        <span>📊</span> Comparison Results
+                    </h3>
+                    <div class="comparison-grid" id="comparisonGrid">
+                        <!-- Comparison items will be inserted here -->
+                    </div>
+                </div>
+            </div>
+
+            <div class="history-section">
+                <div class="history-header">
+                    <div class="history-title">
+                        <span>📜</span>
+                        <span>History</span>
+                    </div>
+                    <div class="history-tabs">
+                        <button class="tab-btn active" onclick="switchTab('calculations')">Calculations</button>
+                        <button class="tab-btn" onclick="switchTab('comparisons')">Comparisons</button>
+                    </div>
+                </div>
+
+                <div id="calculationsHistory" class="history-list">
+                    <div class="empty-state">
+                        <div class="icon">📊</div>
+                        <p>No calculations yet</p>
+                    </div>
+                </div>
+
+                <div id="comparisonsHistory" class="history-list" style="display: none;">
+                    <div class="empty-state">
+                        <div class="icon">⚖️</div>
+                        <p>No comparisons yet</p>
+                    </div>
+                </div>
+
+                <button class="clear-btn" onclick="clearHistory()" style="margin-top: 15px; width: 100%;">
+                    🗑️ Clear History
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Dialog -->
+    <div class="modal-overlay" id="modalOverlay">
+        <div class="modal" id="modal">
+            <div class="modal-icon" id="modalIcon">
+                <span id="modalIconEmoji">⚠️</span>
+            </div>
+            <h3 class="modal-title" id="modalTitle">Title</h3>
+            <p class="modal-message" id="modalMessage">Message</p>
+            <div class="modal-buttons" id="modalButtons">
+                <!-- Buttons will be inserted dynamically -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Settings Modal -->
+    <div class="modal-overlay" id="settingsOverlay">
+        <div class="modal settings-modal">
+            <div class="modal-header">
+                <h2>⚙️ Settings</h2>
+                <button class="close-btn" onclick="closeSettings()">✕</button>
+            </div>
+
+            <div class="settings-group">
+                <div class="settings-group-title">Tax Configuration</div>
+                <div class="settings-item">
+                    <div class="settings-item-header">
+                        <span class="settings-item-label">🏛️ Tax Rate</span>
+                        <span class="settings-item-value" id="taxRateValue">23%</span>
+                    </div>
+                    <div class="tax-slider-container">
+                        <input type="range" id="taxRateSlider" min="18" max="27" step="0.5" value="23">
+                        <div class="tax-slider-labels">
+                            <span>18%</span>
+                            <span>27%</span>
+                        </div>
+                    </div>
+                    <div class="auto-save-indicator" id="autoSaveIndicator">
+                        <span class="checkmark">✓</span>
+                        <span>Settings saved automatically</span>
+                    </div>
+                    <div class="settings-info">
+                        <span class="settings-info-icon">ℹ️</span>
+                        <span>Tax rate is applied to gross income from deposits. In Ukraine, the standard rate is 18% income tax + 1.5% military levy = 19.5%, but some banks may withhold different rates.</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="settings-footer">
+                <button class="btn btn-secondary" onclick="resetSettings()">
+                    🔄 Reset to Default
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Constants
+        const TAX_RATE_MIN = 18;
+        const TAX_RATE_MAX = 27;
+        const TAX_RATE_DEFAULT = 23;
+        const UAH_RATE_MIN = 3;
+        const UAH_RATE_MAX = 19;
+        const FOREIGN_RATE_MIN = 0.1;
+        const FOREIGN_RATE_MAX = 3;
+        const MAX_HISTORY = 12;
+
+        // State
+        let state = {
+            settings: {
+                taxRate: TAX_RATE_DEFAULT
+            },
+            calculators: {
+                1: { currency: 'UAH', amount: 10000, monthlyExtra: 0, period: 12, rate: 12, compare: true, results: null },
+                2: { currency: 'UAH', amount: 10000, monthlyExtra: 0, period: 12, rate: 15, compare: true, results: null },
+                3: { currency: 'USD', amount: 1000, monthlyExtra: 100, period: 12, rate: 2, compare: true, results: null }
+            },
+            calculationsHistory: [],
+            comparisonsHistory: [],
+            activeTab: 'calculations'
+        };
+
+        // Currency symbols
+        const currencySymbols = {
+            UAH: '₴',
+            USD: '$',
+            EUR: '€'
+        };
+
+        // Get current tax rate from settings
+        function getTaxRate() {
+            return state.settings.taxRate / 100;
+        }
+
+        // Format tax rate for display
+        function formatTaxRate(rate) {
+            return rate % 1 === 0 ? rate + '%' : rate.toFixed(1) + '%';
+        }
+
+        // Format number based on currency
+        function formatCurrency(num, currency, prefix = '') {
+            const symbol = currencySymbols[currency];
+            
+            if (currency === 'UAH') {
+                const formatted = num.toFixed(2)
+                    .replace('.', ',')
+                    .replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+                return `${prefix}${formatted} ${symbol}`;
+            } else {
+                const formatted = num.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+                return `${prefix}${symbol}${formatted}`;
+            }
+        }
+
+        // Format number for display without currency
+        function formatNumber(num, currency = 'USD') {
+            if (currency === 'UAH') {
+                return num.toFixed(2)
+                    .replace('.', ',')
+                    .replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+            } else {
+                return num.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+            }
+        }
+
+        // Modal system
+        class Modal {
+            constructor() {
+                this.overlay = document.getElementById('modalOverlay');
+                this.modal = document.getElementById('modal');
+                this.icon = document.getElementById('modalIcon');
+                this.iconEmoji = document.getElementById('modalIconEmoji');
+                this.title = document.getElementById('modalTitle');
+                this.message = document.getElementById('modalMessage');
+                this.buttons = document.getElementById('modalButtons');
+                this.resolvePromise = null;
+
+                this.overlay.addEventListener('click', (e) => {
+                    if (e.target === this.overlay) {
+                        this.close(false);
+                    }
+                });
+
+                document.addEventListener('keydown', (e) => {
+                    if (e.key === 'Escape' && this.overlay.classList.contains('active')) {
+                        this.close(false);
+                    }
+                });
+            }
+
+            show(options) {
+                return new Promise((resolve) => {
+                    this.resolvePromise = resolve;
+
+                    this.icon.className = 'modal-icon ' + (options.type || 'info');
+                    const icons = {
+                        warning: '⚠️',
+                        error: '❌',
+                        info: 'ℹ️',
+                        success: '✅'
+                    };
+                    this.iconEmoji.textContent = options.icon || icons[options.type] || 'ℹ️';
+
+                    this.title.textContent = options.title || 'Notice';
+                    this.message.textContent = options.message || '';
+
+                    this.buttons.innerHTML = '';
+
+                    if (options.showCancel) {
+                        const cancelBtn = document.createElement('button');
+                        cancelBtn.className = 'modal-btn modal-btn-cancel';
+                        cancelBtn.textContent = options.cancelText || 'Cancel';
+                        cancelBtn.onclick = () => this.close(false);
+                        this.buttons.appendChild(cancelBtn);
+                    }
+
+                    const confirmBtn = document.createElement('button');
+                    confirmBtn.className = 'modal-btn ' + (options.confirmClass || 'modal-btn-ok');
+                    confirmBtn.textContent = options.confirmText || 'OK';
+                    confirmBtn.onclick = () => this.close(true);
+                    this.buttons.appendChild(confirmBtn);
+
+                    this.overlay.classList.add('active');
+                    confirmBtn.focus();
+                });
+            }
+
+            close(result) {
+                this.overlay.classList.remove('active');
+                if (this.resolvePromise) {
+                    this.resolvePromise(result);
+                    this.resolvePromise = null;
+                }
+            }
+
+            alert(message, title = 'Notice', type = 'info') {
+                return this.show({
+                    type,
+                    title,
+                    message,
+                    confirmText: 'OK',
+                    confirmClass: 'modal-btn-ok'
+                });
+            }
+
+            confirm(message, title = 'Confirm', type = 'warning') {
+                return this.show({
+                    type,
+                    title,
+                    message,
+                    showCancel: true,
+                    cancelText: 'Cancel',
+                    confirmText: 'Confirm',
+                    confirmClass: type === 'warning' ? 'modal-btn-danger' : 'modal-btn-confirm'
+                });
+            }
+
+            error(message, title = 'Error') {
+                return this.show({
+                    type: 'error',
+                    title,
+                    message,
+                    confirmText: 'OK',
+                    confirmClass: 'modal-btn-ok'
+                });
+            }
+
+            success(message, title = 'Success') {
+                return this.show({
+                    type: 'success',
+                    title,
+                    message,
+                    confirmText: 'OK',
+                    confirmClass: 'modal-btn-ok'
+                });
+            }
+        }
+
+        const modal = new Modal();
+
+        // Auto-save indicator timeout
+        let autoSaveTimeout = null;
+
+        // Show auto-save indicator
+        function showAutoSaveIndicator() {
+            const indicator = document.getElementById('autoSaveIndicator');
+            indicator.classList.add('show');
+            
+            if (autoSaveTimeout) {
+                clearTimeout(autoSaveTimeout);
+            }
+            
+            autoSaveTimeout = setTimeout(() => {
+                indicator.classList.remove('show');
+            }, 2000);
+        }
+
+        // Settings functions
+        function openSettings() {
+            const overlay = document.getElementById('settingsOverlay');
+            const slider = document.getElementById('taxRateSlider');
+            const value = document.getElementById('taxRateValue');
+            
+            slider.value = state.settings.taxRate;
+            value.textContent = formatTaxRate(state.settings.taxRate);
+            
+            overlay.classList.add('active');
+        }
+
+        function closeSettings() {
+            document.getElementById('settingsOverlay').classList.remove('active');
+        }
+
+        function resetSettings() {
+            const slider = document.getElementById('taxRateSlider');
+            const value = document.getElementById('taxRateValue');
+            
+            slider.value = TAX_RATE_DEFAULT;
+            value.textContent = formatTaxRate(TAX_RATE_DEFAULT);
+            
+            state.settings.taxRate = TAX_RATE_DEFAULT;
+            saveState();
+            updateTaxLabels();
+            showAutoSaveIndicator();
+        }
+
+        function updateTaxLabels() {
+            const taxRate = state.settings.taxRate;
+            for (let i = 1; i <= 3; i++) {
+                const label = document.getElementById(`taxLabel${i}`);
+                if (label) {
+                    label.textContent = `Tax (${formatTaxRate(taxRate)})`;
+                }
+            }
+        }
+
+        // Check if mobile
+        function isMobile() {
+            return window.innerWidth < 768;
+        }
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            loadState();
+            initializeCalculators();
+            setupEventListeners();
+            setupSettingsListeners();
+            renderHistory();
+            updateTaxLabels();
+        });
+
+        // Setup settings listeners
+        function setupSettingsListeners() {
+            const slider = document.getElementById('taxRateSlider');
+            const value = document.getElementById('taxRateValue');
+            const overlay = document.getElementById('settingsOverlay');
+
+            slider.addEventListener('input', (e) => {
+                const taxRate = parseFloat(e.target.value);
+                value.textContent = formatTaxRate(taxRate);
+                
+                // Auto-save on change
+                state.settings.taxRate = taxRate;
+                saveState();
+                updateTaxLabels();
+                showAutoSaveIndicator();
+            });
+
+            overlay.addEventListener('click', (e) => {
+                if (e.target === overlay) {
+                    closeSettings();
+                }
+            });
+
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape' && overlay.classList.contains('active')) {
+                    closeSettings();
+                }
+            });
+        }
+
+        // Load state from localStorage
+        function loadState() {
+            const savedState = localStorage.getItem('depositCalculatorState');
+            if (savedState) {
+                try {
+                    const parsed = JSON.parse(savedState);
+                    
+                    // Load settings
+                    if (parsed.settings) {
+                        state.settings = { ...state.settings, ...parsed.settings };
+                    }
+                    
+                    // Load calculators
+                    for (let i = 1; i <= 3; i++) {
+                        if (parsed.calculators && parsed.calculators[i]) {
+                            state.calculators[i] = { ...state.calculators[i], ...parsed.calculators[i] };
+                        }
+                    }
+                    if (parsed.calculationsHistory) state.calculationsHistory = parsed.calculationsHistory;
+                    if (parsed.comparisonsHistory) state.comparisonsHistory = parsed.comparisonsHistory;
+                    if (parsed.activeTab) state.activeTab = parsed.activeTab;
+                } catch (e) {
+                    console.error('Error loading state:', e);
+                }
+            }
+        }
+
+        // Save state to localStorage
+        function saveState() {
+            localStorage.setItem('depositCalculatorState', JSON.stringify(state));
+        }
+
+        // Initialize calculators with saved state
+        function initializeCalculators() {
+            for (let i = 1; i <= 3; i++) {
+                const calc = state.calculators[i];
+                
+                document.getElementById(`currency${i}`).value = calc.currency;
+                document.getElementById(`amount${i}`).value = calc.amount;
+                document.getElementById(`monthlyExtra${i}`).value = calc.monthlyExtra || 0;
+                document.getElementById(`period${i}`).value = calc.period;
+                document.getElementById(`compare${i}`).checked = calc.compare;
+                
+                updateRateRange(i, false);
+                document.getElementById(`rate${i}`).value = calc.rate;
+                document.getElementById(`rateValue${i}`).textContent = calc.rate + '%';
+                
+                if (calc.results) {
+                    displayResults(i, calc.results);
+                }
+            }
+        }
+
+        // Setup event listeners
+        function setupEventListeners() {
+            for (let i = 1; i <= 3; i++) {
+                document.getElementById(`rate${i}`).addEventListener('input', (e) => {
+                    const value = e.target.value;
+                    document.getElementById(`rateValue${i}`).textContent = value + '%';
+                    state.calculators[i].rate = parseFloat(value);
+                    saveState();
+                });
+
+                document.getElementById(`currency${i}`).addEventListener('change', (e) => {
+                    state.calculators[i].currency = e.target.value;
+                    saveState();
+                });
+
+                document.getElementById(`amount${i}`).addEventListener('input', (e) => {
+                    state.calculators[i].amount = parseFloat(e.target.value) || 0;
+                    saveState();
+                });
+
+                document.getElementById(`monthlyExtra${i}`).addEventListener('input', (e) => {
+                    state.calculators[i].monthlyExtra = parseFloat(e.target.value) || 0;
+                    saveState();
+                });
+
+                document.getElementById(`period${i}`).addEventListener('input', (e) => {
+                    state.calculators[i].period = parseInt(e.target.value) || 1;
+                    saveState();
+                });
+
+                document.getElementById(`compare${i}`).addEventListener('change', (e) => {
+                    state.calculators[i].compare = e.target.checked;
+                    document.getElementById(`calc${i}`).classList.toggle('compare-mode', e.target.checked);
+                    saveState();
+                });
+            }
+        }
+
+        // Update rate range based on currency
+        function updateRateRange(calcId, updateValue = true) {
+            const currency = document.getElementById(`currency${calcId}`).value;
+            const rateSlider = document.getElementById(`rate${calcId}`);
+            const rateRange = document.getElementById(`rateRange${calcId}`);
+            
+            let min, max;
+            if (currency === 'UAH') {
+                min = UAH_RATE_MIN;
+                max = UAH_RATE_MAX;
+            } else {
+                min = FOREIGN_RATE_MIN;
+                max = FOREIGN_RATE_MAX;
+            }
+            
+            rateSlider.min = min;
+            rateSlider.max = max;
+            rateRange.textContent = `${min}% - ${max}%`;
+            
+            if (updateValue) {
+                const defaultRate = currency === 'UAH' ? 12 : 2;
+                rateSlider.value = defaultRate;
+                document.getElementById(`rateValue${calcId}`).textContent = defaultRate + '%';
+                state.calculators[calcId].rate = defaultRate;
+            }
+            
+            state.calculators[calcId].currency = currency;
+            saveState();
+        }
+
+        // Calculate deposit income with monthly contributions
+        async function calculate(calcId) {
+            const currency = document.getElementById(`currency${calcId}`).value;
+            const initialAmount = parseFloat(document.getElementById(`amount${calcId}`).value) || 0;
+            const monthlyExtra = parseFloat(document.getElementById(`monthlyExtra${calcId}`).value) || 0;
+            const period = parseInt(document.getElementById(`period${calcId}`).value) || 1;
+            const annualRate = parseFloat(document.getElementById(`rate${calcId}`).value) || 0;
+            
+            if (initialAmount <= 0 && monthlyExtra <= 0) {
+                await modal.error('Please enter a valid initial amount or monthly contribution greater than zero.', 'Invalid Amount');
+                return;
+            }
+            
+            if (period <= 0 || period > 60) {
+                await modal.error('Please enter a valid period between 1 and 60 months.', 'Invalid Period');
+                return;
+            }
+
+            const monthlyRate = annualRate / 100 / 12;
+            let totalAmount = initialAmount;
+            let totalGrossIncome = 0;
+
+            for (let month = 1; month <= period; month++) {
+                const monthlyInterest = totalAmount * monthlyRate;
+                totalGrossIncome += monthlyInterest;
+                totalAmount += monthlyInterest;
+                
+                if (month < period) {
+                    totalAmount += monthlyExtra;
+                }
+            }
+
+            const totalExtraContributions = monthlyExtra * (period - 1);
+            const totalDeposited = initialAmount + totalExtraContributions;
+            const taxRate = getTaxRate();
+            const tax = totalGrossIncome * taxRate;
+            const netIncome = totalGrossIncome - tax;
+            const finalTotal = totalDeposited + netIncome;
+            
+            const results = {
+                currency,
+                amount: initialAmount,
+                monthlyExtra,
+                period,
+                rate: annualRate,
+                taxRate: state.settings.taxRate,
+                totalDeposited,
+                extraContributions: totalExtraContributions,
+                grossIncome: totalGrossIncome,
+                tax,
+                netIncome,
+                totalAmount: finalTotal,
+                timestamp: new Date().toISOString()
+            };
+            
+            state.calculators[calcId].results = results;
+            displayResults(calcId, results);
+            
+            addToCalculationsHistory(results, calcId);
+            saveState();
+        }
+
+        // Display calculation results
+        function displayResults(calcId, results) {
+            const currency = results.currency;
+            const taxRate = results.taxRate || state.settings.taxRate;
+            
+            document.getElementById(`totalDeposited${calcId}`).textContent = 
+                formatCurrency(results.totalDeposited, currency);
+            document.getElementById(`extraContributions${calcId}`).textContent = 
+                formatCurrency(results.extraContributions, currency, '+');
+            document.getElementById(`grossIncome${calcId}`).textContent = 
+                formatCurrency(results.grossIncome, currency);
+            document.getElementById(`taxLabel${calcId}`).textContent = `Tax (${formatTaxRate(taxRate)})`;
+            document.getElementById(`tax${calcId}`).textContent = 
+                formatCurrency(results.tax, currency, '-');
+            document.getElementById(`netIncome${calcId}`).textContent = 
+                formatCurrency(results.netIncome, currency);
+            document.getElementById(`totalAmount${calcId}`).textContent = 
+                formatCurrency(results.totalAmount, currency);
+            
+            document.getElementById(`results${calcId}`).style.display = 'block';
+        }
+
+        // Add to calculations history
+        function addToCalculationsHistory(results, calcId) {
+            const historyItem = {
+                ...results,
+                calcId,
+                id: Date.now()
+            };
+            
+            state.calculationsHistory.unshift(historyItem);
+            
+            if (state.calculationsHistory.length > MAX_HISTORY) {
+                state.calculationsHistory = state.calculationsHistory.slice(0, MAX_HISTORY);
+            }
+            
+            renderHistory();
+        }
+
+        // Compare calculations
+        async function compareCalculations() {
+            const selectedCalcs = [];
+            const maxCalcs = isMobile() ? 2 : 3;
+            
+            for (let i = 1; i <= maxCalcs; i++) {
+                if (document.getElementById(`compare${i}`).checked && state.calculators[i].results) {
+                    selectedCalcs.push({
+                        calcId: i,
+                        ...state.calculators[i].results
+                    });
+                }
+            }
+            
+            if (selectedCalcs.length < 2) {
+                await modal.show({
+                    type: 'warning',
+                    icon: '⚖️',
+                    title: 'Not Enough Data',
+                    message: 'Please calculate at least 2 deposits and make sure they are selected for comparison.',
+                    confirmText: 'OK',
+                    confirmClass: 'modal-btn-ok'
+                });
+                return;
+            }
+            
+            let bestIndex = 0;
+            let bestPercentage = 0;
+            
+            selectedCalcs.forEach((calc, index) => {
+                const percentage = (calc.netIncome / calc.totalDeposited) * 100;
+                if (percentage > bestPercentage) {
+                    bestPercentage = percentage;
+                    bestIndex = index;
+                }
+            });
+            
+            const comparisonGrid = document.getElementById('comparisonGrid');
+            comparisonGrid.innerHTML = '';
+            
+            selectedCalcs.forEach((calc, index) => {
+                const currency = calc.currency;
+                const percentage = ((calc.netIncome / calc.totalDeposited) * 100).toFixed(2);
+                const hasExtra = calc.monthlyExtra > 0;
+                
+                const monthlyExtraFormatted = currency === 'UAH' 
+                    ? `+${calc.monthlyExtra} ₴/mo`
+                    : `+${currencySymbols[currency]}${calc.monthlyExtra}/mo`;
+                
+                const item = document.createElement('div');
+                item.className = `comparison-item ${index === bestIndex ? 'best' : ''}`;
+                item.innerHTML = `
+                    <div class="comparison-label">
+                        Calculator ${calc.calcId}
+                        <span class="currency-badge ${currency.toLowerCase()}">${currency}</span>
+                        ${hasExtra ? `<span class="extra-badge">${monthlyExtraFormatted}</span>` : ''}
+                    </div>
+                    <div class="comparison-value">${formatCurrency(calc.netIncome, currency)}</div>
+                    <div style="color: var(--text-secondary); margin-top: 10px;">
+                        ${percentage}% return on ${formatCurrency(calc.totalDeposited, currency)}
+                    </div>
+                    <div style="color: var(--text-secondary); font-size: 0.85rem; margin-top: 5px;">
+                        ${calc.rate}% rate • ${calc.period} months • ${formatTaxRate(calc.taxRate || state.settings.taxRate)} tax
+                    </div>
+                    <div style="color: var(--secondary); font-size: 1rem; margin-top: 10px; font-weight: 600;">
+                        Total: ${formatCurrency(calc.totalAmount, currency)}
+                    </div>
+                `;
+                comparisonGrid.appendChild(item);
+            });
+            
+            document.getElementById('comparisonResults').style.display = 'block';
+            
+            addToComparisonsHistory(selectedCalcs, bestIndex);
+        }
+
+        // Add to comparisons history
+        function addToComparisonsHistory(comparisons, bestIndex) {
+            const historyItem = {
+                comparisons: comparisons.map(c => ({
+                    calcId: c.calcId,
+                    currency: c.currency,
+                    amount: c.amount,
+                    monthlyExtra: c.monthlyExtra,
+                    totalDeposited: c.totalDeposited,
+                    netIncome: c.netIncome,
+                    totalAmount: c.totalAmount,
+                    rate: c.rate,
+                    period: c.period,
+                    taxRate: c.taxRate || state.settings.taxRate
+                })),
+                bestIndex,
+                timestamp: new Date().toISOString(),
+                id: Date.now()
+            };
+            
+            state.comparisonsHistory.unshift(historyItem);
+            
+            if (state.comparisonsHistory.length > MAX_HISTORY) {
+                state.comparisonsHistory = state.comparisonsHistory.slice(0, MAX_HISTORY);
+            }
+            
+            saveState();
+            renderHistory();
+        }
+
+        // Switch history tab
+        function switchTab(tab) {
+            state.activeTab = tab;
+            
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            event.target.classList.add('active');
+            
+            document.getElementById('calculationsHistory').style.display = 
+                tab === 'calculations' ? 'block' : 'none';
+            document.getElementById('comparisonsHistory').style.display = 
+                tab === 'comparisons' ? 'block' : 'none';
+            
+            saveState();
+        }
+
+        // Render history
+        function renderHistory() {
+            renderCalculationsHistory();
+            renderComparisonsHistory();
+        }
+
+        // Render calculations history
+        function renderCalculationsHistory() {
+            const container = document.getElementById('calculationsHistory');
+            
+            if (state.calculationsHistory.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <div class="icon">📊</div>
+                        <p>No calculations yet</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            container.innerHTML = state.calculationsHistory.map(item => {
+                const currency = item.currency;
+                const date = new Date(item.timestamp).toLocaleDateString();
+                const time = new Date(item.timestamp).toLocaleTimeString();
+                const hasExtra = item.monthlyExtra > 0;
+                const taxRate = item.taxRate || 23;
+                
+                const monthlyExtraFormatted = currency === 'UAH' 
+                    ? `+${item.monthlyExtra} ₴/mo`
+                    : `+${currencySymbols[currency]}${item.monthlyExtra}/mo`;
+                
+                return `
+                    <div class="history-item">
+                        <div class="history-info">
+                            <div class="history-amount">
+                                ${formatCurrency(item.totalDeposited || item.amount, currency)}
+                                <span class="currency-badge ${currency.toLowerCase()}">${currency}</span>
+                                ${hasExtra ? `<span class="extra-badge">${monthlyExtraFormatted}</span>` : ''}
+                            </div>
+                            <div class="history-details">
+                                ${item.rate}% rate • ${item.period} months • ${formatTaxRate(taxRate)} tax
+                            </div>
+                        </div>
+                        <div class="history-result">
+                            <div class="history-income">${formatCurrency(item.netIncome, currency, '+')}</div>
+                            <div class="history-date">${date} ${time}</div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // Render comparisons history
+        function renderComparisonsHistory() {
+            const container = document.getElementById('comparisonsHistory');
+            
+            if (state.comparisonsHistory.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <div class="icon">⚖️</div>
+                        <p>No comparisons yet</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            container.innerHTML = state.comparisonsHistory.map(item => {
+                const date = new Date(item.timestamp).toLocaleDateString();
+                const time = new Date(item.timestamp).toLocaleTimeString();
+                const best = item.comparisons[item.bestIndex];
+                const currency = best.currency;
+                
+                const summary = item.comparisons.map((c, i) => {
+                    return `${formatCurrency(c.netIncome, c.currency)}${i === item.bestIndex ? ' 👑' : ''}`;
+                }).join(' vs ');
+                
+                return `
+                    <div class="history-item">
+                        <div class="history-info">
+                            <div class="history-amount" style="font-size: 0.95rem;">
+                                ${summary}
+                            </div>
+                            <div class="history-details">
+                                ${item.comparisons.length} deposits compared
+                            </div>
+                        </div>
+                        <div class="history-result">
+                            <div class="history-income">Best: ${formatCurrency(best.netIncome, currency)}</div>
+                            <div class="history-date">${date} ${time}</div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // Clear history
+        async function clearHistory() {
+            const confirmed = await modal.confirm(
+                'Are you sure you want to clear all calculation and comparison history? This action cannot be undone.',
+                'Clear History'
+            );
+            
+            if (confirmed) {
+                state.calculationsHistory = [];
+                state.comparisonsHistory = [];
+                saveState();
+                renderHistory();
+                
+                await modal.success('All history has been cleared successfully.', 'History Cleared');
+            }
+        }
+    </script>
+</body>
+</html>
