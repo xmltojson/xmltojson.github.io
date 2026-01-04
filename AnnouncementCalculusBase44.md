@@ -10,7 +10,8 @@ Calculus combines elegance with functionality — offering both **Standard** and
 - 📐 **DEG/RAD Toggle** — Switch between degrees and radians seamlessly
 - 🧠 **Memory Functions** — MC, MR, M+, M-, MS for storing and recalling values
 - 📱 **Clean, Modern UI** — Gradient display with intuitive button layout
-- ⚡ **Instant Results** — Fast, responsive calculations at your fingertips
+- ⚡ **Instant Results** — Fast, responsive calculations at your fingernails
+- 📜 **Calculation History** — Log in to save and access your previous calculations anytime
 
 With its intuitive dual-mode interface and comprehensive function library, Calculus is perfect for students, professionals, engineers, and anyone who needs reliable calculations on the go.
 
