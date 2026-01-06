@@ -1,0 +1,1583 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🌸 Хризантема - Квітковий Магазин</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary: #e91e63;
+            --primary-dark: #c2185b;
+            --secondary: #9c27b0;
+            --accent: #ff9800;
+            --bg-gradient: linear-gradient(135deg, #fce4ec 0%, #f3e5f5 50%, #e8f5e9 100%);
+            --card-bg: rgba(255, 255, 255, 0.95);
+            --text-dark: #2d2d2d;
+            --text-light: #666;
+            --shadow: 0 10px 40px rgba(0,0,0,0.1);
+            --shadow-hover: 0 20px 60px rgba(233, 30, 99, 0.3);
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: var(--bg-gradient);
+            min-height: 100vh;
+            color: var(--text-dark);
+            overflow-x: hidden;
+        }
+
+        /* Animated Background Flowers */
+        .bg-flowers {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 0;
+            overflow: hidden;
+        }
+
+        .floating-flower {
+            position: absolute;
+            font-size: 2rem;
+            opacity: 0.3;
+            animation: float 15s infinite ease-in-out;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0) rotate(0deg); }
+            25% { transform: translateY(-20px) rotate(10deg); }
+            50% { transform: translateY(0) rotate(0deg); }
+            75% { transform: translateY(20px) rotate(-10deg); }
+        }
+
+        /* Header */
+        header {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+            padding: 20px;
+            text-align: center;
+            color: white;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            box-shadow: var(--shadow);
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+
+        .logo-flower {
+            font-size: 3rem;
+            animation: bloom 2s infinite ease-in-out;
+        }
+
+        @keyframes bloom {
+            0%, 100% { transform: scale(1) rotate(0deg); }
+            50% { transform: scale(1.1) rotate(5deg); }
+        }
+
+        .logo h1 {
+            font-size: clamp(1.5rem, 5vw, 2.5rem);
+            font-weight: 300;
+            letter-spacing: 3px;
+            text-transform: uppercase;
+        }
+
+        .logo p {
+            width: 100%;
+            font-size: 0.9rem;
+            opacity: 0.9;
+            margin-top: 5px;
+        }
+
+        /* Navigation */
+        nav {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-top: 15px;
+            flex-wrap: wrap;
+        }
+
+        nav button {
+            background: rgba(255,255,255,0.2);
+            border: 2px solid rgba(255,255,255,0.5);
+            color: white;
+            padding: 10px 25px;
+            border-radius: 50px;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        nav button:hover, nav button.active {
+            background: white;
+            color: var(--primary);
+            transform: translateY(-2px);
+        }
+
+        .cart-count {
+            background: var(--accent);
+            color: white;
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.8rem;
+            font-weight: bold;
+        }
+
+        nav button.active .cart-count {
+            background: var(--primary);
+            color: white;
+        }
+
+        /* Main Container */
+        main {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 30px 20px;
+            position: relative;
+            z-index: 1;
+        }
+
+        /* Section Styles */
+        .section {
+            display: none;
+        }
+
+        .section.active {
+            display: block;
+            animation: fadeIn 0.5s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Catalog Section */
+        .section-title {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .section-title h2 {
+            font-size: clamp(1.5rem, 4vw, 2rem);
+            color: var(--primary-dark);
+            margin-bottom: 10px;
+        }
+
+        .section-title p {
+            color: var(--text-light);
+        }
+
+        /* Filter Buttons */
+        .filters {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+        }
+
+        .filter-btn {
+            background: var(--card-bg);
+            border: 2px solid transparent;
+            padding: 10px 20px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+
+        .filter-btn:hover, .filter-btn.active {
+            border-color: var(--primary);
+            color: var(--primary);
+            transform: translateY(-2px);
+        }
+
+        /* Product Grid */
+        .products-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 25px;
+        }
+
+        .product-card {
+            background: var(--card-bg);
+            border-radius: 20px;
+            overflow: hidden;
+            box-shadow: var(--shadow);
+            transition: all 0.4s ease;
+            position: relative;
+        }
+
+        .product-card:hover {
+            transform: translateY(-10px);
+            box-shadow: var(--shadow-hover);
+        }
+
+        .product-image {
+            height: 200px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 6rem;
+            background: linear-gradient(135deg, #fce4ec 0%, #f8bbd9 100%);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .product-badge {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            background: var(--accent);
+            color: white;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: bold;
+        }
+
+        .product-info {
+            padding: 20px;
+        }
+
+        .product-name {
+            font-size: 1.2rem;
+            font-weight: 600;
+            margin-bottom: 5px;
+            color: var(--text-dark);
+        }
+
+        .product-description {
+            color: var(--text-light);
+            font-size: 0.9rem;
+            margin-bottom: 15px;
+            line-height: 1.5;
+        }
+
+        .product-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .product-price {
+            font-size: 1.3rem;
+            font-weight: bold;
+            color: var(--primary);
+        }
+
+        .product-price span {
+            font-size: 0.9rem;
+            color: var(--text-light);
+        }
+
+        .add-to-cart {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .add-to-cart:hover {
+            transform: scale(1.05);
+            box-shadow: 0 5px 20px rgba(233, 30, 99, 0.4);
+        }
+
+        .add-to-cart.added {
+            background: #4caf50;
+        }
+
+        /* Cart Section */
+        .cart-container {
+            background: var(--card-bg);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: var(--shadow);
+        }
+
+        .cart-empty {
+            text-align: center;
+            padding: 60px 20px;
+        }
+
+        .cart-empty-icon {
+            font-size: 5rem;
+            margin-bottom: 20px;
+            opacity: 0.5;
+        }
+
+        .cart-empty h3 {
+            color: var(--text-light);
+            margin-bottom: 15px;
+        }
+
+        .cart-items {
+            margin-bottom: 30px;
+        }
+
+        .cart-item {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            padding: 20px;
+            border-bottom: 1px solid #eee;
+            transition: all 0.3s ease;
+        }
+
+        .cart-item:hover {
+            background: #fafafa;
+        }
+
+        .cart-item-image {
+            font-size: 3rem;
+            width: 80px;
+            height: 80px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(135deg, #fce4ec 0%, #f8bbd9 100%);
+            border-radius: 15px;
+            flex-shrink: 0;
+        }
+
+        .cart-item-info {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .cart-item-name {
+            font-weight: 600;
+            margin-bottom: 5px;
+            color: var(--text-dark);
+        }
+
+        .cart-item-price {
+            color: var(--primary);
+            font-weight: bold;
+        }
+
+        .cart-item-controls {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .quantity-btn {
+            width: 35px;
+            height: 35px;
+            border-radius: 50%;
+            border: 2px solid var(--primary);
+            background: white;
+            color: var(--primary);
+            font-size: 1.2rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .quantity-btn:hover {
+            background: var(--primary);
+            color: white;
+        }
+
+        .quantity {
+            font-size: 1.1rem;
+            font-weight: bold;
+            min-width: 30px;
+            text-align: center;
+        }
+
+        .remove-item {
+            background: #ff5252;
+            color: white;
+            border: none;
+            width: 35px;
+            height: 35px;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+            margin-left: 10px;
+        }
+
+        .remove-item:hover {
+            background: #d32f2f;
+            transform: scale(1.1);
+        }
+
+        .cart-summary {
+            background: linear-gradient(135deg, #fce4ec 0%, #f3e5f5 100%);
+            padding: 25px;
+            border-radius: 15px;
+            margin-top: 20px;
+        }
+
+        .summary-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+            font-size: 1rem;
+        }
+
+        .summary-row.total {
+            font-size: 1.4rem;
+            font-weight: bold;
+            color: var(--primary);
+            border-top: 2px solid var(--primary);
+            padding-top: 15px;
+            margin-top: 15px;
+        }
+
+        /* Checkout Form */
+        .checkout-form {
+            margin-top: 30px;
+            padding-top: 30px;
+            border-top: 2px dashed #ddd;
+        }
+
+        .checkout-form h3 {
+            margin-bottom: 20px;
+            color: var(--primary-dark);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+            color: var(--text-dark);
+        }
+
+        .form-group input,
+        .form-group textarea,
+        .form-group select {
+            width: 100%;
+            padding: 12px 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+            font-family: inherit;
+        }
+
+        .form-group input:focus,
+        .form-group textarea:focus,
+        .form-group select:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 4px rgba(233, 30, 99, 0.1);
+        }
+
+        .form-group textarea {
+            resize: vertical;
+            min-height: 100px;
+        }
+
+        .form-actions {
+            display: flex;
+            gap: 15px;
+            margin-top: 25px;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 15px 30px;
+            border: none;
+            border-radius: 50px;
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(233, 30, 99, 0.4);
+        }
+
+        .btn-secondary {
+            background: white;
+            color: var(--primary);
+            border: 2px solid var(--primary);
+        }
+
+        .btn-secondary:hover {
+            background: var(--primary);
+            color: white;
+        }
+
+        .btn-success {
+            background: linear-gradient(135deg, #4caf50 0%, #2e7d32 100%);
+            color: white;
+        }
+
+        .btn-success:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(76, 175, 80, 0.4);
+        }
+
+        /* Toast Notifications */
+        .toast-container {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            z-index: 9999;
+        }
+
+        .toast {
+            background: var(--card-bg);
+            padding: 15px 25px;
+            border-radius: 10px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+            margin-top: 10px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            animation: slideIn 0.3s ease;
+            max-width: 350px;
+        }
+
+        .toast.success {
+            border-left: 4px solid #4caf50;
+        }
+
+        .toast.error {
+            border-left: 4px solid #f44336;
+        }
+
+        .toast.info {
+            border-left: 4px solid var(--primary);
+        }
+
+        @keyframes slideIn {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+
+        /* Modal */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 10000;
+            padding: 20px;
+        }
+
+        .modal-overlay.active {
+            display: flex;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .modal {
+            background: white;
+            border-radius: 20px;
+            max-width: 500px;
+            width: 100%;
+            max-height: 90vh;
+            overflow-y: auto;
+            padding: 30px;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .modal-header h3 {
+            color: var(--primary-dark);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .modal-close {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: var(--text-light);
+            transition: color 0.3s ease;
+        }
+
+        .modal-close:hover {
+            color: var(--primary);
+        }
+
+        /* Order Preview */
+        .order-preview {
+            background: #f9f9f9;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+
+        .order-preview-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px dashed #ddd;
+        }
+
+        .order-preview-item:last-child {
+            border-bottom: none;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .cart-item {
+                flex-wrap: wrap;
+            }
+
+            .cart-item-controls {
+                width: 100%;
+                justify-content: flex-end;
+                margin-top: 10px;
+            }
+
+            .form-actions {
+                flex-direction: column;
+            }
+
+            .btn {
+                width: 100%;
+                justify-content: center;
+            }
+        }
+
+        /* Landscape Orientation */
+        @media (orientation: landscape) and (max-height: 500px) {
+            header {
+                padding: 10px;
+            }
+
+            .logo-flower {
+                font-size: 2rem;
+            }
+
+            .logo h1 {
+                font-size: 1.3rem;
+            }
+
+            .logo p {
+                display: none;
+            }
+
+            nav {
+                margin-top: 8px;
+            }
+
+            nav button {
+                padding: 6px 15px;
+                font-size: 0.85rem;
+            }
+
+            main {
+                padding: 15px;
+            }
+
+            .products-grid {
+                grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+                gap: 15px;
+            }
+
+            .product-image {
+                height: 120px;
+                font-size: 4rem;
+            }
+
+            .product-info {
+                padding: 12px;
+            }
+        }
+
+        /* Print Styles */
+        @media print {
+            body {
+                background: white;
+            }
+
+            header, nav, .bg-flowers, .form-actions {
+                display: none;
+            }
+
+            .cart-container {
+                box-shadow: none;
+            }
+        }
+
+        /* Loading Spinner */
+        .spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255,255,255,0.3);
+            border-radius: 50%;
+            border-top-color: white;
+            animation: spin 1s ease-in-out infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <!-- Animated Background -->
+    <div class="bg-flowers" id="bgFlowers"></div>
+
+    <!-- Header -->
+    <header>
+        <div class="logo">
+            <span class="logo-flower">🌸</span>
+            <h1>Хризантема</h1>
+            <p>Елегантний квітковий бутік</p>
+        </div>
+        <nav>
+            <button class="nav-btn active" data-section="catalog">
+                <span>🌷</span> Каталог
+            </button>
+            <button class="nav-btn" data-section="cart">
+                <span>🛒</span> Кошик
+                <span class="cart-count" id="cartCount">0</span>
+            </button>
+        </nav>
+    </header>
+
+    <!-- Main Content -->
+    <main>
+        <!-- Catalog Section -->
+        <section class="section active" id="catalog">
+            <div class="section-title">
+                <h2>🌺 Наша чудова колекція</h2>
+                <p>Відбірні хризантеми та сезонні квіти</p>
+            </div>
+
+            <div class="filters">
+                <button class="filter-btn active" data-filter="all">Усі квіти</button>
+                <button class="filter-btn" data-filter="chrysanthemum">Хризантеми</button>
+                <button class="filter-btn" data-filter="bouquet">Букети</button>
+                <button class="filter-btn" data-filter="arrangement">Композиції</button>
+                <button class="filter-btn" data-filter="special">Особливі</button>
+            </div>
+
+            <div class="products-grid" id="productsGrid">
+                <!-- Products will be injected here -->
+            </div>
+        </section>
+
+        <!-- Cart Section -->
+        <section class="section" id="cart">
+            <div class="section-title">
+                <h2>🛒 Ваш кошик</h2>
+                <p>Перегляньте вибране та оформіть замовлення</p>
+            </div>
+
+            <div class="cart-container">
+                <div id="cartContent">
+                    <!-- Cart items will be injected here -->
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Toast Container -->
+    <div class="toast-container" id="toastContainer"></div>
+
+    <!-- Email Modal -->
+    <div class="modal-overlay" id="emailModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h3>📧 Надіслати замовлення електронною поштою</h3>
+                <button class="modal-close" onclick="closeEmailModal()">&times;</button>
+            </div>
+            <div class="form-group">
+                <label for="recipientEmail">Email адреса отримувача</label>
+                <input type="email" id="recipientEmail" placeholder="shop@hrizantema.com.ua">
+            </div>
+            <div class="form-group">
+                <label for="emailSubject">Тема листа</label>
+                <input type="text" id="emailSubject" value="Нове замовлення квітів - Хризантема">
+            </div>
+            <div class="order-preview" id="emailOrderPreview">
+                <!-- Order preview will be here -->
+            </div>
+            <div class="form-actions">
+                <button class="btn btn-primary" onclick="sendEmail()">
+                    <span>📤</span> Надіслати
+                </button>
+                <button class="btn btn-secondary" onclick="closeEmailModal()">
+                    Скасувати
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Currency formatting function
+        function formatPrice(amount) {
+            return amount.toFixed(2).replace('.', ',').replace(/\B(?=(\d{3})+(?!\d))/g, ' ') + ' грн';
+        }
+
+        // Flower Products Data
+        const products = [
+            {
+                id: 1,
+                name: "Рожева хризантема",
+                description: "Елегантні рожеві хризантеми, ідеальні для будь-якої нагоди",
+                price: 450,
+                emoji: "🌸",
+                category: "chrysanthemum",
+                badge: "Хіт продажів"
+            },
+            {
+                id: 2,
+                name: "Біла хризантема Елеганс",
+                description: "Чисто-білі хризантеми, що символізують чистоту та вірність",
+                price: 520,
+                emoji: "💮",
+                category: "chrysanthemum",
+                badge: null
+            },
+            {
+                id: 3,
+                name: "Жовтий сонячний букет",
+                description: "Яскраві жовті хризантеми, щоб освітити будь-який день",
+                price: 580,
+                emoji: "🌼",
+                category: "bouquet",
+                badge: "Популярний"
+            },
+            {
+                id: 4,
+                name: "Королівська фіолетова колекція",
+                description: "Розкішні фіолетові хризантеми для королівського настрою",
+                price: 650,
+                emoji: "💜",
+                category: "chrysanthemum",
+                badge: null
+            },
+            {
+                id: 5,
+                name: "Мікс садовий букет",
+                description: "Прекрасне поєднання сезонних квітів та хризантем",
+                price: 780,
+                emoji: "💐",
+                category: "bouquet",
+                badge: "Новинка"
+            },
+            {
+                id: 6,
+                name: "Троянди та хризантеми",
+                description: "Класичні троянди в поєднанні з ніжними хризантемами",
+                price: 890,
+                emoji: "🌹",
+                category: "arrangement",
+                badge: null
+            },
+            {
+                id: 7,
+                name: "Сонячні соняшники",
+                description: "Веселі соняшники для поширення радості",
+                price: 480,
+                emoji: "🌻",
+                category: "bouquet",
+                badge: null
+            },
+            {
+                id: 8,
+                name: "Тюльпановий сад",
+                description: "Свіжі тюльпани різноманітних кольорів",
+                price: 540,
+                emoji: "🌷",
+                category: "arrangement",
+                badge: "Сезонний"
+            },
+            {
+                id: 9,
+                name: "Вишневий цвіт мрії",
+                description: "Ніжні квіти вишні для весняного настрою",
+                price: 720,
+                emoji: "🌸",
+                category: "special",
+                badge: "Обмежено"
+            },
+            {
+                id: 10,
+                name: "Гібіскус Парадайз",
+                description: "Екзотичні квіти гібіскуса для тропічного настрою",
+                price: 620,
+                emoji: "🌺",
+                category: "special",
+                badge: null
+            },
+            {
+                id: 11,
+                name: "Весільна біла композиція",
+                description: "Елегантна повністю біла композиція, ідеальна для весілля",
+                price: 1350,
+                emoji: "🤍",
+                category: "arrangement",
+                badge: "Преміум"
+            },
+            {
+                id: 12,
+                name: "Подарунок до Дня матері",
+                description: "Любовний букет, щоб висловити вдячність",
+                price: 950,
+                emoji: "💝",
+                category: "special",
+                badge: "Подарунок"
+            }
+        ];
+
+        // State Management
+        let state = {
+            cart: [],
+            customerInfo: {
+                name: '',
+                email: '',
+                phone: '',
+                address: '',
+                message: '',
+                deliveryDate: ''
+            },
+            currentSection: 'catalog',
+            currentFilter: 'all'
+        };
+
+        // Initialize Application
+        document.addEventListener('DOMContentLoaded', () => {
+            loadState();
+            initBackgroundFlowers();
+            renderProducts();
+            renderCart();
+            updateCartCount();
+            initNavigation();
+            initFilters();
+        });
+
+        // Local Storage Functions
+        function saveState() {
+            localStorage.setItem('hrizantemaState', JSON.stringify(state));
+        }
+
+        function loadState() {
+            const savedState = localStorage.getItem('hrizantemaState');
+            if (savedState) {
+                state = JSON.parse(savedState);
+                // Restore active section
+                showSection(state.currentSection);
+                // Restore filter
+                document.querySelectorAll('.filter-btn').forEach(btn => {
+                    btn.classList.toggle('active', btn.dataset.filter === state.currentFilter);
+                });
+            }
+        }
+
+        // Background Animation
+        function initBackgroundFlowers() {
+            const container = document.getElementById('bgFlowers');
+            const flowers = ['🌸', '🌺', '🌷', '🌹', '💮', '🌼', '🌻', '💐'];
+            
+            for (let i = 0; i < 15; i++) {
+                const flower = document.createElement('span');
+                flower.className = 'floating-flower';
+                flower.textContent = flowers[Math.floor(Math.random() * flowers.length)];
+                flower.style.left = Math.random() * 100 + '%';
+                flower.style.top = Math.random() * 100 + '%';
+                flower.style.animationDelay = Math.random() * 5 + 's';
+                flower.style.fontSize = (1 + Math.random() * 2) + 'rem';
+                container.appendChild(flower);
+            }
+        }
+
+        // Navigation
+        function initNavigation() {
+            document.querySelectorAll('.nav-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const section = btn.dataset.section;
+                    showSection(section);
+                });
+            });
+        }
+
+        function showSection(sectionId) {
+            state.currentSection = sectionId;
+            saveState();
+
+            // Update nav buttons
+            document.querySelectorAll('.nav-btn').forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.section === sectionId);
+            });
+
+            // Update sections
+            document.querySelectorAll('.section').forEach(section => {
+                section.classList.toggle('active', section.id === sectionId);
+            });
+
+            // Re-render cart when switching to cart section
+            if (sectionId === 'cart') {
+                renderCart();
+            }
+        }
+
+        // Filters
+        function initFilters() {
+            document.querySelectorAll('.filter-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const filter = btn.dataset.filter;
+                    state.currentFilter = filter;
+                    saveState();
+
+                    document.querySelectorAll('.filter-btn').forEach(b => {
+                        b.classList.toggle('active', b.dataset.filter === filter);
+                    });
+
+                    renderProducts(filter);
+                });
+            });
+        }
+
+        // Render Products
+        function renderProducts(filter = 'all') {
+            const grid = document.getElementById('productsGrid');
+            const filteredProducts = filter === 'all' 
+                ? products 
+                : products.filter(p => p.category === filter);
+
+            grid.innerHTML = filteredProducts.map(product => `
+                <div class="product-card" data-category="${product.category}">
+                    <div class="product-image">
+                        ${product.emoji}
+                        ${product.badge ? `<span class="product-badge">${product.badge}</span>` : ''}
+                    </div>
+                    <div class="product-info">
+                        <h3 class="product-name">${product.name}</h3>
+                        <p class="product-description">${product.description}</p>
+                        <div class="product-footer">
+                            <span class="product-price">${formatPrice(product.price)}</span>
+                            <button class="add-to-cart" onclick="addToCart(${product.id})">
+                                <span>+</span> Додати
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // Cart Functions
+        function addToCart(productId) {
+            const product = products.find(p => p.id === productId);
+            if (!product) return;
+
+            const existingItem = state.cart.find(item => item.id === productId);
+            
+            if (existingItem) {
+                existingItem.quantity += 1;
+            } else {
+                state.cart.push({
+                    ...product,
+                    quantity: 1
+                });
+            }
+
+            saveState();
+            updateCartCount();
+            showToast(`${product.name} додано до кошика!`, 'success');
+
+            // Animate button
+            const btn = event.target.closest('.add-to-cart');
+            btn.classList.add('added');
+            btn.innerHTML = '<span>✓</span> Додано';
+            setTimeout(() => {
+                btn.classList.remove('added');
+                btn.innerHTML = '<span>+</span> Додати';
+            }, 1500);
+        }
+
+        function removeFromCart(productId) {
+            state.cart = state.cart.filter(item => item.id !== productId);
+            saveState();
+            updateCartCount();
+            renderCart();
+            showToast('Товар видалено з кошика', 'info');
+        }
+
+        function updateQuantity(productId, change) {
+            const item = state.cart.find(item => item.id === productId);
+            if (!item) return;
+
+            item.quantity += change;
+            
+            if (item.quantity <= 0) {
+                removeFromCart(productId);
+                return;
+            }
+
+            saveState();
+            updateCartCount();
+            renderCart();
+        }
+
+        function updateCartCount() {
+            const count = state.cart.reduce((sum, item) => sum + item.quantity, 0);
+            document.getElementById('cartCount').textContent = count;
+        }
+
+        function getCartTotal() {
+            return state.cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+        }
+
+        function renderCart() {
+            const container = document.getElementById('cartContent');
+            
+            if (state.cart.length === 0) {
+                container.innerHTML = `
+                    <div class="cart-empty">
+                        <div class="cart-empty-icon">🛒</div>
+                        <h3>Ваш кошик порожній</h3>
+                        <p>Перегляньте нашу чудову колекцію та додайте квіти!</p>
+                        <button class="btn btn-primary" onclick="showSection('catalog')" style="margin-top: 20px;">
+                            <span>🌷</span> Переглянути квіти
+                        </button>
+                    </div>
+                `;
+                return;
+            }
+
+            const subtotal = getCartTotal();
+            const delivery = subtotal > 1500 ? 0 : 150;
+            const total = subtotal + delivery;
+
+            container.innerHTML = `
+                <div class="cart-items">
+                    ${state.cart.map(item => `
+                        <div class="cart-item">
+                            <div class="cart-item-image">${item.emoji}</div>
+                            <div class="cart-item-info">
+                                <div class="cart-item-name">${item.name}</div>
+                                <div class="cart-item-price">${formatPrice(item.price)} за шт.</div>
+                            </div>
+                            <div class="cart-item-controls">
+                                <button class="quantity-btn" onclick="updateQuantity(${item.id}, -1)">−</button>
+                                <span class="quantity">${item.quantity}</span>
+                                <button class="quantity-btn" onclick="updateQuantity(${item.id}, 1)">+</button>
+                                <button class="remove-item" onclick="removeFromCart(${item.id})">🗑</button>
+                            </div>
+                        </div>
+                    `).join('')}
+                </div>
+
+                <div class="cart-summary">
+                    <div class="summary-row">
+                        <span>Сума товарів</span>
+                        <span>${formatPrice(subtotal)}</span>
+                    </div>
+                    <div class="summary-row">
+                        <span>Доставка ${subtotal > 1500 ? '(Безкоштовно від 1 500 грн!)' : ''}</span>
+                        <span>${delivery === 0 ? 'БЕЗКОШТОВНО' : formatPrice(delivery)}</span>
+                    </div>
+                    <div class="summary-row total">
+                        <span>Разом до сплати</span>
+                        <span>${formatPrice(total)}</span>
+                    </div>
+                </div>
+
+                <div class="checkout-form">
+                    <h3>📝 Інформація про клієнта</h3>
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label for="customerName">Повне ім'я *</label>
+                            <input type="text" id="customerName" placeholder="Іван Петренко" 
+                                value="${state.customerInfo.name}" onchange="updateCustomerInfo('name', this.value)">
+                        </div>
+                        <div class="form-group">
+                            <label for="customerEmail">Електронна пошта *</label>
+                            <input type="email" id="customerEmail" placeholder="ivan@example.com"
+                                value="${state.customerInfo.email}" onchange="updateCustomerInfo('email', this.value)">
+                        </div>
+                        <div class="form-group">
+                            <label for="customerPhone">Номер телефону *</label>
+                            <input type="tel" id="customerPhone" placeholder="+380 (99) 123-45-67"
+                                value="${state.customerInfo.phone}" onchange="updateCustomerInfo('phone', this.value)">
+                        </div>
+                        <div class="form-group">
+                            <label for="deliveryDate">Бажана дата доставки</label>
+                            <input type="date" id="deliveryDate"
+                                value="${state.customerInfo.deliveryDate}" onchange="updateCustomerInfo('deliveryDate', this.value)">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="customerAddress">Адреса доставки *</label>
+                        <textarea id="customerAddress" placeholder="м. Київ, вул. Квіткова, 123, кв. 45"
+                            onchange="updateCustomerInfo('address', this.value)">${state.customerInfo.address}</textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="customerMessage">Текст листівки (необов'язково)</label>
+                        <textarea id="customerMessage" placeholder="Додайте особисте повідомлення до замовлення..."
+                            onchange="updateCustomerInfo('message', this.value)">${state.customerInfo.message}</textarea>
+                    </div>
+                    
+                    <div class="form-actions">
+                        <button class="btn btn-primary" onclick="generatePDF()">
+                            <span>📄</span> Згенерувати PDF замовлення
+                        </button>
+                        <button class="btn btn-success" onclick="openEmailModal()">
+                            <span>📧</span> Надіслати на пошту
+                        </button>
+                        <button class="btn btn-secondary" onclick="clearCart()">
+                            <span>🗑</span> Очистити кошик
+                        </button>
+                    </div>
+                </div>
+            `;
+        }
+
+        function updateCustomerInfo(field, value) {
+            state.customerInfo[field] = value;
+            saveState();
+        }
+
+        function clearCart() {
+            if (confirm('Ви впевнені, що хочете очистити кошик?')) {
+                state.cart = [];
+                state.customerInfo = {
+                    name: '',
+                    email: '',
+                    phone: '',
+                    address: '',
+                    message: '',
+                    deliveryDate: ''
+                };
+                saveState();
+                updateCartCount();
+                renderCart();
+                showToast('Кошик очищено', 'info');
+            }
+        }
+
+        // PDF Generation
+        function generatePDF() {
+            if (!validateForm()) return;
+
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+
+            const subtotal = getCartTotal();
+            const delivery = subtotal > 1500 ? 0 : 150;
+            const total = subtotal + delivery;
+
+            // Header
+            doc.setFillColor(233, 30, 99);
+            doc.rect(0, 0, 220, 40, 'F');
+            
+            doc.setTextColor(255, 255, 255);
+            doc.setFontSize(28);
+            doc.text('Хризантема', 105, 20, { align: 'center' });
+            doc.setFontSize(12);
+            doc.text('Елегантний квітковий бутік', 105, 30, { align: 'center' });
+
+            // Order Info
+            doc.setTextColor(0, 0, 0);
+            doc.setFontSize(16);
+            doc.text('Підтвердження замовлення', 20, 55);
+            
+            doc.setFontSize(10);
+            doc.setTextColor(100, 100, 100);
+            doc.text(`Дата замовлення: ${new Date().toLocaleDateString('uk-UA')}`, 20, 65);
+            doc.text(`Номер замовлення: ORD-${Date.now().toString().slice(-8)}`, 20, 72);
+
+            // Customer Information
+            doc.setTextColor(0, 0, 0);
+            doc.setFontSize(14);
+            doc.text('Інформація про клієнта', 20, 90);
+            
+            doc.setFontSize(10);
+            doc.text(`Ім'я: ${state.customerInfo.name}`, 20, 100);
+            doc.text(`Email: ${state.customerInfo.email}`, 20, 107);
+            doc.text(`Телефон: ${state.customerInfo.phone}`, 20, 114);
+            doc.text(`Адреса доставки: ${state.customerInfo.address}`, 20, 121);
+            if (state.customerInfo.deliveryDate) {
+                doc.text(`Бажана дата доставки: ${state.customerInfo.deliveryDate}`, 20, 128);
+            }
+
+            // Order Items
+            let yPos = 145;
+            doc.setFontSize(14);
+            doc.text('Товари замовлення', 20, yPos);
+            yPos += 10;
+
+            doc.setFontSize(10);
+            doc.setFillColor(240, 240, 240);
+            doc.rect(20, yPos, 170, 8, 'F');
+            doc.text('Найменування', 25, yPos + 6);
+            doc.text('К-сть', 115, yPos + 6);
+            doc.text('Ціна', 135, yPos + 6);
+            doc.text('Сума', 165, yPos + 6);
+            yPos += 12;
+
+            state.cart.forEach(item => {
+                doc.text(item.name.substring(0, 30), 25, yPos);
+                doc.text(item.quantity.toString(), 120, yPos);
+                doc.text(formatPrice(item.price), 130, yPos);
+                doc.text(formatPrice(item.price * item.quantity), 158, yPos);
+                yPos += 8;
+            });
+
+            // Totals
+            yPos += 5;
+            doc.line(20, yPos, 190, yPos);
+            yPos += 10;
+            
+            doc.text(`Сума товарів: ${formatPrice(subtotal)}`, 130, yPos);
+            yPos += 7;
+            doc.text(`Доставка: ${delivery === 0 ? 'БЕЗКОШТОВНО' : formatPrice(delivery)}`, 130, yPos);
+            yPos += 10;
+            
+            doc.setFontSize(12);
+            doc.setTextColor(233, 30, 99);
+            doc.text(`РАЗОМ: ${formatPrice(total)}`, 130, yPos);
+
+            // Gift Message
+            if (state.customerInfo.message) {
+                yPos += 20;
+                doc.setTextColor(0, 0, 0);
+                doc.setFontSize(12);
+                doc.text('Текст листівки:', 20, yPos);
+                yPos += 8;
+                doc.setFontSize(10);
+                const messageLines = doc.splitTextToSize(state.customerInfo.message, 170);
+                doc.text(messageLines, 20, yPos);
+            }
+
+            // Footer
+            doc.setFontSize(8);
+            doc.setTextColor(150, 150, 150);
+            doc.text('Дякуємо, що обрали квітковий бутік Хризантема!', 105, 280, { align: 'center' });
+            doc.text('Контакти: shop@hrizantema.com.ua | +380 (44) 123-45-67', 105, 286, { align: 'center' });
+
+            // Save PDF
+            doc.save(`Hrizantema_Zamovlennya_${Date.now()}.pdf`);
+            showToast('PDF успішно згенеровано!', 'success');
+        }
+
+        // Email Functions
+        function openEmailModal() {
+            if (!validateForm()) return;
+
+            const modal = document.getElementById('emailModal');
+            modal.classList.add('active');
+
+            // Populate order preview
+            const preview = document.getElementById('emailOrderPreview');
+            const subtotal = getCartTotal();
+            const delivery = subtotal > 1500 ? 0 : 150;
+            const total = subtotal + delivery;
+            
+            preview.innerHTML = `
+                <h4 style="margin-bottom: 10px; color: var(--primary-dark);">Підсумок замовлення</h4>
+                ${state.cart.map(item => `
+                    <div class="order-preview-item">
+                        <span>${item.emoji} ${item.name} x${item.quantity}</span>
+                        <span>${formatPrice(item.price * item.quantity)}</span>
+                    </div>
+                `).join('')}
+                <div class="order-preview-item" style="font-weight: bold; margin-top: 10px;">
+                    <span>Разом</span>
+                    <span>${formatPrice(total)}</span>
+                </div>
+            `;
+        }
+
+        function closeEmailModal() {
+            document.getElementById('emailModal').classList.remove('active');
+        }
+
+        function sendEmail() {
+            const recipientEmail = document.getElementById('recipientEmail').value;
+            const subject = document.getElementById('emailSubject').value;
+
+            if (!recipientEmail) {
+                showToast('Будь ласка, введіть email отримувача', 'error');
+                return;
+            }
+
+            const subtotal = getCartTotal();
+            const delivery = subtotal > 1500 ? 0 : 150;
+            const total = subtotal + delivery;
+
+            // Create email body
+            let body = `НОВЕ ЗАМОВЛЕННЯ КВІТІВ - ХРИЗАНТЕМА%0D%0A`;
+            body += `================================%0D%0A%0D%0A`;
+            body += `Дата замовлення: ${new Date().toLocaleDateString('uk-UA')}%0D%0A`;
+            body += `Номер замовлення: ORD-${Date.now().toString().slice(-8)}%0D%0A%0D%0A`;
+            
+            body += `ІНФОРМАЦІЯ ПРО КЛІЄНТА%0D%0A`;
+            body += `----------------------%0D%0A`;
+            body += `Ім'я: ${state.customerInfo.name}%0D%0A`;
+            body += `Email: ${state.customerInfo.email}%0D%0A`;
+            body += `Телефон: ${state.customerInfo.phone}%0D%0A`;
+            body += `Адреса: ${state.customerInfo.address}%0D%0A`;
+            if (state.customerInfo.deliveryDate) {
+                body += `Дата доставки: ${state.customerInfo.deliveryDate}%0D%0A`;
+            }
+            body += `%0D%0A`;
+            
+            body += `ТОВАРИ ЗАМОВЛЕННЯ%0D%0A`;
+            body += `-----------------%0D%0A`;
+            state.cart.forEach(item => {
+                body += `${item.name} x${item.quantity} - ${formatPrice(item.price * item.quantity)}%0D%0A`;
+            });
+            body += `%0D%0A`;
+            
+            body += `ПІДСУМОК%0D%0A`;
+            body += `--------%0D%0A`;
+            body += `Сума товарів: ${formatPrice(subtotal)}%0D%0A`;
+            body += `Доставка: ${delivery === 0 ? 'БЕЗКОШТОВНО' : formatPrice(delivery)}%0D%0A`;
+            body += `РАЗОМ: ${formatPrice(total)}%0D%0A%0D%0A`;
+            
+            if (state.customerInfo.message) {
+                body += `ТЕКСТ ЛИСТІВКИ%0D%0A`;
+                body += `--------------%0D%0A`;
+                body += `${state.customerInfo.message}%0D%0A`;
+            }
+
+            // Open email client
+            window.location.href = `mailto:${recipientEmail}?subject=${encodeURIComponent(subject)}&body=${body}`;
+            
+            closeEmailModal();
+            showToast('Поштовий клієнт відкрито!', 'success');
+        }
+
+        // Form Validation
+        function validateForm() {
+            const { name, email, phone, address } = state.customerInfo;
+            
+            if (!name.trim()) {
+                showToast('Будь ласка, введіть ваше ім\'я', 'error');
+                document.getElementById('customerName').focus();
+                return false;
+            }
+            if (!email.trim() || !email.includes('@')) {
+                showToast('Будь ласка, введіть коректний email', 'error');
+                document.getElementById('customerEmail').focus();
+                return false;
+            }
+            if (!phone.trim()) {
+                showToast('Будь ласка, введіть номер телефону', 'error');
+                document.getElementById('customerPhone').focus();
+                return false;
+            }
+            if (!address.trim()) {
+                showToast('Будь ласка, введіть адресу доставки', 'error');
+                document.getElementById('customerAddress').focus();
+                return false;
+            }
+            if (state.cart.length === 0) {
+                showToast('Ваш кошик порожній', 'error');
+                return false;
+            }
+            
+            return true;
+        }
+
+        // Toast Notifications
+        function showToast(message, type = 'info') {
+            const container = document.getElementById('toastContainer');
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+            
+            const icon = type === 'success' ? '✓' : type === 'error' ? '✗' : 'ℹ';
+            toast.innerHTML = `<span>${icon}</span> ${message}`;
+            
+            container.appendChild(toast);
+            
+            setTimeout(() => {
+                toast.style.animation = 'slideIn 0.3s ease reverse';
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+
+        // Handle orientation change
+        window.addEventListener('orientationchange', () => {
+            setTimeout(() => {
+                renderProducts(state.currentFilter);
+                if (state.currentSection === 'cart') {
+                    renderCart();
+                }
+            }, 100);
+        });
+
+        // Handle window resize
+        window.addEventListener('resize', () => {
+            // Debounce resize handler
+            clearTimeout(window.resizeTimer);
+            window.resizeTimer = setTimeout(() => {
+                renderProducts(state.currentFilter);
+            }, 250);
+        });
+    </script>
+</body>
+</html>
