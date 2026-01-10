@@ -1,0 +1,893 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Lava Lamp Simulator</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            min-height: 100vh;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f0f23 100%);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            overflow: hidden;
+            padding: 10px;
+        }
+
+        .container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 20px;
+            width: 100%;
+            max-width: 100%;
+            height: 100vh;
+            padding: 10px;
+        }
+
+        .lamp-wrapper {
+            position: relative;
+            flex: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            width: 100%;
+            max-height: calc(100vh - 180px);
+        }
+
+        .lava-lamp {
+            position: relative;
+            width: 200px;
+            height: 400px;
+            max-height: 100%;
+            border-radius: 100px 100px 60px 60px;
+            overflow: hidden;
+            box-shadow: 
+                0 0 60px rgba(255, 100, 100, 0.3),
+                inset 0 0 100px rgba(0, 0, 0, 0.5),
+                0 20px 60px rgba(0, 0, 0, 0.5);
+        }
+
+        .lamp-glass {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            border-radius: inherit;
+            background: linear-gradient(
+                90deg,
+                rgba(255, 255, 255, 0.1) 0%,
+                transparent 30%,
+                transparent 70%,
+                rgba(0, 0, 0, 0.2) 100%
+            );
+            pointer-events: none;
+            z-index: 10;
+        }
+
+        .lamp-shine {
+            position: absolute;
+            top: 10px;
+            left: 20px;
+            width: 30px;
+            height: 150px;
+            background: linear-gradient(
+                180deg,
+                rgba(255, 255, 255, 0.3) 0%,
+                transparent 100%
+            );
+            border-radius: 50%;
+            transform: rotate(-10deg);
+            pointer-events: none;
+            z-index: 11;
+        }
+
+        #lavaCanvas {
+            width: 100%;
+            height: 100%;
+            display: block;
+        }
+
+        .lamp-base {
+            position: absolute;
+            bottom: -30px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 180px;
+            height: 60px;
+            background: linear-gradient(180deg, #2a2a3a 0%, #1a1a2a 50%, #0a0a1a 100%);
+            border-radius: 0 0 30px 30px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+            z-index: -1;
+        }
+
+        .lamp-cap {
+            position: absolute;
+            top: -20px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 100px;
+            height: 40px;
+            background: linear-gradient(180deg, #3a3a4a 0%, #2a2a3a 50%, #1a1a2a 100%);
+            border-radius: 30px 30px 0 0;
+            box-shadow: 0 -5px 20px rgba(0, 0, 0, 0.3);
+            z-index: -1;
+        }
+
+        .controls {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 15px 20px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            justify-content: center;
+            align-items: center;
+            max-width: 600px;
+            width: 100%;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+            align-items: center;
+            min-width: 80px;
+        }
+
+        .control-group label {
+            color: rgba(255, 255, 255, 0.8);
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .control-group input[type="range"] {
+            width: 80px;
+            height: 6px;
+            border-radius: 3px;
+            background: rgba(255, 255, 255, 0.2);
+            outline: none;
+            -webkit-appearance: none;
+        }
+
+        .control-group input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #ff6b6b, #feca57);
+            cursor: pointer;
+            box-shadow: 0 2px 10px rgba(255, 107, 107, 0.5);
+        }
+
+        .control-group input[type="color"] {
+            width: 40px;
+            height: 30px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            background: transparent;
+        }
+
+        .color-inputs {
+            display: flex;
+            gap: 5px;
+        }
+
+        .btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            transition: all 0.3s ease;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #ff6b6b, #feca57);
+            color: #1a1a2e;
+        }
+
+        .btn-primary:hover {
+            transform: scale(1.05);
+            box-shadow: 0 5px 20px rgba(255, 107, 107, 0.4);
+        }
+
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+
+        .presets {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .preset-btn {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .preset-btn:hover {
+            transform: scale(1.2);
+            border-color: white;
+        }
+
+        .title {
+            color: white;
+            font-size: 24px;
+            font-weight: 300;
+            text-align: center;
+            text-shadow: 0 0 20px rgba(255, 107, 107, 0.5);
+            letter-spacing: 3px;
+        }
+
+        /* Landscape mode on mobile */
+        @media (max-height: 500px) and (orientation: landscape) {
+            .container {
+                flex-direction: row;
+                padding: 5px;
+            }
+
+            .lamp-wrapper {
+                max-height: 100%;
+                flex: none;
+                width: auto;
+            }
+
+            .lava-lamp {
+                width: 120px;
+                height: 250px;
+                border-radius: 60px 60px 40px 40px;
+            }
+
+            .lamp-base {
+                width: 110px;
+                height: 40px;
+                bottom: -20px;
+            }
+
+            .lamp-cap {
+                width: 70px;
+                height: 30px;
+                top: -15px;
+            }
+
+            .controls {
+                flex-direction: column;
+                max-width: 300px;
+                padding: 10px;
+                gap: 10px;
+                max-height: calc(100vh - 20px);
+                overflow-y: auto;
+            }
+
+            .title {
+                font-size: 16px;
+            }
+        }
+
+        /* Small screens portrait */
+        @media (max-width: 400px) {
+            .lava-lamp {
+                width: 160px;
+                height: 320px;
+                border-radius: 80px 80px 50px 50px;
+            }
+
+            .lamp-base {
+                width: 140px;
+                height: 50px;
+            }
+
+            .lamp-cap {
+                width: 80px;
+                height: 35px;
+            }
+
+            .controls {
+                padding: 10px;
+                gap: 10px;
+            }
+
+            .control-group {
+                min-width: 70px;
+            }
+
+            .control-group input[type="range"] {
+                width: 60px;
+            }
+
+            .title {
+                font-size: 18px;
+            }
+        }
+
+        /* Large screens */
+        @media (min-width: 768px) and (min-height: 600px) {
+            .lava-lamp {
+                width: 250px;
+                height: 500px;
+            }
+
+            .lamp-base {
+                width: 220px;
+                height: 70px;
+                bottom: -35px;
+            }
+
+            .lamp-cap {
+                width: 120px;
+                height: 45px;
+                top: -22px;
+            }
+
+            .control-group input[type="range"] {
+                width: 100px;
+            }
+        }
+
+        /* Fullscreen button */
+        .fullscreen-btn {
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            z-index: 100;
+            background: rgba(255, 255, 255, 0.1);
+            border: none;
+            color: white;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 18px;
+            transition: all 0.3s ease;
+        }
+
+        .fullscreen-btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: scale(1.1);
+        }
+
+        /* Hide controls in fullscreen */
+        .fullscreen-mode .controls,
+        .fullscreen-mode .title,
+        .fullscreen-mode .lamp-base,
+        .fullscreen-mode .lamp-cap {
+            display: none;
+        }
+
+        .fullscreen-mode .lava-lamp {
+            width: 100vw;
+            height: 100vh;
+            max-height: 100vh;
+            border-radius: 0;
+        }
+
+        .fullscreen-mode .lamp-wrapper {
+            max-height: 100vh;
+        }
+
+        .fullscreen-mode .lamp-glass,
+        .fullscreen-mode .lamp-shine {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <button class="fullscreen-btn" onclick="toggleFullscreen()" title="Toggle Fullscreen">⛶</button>
+    
+    <div class="container" id="container">
+        <h1 class="title">LAVA LAMP</h1>
+        
+        <div class="lamp-wrapper">
+            <div class="lava-lamp" id="lavaLamp">
+                <canvas id="lavaCanvas"></canvas>
+                <div class="lamp-glass"></div>
+                <div class="lamp-shine"></div>
+                <div class="lamp-base"></div>
+                <div class="lamp-cap"></div>
+            </div>
+        </div>
+        
+        <div class="controls">
+            <div class="control-group">
+                <label>Blobs</label>
+                <input type="range" id="blobCount" min="3" max="15" value="8">
+            </div>
+            
+            <div class="control-group">
+                <label>Speed</label>
+                <input type="range" id="speed" min="1" max="10" value="5">
+            </div>
+            
+            <div class="control-group">
+                <label>Heat</label>
+                <input type="range" id="heat" min="1" max="10" value="5">
+            </div>
+            
+            <div class="control-group">
+                <label>Size</label>
+                <input type="range" id="blobSize" min="1" max="10" value="5">
+            </div>
+            
+            <div class="control-group">
+                <label>Colors</label>
+                <div class="color-inputs">
+                    <input type="color" id="color1" value="#ff6b6b">
+                    <input type="color" id="color2" value="#feca57">
+                </div>
+            </div>
+            
+            <div class="control-group">
+                <label>Background</label>
+                <input type="color" id="bgColor" value="#1a0a2e">
+            </div>
+            
+            <div class="control-group">
+                <label>Presets</label>
+                <div class="presets">
+                    <button class="preset-btn" style="background: linear-gradient(135deg, #ff6b6b, #feca57);" onclick="applyPreset('classic')"></button>
+                    <button class="preset-btn" style="background: linear-gradient(135deg, #a29bfe, #6c5ce7);" onclick="applyPreset('purple')"></button>
+                    <button class="preset-btn" style="background: linear-gradient(135deg, #00d2d3, #54a0ff);" onclick="applyPreset('ocean')"></button>
+                    <button class="preset-btn" style="background: linear-gradient(135deg, #00b894, #55efc4);" onclick="applyPreset('nature')"></button>
+                    <button class="preset-btn" style="background: linear-gradient(135deg, #fd79a8, #e84393);" onclick="applyPreset('pink')"></button>
+                </div>
+            </div>
+            
+            <button class="btn btn-secondary" onclick="resetSettings()">Reset</button>
+        </div>
+    </div>
+
+    <script>
+        // Lava Lamp Simulator
+        const canvas = document.getElementById('lavaCanvas');
+        const ctx = canvas.getContext('2d');
+        const lamp = document.getElementById('lavaLamp');
+
+        // State
+        let state = {
+            blobCount: 8,
+            speed: 5,
+            heat: 5,
+            blobSize: 5,
+            color1: '#ff6b6b',
+            color2: '#feca57',
+            bgColor: '#1a0a2e'
+        };
+
+        // Blobs array
+        let blobs = [];
+        let animationId;
+
+        // Blob class
+        class Blob {
+            constructor(canvasWidth, canvasHeight) {
+                this.canvasWidth = canvasWidth;
+                this.canvasHeight = canvasHeight;
+                this.reset();
+            }
+
+            reset() {
+                const sizeMultiplier = state.blobSize / 5;
+                this.baseRadius = (20 + Math.random() * 30) * sizeMultiplier;
+                this.radius = this.baseRadius;
+                this.x = this.baseRadius + Math.random() * (this.canvasWidth - this.baseRadius * 2);
+                this.y = this.canvasHeight - this.baseRadius - Math.random() * this.canvasHeight * 0.3;
+                this.vx = (Math.random() - 0.5) * 0.5;
+                this.vy = 0;
+                this.temperature = Math.random();
+                this.wobblePhase = Math.random() * Math.PI * 2;
+                this.wobbleSpeed = 0.02 + Math.random() * 0.02;
+                this.squish = 1;
+                this.targetSquish = 1;
+            }
+
+            update() {
+                const speedMultiplier = state.speed / 5;
+                const heatMultiplier = state.heat / 5;
+
+                // Update wobble
+                this.wobblePhase += this.wobbleSpeed * speedMultiplier;
+
+                // Temperature affects buoyancy
+                const bottomZone = this.canvasHeight * 0.8;
+                const topZone = this.canvasHeight * 0.2;
+
+                // Heat up at bottom, cool down at top
+                if (this.y > bottomZone) {
+                    this.temperature += 0.01 * heatMultiplier;
+                } else if (this.y < topZone) {
+                    this.temperature -= 0.008 * heatMultiplier;
+                } else {
+                    this.temperature += (Math.random() - 0.5) * 0.005;
+                }
+
+                this.temperature = Math.max(0, Math.min(1, this.temperature));
+
+                // Buoyancy based on temperature
+                const buoyancy = (this.temperature - 0.5) * 0.15 * heatMultiplier;
+                this.vy -= buoyancy;
+
+                // Gravity
+                this.vy += 0.02;
+
+                // Damping
+                this.vy *= 0.98;
+                this.vx *= 0.95;
+
+                // Apply velocity
+                this.y += this.vy * speedMultiplier;
+                this.x += this.vx * speedMultiplier;
+
+                // Wobble effect on radius
+                const wobble = Math.sin(this.wobblePhase) * 0.15;
+                this.radius = this.baseRadius * (1 + wobble);
+
+                // Squish when hitting boundaries
+                if (this.y > this.canvasHeight - this.radius) {
+                    this.y = this.canvasHeight - this.radius;
+                    this.vy *= -0.3;
+                    this.targetSquish = 1.3;
+                    this.temperature += 0.1 * heatMultiplier;
+                } else if (this.y < this.radius) {
+                    this.y = this.radius;
+                    this.vy *= -0.3;
+                    this.targetSquish = 1.3;
+                    this.temperature -= 0.1;
+                }
+
+                // Horizontal boundaries
+                if (this.x < this.radius) {
+                    this.x = this.radius;
+                    this.vx *= -0.5;
+                } else if (this.x > this.canvasWidth - this.radius) {
+                    this.x = this.canvasWidth - this.radius;
+                    this.vx *= -0.5;
+                }
+
+                // Squish animation
+                this.squish += (this.targetSquish - this.squish) * 0.1;
+                this.targetSquish += (1 - this.targetSquish) * 0.05;
+
+                // Random horizontal movement
+                this.vx += (Math.random() - 0.5) * 0.1;
+            }
+
+            draw(ctx) {
+                const gradient = ctx.createRadialGradient(
+                    this.x - this.radius * 0.3,
+                    this.y - this.radius * 0.3,
+                    0,
+                    this.x,
+                    this.y,
+                    this.radius * this.squish
+                );
+
+                // Interpolate colors based on temperature
+                const color1 = hexToRgb(state.color1);
+                const color2 = hexToRgb(state.color2);
+                const t = this.temperature;
+
+                const r = Math.round(color1.r + (color2.r - color1.r) * t);
+                const g = Math.round(color1.g + (color2.g - color1.g) * t);
+                const b = Math.round(color1.b + (color2.b - color1.b) * t);
+
+                gradient.addColorStop(0, `rgba(${r + 50}, ${g + 50}, ${b + 50}, 0.9)`);
+                gradient.addColorStop(0.5, `rgba(${r}, ${g}, ${b}, 0.85)`);
+                gradient.addColorStop(1, `rgba(${r - 30}, ${g - 30}, ${b - 30}, 0.8)`);
+
+                ctx.fillStyle = gradient;
+                ctx.beginPath();
+
+                // Draw organic blob shape
+                const points = 60;
+                for (let i = 0; i <= points; i++) {
+                    const angle = (i / points) * Math.PI * 2;
+                    const wobbleX = Math.sin(angle * 3 + this.wobblePhase) * this.radius * 0.1;
+                    const wobbleY = Math.cos(angle * 2 + this.wobblePhase * 1.3) * this.radius * 0.1;
+
+                    const rx = this.radius * (1 / this.squish) + wobbleX;
+                    const ry = this.radius * this.squish + wobbleY;
+
+                    const px = this.x + Math.cos(angle) * rx;
+                    const py = this.y + Math.sin(angle) * ry;
+
+                    if (i === 0) {
+                        ctx.moveTo(px, py);
+                    } else {
+                        ctx.lineTo(px, py);
+                    }
+                }
+
+                ctx.closePath();
+                ctx.fill();
+
+                // Inner glow
+                const innerGlow = ctx.createRadialGradient(
+                    this.x - this.radius * 0.2,
+                    this.y - this.radius * 0.2,
+                    0,
+                    this.x,
+                    this.y,
+                    this.radius * 0.6
+                );
+                innerGlow.addColorStop(0, `rgba(255, 255, 255, 0.3)`);
+                innerGlow.addColorStop(1, `rgba(255, 255, 255, 0)`);
+
+                ctx.fillStyle = innerGlow;
+                ctx.beginPath();
+                ctx.arc(this.x - this.radius * 0.1, this.y - this.radius * 0.1, this.radius * 0.4, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        }
+
+        // Helper function
+        function hexToRgb(hex) {
+            const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+            return result ? {
+                r: parseInt(result[1], 16),
+                g: parseInt(result[2], 16),
+                b: parseInt(result[3], 16)
+            } : { r: 255, g: 107, b: 107 };
+        }
+
+        // Initialize blobs
+        function initBlobs() {
+            const rect = lamp.getBoundingClientRect();
+            canvas.width = rect.width * 2;
+            canvas.height = rect.height * 2;
+            ctx.scale(2, 2);
+
+            blobs = [];
+            for (let i = 0; i < state.blobCount; i++) {
+                const blob = new Blob(rect.width, rect.height);
+                blob.y = rect.height * 0.3 + Math.random() * rect.height * 0.6;
+                blobs.push(blob);
+            }
+        }
+
+        // Animation loop
+        function animate() {
+            const rect = lamp.getBoundingClientRect();
+
+            ctx.clearRect(0, 0, rect.width, rect.height);
+
+            // Draw background gradient
+            const bgGradient = ctx.createLinearGradient(0, 0, 0, rect.height);
+            const bgColor = hexToRgb(state.bgColor);
+            bgGradient.addColorStop(0, `rgba(${bgColor.r}, ${bgColor.g}, ${bgColor.b}, 1)`);
+            bgGradient.addColorStop(0.5, `rgba(${Math.min(255, bgColor.r + 20)}, ${Math.min(255, bgColor.g + 10)}, ${Math.min(255, bgColor.b + 30)}, 1)`);
+            bgGradient.addColorStop(1, `rgba(${Math.min(255, bgColor.r + 40)}, ${Math.min(255, bgColor.g + 20)}, ${Math.min(255, bgColor.b + 10)}, 1)`);
+
+            ctx.fillStyle = bgGradient;
+            ctx.fillRect(0, 0, rect.width, rect.height);
+
+            // Draw heat source glow at bottom
+            const heatGlow = ctx.createRadialGradient(
+                rect.width / 2,
+                rect.height + 20,
+                0,
+                rect.width / 2,
+                rect.height,
+                rect.height * 0.4
+            );
+            const color1 = hexToRgb(state.color1);
+            heatGlow.addColorStop(0, `rgba(${color1.r}, ${color1.g}, ${color1.b}, 0.4)`);
+            heatGlow.addColorStop(1, `rgba(${color1.r}, ${color1.g}, ${color1.b}, 0)`);
+            ctx.fillStyle = heatGlow;
+            ctx.fillRect(0, rect.height * 0.5, rect.width, rect.height * 0.5);
+
+            // Update and draw blobs
+            blobs.forEach(blob => {
+                blob.canvasWidth = rect.width;
+                blob.canvasHeight = rect.height;
+                blob.update();
+            });
+
+            // Sort blobs by y position for depth effect
+            blobs.sort((a, b) => a.y - b.y);
+
+            blobs.forEach(blob => {
+                blob.draw(ctx);
+            });
+
+            // Draw ambient light effect at top
+            const topGlow = ctx.createLinearGradient(0, 0, 0, rect.height * 0.2);
+            topGlow.addColorStop(0, `rgba(255, 255, 255, 0.05)`);
+            topGlow.addColorStop(1, `rgba(255, 255, 255, 0)`);
+            ctx.fillStyle = topGlow;
+            ctx.fillRect(0, 0, rect.width, rect.height * 0.2);
+
+            animationId = requestAnimationFrame(animate);
+        }
+
+        // Resize handler
+        function handleResize() {
+            const rect = lamp.getBoundingClientRect();
+            canvas.width = rect.width * 2;
+            canvas.height = rect.height * 2;
+            ctx.setTransform(1, 0, 0, 1, 0, 0);
+            ctx.scale(2, 2);
+
+            blobs.forEach(blob => {
+                blob.canvasWidth = rect.width;
+                blob.canvasHeight = rect.height;
+                blob.x = Math.max(blob.radius, Math.min(rect.width - blob.radius, blob.x));
+                blob.y = Math.max(blob.radius, Math.min(rect.height - blob.radius, blob.y));
+            });
+        }
+
+        // Load state from localStorage
+        function loadState() {
+            const saved = localStorage.getItem('lavaLampState');
+            if (saved) {
+                try {
+                    state = { ...state, ...JSON.parse(saved) };
+                } catch (e) {
+                    console.log('Could not load saved state');
+                }
+            }
+            updateControls();
+        }
+
+        // Save state to localStorage
+        function saveState() {
+            localStorage.setItem('lavaLampState', JSON.stringify(state));
+        }
+
+        // Update control values from state
+        function updateControls() {
+            document.getElementById('blobCount').value = state.blobCount;
+            document.getElementById('speed').value = state.speed;
+            document.getElementById('heat').value = state.heat;
+            document.getElementById('blobSize').value = state.blobSize;
+            document.getElementById('color1').value = state.color1;
+            document.getElementById('color2').value = state.color2;
+            document.getElementById('bgColor').value = state.bgColor;
+        }
+
+        // Event listeners for controls
+        document.getElementById('blobCount').addEventListener('input', (e) => {
+            state.blobCount = parseInt(e.target.value);
+            saveState();
+            adjustBlobCount();
+        });
+
+        document.getElementById('speed').addEventListener('input', (e) => {
+            state.speed = parseInt(e.target.value);
+            saveState();
+        });
+
+        document.getElementById('heat').addEventListener('input', (e) => {
+            state.heat = parseInt(e.target.value);
+            saveState();
+        });
+
+        document.getElementById('blobSize').addEventListener('input', (e) => {
+            state.blobSize = parseInt(e.target.value);
+            saveState();
+            blobs.forEach(blob => {
+                const sizeMultiplier = state.blobSize / 5;
+                blob.baseRadius = (20 + Math.random() * 30) * sizeMultiplier;
+            });
+        });
+
+        document.getElementById('color1').addEventListener('input', (e) => {
+            state.color1 = e.target.value;
+            saveState();
+            updateLampGlow();
+        });
+
+        document.getElementById('color2').addEventListener('input', (e) => {
+            state.color2 = e.target.value;
+            saveState();
+        });
+
+        document.getElementById('bgColor').addEventListener('input', (e) => {
+            state.bgColor = e.target.value;
+            saveState();
+        });
+
+        function adjustBlobCount() {
+            const rect = lamp.getBoundingClientRect();
+            while (blobs.length < state.blobCount) {
+                blobs.push(new Blob(rect.width, rect.height));
+            }
+            while (blobs.length > state.blobCount) {
+                blobs.pop();
+            }
+        }
+
+        function updateLampGlow() {
+            lamp.style.boxShadow = `
+                0 0 60px ${state.color1}50,
+                inset 0 0 100px rgba(0, 0, 0, 0.5),
+                0 20px 60px rgba(0, 0, 0, 0.5)
+            `;
+        }
+
+        // Presets
+        function applyPreset(preset) {
+            const presets = {
+                classic: { color1: '#ff6b6b', color2: '#feca57', bgColor: '#1a0a2e' },
+                purple: { color1: '#a29bfe', color2: '#6c5ce7', bgColor: '#1a1a3e' },
+                ocean: { color1: '#00d2d3', color2: '#54a0ff', bgColor: '#0a1a2e' },
+                nature: { color1: '#00b894', color2: '#55efc4', bgColor: '#0a2e1a' },
+                pink: { color1: '#fd79a8', color2: '#e84393', bgColor: '#2e0a1a' }
+            };
+
+            if (presets[preset]) {
+                state = { ...state, ...presets[preset] };
+                saveState();
+                updateControls();
+                updateLampGlow();
+            }
+        }
+
+        // Reset settings
+        function resetSettings() {
+            state = {
+                blobCount: 8,
+                speed: 5,
+                heat: 5,
+                blobSize: 5,
+                color1: '#ff6b6b',
+                color2: '#feca57',
+                bgColor: '#1a0a2e'
+            };
+            saveState();
+            updateControls();
+            updateLampGlow();
+            initBlobs();
+        }
+
+        // Fullscreen toggle
+        function toggleFullscreen() {
+            document.getElementById('container').classList.toggle('fullscreen-mode');
+            setTimeout(handleResize, 100);
+        }
+
+        // Expose functions to global scope
+        window.applyPreset = applyPreset;
+        window.resetSettings = resetSettings;
+        window.toggleFullscreen = toggleFullscreen;
+
+        // Initialize
+        window.addEventListener('resize', handleResize);
+        window.addEventListener('orientationchange', () => {
+            setTimeout(handleResize, 100);
+        });
+
+        loadState();
+        updateLampGlow();
+        initBlobs();
+        animate();
+    </script>
+</body>
+</html>
