@@ -1,0 +1,1428 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Lava Lamp</title>
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cdefs%3E%3ClinearGradient id='bg' x1='0%25' y1='0%25' x2='100%25' y2='100%25'%3E%3Cstop offset='0%25' stop-color='%231a3a4a'/%3E%3Cstop offset='100%25' stop-color='%230a2a3a'/%3E%3C/linearGradient%3E%3ClinearGradient id='lamp' x1='0%25' y1='0%25' x2='100%25' y2='100%25'%3E%3Cstop offset='0%25' stop-color='%232a4a4a'/%3E%3Cstop offset='100%25' stop-color='%231a3a3a'/%3E%3C/linearGradient%3E%3CradialGradient id='blob1'%3E%3Cstop offset='0%25' stop-color='%2355efc4'/%3E%3Cstop offset='100%25' stop-color='%2300b894'/%3E%3C/radialGradient%3E%3CradialGradient id='blob2'%3E%3Cstop offset='0%25' stop-color='%2300d2d3'/%3E%3Cstop offset='100%25' stop-color='%2300a8a8'/%3E%3C/radialGradient%3E%3Cfilter id='glow'%3E%3CfeGaussianBlur stdDeviation='2' result='coloredBlur'/%3E%3CfeMerge%3E%3CfeMergeNode in='coloredBlur'/%3E%3CfeMergeNode in='SourceGraphic'/%3E%3C/feMerge%3E%3C/filter%3E%3C/defs%3E%3Crect width='100' height='100' fill='url(%23bg)'/%3E%3Crect x='20' y='8' width='60' height='84' rx='30' fill='url(%23lamp)'/%3E%3Ccircle cx='55' cy='28' r='10' fill='url(%23blob1)' filter='url(%23glow)'/%3E%3Ccircle cx='40' cy='50' r='12' fill='url(%23blob2)' filter='url(%23glow)'/%3E%3Ccircle cx='58' cy='70' r='9' fill='url(%23blob1)' filter='url(%23glow)'/%3E%3Ccircle cx='45' cy='78' r='6' fill='url(%23blob2)' filter='url(%23glow)'/%3E%3C/svg%3E">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            min-height: 100vh;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f0f23 100%);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            overflow: hidden;
+            padding: 10px;
+        }
+
+        .container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 20px;
+            width: 100%;
+            max-width: 100%;
+            height: 100vh;
+            padding: 10px;
+        }
+
+        .lamp-wrapper {
+            position: relative;
+            flex: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            width: 100%;
+            max-height: calc(100vh - 180px);
+        }
+
+        .lava-lamp {
+            position: relative;
+            width: 220px;
+            height: 450px;
+            max-height: 100%;
+            border-radius: 110px 110px 70px 70px;
+            overflow: hidden;
+            box-shadow: 
+                0 0 80px rgba(255, 100, 100, 0.4),
+                0 0 120px rgba(255, 100, 100, 0.2),
+                inset 0 0 100px rgba(0, 0, 0, 0.5),
+                0 25px 80px rgba(0, 0, 0, 0.6);
+            background: #000;
+        }
+
+        .lamp-glass {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            border-radius: inherit;
+            background: linear-gradient(
+                105deg,
+                rgba(255, 255, 255, 0.15) 0%,
+                rgba(255, 255, 255, 0.05) 20%,
+                transparent 40%,
+                transparent 60%,
+                rgba(0, 0, 0, 0.1) 80%,
+                rgba(0, 0, 0, 0.2) 100%
+            );
+            pointer-events: none;
+            z-index: 10;
+        }
+
+        .lamp-glass::before {
+            content: '';
+            position: absolute;
+            top: 5%;
+            left: 8%;
+            width: 25%;
+            height: 40%;
+            background: linear-gradient(
+                180deg,
+                rgba(255, 255, 255, 0.2) 0%,
+                rgba(255, 255, 255, 0.1) 50%,
+                transparent 100%
+            );
+            border-radius: 50%;
+            transform: rotate(-15deg);
+            filter: blur(8px);
+        }
+
+        .lamp-glass::after {
+            content: '';
+            position: absolute;
+            top: 10%;
+            right: 15%;
+            width: 8%;
+            height: 15%;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 50%;
+            filter: blur(4px);
+        }
+
+        .lamp-inner-glow {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 30%;
+            background: radial-gradient(
+                ellipse at bottom center,
+                rgba(255, 150, 100, 0.3) 0%,
+                transparent 70%
+            );
+            pointer-events: none;
+            z-index: 5;
+            animation: pulseGlow 4s ease-in-out infinite;
+        }
+
+        @keyframes pulseGlow {
+            0%, 100% { opacity: 0.6; }
+            50% { opacity: 1; }
+        }
+
+        #lavaCanvas {
+            width: 100%;
+            height: 100%;
+            display: block;
+        }
+
+        .lamp-base {
+            position: absolute;
+            bottom: -35px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 200px;
+            height: 70px;
+            background: linear-gradient(
+                180deg,
+                #3a3a4a 0%,
+                #2a2a3a 30%,
+                #1a1a2a 60%,
+                #0a0a1a 100%
+            );
+            border-radius: 10px 10px 40px 40px;
+            box-shadow: 
+                0 15px 40px rgba(0, 0, 0, 0.6),
+                inset 0 2px 0 rgba(255, 255, 255, 0.1);
+            z-index: -1;
+        }
+
+        .lamp-base::before {
+            content: '';
+            position: absolute;
+            top: 5px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 60%;
+            height: 8px;
+            background: linear-gradient(90deg, 
+                transparent,
+                rgba(255, 100, 50, 0.5),
+                rgba(255, 150, 50, 0.8),
+                rgba(255, 100, 50, 0.5),
+                transparent
+            );
+            border-radius: 4px;
+            animation: heatGlow 2s ease-in-out infinite;
+        }
+
+        @keyframes heatGlow {
+            0%, 100% { opacity: 0.5; filter: blur(2px); }
+            50% { opacity: 1; filter: blur(4px); }
+        }
+
+        .lamp-cap {
+            position: absolute;
+            top: -25px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 110px;
+            height: 50px;
+            background: linear-gradient(
+                180deg,
+                #4a4a5a 0%,
+                #3a3a4a 30%,
+                #2a2a3a 70%,
+                #1a1a2a 100%
+            );
+            border-radius: 40px 40px 10px 10px;
+            box-shadow: 
+                0 -5px 25px rgba(0, 0, 0, 0.4),
+                inset 0 -2px 0 rgba(0, 0, 0, 0.3),
+                inset 0 2px 0 rgba(255, 255, 255, 0.1);
+            z-index: -1;
+        }
+
+        .controls {
+            background: rgba(255, 255, 255, 0.08);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-radius: 24px;
+            padding: 18px 24px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 16px;
+            justify-content: center;
+            align-items: center;
+            max-width: 650px;
+            width: 100%;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+        }
+
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            align-items: center;
+            min-width: 80px;
+        }
+
+        .control-group label {
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 10px;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            font-weight: 500;
+        }
+
+        .control-group input[type="range"] {
+            width: 85px;
+            height: 6px;
+            border-radius: 3px;
+            background: rgba(255, 255, 255, 0.15);
+            outline: none;
+            -webkit-appearance: none;
+            cursor: pointer;
+        }
+
+        .control-group input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #ff6b6b, #feca57);
+            cursor: pointer;
+            box-shadow: 0 2px 12px rgba(255, 107, 107, 0.6);
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .control-group input[type="range"]::-webkit-slider-thumb:hover {
+            transform: scale(1.15);
+            box-shadow: 0 4px 20px rgba(255, 107, 107, 0.8);
+        }
+
+        .control-group input[type="range"]::-moz-range-thumb {
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #ff6b6b, #feca57);
+            cursor: pointer;
+            border: none;
+            box-shadow: 0 2px 12px rgba(255, 107, 107, 0.6);
+        }
+
+        .control-group input[type="color"] {
+            width: 36px;
+            height: 36px;
+            border: none;
+            border-radius: 50%;
+            cursor: pointer;
+            background: transparent;
+            padding: 0;
+            overflow: hidden;
+        }
+
+        .control-group input[type="color"]::-webkit-color-swatch-wrapper {
+            padding: 0;
+        }
+
+        .control-group input[type="color"]::-webkit-color-swatch {
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+        }
+
+        .color-inputs {
+            display: flex;
+            gap: 8px;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.15);
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.25);
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.3);
+        }
+
+        .presets {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .preset-btn {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+        }
+
+        .preset-btn:hover {
+            transform: scale(1.25) translateY(-3px);
+            border-color: white;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.4);
+        }
+
+        .title {
+            color: white;
+            font-size: 26px;
+            font-weight: 200;
+            text-align: center;
+            text-shadow: 0 0 30px rgba(255, 107, 107, 0.5);
+            letter-spacing: 8px;
+            text-transform: uppercase;
+        }
+
+        /* Landscape mode */
+        @media (max-height: 500px) and (orientation: landscape) {
+            .container {
+                flex-direction: row;
+                padding: 5px;
+            }
+
+            .lamp-wrapper {
+                max-height: 100%;
+                flex: none;
+                width: auto;
+            }
+
+            .lava-lamp {
+                width: 130px;
+                height: 280px;
+                border-radius: 65px 65px 45px 45px;
+            }
+
+            .lamp-base {
+                width: 120px;
+                height: 45px;
+                bottom: -22px;
+            }
+
+            .lamp-cap {
+                width: 75px;
+                height: 35px;
+                top: -17px;
+            }
+
+            .controls {
+                flex-direction: column;
+                max-width: 320px;
+                padding: 12px;
+                gap: 10px;
+                max-height: calc(100vh - 20px);
+                overflow-y: auto;
+            }
+
+            .title {
+                font-size: 14px;
+                letter-spacing: 4px;
+            }
+        }
+
+        /* Small screens */
+        @media (max-width: 400px) {
+            .lava-lamp {
+                width: 170px;
+                height: 350px;
+                border-radius: 85px 85px 55px 55px;
+            }
+
+            .lamp-base {
+                width: 155px;
+                height: 55px;
+            }
+
+            .lamp-cap {
+                width: 90px;
+                height: 40px;
+            }
+
+            .controls {
+                padding: 12px;
+                gap: 12px;
+            }
+
+            .control-group {
+                min-width: 65px;
+            }
+
+            .control-group input[type="range"] {
+                width: 65px;
+            }
+
+            .title {
+                font-size: 18px;
+                letter-spacing: 5px;
+            }
+        }
+
+        /* Large screens */
+        @media (min-width: 768px) and (min-height: 700px) {
+            .lava-lamp {
+                width: 280px;
+                height: 560px;
+            }
+
+            .lamp-base {
+                width: 250px;
+                height: 80px;
+                bottom: -40px;
+            }
+
+            .lamp-cap {
+                width: 140px;
+                height: 55px;
+                top: -28px;
+            }
+
+            .control-group input[type="range"] {
+                width: 100px;
+            }
+
+            .title {
+                font-size: 32px;
+            }
+        }
+
+        /* Fullscreen button */
+        .fullscreen-btn {
+            position: fixed;
+            top: 15px;
+            right: 15px;
+            z-index: 100;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: white;
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 20px;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .fullscreen-btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: scale(1.1);
+            box-shadow: 0 5px 25px rgba(0, 0, 0, 0.3);
+        }
+
+        /* Fullscreen mode */
+        .fullscreen-mode .controls,
+        .fullscreen-mode .title,
+        .fullscreen-mode .lamp-base,
+        .fullscreen-mode .lamp-cap {
+            display: none;
+        }
+
+        .fullscreen-mode .lava-lamp {
+            width: 100vw;
+            height: 100vh;
+            max-height: 100vh;
+            border-radius: 0;
+            box-shadow: none;
+        }
+
+        .fullscreen-mode .lamp-wrapper {
+            max-height: 100vh;
+        }
+
+        .fullscreen-mode .lamp-glass {
+            display: none;
+        }
+
+        .fullscreen-mode .lamp-inner-glow {
+            display: none;
+        }
+
+        /* Particles container */
+        .bubbles-layer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 8;
+            overflow: hidden;
+            border-radius: inherit;
+        }
+    </style>
+</head>
+<body>
+    <button class="fullscreen-btn" onclick="toggleFullscreen()" title="Toggle Fullscreen">⛶</button>
+    
+    <div class="container" id="container">
+        <h1 class="title">Lava Lamp</h1>
+        
+        <div class="lamp-wrapper">
+            <div class="lava-lamp" id="lavaLamp">
+                <canvas id="lavaCanvas"></canvas>
+                <div class="bubbles-layer" id="bubblesLayer"></div>
+                <div class="lamp-inner-glow" id="innerGlow"></div>
+                <div class="lamp-glass"></div>
+                <div class="lamp-base"></div>
+                <div class="lamp-cap"></div>
+            </div>
+        </div>
+        
+        <div class="controls">
+            <div class="control-group">
+                <label>Blobs</label>
+                <input type="range" id="blobCount" min="4" max="12" value="7">
+            </div>
+            
+            <div class="control-group">
+                <label>Speed</label>
+                <input type="range" id="speed" min="1" max="10" value="5">
+            </div>
+            
+            <div class="control-group">
+                <label>Heat</label>
+                <input type="range" id="heat" min="1" max="10" value="5">
+            </div>
+            
+            <div class="control-group">
+                <label>Size</label>
+                <input type="range" id="blobSize" min="1" max="10" value="5">
+            </div>
+
+            <div class="control-group">
+                <label>Gooey</label>
+                <input type="range" id="gooey" min="1" max="10" value="6">
+            </div>
+            
+            <div class="control-group">
+                <label>Colors</label>
+                <div class="color-inputs">
+                    <input type="color" id="color1" value="#ff6b6b">
+                    <input type="color" id="color2" value="#feca57">
+                </div>
+            </div>
+            
+            <div class="control-group">
+                <label>Liquid</label>
+                <input type="color" id="bgColor" value="#1a0a2e">
+            </div>
+            
+            <div class="control-group">
+                <label>Presets</label>
+                <div class="presets">
+                    <button class="preset-btn" style="background: linear-gradient(135deg, #ff6b6b, #feca57);" onclick="applyPreset('classic')" title="Classic"></button>
+                    <button class="preset-btn" style="background: linear-gradient(135deg, #a29bfe, #6c5ce7);" onclick="applyPreset('purple')" title="Purple Haze"></button>
+                    <button class="preset-btn" style="background: linear-gradient(135deg, #00d2d3, #54a0ff);" onclick="applyPreset('ocean')" title="Ocean"></button>
+                    <button class="preset-btn" style="background: linear-gradient(135deg, #00b894, #55efc4);" onclick="applyPreset('nature')" title="Nature"></button>
+                    <button class="preset-btn" style="background: linear-gradient(135deg, #fd79a8, #e84393);" onclick="applyPreset('pink')" title="Pink Dreams"></button>
+                    <button class="preset-btn" style="background: linear-gradient(135deg, #f39c12, #e74c3c);" onclick="applyPreset('sunset')" title="Sunset"></button>
+                </div>
+            </div>
+            
+            <button class="btn btn-secondary" onclick="resetSettings()">Reset</button>
+        </div>
+    </div>
+
+    <script>
+        // Lava Lamp - Enhanced Simulator with Metaball Effect
+        const canvas = document.getElementById('lavaCanvas');
+        const ctx = canvas.getContext('2d');
+        const lamp = document.getElementById('lavaLamp');
+        const bubblesLayer = document.getElementById('bubblesLayer');
+
+        // High DPI support
+        let dpr = window.devicePixelRatio || 1;
+        
+        // State
+        let state = {
+            blobCount: 7,
+            speed: 5,
+            heat: 5,
+            blobSize: 5,
+            gooey: 6,
+            color1: '#ff6b6b',
+            color2: '#feca57',
+            bgColor: '#1a0a2e'
+        };
+
+        // Blobs and bubbles
+        let blobs = [];
+        let bubbles = [];
+        let animationId;
+        let lastTime = 0;
+        const targetFPS = 60;
+        const frameInterval = 1000 / targetFPS;
+
+        // Metaball field resolution
+        let fieldResolution = 4;
+        let field = [];
+        let fieldWidth, fieldHeight;
+
+        // Blob class with improved physics
+        class Blob {
+            constructor(canvasWidth, canvasHeight, index) {
+                this.index = index;
+                this.canvasWidth = canvasWidth;
+                this.canvasHeight = canvasHeight;
+                this.init();
+            }
+
+            init() {
+                const sizeMultiplier = state.blobSize / 5;
+                this.baseRadius = (25 + Math.random() * 35) * sizeMultiplier;
+                this.radius = this.baseRadius;
+                this.x = this.baseRadius + Math.random() * (this.canvasWidth - this.baseRadius * 2);
+                this.y = this.canvasHeight * 0.5 + Math.random() * this.canvasHeight * 0.4;
+                this.vx = 0;
+                this.vy = 0;
+                this.ax = 0;
+                this.ay = 0;
+                this.temperature = 0.3 + Math.random() * 0.4;
+                this.targetTemperature = this.temperature;
+                
+                // Oscillation parameters
+                this.wobblePhase = Math.random() * Math.PI * 2;
+                this.wobbleSpeed = 0.015 + Math.random() * 0.01;
+                this.wobbleAmplitude = 0.08 + Math.random() * 0.06;
+                
+                // Shape deformation
+                this.squishX = 1;
+                this.squishY = 1;
+                this.targetSquishX = 1;
+                this.targetSquishY = 1;
+                this.rotation = Math.random() * Math.PI * 2;
+                this.rotationSpeed = (Math.random() - 0.5) * 0.01;
+                
+                // Organic movement
+                this.noiseOffsetX = Math.random() * 1000;
+                this.noiseOffsetY = Math.random() * 1000;
+            }
+
+            update(deltaTime) {
+                const dt = deltaTime / 16.67; // Normalize to ~60fps
+                const speedMultiplier = state.speed / 5 * dt;
+                const heatMultiplier = state.heat / 5;
+
+                // Update wobble
+                this.wobblePhase += this.wobbleSpeed * speedMultiplier;
+                this.rotation += this.rotationSpeed * speedMultiplier;
+                this.noiseOffsetX += 0.003 * speedMultiplier;
+                this.noiseOffsetY += 0.003 * speedMultiplier;
+
+                // Temperature zones
+                const bottomZone = this.canvasHeight * 0.85;
+                const topZone = this.canvasHeight * 0.15;
+                const normalizedY = this.y / this.canvasHeight;
+
+                // Smooth temperature changes
+                if (this.y > bottomZone) {
+                    this.targetTemperature = Math.min(1, this.targetTemperature + 0.02 * heatMultiplier);
+                } else if (this.y < topZone) {
+                    this.targetTemperature = Math.max(0, this.targetTemperature - 0.015 * heatMultiplier);
+                } else {
+                    // Gradual cooling in middle
+                    this.targetTemperature += (0.4 - this.targetTemperature) * 0.001;
+                }
+
+                // Smooth temperature interpolation
+                this.temperature += (this.targetTemperature - this.temperature) * 0.02;
+
+                // Buoyancy force (stronger when hot)
+                const buoyancy = (this.temperature - 0.45) * 0.12 * heatMultiplier;
+                this.ay = -buoyancy;
+
+                // Gravity
+                this.ay += 0.015;
+
+                // Apply noise-based wandering force
+                const wanderX = this.simplex2D(this.noiseOffsetX, 0) * 0.02;
+                const wanderY = this.simplex2D(0, this.noiseOffsetY) * 0.01;
+                this.ax = wanderX;
+                this.ay += wanderY;
+
+                // Apply acceleration
+                this.vx += this.ax * speedMultiplier;
+                this.vy += this.ay * speedMultiplier;
+
+                // Damping (viscosity)
+                const damping = 0.985;
+                this.vx *= damping;
+                this.vy *= damping;
+
+                // Speed limit
+                const maxSpeed = 2.5 * speedMultiplier;
+                const speed = Math.sqrt(this.vx * this.vx + this.vy * this.vy);
+                if (speed > maxSpeed) {
+                    this.vx = (this.vx / speed) * maxSpeed;
+                    this.vy = (this.vy / speed) * maxSpeed;
+                }
+
+                // Apply velocity
+                this.x += this.vx;
+                this.y += this.vy;
+
+                // Wobble effect
+                const wobble = Math.sin(this.wobblePhase) * this.wobbleAmplitude;
+                const wobble2 = Math.cos(this.wobblePhase * 1.3) * this.wobbleAmplitude * 0.7;
+                this.radius = this.baseRadius * (1 + wobble);
+
+                // Boundary collisions with squish effect
+                const margin = this.radius * 0.8;
+                
+                if (this.y > this.canvasHeight - margin) {
+                    this.y = this.canvasHeight - margin;
+                    this.vy *= -0.4;
+                    this.targetSquishY = 0.7;
+                    this.targetSquishX = 1.3;
+                    this.targetTemperature = Math.min(1, this.targetTemperature + 0.15 * heatMultiplier);
+                    this.createBubbles(2);
+                }
+
+                if (this.y < margin) {
+                    this.y = margin;
+                    this.vy *= -0.4;
+                    this.targetSquishY = 0.7;
+                    this.targetSquishX = 1.3;
+                    this.targetTemperature = Math.max(0, this.targetTemperature - 0.1);
+                }
+
+                // Horizontal boundaries with smooth reflection
+                if (this.x < margin) {
+                    this.x = margin;
+                    this.vx *= -0.5;
+                    this.targetSquishX = 0.8;
+                    this.targetSquishY = 1.2;
+                }
+                if (this.x > this.canvasWidth - margin) {
+                    this.x = this.canvasWidth - margin;
+                    this.vx *= -0.5;
+                    this.targetSquishX = 0.8;
+                    this.targetSquishY = 1.2;
+                }
+
+                // Smooth squish recovery
+                const squishRecovery = 0.08;
+                this.squishX += (this.targetSquishX - this.squishX) * squishRecovery;
+                this.squishY += (this.targetSquishY - this.squishY) * squishRecovery;
+                this.targetSquishX += (1 - this.targetSquishX) * 0.03;
+                this.targetSquishY += (1 - this.targetSquishY) * 0.03;
+
+                // Velocity-based squish
+                const velSquish = Math.abs(this.vy) * 0.05;
+                this.squishY = Math.max(0.7, this.squishY - velSquish * 0.1);
+                this.squishX = Math.min(1.3, this.squishX + velSquish * 0.1);
+            }
+
+            simplex2D(x, y) {
+                // Simple noise approximation
+                return Math.sin(x * 1.5) * Math.cos(y * 1.5) + 
+                       Math.sin(x * 0.7 + 1.3) * Math.cos(y * 0.9 + 0.7) * 0.5;
+            }
+
+            createBubbles(count) {
+                for (let i = 0; i < count; i++) {
+                    if (bubbles.length < 30) {
+                        bubbles.push(new Bubble(
+                            this.x + (Math.random() - 0.5) * this.radius,
+                            this.y,
+                            this.canvasWidth,
+                            this.canvasHeight
+                        ));
+                    }
+                }
+            }
+
+            getFieldStrength(px, py) {
+                const dx = px - this.x;
+                const dy = py - this.y;
+                
+                // Apply squish transformation
+                const transformedDx = dx / this.squishX;
+                const transformedDy = dy / this.squishY;
+                
+                const distSq = transformedDx * transformedDx + transformedDy * transformedDy;
+                const radiusSq = this.radius * this.radius;
+                
+                if (distSq === 0) return 1;
+                return radiusSq / distSq;
+            }
+        }
+
+        // Bubble class for small rising bubbles
+        class Bubble {
+            constructor(x, y, canvasWidth, canvasHeight) {
+                this.x = x;
+                this.y = y;
+                this.canvasWidth = canvasWidth;
+                this.canvasHeight = canvasHeight;
+                this.radius = 1 + Math.random() * 3;
+                this.vy = -0.5 - Math.random() * 1;
+                this.vx = (Math.random() - 0.5) * 0.3;
+                this.life = 1;
+                this.decay = 0.005 + Math.random() * 0.01;
+                this.wobblePhase = Math.random() * Math.PI * 2;
+            }
+
+            update() {
+                this.wobblePhase += 0.1;
+                this.x += this.vx + Math.sin(this.wobblePhase) * 0.2;
+                this.y += this.vy;
+                this.life -= this.decay;
+                return this.life > 0 && this.y > 0;
+            }
+
+            draw(ctx) {
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+                ctx.fillStyle = `rgba(255, 255, 255, ${this.life * 0.3})`;
+                ctx.fill();
+            }
+        }
+
+        // Color utilities
+        function hexToRgb(hex) {
+            const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+            return result ? {
+                r: parseInt(result[1], 16),
+                g: parseInt(result[2], 16),
+                b: parseInt(result[3], 16)
+            } : { r: 255, g: 107, b: 107 };
+        }
+
+        function interpolateColor(color1, color2, t) {
+            const c1 = hexToRgb(color1);
+            const c2 = hexToRgb(color2);
+            return {
+                r: Math.round(c1.r + (c2.r - c1.r) * t),
+                g: Math.round(c1.g + (c2.g - c1.g) * t),
+                b: Math.round(c1.b + (c2.b - c1.b) * t)
+            };
+        }
+
+        // Initialize metaball field
+        function initField(width, height) {
+            fieldWidth = Math.ceil(width / fieldResolution);
+            fieldHeight = Math.ceil(height / fieldResolution);
+            field = new Float32Array(fieldWidth * fieldHeight);
+        }
+
+        // Calculate metaball field
+        function calculateField() {
+            const threshold = state.gooey / 10 + 0.4;
+            
+            for (let y = 0; y < fieldHeight; y++) {
+                for (let x = 0; x < fieldWidth; x++) {
+                    const px = x * fieldResolution;
+                    const py = y * fieldResolution;
+                    let sum = 0;
+
+                    for (const blob of blobs) {
+                        sum += blob.getFieldStrength(px, py);
+                    }
+
+                    field[y * fieldWidth + x] = sum;
+                }
+            }
+        }
+
+        // Render metaballs using marching squares
+        function renderMetaballs(width, height) {
+            const threshold = state.gooey / 10 + 0.4;
+            const bgColor = hexToRgb(state.bgColor);
+
+            // Create image data for pixel manipulation
+            const imageData = ctx.createImageData(width, height);
+            const data = imageData.data;
+
+            // Background gradient
+            for (let y = 0; y < height; y++) {
+                const gradientT = y / height;
+                const bgR = Math.min(255, bgColor.r + gradientT * 30);
+                const bgG = Math.min(255, bgColor.g + gradientT * 15);
+                const bgB = Math.min(255, bgColor.b + gradientT * 10);
+
+                for (let x = 0; x < width; x++) {
+                    const idx = (y * width + x) * 4;
+                    data[idx] = bgR;
+                    data[idx + 1] = bgG;
+                    data[idx + 2] = bgB;
+                    data[idx + 3] = 255;
+                }
+            }
+
+            // Calculate and render metaballs
+            for (let y = 0; y < height; y++) {
+                for (let x = 0; x < width; x++) {
+                    let sum = 0;
+                    let weightedTemp = 0;
+                    let totalWeight = 0;
+
+                    for (const blob of blobs) {
+                        const strength = blob.getFieldStrength(x, y);
+                        sum += strength;
+                        
+                        if (strength > 0.01) {
+                            weightedTemp += blob.temperature * strength;
+                            totalWeight += strength;
+                        }
+                    }
+
+                    if (sum >= threshold) {
+                        const idx = (y * width + x) * 4;
+                        const temp = totalWeight > 0 ? weightedTemp / totalWeight : 0.5;
+                        
+                        // Color based on temperature
+                        const color = interpolateColor(state.color1, state.color2, temp);
+                        
+                        // Edge glow effect
+                        const edgeFactor = Math.min(1, (sum - threshold) / (threshold * 2));
+                        const glow = 1 - edgeFactor;
+                        
+                        // Highlight
+                        const highlightX = x / width;
+                        const highlightY = y / height;
+                        const highlight = Math.max(0, 1 - Math.sqrt(
+                            Math.pow(highlightX - 0.3, 2) + Math.pow(highlightY - 0.3, 2)
+                        ) * 2) * 0.3;
+
+                        data[idx] = Math.min(255, color.r + glow * 50 + highlight * 100);
+                        data[idx + 1] = Math.min(255, color.g + glow * 30 + highlight * 100);
+                        data[idx + 2] = Math.min(255, color.b + glow * 20 + highlight * 100);
+                        data[idx + 3] = 255;
+                    }
+                }
+            }
+
+            ctx.putImageData(imageData, 0, 0);
+        }
+
+        // Smooth metaball rendering with gradients
+        function renderSmooth(width, height) {
+            const bgColor = hexToRgb(state.bgColor);
+            
+            // Background
+            const bgGradient = ctx.createLinearGradient(0, 0, 0, height);
+            bgGradient.addColorStop(0, `rgb(${bgColor.r}, ${bgColor.g}, ${bgColor.b})`);
+            bgGradient.addColorStop(0.5, `rgb(${Math.min(255, bgColor.r + 15)}, ${Math.min(255, bgColor.g + 8)}, ${Math.min(255, bgColor.b + 20)})`);
+            bgGradient.addColorStop(1, `rgb(${Math.min(255, bgColor.r + 35)}, ${Math.min(255, bgColor.g + 18)}, ${Math.min(255, bgColor.b + 12)})`);
+            
+            ctx.fillStyle = bgGradient;
+            ctx.fillRect(0, 0, width, height);
+
+            // Heat glow at bottom
+            const heatGlow = ctx.createRadialGradient(
+                width / 2, height + 30, 0,
+                width / 2, height, height * 0.5
+            );
+            const color1 = hexToRgb(state.color1);
+            heatGlow.addColorStop(0, `rgba(${color1.r}, ${color1.g}, ${color1.b}, 0.4)`);
+            heatGlow.addColorStop(0.5, `rgba(${color1.r}, ${color1.g}, ${color1.b}, 0.15)`);
+            heatGlow.addColorStop(1, 'transparent');
+            ctx.fillStyle = heatGlow;
+            ctx.fillRect(0, 0, width, height);
+
+            // Use temporary canvas for metaball effect
+            const tempCanvas = document.createElement('canvas');
+            tempCanvas.width = width;
+            tempCanvas.height = height;
+            const tempCtx = tempCanvas.getContext('2d');
+
+            // Enable blur for gooey effect
+            tempCtx.filter = `blur(${state.gooey * 2}px)`;
+
+            // Draw blobs
+            blobs.forEach((blob, index) => {
+                const color = interpolateColor(state.color1, state.color2, blob.temperature);
+                
+                const gradient = tempCtx.createRadialGradient(
+                    blob.x, blob.y, 0,
+                    blob.x, blob.y, blob.radius * Math.max(blob.squishX, blob.squishY)
+                );
+
+                gradient.addColorStop(0, `rgba(${Math.min(255, color.r + 40)}, ${Math.min(255, color.g + 40)}, ${Math.min(255, color.b + 40)}, 1)`);
+                gradient.addColorStop(0.4, `rgba(${color.r}, ${color.g}, ${color.b}, 1)`);
+                gradient.addColorStop(0.8, `rgba(${Math.max(0, color.r - 20)}, ${Math.max(0, color.g - 20)}, ${Math.max(0, color.b - 20)}, 0.9)`);
+                gradient.addColorStop(1, `rgba(${Math.max(0, color.r - 40)}, ${Math.max(0, color.g - 40)}, ${Math.max(0, color.b - 40)}, 0)`);
+
+                tempCtx.fillStyle = gradient;
+                tempCtx.beginPath();
+                
+                // Draw organic shape with bezier curves
+                const points = 32;
+                const angleStep = (Math.PI * 2) / points;
+                
+                for (let i = 0; i <= points; i++) {
+                    const angle = i * angleStep + blob.rotation;
+                    const wobble1 = Math.sin(angle * 3 + blob.wobblePhase) * blob.radius * 0.12;
+                    const wobble2 = Math.cos(angle * 2 + blob.wobblePhase * 1.5) * blob.radius * 0.08;
+                    
+                    const rx = (blob.radius + wobble1 + wobble2) * blob.squishX;
+                    const ry = (blob.radius + wobble1 - wobble2) * blob.squishY;
+                    
+                    const px = blob.x + Math.cos(angle) * rx;
+                    const py = blob.y + Math.sin(angle) * ry;
+
+                    if (i === 0) {
+                        tempCtx.moveTo(px, py);
+                    } else {
+                        // Use quadratic curves for smoother shape
+                        const prevAngle = (i - 1) * angleStep + blob.rotation;
+                        const cpAngle = (angle + prevAngle) / 2;
+                        const cpR = (blob.radius + wobble1) * 1.02;
+                        const cpx = blob.x + Math.cos(cpAngle) * cpR * blob.squishX;
+                        const cpy = blob.y + Math.sin(cpAngle) * cpR * blob.squishY;
+                        tempCtx.quadraticCurveTo(cpx, cpy, px, py);
+                    }
+                }
+                
+                tempCtx.closePath();
+                tempCtx.fill();
+            });
+
+            // Apply contrast to create metaball effect
+            tempCtx.filter = 'none';
+            tempCtx.globalCompositeOperation = 'source-atop';
+            
+            // Draw to main canvas with threshold effect
+            ctx.drawImage(tempCanvas, 0, 0);
+
+            // Draw blob highlights
+            ctx.globalCompositeOperation = 'source-over';
+            blobs.forEach(blob => {
+                // Inner highlight
+                const highlightGradient = ctx.createRadialGradient(
+                    blob.x - blob.radius * 0.25 * blob.squishX,
+                    blob.y - blob.radius * 0.25 * blob.squishY,
+                    0,
+                    blob.x,
+                    blob.y,
+                    blob.radius * 0.7
+                );
+                highlightGradient.addColorStop(0, 'rgba(255, 255, 255, 0.25)');
+                highlightGradient.addColorStop(0.5, 'rgba(255, 255, 255, 0.08)');
+                highlightGradient.addColorStop(1, 'transparent');
+
+                ctx.fillStyle = highlightGradient;
+                ctx.beginPath();
+                ctx.ellipse(
+                    blob.x - blob.radius * 0.15,
+                    blob.y - blob.radius * 0.15,
+                    blob.radius * 0.5 * blob.squishX,
+                    blob.radius * 0.4 * blob.squishY,
+                    blob.rotation,
+                    0,
+                    Math.PI * 2
+                );
+                ctx.fill();
+            });
+
+            // Draw bubbles
+            bubbles.forEach(bubble => bubble.draw(ctx));
+
+            // Top ambient light
+            const topGlow = ctx.createLinearGradient(0, 0, 0, height * 0.15);
+            topGlow.addColorStop(0, 'rgba(255, 255, 255, 0.03)');
+            topGlow.addColorStop(1, 'transparent');
+            ctx.fillStyle = topGlow;
+            ctx.fillRect(0, 0, width, height * 0.15);
+        }
+
+        // Initialize blobs
+        function initBlobs() {
+            const rect = lamp.getBoundingClientRect();
+            const width = rect.width;
+            const height = rect.height;
+            
+            canvas.width = width * dpr;
+            canvas.height = height * dpr;
+            canvas.style.width = width + 'px';
+            canvas.style.height = height + 'px';
+            ctx.scale(dpr, dpr);
+
+            initField(width, height);
+
+            blobs = [];
+            for (let i = 0; i < state.blobCount; i++) {
+                blobs.push(new Blob(width, height, i));
+            }
+            
+            bubbles = [];
+        }
+
+        // Animation loop
+        function animate(currentTime) {
+            const deltaTime = currentTime - lastTime;
+            
+            if (deltaTime >= frameInterval) {
+                lastTime = currentTime - (deltaTime % frameInterval);
+                
+                const rect = lamp.getBoundingClientRect();
+                const width = rect.width;
+                const height = rect.height;
+
+                // Update blobs
+                blobs.forEach(blob => {
+                    blob.canvasWidth = width;
+                    blob.canvasHeight = height;
+                    blob.update(deltaTime);
+                });
+
+                // Blob-to-blob collision
+                for (let i = 0; i < blobs.length; i++) {
+                    for (let j = i + 1; j < blobs.length; j++) {
+                        const b1 = blobs[i];
+                        const b2 = blobs[j];
+                        const dx = b2.x - b1.x;
+                        const dy = b2.y - b1.y;
+                        const dist = Math.sqrt(dx * dx + dy * dy);
+                        const minDist = (b1.radius + b2.radius) * 0.8;
+
+                        if (dist < minDist && dist > 0) {
+                            const overlap = (minDist - dist) / 2;
+                            const nx = dx / dist;
+                            const ny = dy / dist;
+
+                            b1.x -= nx * overlap * 0.3;
+                            b1.y -= ny * overlap * 0.3;
+                            b2.x += nx * overlap * 0.3;
+                            b2.y += ny * overlap * 0.3;
+
+                            // Exchange some velocity
+                            const dvx = b2.vx - b1.vx;
+                            const dvy = b2.vy - b1.vy;
+                            const dvn = dvx * nx + dvy * ny;
+
+                            if (dvn < 0) {
+                                b1.vx += dvn * nx * 0.2;
+                                b1.vy += dvn * ny * 0.2;
+                                b2.vx -= dvn * nx * 0.2;
+                                b2.vy -= dvn * ny * 0.2;
+                            }
+
+                            // Temperature exchange
+                            const avgTemp = (b1.temperature + b2.temperature) / 2;
+                            b1.targetTemperature += (avgTemp - b1.targetTemperature) * 0.1;
+                            b2.targetTemperature += (avgTemp - b2.targetTemperature) * 0.1;
+                        }
+                    }
+                }
+
+                // Update bubbles
+                bubbles = bubbles.filter(bubble => bubble.update());
+
+                // Occasional random bubbles from hot blobs
+                blobs.forEach(blob => {
+                    if (blob.temperature > 0.7 && Math.random() < 0.02) {
+                        blob.createBubbles(1);
+                    }
+                });
+
+                // Render
+                ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+                renderSmooth(width, height);
+            }
+
+            animationId = requestAnimationFrame(animate);
+        }
+
+        // Resize handler
+        function handleResize() {
+            dpr = window.devicePixelRatio || 1;
+            const rect = lamp.getBoundingClientRect();
+            const width = rect.width;
+            const height = rect.height;
+
+            canvas.width = width * dpr;
+            canvas.height = height * dpr;
+            canvas.style.width = width + 'px';
+            canvas.style.height = height + 'px';
+            
+            initField(width, height);
+
+            blobs.forEach(blob => {
+                blob.canvasWidth = width;
+                blob.canvasHeight = height;
+                blob.x = Math.max(blob.radius, Math.min(width - blob.radius, blob.x));
+                blob.y = Math.max(blob.radius, Math.min(height - blob.radius, blob.y));
+            });
+        }
+
+        // Load state from localStorage
+        function loadState() {
+            const saved = localStorage.getItem('lavaLampState');
+            if (saved) {
+                try {
+                    state = { ...state, ...JSON.parse(saved) };
+                } catch (e) {
+                    console.log('Could not load saved state');
+                }
+            }
+            updateControls();
+        }
+
+        // Save state to localStorage
+        function saveState() {
+            localStorage.setItem('lavaLampState', JSON.stringify(state));
+        }
+
+        // Update control values
+        function updateControls() {
+            document.getElementById('blobCount').value = state.blobCount;
+            document.getElementById('speed').value = state.speed;
+            document.getElementById('heat').value = state.heat;
+            document.getElementById('blobSize').value = state.blobSize;
+            document.getElementById('gooey').value = state.gooey;
+            document.getElementById('color1').value = state.color1;
+            document.getElementById('color2').value = state.color2;
+            document.getElementById('bgColor').value = state.bgColor;
+        }
+
+        // Control event listeners
+        document.getElementById('blobCount').addEventListener('input', (e) => {
+            state.blobCount = parseInt(e.target.value);
+            saveState();
+            adjustBlobCount();
+        });
+
+        document.getElementById('speed').addEventListener('input', (e) => {
+            state.speed = parseInt(e.target.value);
+            saveState();
+        });
+
+        document.getElementById('heat').addEventListener('input', (e) => {
+            state.heat = parseInt(e.target.value);
+            saveState();
+        });
+
+        document.getElementById('blobSize').addEventListener('input', (e) => {
+            state.blobSize = parseInt(e.target.value);
+            saveState();
+            blobs.forEach(blob => {
+                const sizeMultiplier = state.blobSize / 5;
+                blob.baseRadius = (25 + Math.random() * 35) * sizeMultiplier;
+            });
+        });
+
+        document.getElementById('gooey').addEventListener('input', (e) => {
+            state.gooey = parseInt(e.target.value);
+            saveState();
+        });
+
+        document.getElementById('color1').addEventListener('input', (e) => {
+            state.color1 = e.target.value;
+            saveState();
+            updateLampGlow();
+        });
+
+        document.getElementById('color2').addEventListener('input', (e) => {
+            state.color2 = e.target.value;
+            saveState();
+        });
+
+        document.getElementById('bgColor').addEventListener('input', (e) => {
+            state.bgColor = e.target.value;
+            saveState();
+        });
+
+        function adjustBlobCount() {
+            const rect = lamp.getBoundingClientRect();
+            while (blobs.length < state.blobCount) {
+                blobs.push(new Blob(rect.width, rect.height, blobs.length));
+            }
+            while (blobs.length > state.blobCount) {
+                blobs.pop();
+            }
+        }
+
+        function updateLampGlow() {
+            const color = hexToRgb(state.color1);
+            lamp.style.boxShadow = `
+                0 0 80px rgba(${color.r}, ${color.g}, ${color.b}, 0.4),
+                0 0 120px rgba(${color.r}, ${color.g}, ${color.b}, 0.2),
+                inset 0 0 100px rgba(0, 0, 0, 0.5),
+                0 25px 80px rgba(0, 0, 0, 0.6)
+            `;
+            
+            // Update inner glow
+            const innerGlow = document.getElementById('innerGlow');
+            innerGlow.style.background = `radial-gradient(
+                ellipse at bottom center,
+                rgba(${color.r}, ${color.g}, ${color.b}, 0.3) 0%,
+                transparent 70%
+            )`;
+        }
+
+        // Presets
+        function applyPreset(preset) {
+            const presets = {
+                classic: { color1: '#ff6b6b', color2: '#feca57', bgColor: '#1a0a2e' },
+                purple: { color1: '#a29bfe', color2: '#6c5ce7', bgColor: '#1a1a3e' },
+                ocean: { color1: '#00d2d3', color2: '#54a0ff', bgColor: '#0a1a2e' },
+                nature: { color1: '#00b894', color2: '#55efc4', bgColor: '#0a2e1a' },
+                pink: { color1: '#fd79a8', color2: '#e84393', bgColor: '#2e0a2a' },
+                sunset: { color1: '#f39c12', color2: '#e74c3c', bgColor: '#1a0a0a' }
+            };
+
+            if (presets[preset]) {
+                state = { ...state, ...presets[preset] };
+                saveState();
+                updateControls();
+                updateLampGlow();
+            }
+        }
+
+        // Reset
+        function resetSettings() {
+            state = {
+                blobCount: 7,
+                speed: 5,
+                heat: 5,
+                blobSize: 5,
+                gooey: 6,
+                color1: '#ff6b6b',
+                color2: '#feca57',
+                bgColor: '#1a0a2e'
+            };
+            saveState();
+            updateControls();
+            updateLampGlow();
+            initBlobs();
+        }
+
+        // Fullscreen
+        function toggleFullscreen() {
+            document.getElementById('container').classList.toggle('fullscreen-mode');
+            setTimeout(handleResize, 100);
+        }
+
+        // Global functions
+        window.applyPreset = applyPreset;
+        window.resetSettings = resetSettings;
+        window.toggleFullscreen = toggleFullscreen;
+
+        // Event listeners
+        window.addEventListener('resize', handleResize);
+        window.addEventListener('orientationchange', () => setTimeout(handleResize, 100));
+
+        // Touch interaction - blobs react to touch
+        lamp.addEventListener('click', (e) => {
+            const rect = lamp.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+
+            blobs.forEach(blob => {
+                const dx = blob.x - x;
+                const dy = blob.y - y;
+                const dist = Math.sqrt(dx * dx + dy * dy);
+                
+                if (dist < blob.radius * 2) {
+                    blob.vx += dx / dist * 3;
+                    blob.vy += dy / dist * 3;
+                    blob.targetTemperature = Math.min(1, blob.targetTemperature + 0.2);
+                }
+            });
+
+            // Create bubbles at touch point
+            for (let i = 0; i < 5; i++) {
+                if (bubbles.length < 30) {
+                    bubbles.push(new Bubble(
+                        x + (Math.random() - 0.5) * 20,
+                        y,
+                        rect.width,
+                        rect.height
+                    ));
+                }
+            }
+        });
+
+        // Initialize
+        loadState();
+        updateLampGlow();
+        initBlobs();
+        requestAnimationFrame(animate);
+    </script>
+</body>
+</html>
