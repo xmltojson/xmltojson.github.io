@@ -1,0 +1,1786 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Bubble Pop Game</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            overflow: hidden;
+            touch-action: manipulation;
+        }
+
+        #game-container {
+            width: 100vw;
+            height: 100vh;
+            background: linear-gradient(180deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* Animated background stars */
+        .star {
+            position: absolute;
+            background: white;
+            border-radius: 50%;
+            animation: twinkle 2s ease-in-out infinite;
+        }
+
+        @keyframes twinkle {
+            0%, 100% { opacity: 0.3; transform: scale(1); }
+            50% { opacity: 1; transform: scale(1.2); }
+        }
+
+        /* Header UI */
+        #header {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            padding: 10px 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: rgba(0, 0, 0, 0.3);
+            backdrop-filter: blur(10px);
+            z-index: 100;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .stat-box {
+            background: linear-gradient(135deg, rgba(255,255,255,0.1), rgba(255,255,255,0.05));
+            border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 12px;
+            padding: 8px 15px;
+            color: white;
+            text-align: center;
+            min-width: 80px;
+        }
+
+        .stat-label {
+            font-size: 10px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            opacity: 0.7;
+        }
+
+        .stat-value {
+            font-size: 20px;
+            font-weight: bold;
+            text-shadow: 0 0 10px currentColor;
+        }
+
+        #score-box .stat-value { color: #ffd700; }
+        #combo-box .stat-value { color: #ff6b6b; }
+        #level-box .stat-value { color: #4ecdc4; }
+        #lives-box .stat-value { color: #ff69b4; }
+        #high-score-box .stat-value { color: #a855f7; }
+        #time-box .stat-value { color: #00d4ff; }
+
+        /* Combo indicator */
+        #combo-indicator {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 48px;
+            font-weight: bold;
+            color: #ff6b6b;
+            text-shadow: 0 0 20px #ff6b6b, 0 0 40px #ff6b6b;
+            pointer-events: none;
+            opacity: 0;
+            z-index: 50;
+            transition: all 0.3s ease;
+        }
+
+        #combo-indicator.show {
+            animation: comboPopup 0.5s ease-out;
+        }
+
+        @keyframes comboPopup {
+            0% { opacity: 0; transform: translate(-50%, -50%) scale(0.5); }
+            50% { opacity: 1; transform: translate(-50%, -50%) scale(1.2); }
+            100% { opacity: 0; transform: translate(-50%, -50%) scale(1); }
+        }
+
+        /* Bubbles */
+        .bubble {
+            position: absolute;
+            border-radius: 50%;
+            cursor: pointer;
+            transition: transform 0.1s ease;
+            will-change: transform, bottom;
+        }
+
+        .bubble:hover {
+            transform: scale(1.1);
+        }
+
+        .bubble::before {
+            content: '';
+            position: absolute;
+            top: 15%;
+            left: 20%;
+            width: 30%;
+            height: 30%;
+            background: radial-gradient(ellipse at center, rgba(255,255,255,0.8) 0%, transparent 70%);
+            border-radius: 50%;
+        }
+
+        .bubble::after {
+            content: '';
+            position: absolute;
+            bottom: 20%;
+            right: 15%;
+            width: 15%;
+            height: 15%;
+            background: radial-gradient(ellipse at center, rgba(255,255,255,0.5) 0%, transparent 70%);
+            border-radius: 50%;
+        }
+
+        /* Pop animation */
+        .bubble.popping {
+            animation: pop 0.3s ease-out forwards;
+            pointer-events: none;
+        }
+
+        @keyframes pop {
+            0% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.5); opacity: 0.5; }
+            100% { transform: scale(0); opacity: 0; }
+        }
+
+        /* Score popup */
+        .score-popup {
+            position: absolute;
+            font-size: 24px;
+            font-weight: bold;
+            color: #ffd700;
+            text-shadow: 0 0 10px #ffd700, 2px 2px 4px rgba(0,0,0,0.5);
+            pointer-events: none;
+            animation: scoreFloat 1s ease-out forwards;
+            z-index: 60;
+        }
+
+        @keyframes scoreFloat {
+            0% { opacity: 1; transform: translateY(0) scale(1); }
+            100% { opacity: 0; transform: translateY(-50px) scale(1.5); }
+        }
+
+        /* Particles */
+        .particle {
+            position: absolute;
+            border-radius: 50%;
+            pointer-events: none;
+            animation: particleFade 0.6s ease-out forwards;
+        }
+
+        @keyframes particleFade {
+            0% { opacity: 1; transform: scale(1); }
+            100% { opacity: 0; transform: scale(0); }
+        }
+
+        /* Game Over / Pause Screen */
+        #overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.85);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 200;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+            padding: 20px;
+            overflow-y: auto;
+        }
+
+        #overlay.show {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        #overlay h1 {
+            color: white;
+            font-size: 48px;
+            margin-bottom: 20px;
+            text-shadow: 0 0 20px currentColor;
+        }
+
+        #overlay.game-over h1 { color: #ff6b6b; }
+        #overlay.paused h1 { color: #4ecdc4; }
+        #overlay.new-record h1 { color: #ffd700; }
+
+        .overlay-stats {
+            color: white;
+            font-size: 24px;
+            margin: 10px 0;
+            text-align: center;
+        }
+
+        .overlay-stats span {
+            color: #ffd700;
+        }
+
+        .btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            color: white;
+            padding: 15px 40px;
+            font-size: 20px;
+            border-radius: 30px;
+            cursor: pointer;
+            margin: 10px;
+            transition: all 0.3s ease;
+            box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 30px rgba(102, 126, 234, 0.6);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        .btn-secondary {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            box-shadow: 0 5px 20px rgba(240, 147, 251, 0.4);
+        }
+
+        .btn-records {
+            background: linear-gradient(135deg, #ffd700 0%, #ff8c00 100%);
+            box-shadow: 0 5px 20px rgba(255, 215, 0, 0.4);
+        }
+
+        .btn-resume {
+            background: linear-gradient(135deg, #00b894 0%, #00cec9 100%);
+            box-shadow: 0 5px 20px rgba(0, 184, 148, 0.4);
+        }
+
+        /* Controls */
+        #controls {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 15px;
+            z-index: 100;
+        }
+
+        .control-btn {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            border: 2px solid rgba(255,255,255,0.3);
+            background: rgba(255,255,255,0.1);
+            color: white;
+            font-size: 20px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(5px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .control-btn:hover {
+            background: rgba(255,255,255,0.2);
+            transform: scale(1.1);
+        }
+
+        .control-btn:active {
+            transform: scale(0.95);
+        }
+
+        .control-btn.pause-btn {
+            background: rgba(255, 107, 107, 0.3);
+            border-color: rgba(255, 107, 107, 0.5);
+        }
+
+        .control-btn.pause-btn:hover {
+            background: rgba(255, 107, 107, 0.5);
+        }
+
+        /* Level up notification */
+        #level-up {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 36px;
+            font-weight: bold;
+            color: #4ecdc4;
+            text-shadow: 0 0 30px #4ecdc4;
+            opacity: 0;
+            pointer-events: none;
+            z-index: 150;
+        }
+
+        #level-up.show {
+            animation: levelUp 1.5s ease-out;
+        }
+
+        @keyframes levelUp {
+            0% { opacity: 0; transform: translate(-50%, -50%) scale(0.5); }
+            20% { opacity: 1; transform: translate(-50%, -50%) scale(1.2); }
+            80% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+            100% { opacity: 0; transform: translate(-50%, -50%) scale(1); }
+        }
+
+        /* Records Modal */
+        #records-modal {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.9);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 300;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+            padding: 20px;
+        }
+
+        #records-modal.show {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        #records-modal h2 {
+            color: #ffd700;
+            font-size: 36px;
+            margin-bottom: 20px;
+            text-shadow: 0 0 20px #ffd700;
+        }
+
+        .records-list {
+            background: linear-gradient(135deg, rgba(255,255,255,0.1), rgba(255,255,255,0.05));
+            border: 2px solid rgba(255,215,0,0.3);
+            border-radius: 20px;
+            padding: 20px;
+            max-width: 400px;
+            width: 100%;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .record-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 15px;
+            margin: 5px 0;
+            background: rgba(255,255,255,0.05);
+            border-radius: 10px;
+            color: white;
+            transition: all 0.3s ease;
+        }
+
+        .record-item:hover {
+            background: rgba(255,255,255,0.1);
+        }
+
+        .record-item.gold {
+            background: linear-gradient(135deg, rgba(255,215,0,0.3), rgba(255,215,0,0.1));
+            border: 1px solid rgba(255,215,0,0.5);
+        }
+
+        .record-item.silver {
+            background: linear-gradient(135deg, rgba(192,192,192,0.3), rgba(192,192,192,0.1));
+            border: 1px solid rgba(192,192,192,0.5);
+        }
+
+        .record-item.bronze {
+            background: linear-gradient(135deg, rgba(205,127,50,0.3), rgba(205,127,50,0.1));
+            border: 1px solid rgba(205,127,50,0.5);
+        }
+
+        .record-item.current {
+            animation: highlightRecord 1s ease-in-out infinite;
+        }
+
+        @keyframes highlightRecord {
+            0%, 100% { box-shadow: 0 0 10px rgba(255,215,0,0.5); }
+            50% { box-shadow: 0 0 20px rgba(255,215,0,0.8); }
+        }
+
+        .record-rank {
+            font-size: 24px;
+            font-weight: bold;
+            min-width: 40px;
+        }
+
+        .record-rank.gold { color: #ffd700; }
+        .record-rank.silver { color: #c0c0c0; }
+        .record-rank.bronze { color: #cd7f32; }
+
+        .record-info {
+            flex: 1;
+            margin: 0 15px;
+        }
+
+        .record-name {
+            font-size: 14px;
+            color: #aaa;
+        }
+
+        .record-details {
+            font-size: 12px;
+            color: #888;
+        }
+
+        .record-score {
+            font-size: 20px;
+            font-weight: bold;
+            color: #ffd700;
+        }
+
+        .no-records {
+            color: #888;
+            text-align: center;
+            padding: 40px;
+            font-size: 18px;
+        }
+
+        /* Name input */
+        #name-input-container {
+            margin: 20px 0;
+            text-align: center;
+        }
+
+        #name-input-container label {
+            color: white;
+            font-size: 18px;
+            display: block;
+            margin-bottom: 10px;
+        }
+
+        #player-name {
+            background: rgba(255,255,255,0.1);
+            border: 2px solid rgba(255,215,0,0.5);
+            border-radius: 10px;
+            padding: 12px 20px;
+            font-size: 18px;
+            color: white;
+            text-align: center;
+            width: 200px;
+            outline: none;
+            transition: all 0.3s ease;
+        }
+
+        #player-name:focus {
+            border-color: #ffd700;
+            box-shadow: 0 0 15px rgba(255,215,0,0.3);
+        }
+
+        #player-name::placeholder {
+            color: rgba(255,255,255,0.5);
+        }
+
+        /* Progress bar for next level */
+        .level-progress {
+            width: 100%;
+            height: 4px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 2px;
+            margin-top: 5px;
+            overflow: hidden;
+        }
+
+        .level-progress-bar {
+            height: 100%;
+            background: linear-gradient(90deg, #4ecdc4, #44a08d);
+            border-radius: 2px;
+            transition: width 0.3s ease;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 600px) {
+            #header {
+                padding: 8px 10px;
+                justify-content: center;
+            }
+
+            .stat-box {
+                padding: 5px 10px;
+                min-width: 55px;
+            }
+
+            .stat-label {
+                font-size: 8px;
+            }
+
+            .stat-value {
+                font-size: 14px;
+            }
+
+            #combo-indicator {
+                font-size: 32px;
+            }
+
+            #overlay h1 {
+                font-size: 32px;
+            }
+
+            .overlay-stats {
+                font-size: 18px;
+            }
+
+            .btn {
+                padding: 12px 30px;
+                font-size: 16px;
+            }
+
+            .control-btn {
+                width: 45px;
+                height: 45px;
+                font-size: 18px;
+            }
+
+            #level-up {
+                font-size: 28px;
+            }
+
+            #records-modal h2 {
+                font-size: 28px;
+            }
+
+            .record-item {
+                padding: 10px 12px;
+            }
+
+            .record-rank {
+                font-size: 20px;
+                min-width: 30px;
+            }
+
+            .record-score {
+                font-size: 16px;
+            }
+        }
+
+        @media (max-width: 400px) {
+            .stat-box {
+                padding: 4px 6px;
+                min-width: 45px;
+            }
+
+            .stat-value {
+                font-size: 12px;
+            }
+
+            .stat-label {
+                font-size: 7px;
+            }
+        }
+
+        /* Landscape orientation adjustments */
+        @media (max-height: 500px) and (orientation: landscape) {
+            #header {
+                padding: 5px 15px;
+            }
+
+            .stat-box {
+                padding: 3px 10px;
+            }
+
+            .stat-label {
+                font-size: 8px;
+            }
+
+            .stat-value {
+                font-size: 14px;
+            }
+
+            #controls {
+                bottom: 10px;
+            }
+
+            .control-btn {
+                width: 40px;
+                height: 40px;
+                font-size: 16px;
+            }
+
+            #overlay h1 {
+                font-size: 28px;
+                margin-bottom: 10px;
+            }
+
+            .overlay-stats {
+                font-size: 14px;
+                margin: 5px 0;
+            }
+
+            .btn {
+                padding: 10px 25px;
+                font-size: 14px;
+                margin: 5px;
+            }
+
+            .records-list {
+                max-height: 200px;
+            }
+        }
+
+        /* Sound toggle indicator */
+        #sound-btn.muted::after {
+            content: '';
+            position: absolute;
+            width: 100%;
+            height: 2px;
+            background: #ff6b6b;
+            top: 50%;
+            left: 0;
+            transform: rotate(-45deg);
+        }
+
+        #sound-btn {
+            position: relative;
+        }
+
+        /* Button container */
+        .button-container {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 10px;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div id="game-container">
+        <!-- Header Stats -->
+        <div id="header">
+            <div class="stat-box" id="score-box">
+                <div class="stat-label">Score</div>
+                <div class="stat-value" id="score">0</div>
+            </div>
+            <div class="stat-box" id="combo-box">
+                <div class="stat-label">Combo</div>
+                <div class="stat-value" id="combo">x1</div>
+            </div>
+            <div class="stat-box" id="level-box">
+                <div class="stat-label">Level</div>
+                <div class="stat-value" id="level">1</div>
+                <div class="level-progress">
+                    <div class="level-progress-bar" id="level-progress"></div>
+                </div>
+            </div>
+            <div class="stat-box" id="lives-box">
+                <div class="stat-label">Lives</div>
+                <div class="stat-value" id="lives">❤️❤️❤️</div>
+            </div>
+            <div class="stat-box" id="time-box">
+                <div class="stat-label">Time</div>
+                <div class="stat-value" id="time">0:00</div>
+            </div>
+            <div class="stat-box" id="high-score-box">
+                <div class="stat-label">Best</div>
+                <div class="stat-value" id="high-score">0</div>
+            </div>
+        </div>
+
+        <!-- Combo Indicator -->
+        <div id="combo-indicator"></div>
+
+        <!-- Level Up Notification -->
+        <div id="level-up"></div>
+
+        <!-- Game Over / Pause Overlay -->
+        <div id="overlay">
+            <h1 id="overlay-title">Game Over</h1>
+            <div id="name-input-container" style="display: none;">
+                <label for="player-name">Enter your name:</label>
+                <input type="text" id="player-name" placeholder="Player" maxlength="15">
+            </div>
+            <p class="overlay-stats">Final Score: <span id="final-score">0</span></p>
+            <p class="overlay-stats">Time Played: <span id="final-time">0:00</span></p>
+            <p class="overlay-stats">Level Reached: <span id="final-level">1</span></p>
+            <p class="overlay-stats">Max Combo: <span id="final-combo">x1</span></p>
+            <p class="overlay-stats">Bubbles Popped: <span id="final-popped">0</span></p>
+            <div class="button-container">
+                <button class="btn btn-resume" id="resume-btn" style="display: none;">▶️ Resume</button>
+                <button class="btn" id="restart-btn">🔄 Play Again</button>
+                <button class="btn btn-records" id="show-records-btn">🏆 Records</button>
+            </div>
+        </div>
+
+        <!-- Records Modal -->
+        <div id="records-modal">
+            <h2>🏆 Top 10 Records</h2>
+            <div class="records-list" id="records-list">
+                <div class="no-records">No records yet. Start playing!</div>
+            </div>
+            <div class="button-container">
+                <button class="btn" id="close-records-btn">Close</button>
+                <button class="btn btn-secondary" id="clear-records-btn">Clear All</button>
+            </div>
+        </div>
+
+        <!-- Controls -->
+        <div id="controls">
+            <button class="control-btn pause-btn" id="pause-btn" title="Pause (P or ESC)">⏸️</button>
+            <button class="control-btn" id="sound-btn" title="Sound">🔊</button>
+            <button class="control-btn" id="records-btn" title="Records">🏆</button>
+        </div>
+    </div>
+
+    <script>
+        // Game State
+        const GameState = {
+            score: 0,
+            highScore: 0,
+            level: 1,
+            lives: 3,
+            combo: 1,
+            maxCombo: 1,
+            lastPopTime: 0,
+            comboTimeout: 2500,
+            bubbles: [],
+            isRunning: false,
+            isPaused: false,
+            soundEnabled: true,
+            bubblesPopped: 0,
+            bubblesMissed: 0,
+            gameStartTime: 0,
+            gameTime: 0,
+            playerName: 'Player',
+            totalScoreForLevel: 0
+        };
+
+        // Game Configuration - Balanced for 10+ minute gameplay with unlimited levels
+        const Config = {
+            baseSpawnRate: 2800,
+            minSpawnRate: 900,
+            spawnRateDecay: 0.985,
+            baseBubbleSpeed: 0.6,
+            maxBubbleSpeed: 2.2,
+            speedIncreasePerLevel: 0.025,
+            minBubbleSize: 35,
+            maxBubbleSize: 85,
+            pointsPerBubble: 10,
+            baseLevelUpThreshold: 200,
+            levelUpThresholdIncrease: 50,
+            comboMultiplierMax: 20,
+            difficultyPlateau: 30
+        };
+
+        // Records storage
+        let gameRecords = [];
+
+        // DOM Elements
+        const container = document.getElementById('game-container');
+        const scoreEl = document.getElementById('score');
+        const comboEl = document.getElementById('combo');
+        const levelEl = document.getElementById('level');
+        const levelProgressEl = document.getElementById('level-progress');
+        const livesEl = document.getElementById('lives');
+        const timeEl = document.getElementById('time');
+        const highScoreEl = document.getElementById('high-score');
+        const comboIndicator = document.getElementById('combo-indicator');
+        const levelUpEl = document.getElementById('level-up');
+        const overlay = document.getElementById('overlay');
+        const overlayTitle = document.getElementById('overlay-title');
+        const finalScoreEl = document.getElementById('final-score');
+        const finalTimeEl = document.getElementById('final-time');
+        const finalLevelEl = document.getElementById('final-level');
+        const finalComboEl = document.getElementById('final-combo');
+        const finalPoppedEl = document.getElementById('final-popped');
+        const nameInputContainer = document.getElementById('name-input-container');
+        const playerNameInput = document.getElementById('player-name');
+        const restartBtn = document.getElementById('restart-btn');
+        const resumeBtn = document.getElementById('resume-btn');
+        const pauseBtn = document.getElementById('pause-btn');
+        const soundBtn = document.getElementById('sound-btn');
+        const recordsBtn = document.getElementById('records-btn');
+        const showRecordsBtn = document.getElementById('show-records-btn');
+        const recordsModal = document.getElementById('records-modal');
+        const recordsList = document.getElementById('records-list');
+        const closeRecordsBtn = document.getElementById('close-records-btn');
+        const clearRecordsBtn = document.getElementById('clear-records-btn');
+
+        // Audio Context for sound effects
+        let audioContext = null;
+
+        function initAudio() {
+            if (!audioContext) {
+                audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            }
+        }
+
+        function playSound(type) {
+            if (!GameState.soundEnabled || !audioContext) return;
+
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+
+            switch(type) {
+                case 'pop':
+                    oscillator.frequency.setValueAtTime(600 + Math.random() * 400, audioContext.currentTime);
+                    oscillator.type = 'sine';
+                    gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+                    gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.1);
+                    oscillator.start(audioContext.currentTime);
+                    oscillator.stop(audioContext.currentTime + 0.1);
+                    break;
+                case 'combo':
+                    oscillator.frequency.setValueAtTime(800, audioContext.currentTime);
+                    oscillator.frequency.exponentialRampToValueAtTime(1200, audioContext.currentTime + 0.1);
+                    oscillator.type = 'square';
+                    gainNode.gain.setValueAtTime(0.2, audioContext.currentTime);
+                    gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.2);
+                    oscillator.start(audioContext.currentTime);
+                    oscillator.stop(audioContext.currentTime + 0.2);
+                    break;
+                case 'levelUp':
+                    const notes = [523, 659, 784, 1047];
+                    notes.forEach((freq, i) => {
+                        const osc = audioContext.createOscillator();
+                        const gain = audioContext.createGain();
+                        osc.connect(gain);
+                        gain.connect(audioContext.destination);
+                        osc.frequency.value = freq;
+                        osc.type = 'sine';
+                        gain.gain.setValueAtTime(0.2, audioContext.currentTime + i * 0.1);
+                        gain.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + i * 0.1 + 0.2);
+                        osc.start(audioContext.currentTime + i * 0.1);
+                        osc.stop(audioContext.currentTime + i * 0.1 + 0.2);
+                    });
+                    break;
+                case 'miss':
+                    oscillator.frequency.setValueAtTime(200, audioContext.currentTime);
+                    oscillator.frequency.exponentialRampToValueAtTime(100, audioContext.currentTime + 0.2);
+                    oscillator.type = 'sawtooth';
+                    gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+                    gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.3);
+                    oscillator.start(audioContext.currentTime);
+                    oscillator.stop(audioContext.currentTime + 0.3);
+                    break;
+                case 'gameOver':
+                    const goNotes = [400, 350, 300, 250];
+                    goNotes.forEach((freq, i) => {
+                        const osc = audioContext.createOscillator();
+                        const gain = audioContext.createGain();
+                        osc.connect(gain);
+                        gain.connect(audioContext.destination);
+                        osc.frequency.value = freq;
+                        osc.type = 'sine';
+                        gain.gain.setValueAtTime(0.3, audioContext.currentTime + i * 0.15);
+                        gain.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + i * 0.15 + 0.3);
+                        osc.start(audioContext.currentTime + i * 0.15);
+                        osc.stop(audioContext.currentTime + i * 0.15 + 0.3);
+                    });
+                    break;
+                case 'newRecord':
+                    const nrNotes = [523, 659, 784, 880, 1047, 1319];
+                    nrNotes.forEach((freq, i) => {
+                        const osc = audioContext.createOscillator();
+                        const gain = audioContext.createGain();
+                        osc.connect(gain);
+                        gain.connect(audioContext.destination);
+                        osc.frequency.value = freq;
+                        osc.type = 'sine';
+                        gain.gain.setValueAtTime(0.25, audioContext.currentTime + i * 0.08);
+                        gain.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + i * 0.08 + 0.25);
+                        osc.start(audioContext.currentTime + i * 0.08);
+                        osc.stop(audioContext.currentTime + i * 0.08 + 0.25);
+                    });
+                    break;
+                case 'pause':
+                    oscillator.frequency.setValueAtTime(440, audioContext.currentTime);
+                    oscillator.type = 'sine';
+                    gainNode.gain.setValueAtTime(0.2, audioContext.currentTime);
+                    gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.15);
+                    oscillator.start(audioContext.currentTime);
+                    oscillator.stop(audioContext.currentTime + 0.15);
+                    break;
+                case 'resume':
+                    oscillator.frequency.setValueAtTime(440, audioContext.currentTime);
+                    oscillator.frequency.setValueAtTime(550, audioContext.currentTime + 0.1);
+                    oscillator.type = 'sine';
+                    gainNode.gain.setValueAtTime(0.2, audioContext.currentTime);
+                    gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.2);
+                    oscillator.start(audioContext.currentTime);
+                    oscillator.stop(audioContext.currentTime + 0.2);
+                    break;
+            }
+        }
+
+        // Create background stars
+        function createStars() {
+            const existingStars = container.querySelectorAll('.star');
+            existingStars.forEach(star => star.remove());
+            
+            for (let i = 0; i < 50; i++) {
+                const star = document.createElement('div');
+                star.className = 'star';
+                star.style.width = Math.random() * 3 + 1 + 'px';
+                star.style.height = star.style.width;
+                star.style.left = Math.random() * 100 + '%';
+                star.style.top = Math.random() * 100 + '%';
+                star.style.animationDelay = Math.random() * 2 + 's';
+                container.appendChild(star);
+            }
+        }
+
+        // Bubble colors with gradients
+        const bubbleColors = [
+            { main: '#ff6b6b', light: '#ff8e8e', dark: '#e55555' },
+            { main: '#4ecdc4', light: '#7edad4', dark: '#3db3ab' },
+            { main: '#45b7d1', light: '#6fc9de', dark: '#35a0b8' },
+            { main: '#96ceb4', light: '#b5dcc9', dark: '#7cb89d' },
+            { main: '#ffeaa7', light: '#fff2c9', dark: '#e6d396' },
+            { main: '#dfe6e9', light: '#f1f4f5', dark: '#c8d1d4' },
+            { main: '#fd79a8', light: '#fe9bbe', dark: '#e5618f' },
+            { main: '#a29bfe', light: '#bdb7fe', dark: '#8b83e5' },
+            { main: '#00b894', light: '#33c9ab', dark: '#009d7d' },
+            { main: '#e17055', light: '#e99177', dark: '#c85f47' }
+        ];
+
+        // Calculate score needed for a specific level
+        function getScoreForLevel(level) {
+            if (level <= 1) return 0;
+            let totalScore = 0;
+            for (let i = 1; i < level; i++) {
+                totalScore += Config.baseLevelUpThreshold + (i - 1) * Config.levelUpThresholdIncrease;
+            }
+            return totalScore;
+        }
+
+        // Calculate current level from score
+        function calculateLevel(score) {
+            let level = 1;
+            let threshold = Config.baseLevelUpThreshold;
+            let totalNeeded = threshold;
+            
+            while (score >= totalNeeded) {
+                level++;
+                threshold = Config.baseLevelUpThreshold + (level - 1) * Config.levelUpThresholdIncrease;
+                totalNeeded += threshold;
+            }
+            
+            return level;
+        }
+
+        // Get progress to next level (0-100)
+        function getLevelProgress() {
+            const currentLevelStart = getScoreForLevel(GameState.level);
+            const nextLevelStart = getScoreForLevel(GameState.level + 1);
+            const scoreInLevel = GameState.score - currentLevelStart;
+            const scoreNeeded = nextLevelStart - currentLevelStart;
+            return Math.min(100, (scoreInLevel / scoreNeeded) * 100);
+        }
+
+        // Calculate difficulty based on level with plateau
+        function getDifficultyLevel() {
+            return Math.min(GameState.level, Config.difficultyPlateau);
+        }
+
+        // Get current spawn rate
+        function getSpawnRate() {
+            const diffLevel = getDifficultyLevel();
+            const rate = Config.baseSpawnRate * Math.pow(Config.spawnRateDecay, diffLevel - 1);
+            return Math.max(Config.minSpawnRate, rate);
+        }
+
+        // Get current bubble speed
+        function getBubbleSpeed() {
+            const diffLevel = getDifficultyLevel();
+            const speed = Config.baseBubbleSpeed + (diffLevel - 1) * Config.speedIncreasePerLevel;
+            return Math.min(speed, Config.maxBubbleSpeed);
+        }
+
+        // Create a bubble
+        function createBubble() {
+            if (!GameState.isRunning || GameState.isPaused) return;
+
+            const bubble = document.createElement('div');
+            bubble.className = 'bubble';
+
+            const size = Config.minBubbleSize + Math.random() * (Config.maxBubbleSize - Config.minBubbleSize);
+            const color = bubbleColors[Math.floor(Math.random() * bubbleColors.length)];
+            const startX = Math.random() * (window.innerWidth - size);
+            const baseSpeed = getBubbleSpeed();
+            const speed = baseSpeed + Math.random() * 0.2;
+
+            bubble.style.width = size + 'px';
+            bubble.style.height = size + 'px';
+            bubble.style.left = startX + 'px';
+            bubble.style.bottom = '-' + size + 'px';
+            bubble.style.background = `radial-gradient(circle at 30% 30%, ${color.light}, ${color.main} 50%, ${color.dark})`;
+            bubble.style.boxShadow = `
+                inset 0 0 20px rgba(255,255,255,0.3),
+                0 0 20px ${color.main}40,
+                0 5px 15px rgba(0,0,0,0.2)
+            `;
+
+            const bubbleData = {
+                element: bubble,
+                x: startX,
+                y: -size,
+                size: size,
+                speed: speed,
+                color: color,
+                points: Math.round((Config.maxBubbleSize - size + Config.minBubbleSize) / 2)
+            };
+
+            bubble.addEventListener('click', (e) => popBubble(bubbleData, e));
+            bubble.addEventListener('touchstart', (e) => {
+                e.preventDefault();
+                popBubble(bubbleData, e.touches[0]);
+            }, { passive: false });
+
+            container.appendChild(bubble);
+            GameState.bubbles.push(bubbleData);
+        }
+
+        // Pop a bubble
+        function popBubble(bubbleData, event) {
+            if (!GameState.isRunning || GameState.isPaused) return;
+
+            const now = Date.now();
+            const timeSinceLastPop = now - GameState.lastPopTime;
+
+            // Update combo
+            if (timeSinceLastPop < GameState.comboTimeout) {
+                GameState.combo = Math.min(GameState.combo + 1, Config.comboMultiplierMax);
+                if (GameState.combo > GameState.maxCombo) {
+                    GameState.maxCombo = GameState.combo;
+                }
+                if (GameState.combo >= 3) {
+                    showComboIndicator();
+                    playSound('combo');
+                }
+            } else {
+                GameState.combo = 1;
+            }
+
+            GameState.lastPopTime = now;
+
+            // Calculate score
+            const points = bubbleData.points * GameState.combo;
+            GameState.score += points;
+            GameState.bubblesPopped++;
+
+            // Check for level up (unlimited levels)
+            const newLevel = calculateLevel(GameState.score);
+            if (newLevel > GameState.level) {
+                GameState.level = newLevel;
+                showLevelUp();
+                playSound('levelUp');
+            }
+
+            // Create pop effect
+            bubbleData.element.classList.add('popping');
+            createParticles(bubbleData);
+            showScorePopup(event.clientX || event.pageX, event.clientY || event.pageY, points);
+            playSound('pop');
+
+            // Remove bubble
+            setTimeout(() => {
+                if (bubbleData.element.parentNode) {
+                    bubbleData.element.remove();
+                }
+            }, 300);
+
+            // Remove from array
+            const index = GameState.bubbles.indexOf(bubbleData);
+            if (index > -1) {
+                GameState.bubbles.splice(index, 1);
+            }
+
+            updateUI();
+            saveGame();
+        }
+
+        // Create particle effects
+        function createParticles(bubbleData) {
+            const rect = bubbleData.element.getBoundingClientRect();
+            const centerX = rect.left + rect.width / 2;
+            const centerY = rect.top + rect.height / 2;
+
+            for (let i = 0; i < 8; i++) {
+                const particle = document.createElement('div');
+                particle.className = 'particle';
+
+                const size = 5 + Math.random() * 10;
+                const angle = (i / 8) * Math.PI * 2;
+                const distance = 30 + Math.random() * 50;
+                const endX = centerX + Math.cos(angle) * distance;
+                const endY = centerY + Math.sin(angle) * distance;
+
+                particle.style.width = size + 'px';
+                particle.style.height = size + 'px';
+                particle.style.background = bubbleData.color.main;
+                particle.style.left = centerX + 'px';
+                particle.style.top = centerY + 'px';
+                particle.style.boxShadow = `0 0 10px ${bubbleData.color.main}`;
+
+                particle.animate([
+                    { left: centerX + 'px', top: centerY + 'px', opacity: 1 },
+                    { left: endX + 'px', top: endY + 'px', opacity: 0 }
+                ], {
+                    duration: 600,
+                    easing: 'ease-out'
+                });
+
+                container.appendChild(particle);
+                setTimeout(() => particle.remove(), 600);
+            }
+        }
+
+        // Show score popup
+        function showScorePopup(x, y, points) {
+            const popup = document.createElement('div');
+            popup.className = 'score-popup';
+            popup.textContent = '+' + points;
+            popup.style.left = x + 'px';
+            popup.style.top = y + 'px';
+
+            if (GameState.combo > 1) {
+                popup.style.color = '#ff6b6b';
+            }
+
+            container.appendChild(popup);
+            setTimeout(() => popup.remove(), 1000);
+        }
+
+        // Show combo indicator
+        function showComboIndicator() {
+            comboIndicator.textContent = `${GameState.combo}x COMBO!`;
+            comboIndicator.classList.remove('show');
+            void comboIndicator.offsetWidth;
+            comboIndicator.classList.add('show');
+        }
+
+        // Show level up notification
+        function showLevelUp() {
+            levelUpEl.textContent = `LEVEL ${GameState.level}!`;
+            levelUpEl.classList.remove('show');
+            void levelUpEl.offsetWidth;
+            levelUpEl.classList.add('show');
+        }
+
+        // Format time
+        function formatTime(ms) {
+            const totalSeconds = Math.floor(ms / 1000);
+            const minutes = Math.floor(totalSeconds / 60);
+            const seconds = totalSeconds % 60;
+            return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+        }
+
+        // Update UI
+        function updateUI() {
+            scoreEl.textContent = GameState.score.toLocaleString();
+            comboEl.textContent = 'x' + GameState.combo;
+            levelEl.textContent = GameState.level;
+            timeEl.textContent = formatTime(GameState.gameTime);
+            
+            // Update level progress bar
+            const progress = getLevelProgress();
+            levelProgressEl.style.width = progress + '%';
+            
+            // Update high score display from records
+            const topScore = gameRecords.length > 0 ? gameRecords[0].score : 0;
+            highScoreEl.textContent = topScore.toLocaleString();
+
+            let hearts = '';
+            for (let i = 0; i < GameState.lives; i++) {
+                hearts += '❤️';
+            }
+            livesEl.textContent = hearts || '💔';
+
+            // Update pause button
+            pauseBtn.textContent = GameState.isPaused ? '▶️' : '⏸️';
+        }
+
+        // Game loop
+        let lastTime = 0;
+        let spawnTimer = 0;
+
+        function gameLoop(currentTime) {
+            if (!GameState.isRunning) return;
+
+            if (!lastTime) lastTime = currentTime;
+            const deltaTime = currentTime - lastTime;
+            lastTime = currentTime;
+
+            if (!GameState.isPaused) {
+                // Update game time
+                GameState.gameTime += deltaTime;
+
+                // Update bubbles
+                for (let i = GameState.bubbles.length - 1; i >= 0; i--) {
+                    const bubble = GameState.bubbles[i];
+                    bubble.y += bubble.speed * (deltaTime / 16);
+                    bubble.element.style.bottom = bubble.y + 'px';
+
+                    // Check if bubble escaped
+                    if (bubble.y > window.innerHeight + bubble.size) {
+                        bubble.element.remove();
+                        GameState.bubbles.splice(i, 1);
+                        GameState.bubblesMissed++;
+                        GameState.lives--;
+                        GameState.combo = 1;
+                        playSound('miss');
+                        updateUI();
+                        saveGame();
+
+                        if (GameState.lives <= 0) {
+                            gameOver();
+                            return;
+                        }
+                    }
+                }
+
+                // Spawn new bubbles
+                spawnTimer += deltaTime;
+                const spawnRate = getSpawnRate();
+
+                if (spawnTimer >= spawnRate) {
+                    createBubble();
+                    spawnTimer = 0;
+                }
+
+                // Reset combo if timeout
+                if (Date.now() - GameState.lastPopTime > GameState.comboTimeout && GameState.combo > 1) {
+                    GameState.combo = 1;
+                    updateUI();
+                }
+
+                // Update time display every second
+                if (Math.floor(GameState.gameTime / 1000) !== Math.floor((GameState.gameTime - deltaTime) / 1000)) {
+                    updateUI();
+                }
+            }
+
+            requestAnimationFrame(gameLoop);
+        }
+
+        // Check if score qualifies for top 10
+        function isTopTenScore(score) {
+            if (gameRecords.length < 10) return true;
+            return score > gameRecords[gameRecords.length - 1].score;
+        }
+
+        // Add record to list
+        function addRecord(name, score, level, maxCombo, time, bubblesPopped) {
+            const record = {
+                name: name || 'Player',
+                score: score,
+                level: level,
+                maxCombo: maxCombo,
+                time: time,
+                bubblesPopped: bubblesPopped,
+                date: Date.now()
+            };
+
+            gameRecords.push(record);
+            gameRecords.sort((a, b) => b.score - a.score);
+            gameRecords = gameRecords.slice(0, 10);
+
+            saveRecords();
+            return gameRecords.indexOf(record);
+        }
+
+        // Game over
+        function gameOver() {
+            GameState.isRunning = false;
+            
+            // Clear remaining bubbles
+            GameState.bubbles.forEach(bubble => bubble.element.remove());
+            GameState.bubbles = [];
+
+            const isNewRecord = isTopTenScore(GameState.score);
+
+            if (isNewRecord && GameState.score > 0) {
+                playSound('newRecord');
+                overlay.classList.add('show', 'new-record');
+                overlay.classList.remove('game-over', 'paused');
+                overlayTitle.textContent = '🎉 New Record!';
+                nameInputContainer.style.display = 'block';
+                playerNameInput.value = GameState.playerName;
+                setTimeout(() => playerNameInput.focus(), 100);
+            } else {
+                playSound('gameOver');
+                overlay.classList.add('show', 'game-over');
+                overlay.classList.remove('paused', 'new-record');
+                overlayTitle.textContent = 'Game Over';
+                nameInputContainer.style.display = 'none';
+            }
+
+            finalScoreEl.textContent = GameState.score.toLocaleString();
+            finalTimeEl.textContent = formatTime(GameState.gameTime);
+            finalLevelEl.textContent = GameState.level;
+            finalComboEl.textContent = 'x' + GameState.maxCombo;
+            finalPoppedEl.textContent = GameState.bubblesPopped;
+            resumeBtn.style.display = 'none';
+            restartBtn.textContent = '🔄 Play Again';
+
+            // Save record if qualified
+            if (isNewRecord && GameState.score > 0) {
+                GameState.pendingRecord = true;
+            }
+
+            saveGame();
+        }
+
+        // Save pending record
+        function savePendingRecord() {
+            if (GameState.pendingRecord) {
+                const name = playerNameInput.value.trim() || 'Player';
+                GameState.playerName = name;
+                addRecord(
+                    name,
+                    GameState.score,
+                    GameState.level,
+                    GameState.maxCombo,
+                    GameState.gameTime,
+                    GameState.bubblesPopped
+                );
+                GameState.pendingRecord = false;
+            }
+        }
+
+        // Pause game
+        function pauseGame() {
+            if (!GameState.isRunning || GameState.isPaused) return;
+
+            GameState.isPaused = true;
+            playSound('pause');
+            
+            overlay.classList.add('show', 'paused');
+            overlay.classList.remove('game-over', 'new-record');
+            overlayTitle.textContent = '⏸️ Paused';
+            nameInputContainer.style.display = 'none';
+            finalScoreEl.textContent = GameState.score.toLocaleString();
+            finalTimeEl.textContent = formatTime(GameState.gameTime);
+            finalLevelEl.textContent = GameState.level;
+            finalComboEl.textContent = 'x' + GameState.maxCombo;
+            finalPoppedEl.textContent = GameState.bubblesPopped;
+            resumeBtn.style.display = 'inline-block';
+            restartBtn.textContent = '🔄 Restart';
+
+            updateUI();
+            saveGame();
+        }
+
+        // Resume game
+        function resumeGame() {
+            if (!GameState.isPaused) return;
+            
+            GameState.isPaused = false;
+            playSound('resume');
+            overlay.classList.remove('show');
+            lastTime = 0;
+            updateUI();
+        }
+
+        // Toggle pause
+        function togglePause() {
+            if (!GameState.isRunning) return;
+            
+            if (GameState.isPaused) {
+                resumeGame();
+            } else {
+                pauseGame();
+            }
+        }
+
+        // Start/Restart game
+        function startGame() {
+            // Save pending record first
+            savePendingRecord();
+
+            // Clear existing bubbles
+            GameState.bubbles.forEach(bubble => bubble.element.remove());
+
+            // Reset state
+            Object.assign(GameState, {
+                score: 0,
+                level: 1,
+                lives: 3,
+                combo: 1,
+                maxCombo: 1,
+                lastPopTime: 0,
+                bubbles: [],
+                isRunning: true,
+                isPaused: false,
+                bubblesPopped: 0,
+                bubblesMissed: 0,
+                gameStartTime: Date.now(),
+                gameTime: 0,
+                pendingRecord: false,
+                totalScoreForLevel: 0
+            });
+
+            overlay.classList.remove('show');
+            nameInputContainer.style.display = 'none';
+            updateUI();
+            saveGame();
+
+            lastTime = 0;
+            spawnTimer = 0;
+            requestAnimationFrame(gameLoop);
+        }
+
+        // Render records list
+        function renderRecords(highlightIndex = -1) {
+            if (gameRecords.length === 0) {
+                recordsList.innerHTML = '<div class="no-records">No records yet. Start playing!</div>';
+                return;
+            }
+
+            recordsList.innerHTML = gameRecords.map((record, index) => {
+                let rankClass = '';
+                if (index === 0) rankClass = 'gold';
+                else if (index === 1) rankClass = 'silver';
+                else if (index === 2) rankClass = 'bronze';
+
+                const isHighlighted = index === highlightIndex;
+                const date = new Date(record.date).toLocaleDateString();
+
+                return `
+                    <div class="record-item ${rankClass} ${isHighlighted ? 'current' : ''}">
+                        <div class="record-rank ${rankClass}">#${index + 1}</div>
+                        <div class="record-info">
+                            <div class="record-name">${escapeHtml(record.name)}</div>
+                            <div class="record-details">
+                                Lvl ${record.level} | ${formatTime(record.time)} | x${record.maxCombo} combo
+                            </div>
+                        </div>
+                        <div class="record-score">${record.score.toLocaleString()}</div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // Escape HTML to prevent XSS
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // Show records modal
+        function showRecords() {
+            renderRecords();
+            recordsModal.classList.add('show');
+        }
+
+        // Hide records modal
+        function hideRecords() {
+            recordsModal.classList.remove('show');
+        }
+
+        // Clear all records
+        function clearRecords() {
+            if (confirm('Are you sure you want to clear all records? This cannot be undone.')) {
+                gameRecords = [];
+                saveRecords();
+                renderRecords();
+                updateUI();
+            }
+        }
+
+        // Save game to localStorage
+        function saveGame() {
+            const saveData = {
+                score: GameState.score,
+                level: GameState.level,
+                lives: GameState.lives,
+                combo: GameState.combo,
+                maxCombo: GameState.maxCombo,
+                bubblesPopped: GameState.bubblesPopped,
+                bubblesMissed: GameState.bubblesMissed,
+                soundEnabled: GameState.soundEnabled,
+                isRunning: GameState.isRunning,
+                isPaused: GameState.isPaused,
+                gameTime: GameState.gameTime,
+                playerName: GameState.playerName,
+                bubbles: GameState.bubbles.map(b => ({
+                    x: b.x,
+                    y: b.y,
+                    size: b.size,
+                    speed: b.speed,
+                    color: b.color,
+                    points: b.points
+                }))
+            };
+
+            localStorage.setItem('bubblePopGame', JSON.stringify(saveData));
+        }
+
+        // Save records to localStorage
+        function saveRecords() {
+            localStorage.setItem('bubblePopRecords', JSON.stringify(gameRecords));
+        }
+
+        // Load records from localStorage
+        function loadRecords() {
+            const saved = localStorage.getItem('bubblePopRecords');
+            if (saved) {
+                try {
+                    gameRecords = JSON.parse(saved);
+                } catch (e) {
+                    gameRecords = [];
+                }
+            }
+        }
+
+        // Load game from localStorage
+        function loadGame() {
+            loadRecords();
+
+            const saved = localStorage.getItem('bubblePopGame');
+            if (!saved) return false;
+
+            try {
+                const saveData = JSON.parse(saved);
+
+                GameState.soundEnabled = saveData.soundEnabled !== false;
+                GameState.playerName = saveData.playerName || 'Player';
+
+                // Update sound button
+                if (!GameState.soundEnabled) {
+                    soundBtn.classList.add('muted');
+                    soundBtn.textContent = '🔇';
+                }
+
+                // Restore game in progress
+                if (saveData.isRunning && saveData.lives > 0) {
+                    GameState.score = saveData.score || 0;
+                    GameState.level = saveData.level || 1;
+                    GameState.lives = saveData.lives || 3;
+                    GameState.combo = 1;
+                    GameState.maxCombo = saveData.maxCombo || 1;
+                    GameState.bubblesPopped = saveData.bubblesPopped || 0;
+                    GameState.bubblesMissed = saveData.bubblesMissed || 0;
+                    GameState.gameTime = saveData.gameTime || 0;
+                    GameState.isRunning = true;
+                    GameState.isPaused = true;
+
+                    // Recreate bubbles
+                    if (saveData.bubbles && saveData.bubbles.length > 0) {
+                        saveData.bubbles.forEach(bubbleData => {
+                            const bubble = document.createElement('div');
+                            bubble.className = 'bubble';
+                            bubble.style.width = bubbleData.size + 'px';
+                            bubble.style.height = bubbleData.size + 'px';
+                            bubble.style.left = bubbleData.x + 'px';
+                            bubble.style.bottom = bubbleData.y + 'px';
+                            bubble.style.background = `radial-gradient(circle at 30% 30%, ${bubbleData.color.light}, ${bubbleData.color.main} 50%, ${bubbleData.color.dark})`;
+                            bubble.style.boxShadow = `
+                                inset 0 0 20px rgba(255,255,255,0.3),
+                                0 0 20px ${bubbleData.color.main}40,
+                                0 5px 15px rgba(0,0,0,0.2)
+                            `;
+
+                            const newBubbleData = {
+                                element: bubble,
+                                ...bubbleData
+                            };
+
+                            bubble.addEventListener('click', (e) => popBubble(newBubbleData, e));
+                            bubble.addEventListener('touchstart', (e) => {
+                                e.preventDefault();
+                                popBubble(newBubbleData, e.touches[0]);
+                            }, { passive: false });
+
+                            container.appendChild(bubble);
+                            GameState.bubbles.push(newBubbleData);
+                        });
+                    }
+
+                    updateUI();
+                    
+                    // Show pause overlay for restored game
+                    overlay.classList.add('show', 'paused');
+                    overlay.classList.remove('game-over', 'new-record');
+                    overlayTitle.textContent = '⏸️ Game Restored';
+                    nameInputContainer.style.display = 'none';
+                    finalScoreEl.textContent = GameState.score.toLocaleString();
+                    finalTimeEl.textContent = formatTime(GameState.gameTime);
+                    finalLevelEl.textContent = GameState.level;
+                    finalComboEl.textContent = 'x' + GameState.maxCombo;
+                    finalPoppedEl.textContent = GameState.bubblesPopped;
+                    resumeBtn.style.display = 'inline-block';
+                    restartBtn.textContent = '🔄 Restart';
+                    
+                    // Show all stats
+                    finalScoreEl.parentElement.style.display = '';
+                    finalTimeEl.parentElement.style.display = '';
+                    finalLevelEl.parentElement.style.display = '';
+                    finalComboEl.parentElement.style.display = '';
+                    finalPoppedEl.parentElement.style.display = '';
+                    
+                    requestAnimationFrame(gameLoop);
+
+                    return true;
+                }
+
+                return false;
+            } catch (e) {
+                console.error('Error loading save:', e);
+                return false;
+            }
+        }
+
+        // Toggle sound
+        function toggleSound() {
+            GameState.soundEnabled = !GameState.soundEnabled;
+            if (GameState.soundEnabled) {
+                soundBtn.classList.remove('muted');
+                soundBtn.textContent = '🔊';
+                initAudio();
+            } else {
+                soundBtn.classList.add('muted');
+                soundBtn.textContent = '🔇';
+            }
+            saveGame();
+        }
+
+        // Event listeners
+        restartBtn.addEventListener('click', () => {
+            initAudio();
+            startGame();
+        });
+
+        resumeBtn.addEventListener('click', () => {
+            initAudio();
+            resumeGame();
+        });
+
+        pauseBtn.addEventListener('click', () => {
+            initAudio();
+            if (!GameState.isRunning) {
+                // If game not running, start it
+                startGame();
+            } else {
+                togglePause();
+            }
+        });
+
+        soundBtn.addEventListener('click', toggleSound);
+
+        recordsBtn.addEventListener('click', () => {
+            if (GameState.isRunning && !GameState.isPaused) {
+                pauseGame();
+            }
+            showRecords();
+        });
+
+        showRecordsBtn.addEventListener('click', showRecords);
+        closeRecordsBtn.addEventListener('click', hideRecords);
+        clearRecordsBtn.addEventListener('click', clearRecords);
+
+        // Close records on click outside
+        recordsModal.addEventListener('click', (e) => {
+            if (e.target === recordsModal) {
+                hideRecords();
+            }
+        });
+
+        // Keyboard controls
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                if (recordsModal.classList.contains('show')) {
+                    hideRecords();
+                } else if (GameState.isRunning) {
+                    togglePause();
+                }
+            }
+            if ((e.key === 'p' || e.key === 'P') && !recordsModal.classList.contains('show')) {
+                if (GameState.isRunning) {
+                    togglePause();
+                }
+            }
+            if (e.key === ' ' && !GameState.isRunning && !recordsModal.classList.contains('show')) {
+                e.preventDefault();
+                initAudio();
+                startGame();
+            }
+            if (e.key === 'Enter') {
+                if (overlay.classList.contains('new-record')) {
+                    initAudio();
+                    startGame();
+                } else if (GameState.isPaused && !overlay.classList.contains('game-over')) {
+                    initAudio();
+                    resumeGame();
+                }
+            }
+        });
+
+        // Handle visibility change
+        document.addEventListener('visibilitychange', () => {
+            if (document.hidden && GameState.isRunning && !GameState.isPaused) {
+                pauseGame();
+            }
+        });
+
+        // Handle resize
+        window.addEventListener('resize', () => {
+            GameState.bubbles.forEach(bubble => {
+                if (bubble.x > window.innerWidth - bubble.size) {
+                    bubble.x = window.innerWidth - bubble.size;
+                    bubble.element.style.left = bubble.x + 'px';
+                }
+            });
+        });
+
+        // Initialize
+        function init() {
+            createStars();
+
+            const hasExistingGame = loadGame();
+
+            if (!hasExistingGame) {
+                // Show start screen
+                overlay.classList.add('show', 'paused');
+                overlayTitle.textContent = '🫧 Bubble Pop!';
+                nameInputContainer.style.display = 'none';
+                
+                // Hide stats on start screen
+                finalScoreEl.parentElement.style.display = 'none';
+                finalTimeEl.parentElement.style.display = 'none';
+                finalLevelEl.parentElement.style.display = 'none';
+                finalComboEl.parentElement.style.display = 'none';
+                finalPoppedEl.parentElement.style.display = 'none';
+                
+                resumeBtn.style.display = 'none';
+                restartBtn.textContent = '▶️ Start Game';
+            }
+
+            updateUI();
+        }
+
+        init();
+    </script>
+</body>
+</html>
