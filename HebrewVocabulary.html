@@ -1,0 +1,1700 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hebrew Vocabulary Learner</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+            min-height: 100vh;
+            color: #fff;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        header {
+            text-align: center;
+            padding: 30px 0;
+        }
+
+        header h1 {
+            font-size: 2.5rem;
+            background: linear-gradient(45deg, #00d4ff, #7b2cbf);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 10px;
+        }
+
+        .hebrew-title {
+            font-size: 2rem;
+            color: #ffd700;
+            direction: rtl;
+        }
+
+        .stats-bar {
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            padding: 20px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 15px;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+        }
+
+        .stat-item {
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #00d4ff;
+        }
+
+        .stat-label {
+            font-size: 0.9rem;
+            color: #aaa;
+        }
+
+        .nav-tabs {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+        }
+
+        .nav-tab {
+            padding: 12px 25px;
+            background: rgba(255,255,255,0.1);
+            border: none;
+            border-radius: 25px;
+            color: #fff;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-size: 1rem;
+        }
+
+        .nav-tab:hover {
+            background: rgba(255,255,255,0.2);
+        }
+
+        .nav-tab.active {
+            background: linear-gradient(45deg, #00d4ff, #7b2cbf);
+        }
+
+        .category-selector {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            justify-content: center;
+            margin-bottom: 30px;
+        }
+
+        .category-btn {
+            padding: 8px 16px;
+            background: rgba(255,255,255,0.1);
+            border: 2px solid transparent;
+            border-radius: 20px;
+            color: #fff;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-size: 0.85rem;
+        }
+
+        .category-btn:hover {
+            border-color: #00d4ff;
+        }
+
+        .category-btn.active {
+            background: rgba(0, 212, 255, 0.3);
+            border-color: #00d4ff;
+        }
+
+        .category-btn .count {
+            background: rgba(255,255,255,0.2);
+            padding: 2px 8px;
+            border-radius: 10px;
+            margin-left: 5px;
+            font-size: 0.75rem;
+        }
+
+        /* Flashcard Mode */
+        .flashcard-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            perspective: 1000px;
+            margin-bottom: 30px;
+        }
+
+        .flashcard {
+            width: 100%;
+            max-width: 450px;
+            height: 350px;
+            position: relative;
+            transform-style: preserve-3d;
+            transition: transform 0.6s;
+            cursor: pointer;
+        }
+
+        .flashcard.flipped {
+            transform: rotateY(180deg);
+        }
+
+        .flashcard-face {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            backface-visibility: hidden;
+            border-radius: 20px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .flashcard-front {
+            background: linear-gradient(135deg, #2d3436 0%, #636e72 100%);
+            border: 3px solid #00d4ff;
+        }
+
+        .flashcard-back {
+            background: linear-gradient(135deg, #0f3460 0%, #16213e 100%);
+            border: 3px solid #7b2cbf;
+            transform: rotateY(180deg);
+        }
+
+        .hebrew-word {
+            font-size: 4rem;
+            margin-bottom: 15px;
+            direction: rtl;
+            color: #ffd700;
+            text-shadow: 0 0 20px rgba(255, 215, 0, 0.5);
+        }
+
+        .transliteration {
+            font-size: 1.5rem;
+            color: #00d4ff;
+            margin-bottom: 10px;
+            font-style: italic;
+        }
+
+        .english-word {
+            font-size: 2rem;
+            color: #fff;
+            margin-bottom: 10px;
+        }
+
+        .word-category {
+            font-size: 0.9rem;
+            color: #aaa;
+            background: rgba(255,255,255,0.1);
+            padding: 5px 15px;
+            border-radius: 15px;
+        }
+
+        .speak-btn {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background: linear-gradient(45deg, #00d4ff, #7b2cbf);
+            border: none;
+            cursor: pointer;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            transition: transform 0.3s;
+        }
+
+        .speak-btn:hover {
+            transform: scale(1.1);
+        }
+
+        .speak-btn svg {
+            width: 25px;
+            height: 25px;
+            fill: #fff;
+        }
+
+        .card-controls {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .control-btn {
+            padding: 15px 30px;
+            border: none;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .btn-prev, .btn-next {
+            background: rgba(255,255,255,0.1);
+            color: #fff;
+        }
+
+        .btn-prev:hover, .btn-next:hover {
+            background: rgba(255,255,255,0.2);
+        }
+
+        .btn-know {
+            background: linear-gradient(45deg, #00b894, #00cec9);
+            color: #fff;
+        }
+
+        .btn-learning {
+            background: linear-gradient(45deg, #fdcb6e, #e17055);
+            color: #fff;
+        }
+
+        .progress-bar {
+            width: 100%;
+            max-width: 450px;
+            height: 8px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 4px;
+            margin: 20px auto;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(45deg, #00d4ff, #7b2cbf);
+            border-radius: 4px;
+            transition: width 0.3s;
+        }
+
+        .card-counter {
+            text-align: center;
+            color: #aaa;
+            margin-bottom: 10px;
+        }
+
+        /* Quiz Mode */
+        .quiz-container {
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .quiz-question {
+            background: rgba(255,255,255,0.1);
+            border-radius: 20px;
+            padding: 40px;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .quiz-hebrew {
+            font-size: 4rem;
+            color: #ffd700;
+            direction: rtl;
+            margin-bottom: 15px;
+        }
+
+        .quiz-transliteration {
+            font-size: 1.3rem;
+            color: #00d4ff;
+            font-style: italic;
+        }
+
+        .quiz-options {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+        }
+
+        .quiz-option {
+            padding: 20px;
+            background: rgba(255,255,255,0.1);
+            border: 2px solid transparent;
+            border-radius: 15px;
+            color: #fff;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-size: 1.1rem;
+        }
+
+        .quiz-option:hover {
+            border-color: #00d4ff;
+            background: rgba(255,255,255,0.15);
+        }
+
+        .quiz-option.correct {
+            background: rgba(0, 184, 148, 0.5);
+            border-color: #00b894;
+        }
+
+        .quiz-option.wrong {
+            background: rgba(214, 48, 49, 0.5);
+            border-color: #d63031;
+        }
+
+        .quiz-option.disabled {
+            pointer-events: none;
+        }
+
+        .quiz-result {
+            text-align: center;
+            margin-top: 20px;
+            font-size: 1.2rem;
+        }
+
+        .quiz-score {
+            background: rgba(255,255,255,0.1);
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .score-value {
+            font-size: 3rem;
+            color: #00d4ff;
+            font-weight: bold;
+        }
+
+        /* Browse Mode */
+        .browse-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 20px;
+        }
+
+        .word-card {
+            background: rgba(255,255,255,0.1);
+            border-radius: 15px;
+            padding: 20px;
+            transition: all 0.3s;
+            cursor: pointer;
+        }
+
+        .word-card:hover {
+            transform: translateY(-5px);
+            background: rgba(255,255,255,0.15);
+        }
+
+        .word-card .hebrew {
+            font-size: 2.5rem;
+            color: #ffd700;
+            direction: rtl;
+            margin-bottom: 10px;
+        }
+
+        .word-card .translit {
+            font-size: 1rem;
+            color: #00d4ff;
+            font-style: italic;
+            margin-bottom: 5px;
+        }
+
+        .word-card .english {
+            font-size: 1.2rem;
+            color: #fff;
+            margin-bottom: 10px;
+        }
+
+        .word-card .category-tag {
+            font-size: 0.8rem;
+            background: rgba(123, 44, 191, 0.3);
+            color: #d4a5ff;
+            padding: 3px 10px;
+            border-radius: 10px;
+            display: inline-block;
+        }
+
+        .word-card .card-actions {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 15px;
+        }
+
+        .mini-speak-btn {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: linear-gradient(45deg, #00d4ff, #7b2cbf);
+            border: none;
+            cursor: pointer;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            transition: transform 0.3s;
+        }
+
+        .mini-speak-btn:hover {
+            transform: scale(1.1);
+        }
+
+        .mini-speak-btn svg {
+            width: 20px;
+            height: 20px;
+            fill: #fff;
+        }
+
+        .mastery-indicator {
+            display: flex;
+            gap: 3px;
+        }
+
+        .mastery-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.2);
+        }
+
+        .mastery-dot.filled {
+            background: #00b894;
+        }
+
+        /* Search and Filter */
+        .search-filter {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .search-input {
+            padding: 12px 20px;
+            border: 2px solid rgba(255,255,255,0.2);
+            border-radius: 25px;
+            background: rgba(255,255,255,0.1);
+            color: #fff;
+            font-size: 1rem;
+            width: 300px;
+            outline: none;
+        }
+
+        .search-input::placeholder {
+            color: #aaa;
+        }
+
+        .search-input:focus {
+            border-color: #00d4ff;
+        }
+
+        .filter-select {
+            padding: 12px 20px;
+            border: 2px solid rgba(255,255,255,0.2);
+            border-radius: 25px;
+            background: rgba(255,255,255,0.1);
+            color: #fff;
+            font-size: 1rem;
+            outline: none;
+            cursor: pointer;
+        }
+
+        .filter-select option {
+            background: #1a1a2e;
+        }
+
+        /* Settings Modal */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.8);
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .modal-overlay.show {
+            display: flex;
+        }
+
+        .modal {
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            border-radius: 20px;
+            padding: 30px;
+            max-width: 500px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+
+        .modal h2 {
+            color: #00d4ff;
+            margin-bottom: 20px;
+        }
+
+        .modal-close {
+            float: right;
+            background: none;
+            border: none;
+            color: #fff;
+            font-size: 1.5rem;
+            cursor: pointer;
+        }
+
+        .setting-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px 0;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .setting-label {
+            color: #fff;
+        }
+
+        .toggle-switch {
+            width: 50px;
+            height: 26px;
+            background: rgba(255,255,255,0.2);
+            border-radius: 13px;
+            position: relative;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+
+        .toggle-switch.active {
+            background: #00d4ff;
+        }
+
+        .toggle-switch::after {
+            content: '';
+            position: absolute;
+            width: 22px;
+            height: 22px;
+            background: #fff;
+            border-radius: 50%;
+            top: 2px;
+            left: 2px;
+            transition: left 0.3s;
+        }
+
+        .toggle-switch.active::after {
+            left: 26px;
+        }
+
+        .speed-slider {
+            width: 150px;
+        }
+
+        /* Completion Screen */
+        .completion-screen {
+            text-align: center;
+            padding: 50px;
+        }
+
+        .completion-screen h2 {
+            font-size: 2.5rem;
+            color: #ffd700;
+            margin-bottom: 20px;
+        }
+
+        .completion-stats {
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            margin: 30px 0;
+        }
+
+        .completion-stat {
+            background: rgba(255,255,255,0.1);
+            padding: 20px 40px;
+            border-radius: 15px;
+        }
+
+        .completion-stat .value {
+            font-size: 2.5rem;
+            color: #00d4ff;
+            font-weight: bold;
+        }
+
+        .completion-stat .label {
+            color: #aaa;
+        }
+
+        .restart-btn {
+            padding: 15px 40px;
+            background: linear-gradient(45deg, #00d4ff, #7b2cbf);
+            border: none;
+            border-radius: 25px;
+            color: #fff;
+            font-size: 1.1rem;
+            cursor: pointer;
+            transition: transform 0.3s;
+        }
+
+        .restart-btn:hover {
+            transform: scale(1.05);
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            header h1 {
+                font-size: 1.8rem;
+            }
+
+            .hebrew-title {
+                font-size: 1.5rem;
+            }
+
+            .flashcard {
+                height: 300px;
+            }
+
+            .hebrew-word {
+                font-size: 3rem;
+            }
+
+            .quiz-hebrew {
+                font-size: 3rem;
+            }
+
+            .quiz-options {
+                grid-template-columns: 1fr;
+            }
+
+            .stats-bar {
+                gap: 15px;
+            }
+
+            .stat-value {
+                font-size: 1.5rem;
+            }
+
+            .browse-container {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* Animations */
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+
+        .speaking {
+            animation: pulse 0.5s ease-in-out infinite;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .slide-in {
+            animation: slideIn 0.3s ease-out;
+        }
+
+        /* Hidden */
+        .hidden {
+            display: none !important;
+        }
+
+        /* Streak indicator */
+        .streak-badge {
+            background: linear-gradient(45deg, #f39c12, #e74c3c);
+            padding: 5px 15px;
+            border-radius: 20px;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            margin-left: 10px;
+        }
+
+        .streak-badge svg {
+            width: 16px;
+            height: 16px;
+            fill: #fff;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Hebrew Vocabulary Learner</h1>
+            <div class="hebrew-title">לומדים עברית</div>
+        </header>
+
+        <div class="stats-bar">
+            <div class="stat-item">
+                <div class="stat-value" id="wordsLearned">0</div>
+                <div class="stat-label">Words Learned</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value" id="totalWords">200</div>
+                <div class="stat-label">Total Words</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value" id="accuracy">0%</div>
+                <div class="stat-label">Quiz Accuracy</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value" id="streak">0
+                    <span class="streak-badge">
+                        <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>
+                    </span>
+                </div>
+                <div class="stat-label">Day Streak</div>
+            </div>
+        </div>
+
+        <div class="nav-tabs">
+            <button class="nav-tab active" data-mode="flashcard">📚 Flashcards</button>
+            <button class="nav-tab" data-mode="quiz">🎯 Quiz</button>
+            <button class="nav-tab" data-mode="browse">📖 Browse All</button>
+            <button class="nav-tab" data-mode="settings">⚙️ Settings</button>
+        </div>
+
+        <div class="category-selector" id="categorySelector">
+            <!-- Categories will be populated by JS -->
+        </div>
+
+        <!-- Flashcard Mode -->
+        <div id="flashcardMode" class="mode-content">
+            <div class="card-counter">
+                Card <span id="currentCard">1</span> of <span id="totalCards">10</span>
+            </div>
+            <div class="progress-bar">
+                <div class="progress-fill" id="progressFill" style="width: 0%"></div>
+            </div>
+            <div class="flashcard-container">
+                <div class="flashcard" id="flashcard">
+                    <div class="flashcard-face flashcard-front">
+                        <button class="speak-btn" id="speakBtnFront" onclick="event.stopPropagation(); speakWord()">
+                            <svg viewBox="0 0 24 24"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/></svg>
+                        </button>
+                        <div class="hebrew-word" id="hebrewFront"></div>
+                        <div class="transliteration" id="translitFront"></div>
+                        <div class="word-category" id="categoryFront"></div>
+                    </div>
+                    <div class="flashcard-face flashcard-back">
+                        <button class="speak-btn" onclick="event.stopPropagation(); speakWord()">
+                            <svg viewBox="0 0 24 24"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/></svg>
+                        </button>
+                        <div class="hebrew-word" id="hebrewBack"></div>
+                        <div class="transliteration" id="translitBack"></div>
+                        <div class="english-word" id="englishBack"></div>
+                        <div class="word-category" id="categoryBack"></div>
+                    </div>
+                </div>
+            </div>
+            <p style="text-align: center; color: #aaa; margin-bottom: 20px;">Click card to flip</p>
+            <div class="card-controls">
+                <button class="control-btn btn-prev" onclick="prevCard()">← Previous</button>
+                <button class="control-btn btn-learning" onclick="markLearning()">Still Learning</button>
+                <button class="control-btn btn-know" onclick="markKnown()">I Know This ✓</button>
+                <button class="control-btn btn-next" onclick="nextCard()">Next →</button>
+            </div>
+        </div>
+
+        <!-- Quiz Mode -->
+        <div id="quizMode" class="mode-content hidden">
+            <div class="quiz-container">
+                <div class="quiz-score">
+                    <span>Score: </span>
+                    <span class="score-value" id="quizScore">0</span>
+                    <span> / </span>
+                    <span id="quizTotal">0</span>
+                </div>
+                <div class="quiz-question">
+                    <div class="quiz-hebrew" id="quizHebrew"></div>
+                    <div class="quiz-transliteration" id="quizTranslit"></div>
+                    <button class="speak-btn" style="position: relative; margin: 10px auto;" onclick="speakQuizWord()">
+                        <svg viewBox="0 0 24 24"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/></svg>
+                    </button>
+                </div>
+                <div class="quiz-options" id="quizOptions">
+                    <!-- Options populated by JS -->
+                </div>
+                <div class="quiz-result" id="quizResult"></div>
+                <div style="text-align: center; margin-top: 20px;">
+                    <button class="control-btn btn-next" id="nextQuizBtn" onclick="nextQuizQuestion()" style="display: none;">Next Question →</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Browse Mode -->
+        <div id="browseMode" class="mode-content hidden">
+            <div class="search-filter">
+                <input type="text" class="search-input" id="searchInput" placeholder="Search words...">
+                <select class="filter-select" id="filterSelect">
+                    <option value="all">All Categories</option>
+                </select>
+                <select class="filter-select" id="masteryFilter">
+                    <option value="all">All Progress</option>
+                    <option value="new">New Words</option>
+                    <option value="learning">Learning</option>
+                    <option value="mastered">Mastered</option>
+                </select>
+            </div>
+            <div class="browse-container" id="browseContainer">
+                <!-- Cards populated by JS -->
+            </div>
+        </div>
+
+        <!-- Settings Mode -->
+        <div id="settingsMode" class="mode-content hidden">
+            <div class="modal" style="margin: 0 auto;">
+                <h2>⚙️ Settings</h2>
+                
+                <div class="setting-item">
+                    <span class="setting-label">Auto-play pronunciation</span>
+                    <div class="toggle-switch" id="autoPlayToggle" onclick="toggleSetting('autoPlay')"></div>
+                </div>
+                
+                <div class="setting-item">
+                    <span class="setting-label">Show transliteration</span>
+                    <div class="toggle-switch active" id="translitToggle" onclick="toggleSetting('showTranslit')"></div>
+                </div>
+                
+                <div class="setting-item">
+                    <span class="setting-label">Speech speed</span>
+                    <input type="range" class="speed-slider" id="speedSlider" min="0.5" max="1.5" step="0.1" value="0.8">
+                </div>
+                
+                <div class="setting-item">
+                    <span class="setting-label">Quiz options count</span>
+                    <select class="filter-select" id="quizOptionsCount">
+                        <option value="2">2 options</option>
+                        <option value="4" selected>4 options</option>
+                        <option value="6">6 options</option>
+                    </select>
+                </div>
+
+                <div class="setting-item">
+                    <span class="setting-label">Dark mode</span>
+                    <div class="toggle-switch active" id="darkModeToggle" onclick="toggleSetting('darkMode')"></div>
+                </div>
+
+                <div style="margin-top: 30px;">
+                    <h3 style="color: #00d4ff; margin-bottom: 15px;">Progress</h3>
+                    <button class="control-btn btn-learning" onclick="resetProgress()" style="width: 100%;">
+                        🔄 Reset All Progress
+                    </button>
+                </div>
+
+                <div style="margin-top: 20px;">
+                    <button class="control-btn btn-know" onclick="exportProgress()" style="width: 100%; margin-bottom: 10px;">
+                        📤 Export Progress
+                    </button>
+                    <button class="control-btn btn-prev" onclick="document.getElementById('importFile').click()" style="width: 100%;">
+                        📥 Import Progress
+                    </button>
+                    <input type="file" id="importFile" style="display: none;" onchange="importProgress(event)">
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Hebrew Vocabulary Database - 200 words in 20 categories
+        const hebrewWords = [
+            // 1. Greetings & Basic Phrases (10 words)
+            { hebrew: "שָׁלוֹם", translit: "shalom", english: "hello/peace", category: "Greetings" },
+            { hebrew: "תּוֹדָה", translit: "toda", english: "thank you", category: "Greetings" },
+            { hebrew: "בְּבַקָּשָׁה", translit: "bevakasha", english: "please/you're welcome", category: "Greetings" },
+            { hebrew: "סְלִיחָה", translit: "slicha", english: "sorry/excuse me", category: "Greetings" },
+            { hebrew: "בֹּקֶר טוֹב", translit: "boker tov", english: "good morning", category: "Greetings" },
+            { hebrew: "עֶרֶב טוֹב", translit: "erev tov", english: "good evening", category: "Greetings" },
+            { hebrew: "לַיְלָה טוֹב", translit: "layla tov", english: "good night", category: "Greetings" },
+            { hebrew: "לְהִתְרָאוֹת", translit: "lehitraot", english: "goodbye", category: "Greetings" },
+            { hebrew: "מַה שְׁלוֹמְךָ", translit: "ma shlomcha", english: "how are you (m)", category: "Greetings" },
+            { hebrew: "כֵּן", translit: "ken", english: "yes", category: "Greetings" },
+
+            // 2. Numbers (10 words)
+            { hebrew: "אֶחָד", translit: "echad", english: "one", category: "Numbers" },
+            { hebrew: "שְׁנַיִם", translit: "shnayim", english: "two", category: "Numbers" },
+            { hebrew: "שָׁלֹשׁ", translit: "shalosh", english: "three", category: "Numbers" },
+            { hebrew: "אַרְבַּע", translit: "arba", english: "four", category: "Numbers" },
+            { hebrew: "חָמֵשׁ", translit: "chamesh", english: "five", category: "Numbers" },
+            { hebrew: "שֵׁשׁ", translit: "shesh", english: "six", category: "Numbers" },
+            { hebrew: "שֶׁבַע", translit: "sheva", english: "seven", category: "Numbers" },
+            { hebrew: "שְׁמוֹנֶה", translit: "shmone", english: "eight", category: "Numbers" },
+            { hebrew: "תֵּשַׁע", translit: "tesha", english: "nine", category: "Numbers" },
+            { hebrew: "עֶשֶׂר", translit: "eser", english: "ten", category: "Numbers" },
+
+            // 3. Colors (10 words)
+            { hebrew: "אָדֹם", translit: "adom", english: "red", category: "Colors" },
+            { hebrew: "כָּחֹל", translit: "kachol", english: "blue", category: "Colors" },
+            { hebrew: "יָרֹק", translit: "yarok", english: "green", category: "Colors" },
+            { hebrew: "צָהֹב", translit: "tsahov", english: "yellow", category: "Colors" },
+            { hebrew: "לָבָן", translit: "lavan", english: "white", category: "Colors" },
+            { hebrew: "שָׁחֹר", translit: "shachor", english: "black", category: "Colors" },
+            { hebrew: "כָּתֹם", translit: "katom", english: "orange", category: "Colors" },
+            { hebrew: "סָגֹל", translit: "sagol", english: "purple", category: "Colors" },
+            { hebrew: "וָרֹד", translit: "varod", english: "pink", category: "Colors" },
+            { hebrew: "חוּם", translit: "chum", english: "brown", category: "Colors" },
+
+            // 4. Family (10 words)
+            { hebrew: "אַבָּא", translit: "aba", english: "father", category: "Family" },
+            { hebrew: "אִמָּא", translit: "ima", english: "mother", category: "Family" },
+            { hebrew: "אָח", translit: "ach", english: "brother", category: "Family" },
+            { hebrew: "אָחוֹת", translit: "achot", english: "sister", category: "Family" },
+            { hebrew: "סַבָּא", translit: "saba", english: "grandfather", category: "Family" },
+            { hebrew: "סַבְתָּא", translit: "savta", english: "grandmother", category: "Family" },
+            { hebrew: "בֵּן", translit: "ben", english: "son", category: "Family" },
+            { hebrew: "בַּת", translit: "bat", english: "daughter", category: "Family" },
+            { hebrew: "מִשְׁפָּחָה", translit: "mishpacha", english: "family", category: "Family" },
+            { hebrew: "יֶלֶד", translit: "yeled", english: "child (boy)", category: "Family" },
+
+            // 5. Food & Drinks (10 words)
+            { hebrew: "לֶחֶם", translit: "lechem", english: "bread", category: "Food" },
+            { hebrew: "מַיִם", translit: "mayim", english: "water", category: "Food" },
+            { hebrew: "חָלָב", translit: "chalav", english: "milk", category: "Food" },
+            { hebrew: "קָפֶה", translit: "kafe", english: "coffee", category: "Food" },
+            { hebrew: "תֵּה", translit: "te", english: "tea", category: "Food" },
+            { hebrew: "תַּפּוּחַ", translit: "tapuach", english: "apple", category: "Food" },
+            { hebrew: "בָּשָׂר", translit: "basar", english: "meat", category: "Food" },
+            { hebrew: "דָּג", translit: "dag", english: "fish", category: "Food" },
+            { hebrew: "בֵּיצָה", translit: "beytsa", english: "egg", category: "Food" },
+            { hebrew: "גְּבִינָה", translit: "gvina", english: "cheese", category: "Food" },
+
+            // 6. Animals (10 words)
+            { hebrew: "כֶּלֶב", translit: "kelev", english: "dog", category: "Animals" },
+            { hebrew: "חָתוּל", translit: "chatul", english: "cat", category: "Animals" },
+            { hebrew: "צִפּוֹר", translit: "tsipor", english: "bird", category: "Animals" },
+            { hebrew: "סוּס", translit: "sus", english: "horse", category: "Animals" },
+            { hebrew: "פָּרָה", translit: "para", english: "cow", category: "Animals" },
+            { hebrew: "דֹּב", translit: "dov", english: "bear", category: "Animals" },
+            { hebrew: "אַרְיֵה", translit: "aryeh", english: "lion", category: "Animals" },
+            { hebrew: "פִּיל", translit: "pil", english: "elephant", category: "Animals" },
+            { hebrew: "נָחָשׁ", translit: "nachash", english: "snake", category: "Animals" },
+            { hebrew: "דָּגִים", translit: "dagim", english: "fish (plural)", category: "Animals" },
+
+            // 7. Body Parts (10 words)
+            { hebrew: "רֹאשׁ", translit: "rosh", english: "head", category: "Body" },
+            { hebrew: "יָד", translit: "yad", english: "hand", category: "Body" },
+            { hebrew: "רֶגֶל", translit: "regel", english: "leg/foot", category: "Body" },
+            { hebrew: "עַיִן", translit: "ayin", english: "eye", category: "Body" },
+            { hebrew: "אֹזֶן", translit: "ozen", english: "ear", category: "Body" },
+            { hebrew: "אַף", translit: "af", english: "nose", category: "Body" },
+            { hebrew: "פֶּה", translit: "pe", english: "mouth", category: "Body" },
+            { hebrew: "לֵב", translit: "lev", english: "heart", category: "Body" },
+            { hebrew: "שֵׂעָר", translit: "se'ar", english: "hair", category: "Body" },
+            { hebrew: "גּוּף", translit: "guf", english: "body", category: "Body" },
+
+            // 8. Clothing (10 words)
+            { hebrew: "חוּלְצָה", translit: "chultsa", english: "shirt", category: "Clothing" },
+            { hebrew: "מִכְנָסַיִם", translit: "michnsayim", english: "pants", category: "Clothing" },
+            { hebrew: "שִׂמְלָה", translit: "simla", english: "dress", category: "Clothing" },
+            { hebrew: "נַעֲלַיִם", translit: "na'alayim", english: "shoes", category: "Clothing" },
+            { hebrew: "כּוֹבַע", translit: "kova", english: "hat", category: "Clothing" },
+            { hebrew: "מְעִיל", translit: "me'il", english: "coat", category: "Clothing" },
+            { hebrew: "גַּרְבַּיִם", translit: "garbayim", english: "socks", category: "Clothing" },
+            { hebrew: "חֲגוֹרָה", translit: "chagora", english: "belt", category: "Clothing" },
+            { hebrew: "מִשְׁקָפַיִם", translit: "mishkafayim", english: "glasses", category: "Clothing" },
+            { hebrew: "טַבַּעַת", translit: "taba'at", english: "ring", category: "Clothing" },
+
+            // 9. Weather (10 words)
+            { hebrew: "שֶׁמֶשׁ", translit: "shemesh", english: "sun", category: "Weather" },
+            { hebrew: "גֶּשֶׁם", translit: "geshem", english: "rain", category: "Weather" },
+            { hebrew: "שֶׁלֶג", translit: "sheleg", english: "snow", category: "Weather" },
+            { hebrew: "רוּחַ", translit: "ruach", english: "wind", category: "Weather" },
+            { hebrew: "עָנָן", translit: "anan", english: "cloud", category: "Weather" },
+            { hebrew: "חַם", translit: "cham", english: "hot", category: "Weather" },
+            { hebrew: "קַר", translit: "kar", english: "cold", category: "Weather" },
+            { hebrew: "סְעָרָה", translit: "se'ara", english: "storm", category: "Weather" },
+            { hebrew: "קֶשֶׁת", translit: "keshet", english: "rainbow", category: "Weather" },
+            { hebrew: "בָּרָק", translit: "barak", english: "lightning", category: "Weather" },
+
+            // 10. Time & Days (10 words)
+            { hebrew: "יוֹם", translit: "yom", english: "day", category: "Time" },
+            { hebrew: "לַיְלָה", translit: "layla", english: "night", category: "Time" },
+            { hebrew: "שָׁבוּעַ", translit: "shavua", english: "week", category: "Time" },
+            { hebrew: "חֹדֶשׁ", translit: "chodesh", english: "month", category: "Time" },
+            { hebrew: "שָׁנָה", translit: "shana", english: "year", category: "Time" },
+            { hebrew: "הַיּוֹם", translit: "hayom", english: "today", category: "Time" },
+            { hebrew: "מָחָר", translit: "machar", english: "tomorrow", category: "Time" },
+            { hebrew: "אֶתְמוֹל", translit: "etmol", english: "yesterday", category: "Time" },
+            { hebrew: "שַׁבָּת", translit: "shabbat", english: "Saturday", category: "Time" },
+            { hebrew: "עַכְשָׁיו", translit: "achshav", english: "now", category: "Time" },
+
+            // 11. Home & Furniture (10 words)
+            { hebrew: "בַּיִת", translit: "bayit", english: "house/home", category: "Home" },
+            { hebrew: "חֶדֶר", translit: "cheder", english: "room", category: "Home" },
+            { hebrew: "מִטָּה", translit: "mita", english: "bed", category: "Home" },
+            { hebrew: "שֻׁלְחָן", translit: "shulchan", english: "table", category: "Home" },
+            { hebrew: "כִּסֵּא", translit: "kise", english: "chair", category: "Home" },
+            { hebrew: "דֶּלֶת", translit: "delet", english: "door", category: "Home" },
+            { hebrew: "חַלּוֹן", translit: "chalon", english: "window", category: "Home" },
+            { hebrew: "מִטְבָּח", translit: "mitbach", english: "kitchen", category: "Home" },
+            { hebrew: "אַמְבַּטְיָה", translit: "ambatya", english: "bathroom", category: "Home" },
+            { hebrew: "גִּנָּה", translit: "gina", english: "garden", category: "Home" },
+
+            // 12. Transportation (10 words)
+            { hebrew: "מְכוֹנִית", translit: "mechonit", english: "car", category: "Transport" },
+            { hebrew: "אוֹטוֹבּוּס", translit: "otobus", english: "bus", category: "Transport" },
+            { hebrew: "רַכֶּבֶת", translit: "rakevet", english: "train", category: "Transport" },
+            { hebrew: "מָטוֹס", translit: "matos", english: "airplane", category: "Transport" },
+            { hebrew: "אוֹפַנַּיִם", translit: "ofanayim", english: "bicycle", category: "Transport" },
+            { hebrew: "סִירָה", translit: "sira", english: "boat", category: "Transport" },
+            { hebrew: "דֶּרֶךְ", translit: "derech", english: "road/way", category: "Transport" },
+            { hebrew: "תַּחֲנָה", translit: "tachana", english: "station", category: "Transport" },
+            { hebrew: "שְׂדֵה תְעוּפָה", translit: "sde te'ufa", english: "airport", category: "Transport" },
+            { hebrew: "מוֹנִית", translit: "monit", english: "taxi", category: "Transport" },
+
+            // 13. Professions (10 words)
+            { hebrew: "מוֹרֶה", translit: "more", english: "teacher", category: "Professions" },
+            { hebrew: "רוֹפֵא", translit: "rofe", english: "doctor", category: "Professions" },
+            { hebrew: "שׁוֹטֵר", translit: "shoter", english: "police officer", category: "Professions" },
+            { hebrew: "טַבָּח", translit: "tabach", english: "cook/chef", category: "Professions" },
+            { hebrew: "נַהָג", translit: "nahag", english: "driver", category: "Professions" },
+            { hebrew: "סַפָּר", translit: "sapar", english: "barber", category: "Professions" },
+            { hebrew: "עוֹרֵךְ דִּין", translit: "orech din", english: "lawyer", category: "Professions" },
+            { hebrew: "מְהַנְדֵס", translit: "mehandess", english: "engineer", category: "Professions" },
+            { hebrew: "אָמָּן", translit: "aman", english: "artist", category: "Professions" },
+            { hebrew: "זַמָּר", translit: "zamar", english: "singer", category: "Professions" },
+
+            // 14. Emotions (10 words)
+            { hebrew: "שָׂמֵחַ", translit: "same'ach", english: "happy", category: "Emotions" },
+            { hebrew: "עָצוּב", translit: "atsuv", english: "sad", category: "Emotions" },
+            { hebrew: "כּוֹעֵס", translit: "ko'es", english: "angry", category: "Emotions" },
+            { hebrew: "מְפַחֵד", translit: "mefached", english: "afraid", category: "Emotions" },
+            { hebrew: "עָיֵף", translit: "ayef", english: "tired", category: "Emotions" },
+            { hebrew: "רָעֵב", translit: "ra'ev", english: "hungry", category: "Emotions" },
+            { hebrew: "צָמֵא", translit: "tsame", english: "thirsty", category: "Emotions" },
+            { hebrew: "אוֹהֵב", translit: "ohev", english: "love/loving", category: "Emotions" },
+            { hebrew: "מֻפְתָּע", translit: "mufta", english: "surprised", category: "Emotions" },
+            { hebrew: "גֵּאֶה", translit: "ge'e", english: "proud", category: "Emotions" },
+
+            // 15. Actions/Verbs (10 words)
+            { hebrew: "לֶאֱכֹל", translit: "le'echol", english: "to eat", category: "Verbs" },
+            { hebrew: "לִשְׁתּוֹת", translit: "lishtot", english: "to drink", category: "Verbs" },
+            { hebrew: "לִישׁוֹן", translit: "lishon", english: "to sleep", category: "Verbs" },
+            { hebrew: "לָלֶכֶת", translit: "lalechet", english: "to walk/go", category: "Verbs" },
+            { hebrew: "לָרוּץ", translit: "larutz", english: "to run", category: "Verbs" },
+            { hebrew: "לְדַבֵּר", translit: "ledaber", english: "to speak", category: "Verbs" },
+            { hebrew: "לִקְרֹא", translit: "likro", english: "to read", category: "Verbs" },
+            { hebrew: "לִכְתֹּב", translit: "lichtov", english: "to write", category: "Verbs" },
+            { hebrew: "לִשְׁמֹעַ", translit: "lishmoa", english: "to hear", category: "Verbs" },
+            { hebrew: "לִרְאוֹת", translit: "lirot", english: "to see", category: "Verbs" },
+
+            // 16. Nature (10 words)
+            { hebrew: "עֵץ", translit: "ets", english: "tree", category: "Nature" },
+            { hebrew: "פֶּרַח", translit: "perach", english: "flower", category: "Nature" },
+            { hebrew: "הַר", translit: "har", english: "mountain", category: "Nature" },
+            { hebrew: "יָם", translit: "yam", english: "sea", category: "Nature" },
+            { hebrew: "נָהָר", translit: "nahar", english: "river", category: "Nature" },
+            { hebrew: "שָׁמַיִם", translit: "shamayim", english: "sky", category: "Nature" },
+            { hebrew: "כּוֹכָב", translit: "kochav", english: "star", category: "Nature" },
+            { hebrew: "יָרֵחַ", translit: "yareach", english: "moon", category: "Nature" },
+            { hebrew: "אֶבֶן", translit: "even", english: "stone", category: "Nature" },
+            { hebrew: "חוֹל", translit: "chol", english: "sand", category: "Nature" },
+
+            // 17. Shopping (10 words)
+            { hebrew: "חֲנוּת", translit: "chanut", english: "store/shop", category: "Shopping" },
+            { hebrew: "כֶּסֶף", translit: "kesef", english: "money", category: "Shopping" },
+            { hebrew: "מְחִיר", translit: "mechir", english: "price", category: "Shopping" },
+            { hebrew: "לִקְנוֹת", translit: "liknot", english: "to buy", category: "Shopping" },
+            { hebrew: "לִמְכֹּר", translit: "limkor", english: "to sell", category: "Shopping" },
+            { hebrew: "שׁוּק", translit: "shuk", english: "market", category: "Shopping" },
+            { hebrew: "קַבָּלָה", translit: "kabala", english: "receipt", category: "Shopping" },
+            { hebrew: "הַנָּחָה", translit: "hanacha", english: "discount", category: "Shopping" },
+            { hebrew: "סַל", translit: "sal", english: "basket", category: "Shopping" },
+            { hebrew: "תּוֹר", translit: "tor", english: "queue/line", category: "Shopping" },
+
+            // 18. Health (10 words)
+            { hebrew: "בָּרִיא", translit: "bari", english: "healthy", category: "Health" },
+            { hebrew: "חוֹלֶה", translit: "chole", english: "sick", category: "Health" },
+            { hebrew: "תְּרוּפָה", translit: "trufa", english: "medicine", category: "Health" },
+            { hebrew: "בֵּית חוֹלִים", translit: "beit cholim", english: "hospital", category: "Health" },
+            { hebrew: "כְּאֵב", translit: "ke'ev", english: "pain", category: "Health" },
+            { hebrew: "רֹאשׁ כּוֹאֵב", translit: "rosh ko'ev", english: "headache", category: "Health" },
+            { hebrew: "חֹם", translit: "chom", english: "fever", category: "Health" },
+            { hebrew: "אָחוֹת", translit: "achot", english: "nurse", category: "Health" },
+            { hebrew: "בְּדִיקָה", translit: "bdika", english: "examination", category: "Health" },
+            { hebrew: "מְנוּחָה", translit: "menucha", english: "rest", category: "Health" },
+
+            // 19. School & Education (10 words)
+            { hebrew: "בֵּית סֵפֶר", translit: "beit sefer", english: "school", category: "Education" },
+            { hebrew: "סֵפֶר", translit: "sefer", english: "book", category: "Education" },
+            { hebrew: "מַחְבֶּרֶת", translit: "machberet", english: "notebook", category: "Education" },
+            { hebrew: "עֵט", translit: "et", english: "pen", category: "Education" },
+            { hebrew: "עִפָּרוֹן", translit: "iparon", english: "pencil", category: "Education" },
+            { hebrew: "תַּלְמִיד", translit: "talmid", english: "student (m)", category: "Education" },
+            { hebrew: "שִׁיעוּר", translit: "shi'ur", english: "lesson", category: "Education" },
+            { hebrew: "שְׁאֵלָה", translit: "she'ela", english: "question", category: "Education" },
+            { hebrew: "תְּשׁוּבָה", translit: "tshuva", english: "answer", category: "Education" },
+            { hebrew: "מִבְחָן", translit: "mivchan", english: "test/exam", category: "Education" },
+
+            // 20. Common Adjectives (10 words)
+            { hebrew: "גָּדוֹל", translit: "gadol", english: "big", category: "Adjectives" },
+            { hebrew: "קָטָן", translit: "katan", english: "small", category: "Adjectives" },
+            { hebrew: "יָפֶה", translit: "yafe", english: "beautiful", category: "Adjectives" },
+            { hebrew: "טוֹב", translit: "tov", english: "good", category: "Adjectives" },
+            { hebrew: "רַע", translit: "ra", english: "bad", category: "Adjectives" },
+            { hebrew: "חָדָשׁ", translit: "chadash", english: "new", category: "Adjectives" },
+            { hebrew: "יָשָׁן", translit: "yashan", english: "old", category: "Adjectives" },
+            { hebrew: "מָהִיר", translit: "mahir", english: "fast", category: "Adjectives" },
+            { hebrew: "אִטִּי", translit: "iti", english: "slow", category: "Adjectives" },
+            { hebrew: "קָשֶׁה", translit: "kashe", english: "difficult/hard", category: "Adjectives" }
+        ];
+
+        // App State
+        let state = {
+            currentMode: 'flashcard',
+            selectedCategories: ['all'],
+            currentCardIndex: 0,
+            filteredWords: [...hebrewWords],
+            progress: {},
+            quizScore: 0,
+            quizTotal: 0,
+            quizCorrect: 0,
+            currentQuizWord: null,
+            settings: {
+                autoPlay: false,
+                showTranslit: true,
+                speechSpeed: 0.8,
+                quizOptionsCount: 4,
+                darkMode: true
+            },
+            streak: 0
+        };
+
+        // Initialize
+        function init() {
+            loadProgress();
+            setupCategories();
+            setupEventListeners();
+            updateStats();
+            filterWords();
+            renderFlashcard();
+            populateBrowse();
+        }
+
+        // Load progress from localStorage
+        function loadProgress() {
+            const saved = localStorage.getItem('hebrewProgress');
+            if (saved) {
+                const data = JSON.parse(saved);
+                state.progress = data.progress || {};
+                state.settings = { ...state.settings, ...data.settings };
+                state.streak = data.streak || 0;
+                state.quizCorrect = data.quizCorrect || 0;
+                state.quizTotal = data.quizTotal || 0;
+            }
+            updateSettingsUI();
+        }
+
+        // Save progress to localStorage
+        function saveProgress() {
+            localStorage.setItem('hebrewProgress', JSON.stringify({
+                progress: state.progress,
+                settings: state.settings,
+                streak: state.streak,
+                quizCorrect: state.quizCorrect,
+                quizTotal: state.quizTotal
+            }));
+        }
+
+        // Setup category buttons
+        function setupCategories() {
+            const categories = [...new Set(hebrewWords.map(w => w.category))];
+            const container = document.getElementById('categorySelector');
+            const filterSelect = document.getElementById('filterSelect');
+
+            // All button
+            let html = `<button class="category-btn active" data-category="all">All <span class="count">${hebrewWords.length}</span></button>`;
+            
+            categories.forEach(cat => {
+                const count = hebrewWords.filter(w => w.category === cat).length;
+                html += `<button class="category-btn" data-category="${cat}">${cat} <span class="count">${count}</span></button>`;
+                filterSelect.innerHTML += `<option value="${cat}">${cat}</option>`;
+            });
+
+            container.innerHTML = html;
+        }
+
+        // Setup event listeners
+        function setupEventListeners() {
+            // Navigation tabs
+            document.querySelectorAll('.nav-tab').forEach(tab => {
+                tab.addEventListener('click', () => switchMode(tab.dataset.mode));
+            });
+
+            // Category buttons
+            document.getElementById('categorySelector').addEventListener('click', (e) => {
+                if (e.target.classList.contains('category-btn')) {
+                    const category = e.target.dataset.category;
+                    selectCategory(category);
+                }
+            });
+
+            // Flashcard flip
+            document.getElementById('flashcard').addEventListener('click', () => {
+                document.getElementById('flashcard').classList.toggle('flipped');
+            });
+
+            // Search input
+            document.getElementById('searchInput').addEventListener('input', (e) => {
+                filterBrowseWords();
+            });
+
+            // Filter selects
+            document.getElementById('filterSelect').addEventListener('change', filterBrowseWords);
+            document.getElementById('masteryFilter').addEventListener('change', filterBrowseWords);
+
+            // Speed slider
+            document.getElementById('speedSlider').addEventListener('input', (e) => {
+                state.settings.speechSpeed = parseFloat(e.target.value);
+                saveProgress();
+            });
+
+            // Quiz options count
+            document.getElementById('quizOptionsCount').addEventListener('change', (e) => {
+                state.settings.quizOptionsCount = parseInt(e.target.value);
+                saveProgress();
+            });
+        }
+
+        // Switch mode
+        function switchMode(mode) {
+            state.currentMode = mode;
+            
+            document.querySelectorAll('.nav-tab').forEach(tab => {
+                tab.classList.toggle('active', tab.dataset.mode === mode);
+            });
+
+            document.querySelectorAll('.mode-content').forEach(content => {
+                content.classList.add('hidden');
+            });
+
+            document.getElementById(`${mode}Mode`).classList.remove('hidden');
+
+            if (mode === 'quiz') {
+                startQuiz();
+            } else if (mode === 'browse') {
+                populateBrowse();
+            }
+        }
+
+        // Select category
+        function selectCategory(category) {
+            document.querySelectorAll('.category-btn').forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.category === category);
+            });
+
+            state.selectedCategories = [category];
+            filterWords();
+            state.currentCardIndex = 0;
+            renderFlashcard();
+            
+            if (state.currentMode === 'quiz') {
+                startQuiz();
+            }
+        }
+
+        // Filter words based on selected categories
+        function filterWords() {
+            if (state.selectedCategories.includes('all')) {
+                state.filteredWords = [...hebrewWords];
+            } else {
+                state.filteredWords = hebrewWords.filter(w => 
+                    state.selectedCategories.includes(w.category)
+                );
+            }
+            shuffleArray(state.filteredWords);
+        }
+
+        // Shuffle array
+        function shuffleArray(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+        }
+
+        // Render flashcard
+        function renderFlashcard() {
+            if (state.filteredWords.length === 0) return;
+
+            const word = state.filteredWords[state.currentCardIndex];
+            
+            document.getElementById('hebrewFront').textContent = word.hebrew;
+            document.getElementById('translitFront').textContent = state.settings.showTranslit ? word.translit : '';
+            document.getElementById('categoryFront').textContent = word.category;
+
+            document.getElementById('hebrewBack').textContent = word.hebrew;
+            document.getElementById('translitBack').textContent = word.translit;
+            document.getElementById('englishBack').textContent = word.english;
+            document.getElementById('categoryBack').textContent = word.category;
+
+            document.getElementById('currentCard').textContent = state.currentCardIndex + 1;
+            document.getElementById('totalCards').textContent = state.filteredWords.length;
+            
+            const progress = ((state.currentCardIndex + 1) / state.filteredWords.length) * 100;
+            document.getElementById('progressFill').style.width = `${progress}%`;
+
+            document.getElementById('flashcard').classList.remove('flipped');
+
+            if (state.settings.autoPlay) {
+                setTimeout(() => speakWord(), 300);
+            }
+        }
+
+        // Speak word
+        function speakWord() {
+            const word = state.filteredWords[state.currentCardIndex];
+            speak(word.hebrew);
+        }
+
+        // Speak quiz word
+        function speakQuizWord() {
+            if (state.currentQuizWord) {
+                speak(state.currentQuizWord.hebrew);
+            }
+        }
+
+        // Text to speech
+        function speak(text) {
+            if ('speechSynthesis' in window) {
+                window.speechSynthesis.cancel();
+                
+                const utterance = new SpeechSynthesisUtterance(text);
+                utterance.lang = 'he-IL';
+                utterance.rate = state.settings.speechSpeed;
+                
+                // Try to find Hebrew voice
+                const voices = window.speechSynthesis.getVoices();
+                const hebrewVoice = voices.find(v => v.lang.includes('he'));
+                if (hebrewVoice) {
+                    utterance.voice = hebrewVoice;
+                }
+
+                window.speechSynthesis.speak(utterance);
+            }
+        }
+
+        // Navigation
+        function nextCard() {
+            state.currentCardIndex = (state.currentCardIndex + 1) % state.filteredWords.length;
+            renderFlashcard();
+        }
+
+        function prevCard() {
+            state.currentCardIndex = (state.currentCardIndex - 1 + state.filteredWords.length) % state.filteredWords.length;
+            renderFlashcard();
+        }
+
+        // Mark word as known
+        function markKnown() {
+            const word = state.filteredWords[state.currentCardIndex];
+            const key = word.hebrew;
+            
+            if (!state.progress[key]) {
+                state.progress[key] = { mastery: 0, lastSeen: null };
+            }
+            
+            state.progress[key].mastery = Math.min(5, state.progress[key].mastery + 1);
+            state.progress[key].lastSeen = Date.now();
+            
+            saveProgress();
+            updateStats();
+            nextCard();
+        }
+
+        // Mark word as still learning
+        function markLearning() {
+            const word = state.filteredWords[state.currentCardIndex];
+            const key = word.hebrew;
+            
+            if (!state.progress[key]) {
+                state.progress[key] = { mastery: 0, lastSeen: null };
+            }
+            
+            state.progress[key].mastery = Math.max(0, state.progress[key].mastery - 1);
+            state.progress[key].lastSeen = Date.now();
+            
+            saveProgress();
+            updateStats();
+            nextCard();
+        }
+
+        // Update statistics
+        function updateStats() {
+            const learned = Object.values(state.progress).filter(p => p.mastery >= 3).length;
+            document.getElementById('wordsLearned').textContent = learned;
+            document.getElementById('totalWords').textContent = hebrewWords.length;
+            
+            const accuracy = state.quizTotal > 0 
+                ? Math.round((state.quizCorrect / state.quizTotal) * 100) 
+                : 0;
+            document.getElementById('accuracy').textContent = `${accuracy}%`;
+            document.getElementById('streak').innerHTML = `${state.streak} <span class="streak-badge"><svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg></span>`;
+        }
+
+        // Quiz Mode
+        function startQuiz() {
+            state.quizScore = 0;
+            document.getElementById('quizScore').textContent = '0';
+            document.getElementById('quizTotal').textContent = '0';
+            nextQuizQuestion();
+        }
+
+        function nextQuizQuestion() {
+            filterWords();
+            
+            if (state.filteredWords.length < state.settings.quizOptionsCount) {
+                alert('Not enough words in this category for a quiz!');
+                return;
+            }
+
+            const randomIndex = Math.floor(Math.random() * state.filteredWords.length);
+            state.currentQuizWord = state.filteredWords[randomIndex];
+
+            document.getElementById('quizHebrew').textContent = state.currentQuizWord.hebrew;
+            document.getElementById('quizTranslit').textContent = state.settings.showTranslit 
+                ? state.currentQuizWord.translit 
+                : '';
+
+            // Generate options
+            const options = [state.currentQuizWord];
+            const otherWords = state.filteredWords.filter(w => w.hebrew !== state.currentQuizWord.hebrew);
+            shuffleArray(otherWords);
+
+            while (options.length < state.settings.quizOptionsCount && otherWords.length > 0) {
+                options.push(otherWords.pop());
+            }
+
+            shuffleArray(options);
+
+            const optionsContainer = document.getElementById('quizOptions');
+            optionsContainer.innerHTML = options.map(opt => 
+                `<button class="quiz-option" data-answer="${opt.english}">${opt.english}</button>`
+            ).join('');
+
+            // Add click listeners
+            document.querySelectorAll('.quiz-option').forEach(btn => {
+                btn.addEventListener('click', () => checkQuizAnswer(btn));
+            });
+
+            document.getElementById('quizResult').textContent = '';
+            document.getElementById('nextQuizBtn').style.display = 'none';
+
+            if (state.settings.autoPlay) {
+                setTimeout(() => speakQuizWord(), 300);
+            }
+        }
+
+        function checkQuizAnswer(btn) {
+            const answer = btn.dataset.answer;
+            const correct = state.currentQuizWord.english;
+            
+            state.quizTotal++;
+            
+            document.querySelectorAll('.quiz-option').forEach(b => {
+                b.classList.add('disabled');
+                if (b.dataset.answer === correct) {
+                    b.classList.add('correct');
+                }
+            });
+
+            if (answer === correct) {
+                state.quizScore++;
+                state.quizCorrect++;
+                document.getElementById('quizResult').innerHTML = '✅ Correct!';
+                
+                // Update mastery
+                const key = state.currentQuizWord.hebrew;
+                if (!state.progress[key]) {
+                    state.progress[key] = { mastery: 0, lastSeen: null };
+                }
+                state.progress[key].mastery = Math.min(5, state.progress[key].mastery + 1);
+            } else {
+                btn.classList.add('wrong');
+                document.getElementById('quizResult').innerHTML = `❌ Incorrect! The answer was: ${correct}`;
+            }
+
+            document.getElementById('quizScore').textContent = state.quizScore;
+            document.getElementById('quizTotal').textContent = state.quizTotal;
+
+            saveProgress();
+            updateStats();
+            document.getElementById('nextQuizBtn').style.display = 'inline-block';
+        }
+
+        // Browse Mode
+        function populateBrowse() {
+            filterBrowseWords();
+        }
+
+        function filterBrowseWords() {
+            const search = document.getElementById('searchInput').value.toLowerCase();
+            const category = document.getElementById('filterSelect').value;
+            const mastery = document.getElementById('masteryFilter').value;
+
+            let words = hebrewWords.filter(word => {
+                const matchSearch = word.hebrew.includes(search) || 
+                                   word.translit.toLowerCase().includes(search) || 
+                                   word.english.toLowerCase().includes(search);
+                const matchCategory = category === 'all' || word.category === category;
+                
+                let matchMastery = true;
+                const progress = state.progress[word.hebrew];
+                if (mastery === 'new') {
+                    matchMastery = !progress || progress.mastery === 0;
+                } else if (mastery === 'learning') {
+                    matchMastery = progress && progress.mastery > 0 && progress.mastery < 3;
+                } else if (mastery === 'mastered') {
+                    matchMastery = progress && progress.mastery >= 3;
+                }
+
+                return matchSearch && matchCategory && matchMastery;
+            });
+
+            renderBrowseCards(words);
+        }
+
+        function renderBrowseCards(words) {
+            const container = document.getElementById('browseContainer');
+            
+            container.innerHTML = words.map(word => {
+                const progress = state.progress[word.hebrew] || { mastery: 0 };
+                const dots = Array(5).fill(0).map((_, i) => 
+                    `<div class="mastery-dot ${i < progress.mastery ? 'filled' : ''}"></div>`
+                ).join('');
+
+                return `
+                    <div class="word-card slide-in">
+                        <div class="hebrew">${word.hebrew}</div>
+                        <div class="translit">${word.translit}</div>
+                        <div class="english">${word.english}</div>
+                        <span class="category-tag">${word.category}</span>
+                        <div class="card-actions">
+                            <div class="mastery-indicator">${dots}</div>
+                            <button class="mini-speak-btn" onclick="speak('${word.hebrew}')">
+                                <svg viewBox="0 0 24 24"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/></svg>
+                            </button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // Settings
+        function toggleSetting(setting) {
+            if (setting === 'autoPlay') {
+                state.settings.autoPlay = !state.settings.autoPlay;
+                document.getElementById('autoPlayToggle').classList.toggle('active', state.settings.autoPlay);
+            } else if (setting === 'showTranslit') {
+                state.settings.showTranslit = !state.settings.showTranslit;
+                document.getElementById('translitToggle').classList.toggle('active', state.settings.showTranslit);
+            } else if (setting === 'darkMode') {
+                state.settings.darkMode = !state.settings.darkMode;
+                document.getElementById('darkModeToggle').classList.toggle('active', state.settings.darkMode);
+            }
+            saveProgress();
+        }
+
+        function updateSettingsUI() {
+            document.getElementById('autoPlayToggle').classList.toggle('active', state.settings.autoPlay);
+            document.getElementById('translitToggle').classList.toggle('active', state.settings.showTranslit);
+            document.getElementById('darkModeToggle').classList.toggle('active', state.settings.darkMode);
+            document.getElementById('speedSlider').value = state.settings.speechSpeed;
+            document.getElementById('quizOptionsCount').value = state.settings.quizOptionsCount;
+        }
+
+        function resetProgress() {
+            if (confirm('Are you sure you want to reset all progress? This cannot be undone.')) {
+                state.progress = {};
+                state.quizCorrect = 0;
+                state.quizTotal = 0;
+                state.streak = 0;
+                saveProgress();
+                updateStats();
+                populateBrowse();
+                alert('Progress has been reset.');
+            }
+        }
+
+        function exportProgress() {
+            const data = JSON.stringify({
+                progress: state.progress,
+                settings: state.settings,
+                streak: state.streak,
+                quizCorrect: state.quizCorrect,
+                quizTotal: state.quizTotal,
+                exportDate: new Date().toISOString()
+            }, null, 2);
+
+            const blob = new Blob([data], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `hebrew-progress-${new Date().toISOString().split('T')[0]}.json`;
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+
+        function importProgress(event) {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    try {
+                        const data = JSON.parse(e.target.result);
+                        state.progress = data.progress || {};
+                        state.settings = { ...state.settings, ...data.settings };
+                        state.streak = data.streak || 0;
+                        state.quizCorrect = data.quizCorrect || 0;
+                        state.quizTotal = data.quizTotal || 0;
+                        saveProgress();
+                        updateStats();
+                        updateSettingsUI();
+                        populateBrowse();
+                        alert('Progress imported successfully!');
+                    } catch (err) {
+                        alert('Error importing file. Please make sure it\'s a valid progress file.');
+                    }
+                };
+                reader.readAsText(file);
+            }
+        }
+
+        // Load voices when available
+        if ('speechSynthesis' in window) {
+            speechSynthesis.onvoiceschanged = () => {
+                // Voices loaded
+            };
+        }
+
+        // Initialize app
+        init();
+    </script>
+</body>
+</html>
