@@ -1,0 +1,1288 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Particle Playground</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            overflow: hidden;
+            background: linear-gradient(135deg, #0c0c0c 0%, #1a1a2e 50%, #16213e 100%);
+            min-height: 100vh;
+            touch-action: none;
+        }
+
+        #canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            z-index: 1;
+        }
+
+        .controls {
+            position: fixed;
+            z-index: 10;
+            background: rgba(20, 20, 40, 0.85);
+            backdrop-filter: blur(15px);
+            border-radius: 20px;
+            padding: 20px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4),
+                        inset 0 1px 0 rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            transition: all 0.3s ease;
+        }
+
+        /* Landscape orientation */
+        @media (orientation: landscape) {
+            .controls {
+                top: 20px;
+                right: 20px;
+                width: 280px;
+                max-height: calc(100vh - 40px);
+                overflow-y: auto;
+            }
+        }
+
+        /* Portrait orientation */
+        @media (orientation: portrait) {
+            .controls {
+                bottom: 20px;
+                left: 20px;
+                right: 20px;
+                max-height: 50vh;
+                overflow-y: auto;
+            }
+        }
+
+        .controls::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .controls::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 3px;
+        }
+
+        .controls::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 3px;
+        }
+
+        .controls h2 {
+            color: #fff;
+            font-size: 1.4em;
+            margin-bottom: 20px;
+            text-align: center;
+            text-shadow: 0 0 20px rgba(100, 200, 255, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .controls h2::before,
+        .controls h2::after {
+            content: '✨';
+            font-size: 0.8em;
+        }
+
+        .control-group {
+            margin-bottom: 18px;
+        }
+
+        .control-group label {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            color: #a0a0c0;
+            font-size: 0.9em;
+            margin-bottom: 8px;
+        }
+
+        .control-group label span {
+            color: #64b5f6;
+            font-weight: 600;
+            background: rgba(100, 181, 246, 0.15);
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-size: 0.85em;
+        }
+
+        input[type="range"] {
+            width: 100%;
+            height: 8px;
+            border-radius: 4px;
+            background: linear-gradient(90deg, #1e3a5f, #2d5a87);
+            outline: none;
+            -webkit-appearance: none;
+            cursor: pointer;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 22px;
+            height: 22px;
+            border-radius: 50%;
+            background: linear-gradient(145deg, #64b5f6, #42a5f5);
+            cursor: pointer;
+            box-shadow: 0 0 15px rgba(100, 181, 246, 0.6),
+                        0 4px 8px rgba(0, 0, 0, 0.3);
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        input[type="range"]::-webkit-slider-thumb:hover {
+            transform: scale(1.15);
+            box-shadow: 0 0 25px rgba(100, 181, 246, 0.8),
+                        0 6px 12px rgba(0, 0, 0, 0.4);
+        }
+
+        input[type="range"]::-moz-range-thumb {
+            width: 22px;
+            height: 22px;
+            border-radius: 50%;
+            background: linear-gradient(145deg, #64b5f6, #42a5f5);
+            cursor: pointer;
+            border: none;
+            box-shadow: 0 0 15px rgba(100, 181, 246, 0.6);
+        }
+
+        input[type="color"] {
+            width: 100%;
+            height: 45px;
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            background: transparent;
+            padding: 3px;
+        }
+
+        input[type="color"]::-webkit-color-swatch-wrapper {
+            padding: 0;
+        }
+
+        input[type="color"]::-webkit-color-swatch {
+            border-radius: 10px;
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 0 15px currentColor;
+        }
+
+        select {
+            width: 100%;
+            padding: 12px 15px;
+            border-radius: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            background: rgba(30, 30, 60, 0.8);
+            color: #fff;
+            font-size: 0.95em;
+            cursor: pointer;
+            outline: none;
+            transition: all 0.3s ease;
+        }
+
+        select:hover, select:focus {
+            border-color: rgba(100, 181, 246, 0.5);
+            box-shadow: 0 0 20px rgba(100, 181, 246, 0.2);
+        }
+
+        select option {
+            background: #1a1a2e;
+            padding: 10px;
+        }
+
+        .button-group {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        button {
+            padding: 12px 20px;
+            border: none;
+            border-radius: 12px;
+            font-size: 0.9em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(145deg, #667eea, #764ba2);
+            color: white;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 25px rgba(102, 126, 234, 0.6);
+        }
+
+        .btn-danger {
+            background: linear-gradient(145deg, #f093fb, #f5576c);
+            color: white;
+            box-shadow: 0 4px 15px rgba(245, 87, 108, 0.4);
+        }
+
+        .btn-danger:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 25px rgba(245, 87, 108, 0.6);
+        }
+
+        .btn-success {
+            background: linear-gradient(145deg, #4facfe, #00f2fe);
+            color: #1a1a2e;
+            box-shadow: 0 4px 15px rgba(79, 172, 254, 0.4);
+        }
+
+        .btn-success:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 25px rgba(79, 172, 254, 0.6);
+        }
+
+        .btn-warning {
+            background: linear-gradient(145deg, #fa709a, #fee140);
+            color: #1a1a2e;
+            box-shadow: 0 4px 15px rgba(250, 112, 154, 0.4);
+        }
+
+        .btn-warning:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 25px rgba(250, 112, 154, 0.6);
+        }
+
+        .toggle-btn {
+            position: fixed;
+            z-index: 11;
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background: linear-gradient(145deg, #667eea, #764ba2);
+            border: none;
+            color: white;
+            font-size: 1.5em;
+            cursor: pointer;
+            box-shadow: 0 4px 20px rgba(102, 126, 234, 0.5);
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        @media (orientation: landscape) {
+            .toggle-btn {
+                top: 20px;
+                left: 20px;
+            }
+        }
+
+        @media (orientation: portrait) {
+            .toggle-btn {
+                top: 20px;
+                right: 20px;
+            }
+        }
+
+        .toggle-btn:hover {
+            transform: scale(1.1) rotate(90deg);
+        }
+
+        .controls.hidden {
+            opacity: 0;
+            pointer-events: none;
+            transform: translateY(20px);
+        }
+
+        .stats {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 10;
+            background: rgba(20, 20, 40, 0.7);
+            backdrop-filter: blur(10px);
+            padding: 10px 25px;
+            border-radius: 25px;
+            color: #64b5f6;
+            font-size: 0.9em;
+            display: flex;
+            gap: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .stats span {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .stats .dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #4caf50;
+            animation: pulse 1.5s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.5; transform: scale(1.2); }
+        }
+
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .checkbox-group input[type="checkbox"] {
+            width: 20px;
+            height: 20px;
+            cursor: pointer;
+            accent-color: #64b5f6;
+        }
+
+        .divider {
+            height: 1px;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+            margin: 20px 0;
+        }
+
+        .preset-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 8px;
+            margin-top: 10px;
+        }
+
+        .preset-btn {
+            padding: 8px 12px;
+            font-size: 0.75em;
+            border-radius: 8px;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="canvas"></canvas>
+
+    <div class="stats">
+        <span><span class="dot"></span> Active</span>
+        <span>Particles: <strong id="particleCount">0</strong></span>
+        <span>FPS: <strong id="fpsCounter">60</strong></span>
+    </div>
+
+    <button class="toggle-btn" id="toggleBtn">⚙️</button>
+
+    <div class="controls" id="controls">
+        <h2>Particle Playground</h2>
+
+        <div class="control-group">
+            <label>Particle Count <span id="countValue">200</span></label>
+            <input type="range" id="particleCount" min="50" max="1000" value="200">
+        </div>
+
+        <div class="control-group">
+            <label>Particle Size <span id="sizeValue">3</span></label>
+            <input type="range" id="particleSize" min="1" max="15" value="3">
+        </div>
+
+        <div class="control-group">
+            <label>Speed <span id="speedValue">2</span></label>
+            <input type="range" id="speed" min="0.5" max="10" step="0.5" value="2">
+        </div>
+
+        <div class="control-group">
+            <label>Mouse Radius <span id="radiusValue">150</span></label>
+            <input type="range" id="mouseRadius" min="50" max="400" value="150">
+        </div>
+
+        <div class="control-group">
+            <label>Connection Distance <span id="connectionValue">120</span></label>
+            <input type="range" id="connectionDist" min="50" max="250" value="120">
+        </div>
+
+        <div class="control-group">
+            <label>Trail Length <span id="trailValue">0.1</span></label>
+            <input type="range" id="trailLength" min="0.01" max="1" step="0.01" value="0.1">
+        </div>
+
+        <div class="divider"></div>
+
+        <div class="control-group">
+            <label>Primary Color</label>
+            <input type="color" id="primaryColor" value="#64b5f6">
+        </div>
+
+        <div class="control-group">
+            <label>Secondary Color</label>
+            <input type="color" id="secondaryColor" value="#f06292">
+        </div>
+
+        <div class="control-group">
+            <label>Background Color</label>
+            <input type="color" id="bgColor" value="#0a0a1a">
+        </div>
+
+        <div class="divider"></div>
+
+        <div class="control-group">
+            <label>Mouse Effect</label>
+            <select id="mouseEffect">
+                <option value="attract">Attract</option>
+                <option value="repel">Repel</option>
+                <option value="orbit">Orbit</option>
+                <option value="explode">Explode</option>
+                <option value="vortex">Vortex</option>
+            </select>
+        </div>
+
+        <div class="control-group">
+            <label>Particle Shape</label>
+            <select id="particleShape">
+                <option value="circle">Circle</option>
+                <option value="square">Square</option>
+                <option value="triangle">Triangle</option>
+                <option value="star">Star</option>
+                <option value="heart">Heart</option>
+            </select>
+        </div>
+
+        <div class="control-group">
+            <label>Blend Mode</label>
+            <select id="blendMode">
+                <option value="source-over">Normal</option>
+                <option value="lighter">Lighter (Glow)</option>
+                <option value="screen">Screen</option>
+                <option value="overlay">Overlay</option>
+            </select>
+        </div>
+
+        <div class="divider"></div>
+
+        <div class="control-group checkbox-group">
+            <input type="checkbox" id="showConnections" checked>
+            <label style="margin-bottom: 0;">Show Connections</label>
+        </div>
+
+        <div class="control-group checkbox-group">
+            <input type="checkbox" id="rainbow" >
+            <label style="margin-bottom: 0;">Rainbow Mode</label>
+        </div>
+
+        <div class="control-group checkbox-group">
+            <input type="checkbox" id="glow" checked>
+            <label style="margin-bottom: 0;">Glow Effect</label>
+        </div>
+
+        <div class="control-group checkbox-group">
+            <input type="checkbox" id="pulse">
+            <label style="margin-bottom: 0;">Pulse Animation</label>
+        </div>
+
+        <div class="divider"></div>
+
+        <div class="control-group">
+            <label>Presets</label>
+            <div class="preset-grid">
+                <button class="preset-btn btn-primary" data-preset="galaxy">🌌 Galaxy</button>
+                <button class="preset-btn btn-danger" data-preset="fire">🔥 Fire</button>
+                <button class="preset-btn btn-success" data-preset="ocean">🌊 Ocean</button>
+                <button class="preset-btn btn-warning" data-preset="neon">💫 Neon</button>
+                <button class="preset-btn btn-primary" data-preset="snow">❄️ Snow</button>
+                <button class="preset-btn btn-danger" data-preset="matrix">💚 Matrix</button>
+            </div>
+        </div>
+
+        <div class="button-group">
+            <button class="btn-success" id="saveBtn">💾 Save</button>
+            <button class="btn-warning" id="exportBtn">📤 Export</button>
+            <button class="btn-primary" id="randomBtn">🎲 Random</button>
+            <button class="btn-danger" id="resetBtn">🔄 Reset</button>
+        </div>
+    </div>
+
+    <script>
+        // Canvas setup
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+
+        // State management
+        let state = {
+            particleCount: 200,
+            particleSize: 3,
+            speed: 2,
+            mouseRadius: 150,
+            connectionDist: 120,
+            trailLength: 0.1,
+            primaryColor: '#64b5f6',
+            secondaryColor: '#f06292',
+            bgColor: '#0a0a1a',
+            mouseEffect: 'attract',
+            particleShape: 'circle',
+            blendMode: 'source-over',
+            showConnections: true,
+            rainbow: false,
+            glow: true,
+            pulse: false,
+            controlsVisible: true
+        };
+
+        // Particles array
+        let particles = [];
+
+        // Mouse position
+        let mouse = {
+            x: null,
+            y: null,
+            isActive: false
+        };
+
+        // FPS tracking
+        let lastTime = performance.now();
+        let frameCount = 0;
+        let fps = 60;
+
+        // Resize canvas
+        function resizeCanvas() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+            initParticles();
+        }
+
+        // Particle class
+        class Particle {
+            constructor() {
+                this.reset();
+            }
+
+            reset() {
+                this.x = Math.random() * canvas.width;
+                this.y = Math.random() * canvas.height;
+                this.baseSize = state.particleSize * (0.5 + Math.random() * 0.5);
+                this.size = this.baseSize;
+                this.speedX = (Math.random() - 0.5) * state.speed;
+                this.speedY = (Math.random() - 0.5) * state.speed;
+                this.hue = Math.random() * 360;
+                this.life = 1;
+                this.angle = Math.random() * Math.PI * 2;
+            }
+
+            update() {
+                // Pulse effect
+                if (state.pulse) {
+                    this.size = this.baseSize * (1 + Math.sin(Date.now() * 0.005 + this.hue) * 0.3);
+                } else {
+                    this.size = this.baseSize;
+                }
+
+                // Rainbow mode
+                if (state.rainbow) {
+                    this.hue += 0.5;
+                    if (this.hue > 360) this.hue = 0;
+                }
+
+                // Mouse interaction
+                if (mouse.isActive && mouse.x !== null) {
+                    const dx = mouse.x - this.x;
+                    const dy = mouse.y - this.y;
+                    const dist = Math.sqrt(dx * dx + dy * dy);
+
+                    if (dist < state.mouseRadius) {
+                        const force = (state.mouseRadius - dist) / state.mouseRadius;
+                        const angle = Math.atan2(dy, dx);
+
+                        switch (state.mouseEffect) {
+                            case 'attract':
+                                this.speedX += Math.cos(angle) * force * 0.5;
+                                this.speedY += Math.sin(angle) * force * 0.5;
+                                break;
+                            case 'repel':
+                                this.speedX -= Math.cos(angle) * force * 0.8;
+                                this.speedY -= Math.sin(angle) * force * 0.8;
+                                break;
+                            case 'orbit':
+                                this.speedX += Math.cos(angle + Math.PI / 2) * force * 0.3;
+                                this.speedY += Math.sin(angle + Math.PI / 2) * force * 0.3;
+                                break;
+                            case 'explode':
+                                if (dist < 50) {
+                                    this.speedX -= Math.cos(angle) * force * 3;
+                                    this.speedY -= Math.sin(angle) * force * 3;
+                                }
+                                break;
+                            case 'vortex':
+                                const vortexAngle = angle + Math.PI / 2;
+                                this.speedX += Math.cos(vortexAngle) * force * 0.5 - Math.cos(angle) * force * 0.2;
+                                this.speedY += Math.sin(vortexAngle) * force * 0.5 - Math.sin(angle) * force * 0.2;
+                                break;
+                        }
+                    }
+                }
+
+                // Apply velocity with damping
+                this.x += this.speedX;
+                this.y += this.speedY;
+                this.speedX *= 0.99;
+                this.speedY *= 0.99;
+
+                // Boundary check with wrapping
+                if (this.x < -50) this.x = canvas.width + 50;
+                if (this.x > canvas.width + 50) this.x = -50;
+                if (this.y < -50) this.y = canvas.height + 50;
+                if (this.y > canvas.height + 50) this.y = -50;
+
+                // Add some random movement
+                this.speedX += (Math.random() - 0.5) * 0.1;
+                this.speedY += (Math.random() - 0.5) * 0.1;
+
+                // Limit speed
+                const maxSpeed = state.speed * 2;
+                const currentSpeed = Math.sqrt(this.speedX * this.speedX + this.speedY * this.speedY);
+                if (currentSpeed > maxSpeed) {
+                    this.speedX = (this.speedX / currentSpeed) * maxSpeed;
+                    this.speedY = (this.speedY / currentSpeed) * maxSpeed;
+                }
+            }
+
+            draw() {
+                const color = state.rainbow 
+                    ? `hsl(${this.hue}, 80%, 60%)` 
+                    : state.primaryColor;
+
+                ctx.save();
+                ctx.globalCompositeOperation = state.blendMode;
+
+                if (state.glow) {
+                    ctx.shadowBlur = 15;
+                    ctx.shadowColor = color;
+                }
+
+                ctx.fillStyle = color;
+                ctx.beginPath();
+
+                switch (state.particleShape) {
+                    case 'circle':
+                        ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                        break;
+                    case 'square':
+                        ctx.rect(this.x - this.size, this.y - this.size, this.size * 2, this.size * 2);
+                        break;
+                    case 'triangle':
+                        ctx.moveTo(this.x, this.y - this.size);
+                        ctx.lineTo(this.x + this.size, this.y + this.size);
+                        ctx.lineTo(this.x - this.size, this.y + this.size);
+                        ctx.closePath();
+                        break;
+                    case 'star':
+                        this.drawStar(this.x, this.y, 5, this.size, this.size / 2);
+                        break;
+                    case 'heart':
+                        this.drawHeart(this.x, this.y, this.size);
+                        break;
+                }
+
+                ctx.fill();
+                ctx.restore();
+            }
+
+            drawStar(cx, cy, spikes, outerRadius, innerRadius) {
+                let rot = Math.PI / 2 * 3;
+                let step = Math.PI / spikes;
+
+                ctx.moveTo(cx, cy - outerRadius);
+                for (let i = 0; i < spikes; i++) {
+                    ctx.lineTo(cx + Math.cos(rot) * outerRadius, cy + Math.sin(rot) * outerRadius);
+                    rot += step;
+                    ctx.lineTo(cx + Math.cos(rot) * innerRadius, cy + Math.sin(rot) * innerRadius);
+                    rot += step;
+                }
+                ctx.lineTo(cx, cy - outerRadius);
+                ctx.closePath();
+            }
+
+            drawHeart(x, y, size) {
+                ctx.moveTo(x, y + size / 4);
+                ctx.bezierCurveTo(x, y, x - size, y, x - size, y + size / 2);
+                ctx.bezierCurveTo(x - size, y + size, x, y + size * 1.2, x, y + size * 1.5);
+                ctx.bezierCurveTo(x, y + size * 1.2, x + size, y + size, x + size, y + size / 2);
+                ctx.bezierCurveTo(x + size, y, x, y, x, y + size / 4);
+            }
+        }
+
+        // Initialize particles
+        function initParticles() {
+            particles = [];
+            for (let i = 0; i < state.particleCount; i++) {
+                particles.push(new Particle());
+            }
+        }
+
+        // Draw connections
+        function drawConnections() {
+            if (!state.showConnections) return;
+
+            for (let i = 0; i < particles.length; i++) {
+                for (let j = i + 1; j < particles.length; j++) {
+                    const dx = particles[i].x - particles[j].x;
+                    const dy = particles[i].y - particles[j].y;
+                    const dist = Math.sqrt(dx * dx + dy * dy);
+
+                    if (dist < state.connectionDist) {
+                        const opacity = 1 - (dist / state.connectionDist);
+                        const color = state.rainbow 
+                            ? `hsla(${particles[i].hue}, 80%, 60%, ${opacity * 0.5})`
+                            : hexToRgba(state.secondaryColor, opacity * 0.5);
+
+                        ctx.save();
+                        ctx.globalCompositeOperation = state.blendMode;
+                        ctx.strokeStyle = color;
+                        ctx.lineWidth = 1;
+                        ctx.beginPath();
+                        ctx.moveTo(particles[i].x, particles[i].y);
+                        ctx.lineTo(particles[j].x, particles[j].y);
+                        ctx.stroke();
+                        ctx.restore();
+                    }
+                }
+            }
+        }
+
+        // Helper function to convert hex to rgba
+        function hexToRgba(hex, alpha) {
+            const r = parseInt(hex.slice(1, 3), 16);
+            const g = parseInt(hex.slice(3, 5), 16);
+            const b = parseInt(hex.slice(5, 7), 16);
+            return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+        }
+
+        // Animation loop
+        function animate() {
+            // Trail effect
+            ctx.fillStyle = hexToRgba(state.bgColor, state.trailLength);
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Update and draw particles
+            particles.forEach(particle => {
+                particle.update();
+                particle.draw();
+            });
+
+            // Draw connections
+            drawConnections();
+
+            // Draw mouse effect indicator
+            if (mouse.isActive && mouse.x !== null) {
+                ctx.save();
+                ctx.globalCompositeOperation = 'lighter';
+                ctx.strokeStyle = hexToRgba(state.primaryColor, 0.3);
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.arc(mouse.x, mouse.y, state.mouseRadius, 0, Math.PI * 2);
+                ctx.stroke();
+
+                // Inner glow
+                const gradient = ctx.createRadialGradient(
+                    mouse.x, mouse.y, 0,
+                    mouse.x, mouse.y, state.mouseRadius
+                );
+                gradient.addColorStop(0, hexToRgba(state.primaryColor, 0.1));
+                gradient.addColorStop(1, 'transparent');
+                ctx.fillStyle = gradient;
+                ctx.fill();
+                ctx.restore();
+            }
+
+            // FPS calculation
+            frameCount++;
+            const currentTime = performance.now();
+            if (currentTime - lastTime >= 1000) {
+                fps = frameCount;
+                frameCount = 0;
+                lastTime = currentTime;
+                document.getElementById('fpsCounter').textContent = fps;
+            }
+
+            // Update particle count display
+            document.getElementById('particleCount').textContent = particles.length;
+
+            requestAnimationFrame(animate);
+        }
+
+        // Event listeners
+        function setupEventListeners() {
+            // Mouse events
+            canvas.addEventListener('mousemove', (e) => {
+                mouse.x = e.clientX;
+                mouse.y = e.clientY;
+                mouse.isActive = true;
+            });
+
+            canvas.addEventListener('mouseleave', () => {
+                mouse.isActive = false;
+            });
+
+            canvas.addEventListener('mouseenter', () => {
+                mouse.isActive = true;
+            });
+
+            // Touch events
+            canvas.addEventListener('touchstart', (e) => {
+                e.preventDefault();
+                mouse.x = e.touches[0].clientX;
+                mouse.y = e.touches[0].clientY;
+                mouse.isActive = true;
+            });
+
+            canvas.addEventListener('touchmove', (e) => {
+                e.preventDefault();
+                mouse.x = e.touches[0].clientX;
+                mouse.y = e.touches[0].clientY;
+            });
+
+            canvas.addEventListener('touchend', () => {
+                mouse.isActive = false;
+            });
+
+            // Resize
+            window.addEventListener('resize', resizeCanvas);
+            window.addEventListener('orientationchange', () => {
+                setTimeout(resizeCanvas, 100);
+            });
+
+            // Toggle controls
+            document.getElementById('toggleBtn').addEventListener('click', () => {
+                const controls = document.getElementById('controls');
+                controls.classList.toggle('hidden');
+                state.controlsVisible = !controls.classList.contains('hidden');
+                saveState();
+            });
+
+            // Sliders
+            setupSlider('particleCount', 'countValue', (val) => {
+                state.particleCount = parseInt(val);
+                initParticles();
+            });
+
+            setupSlider('particleSize', 'sizeValue', (val) => {
+                state.particleSize = parseFloat(val);
+                particles.forEach(p => p.baseSize = state.particleSize * (0.5 + Math.random() * 0.5));
+            });
+
+            setupSlider('speed', 'speedValue', (val) => {
+                state.speed = parseFloat(val);
+            });
+
+            setupSlider('mouseRadius', 'radiusValue', (val) => {
+                state.mouseRadius = parseInt(val);
+            });
+
+            setupSlider('connectionDist', 'connectionValue', (val) => {
+                state.connectionDist = parseInt(val);
+            });
+
+            setupSlider('trailLength', 'trailValue', (val) => {
+                state.trailLength = parseFloat(val);
+            });
+
+            // Colors
+            document.getElementById('primaryColor').addEventListener('input', (e) => {
+                state.primaryColor = e.target.value;
+                saveState();
+            });
+
+            document.getElementById('secondaryColor').addEventListener('input', (e) => {
+                state.secondaryColor = e.target.value;
+                saveState();
+            });
+
+            document.getElementById('bgColor').addEventListener('input', (e) => {
+                state.bgColor = e.target.value;
+                saveState();
+            });
+
+            // Selects
+            document.getElementById('mouseEffect').addEventListener('change', (e) => {
+                state.mouseEffect = e.target.value;
+                saveState();
+            });
+
+            document.getElementById('particleShape').addEventListener('change', (e) => {
+                state.particleShape = e.target.value;
+                saveState();
+            });
+
+            document.getElementById('blendMode').addEventListener('change', (e) => {
+                state.blendMode = e.target.value;
+                saveState();
+            });
+
+            // Checkboxes
+            document.getElementById('showConnections').addEventListener('change', (e) => {
+                state.showConnections = e.target.checked;
+                saveState();
+            });
+
+            document.getElementById('rainbow').addEventListener('change', (e) => {
+                state.rainbow = e.target.checked;
+                saveState();
+            });
+
+            document.getElementById('glow').addEventListener('change', (e) => {
+                state.glow = e.target.checked;
+                saveState();
+            });
+
+            document.getElementById('pulse').addEventListener('change', (e) => {
+                state.pulse = e.target.checked;
+                saveState();
+            });
+
+            // Buttons
+            document.getElementById('saveBtn').addEventListener('click', () => {
+                saveState();
+                showNotification('State saved!');
+            });
+
+            document.getElementById('exportBtn').addEventListener('click', exportState);
+
+            document.getElementById('randomBtn').addEventListener('click', randomize);
+
+            document.getElementById('resetBtn').addEventListener('click', resetState);
+
+            // Presets
+            document.querySelectorAll('.preset-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    applyPreset(btn.dataset.preset);
+                });
+            });
+        }
+
+        function setupSlider(sliderId, valueId, callback) {
+            const slider = document.getElementById(sliderId);
+            const valueDisplay = document.getElementById(valueId);
+
+            slider.addEventListener('input', (e) => {
+                valueDisplay.textContent = e.target.value;
+                callback(e.target.value);
+                saveState();
+            });
+        }
+
+        // Presets
+        const presets = {
+            galaxy: {
+                particleCount: 500,
+                particleSize: 2,
+                speed: 1,
+                mouseRadius: 200,
+                connectionDist: 100,
+                trailLength: 0.05,
+                primaryColor: '#9c27b0',
+                secondaryColor: '#3f51b5',
+                bgColor: '#000011',
+                mouseEffect: 'orbit',
+                particleShape: 'circle',
+                blendMode: 'lighter',
+                showConnections: true,
+                rainbow: false,
+                glow: true,
+                pulse: true
+            },
+            fire: {
+                particleCount: 400,
+                particleSize: 4,
+                speed: 3,
+                mouseRadius: 150,
+                connectionDist: 80,
+                trailLength: 0.15,
+                primaryColor: '#ff5722',
+                secondaryColor: '#ffeb3b',
+                bgColor: '#1a0500',
+                mouseEffect: 'repel',
+                particleShape: 'circle',
+                blendMode: 'lighter',
+                showConnections: false,
+                rainbow: false,
+                glow: true,
+                pulse: true
+            },
+            ocean: {
+                particleCount: 300,
+                particleSize: 3,
+                speed: 1.5,
+                mouseRadius: 180,
+                connectionDist: 150,
+                trailLength: 0.08,
+                primaryColor: '#00bcd4',
+                secondaryColor: '#4dd0e1',
+                bgColor: '#001a2e',
+                mouseEffect: 'vortex',
+                particleShape: 'circle',
+                blendMode: 'screen',
+                showConnections: true,
+                rainbow: false,
+                glow: true,
+                pulse: false
+            },
+            neon: {
+                particleCount: 250,
+                particleSize: 5,
+                speed: 2,
+                mouseRadius: 200,
+                connectionDist: 180,
+                trailLength: 0.03,
+                primaryColor: '#e91e63',
+                secondaryColor: '#00e676',
+                bgColor: '#0a0a0a',
+                mouseEffect: 'attract',
+                particleShape: 'star',
+                blendMode: 'lighter',
+                showConnections: true,
+                rainbow: true,
+                glow: true,
+                pulse: true
+            },
+            snow: {
+                particleCount: 200,
+                particleSize: 4,
+                speed: 1,
+                mouseRadius: 100,
+                connectionDist: 60,
+                trailLength: 0.02,
+                primaryColor: '#ffffff',
+                secondaryColor: '#b3e5fc',
+                bgColor: '#1a237e',
+                mouseEffect: 'repel',
+                particleShape: 'circle',
+                blendMode: 'source-over',
+                showConnections: false,
+                rainbow: false,
+                glow: true,
+                pulse: false
+            },
+            matrix: {
+                particleCount: 400,
+                particleSize: 3,
+                speed: 4,
+                mouseRadius: 120,
+                connectionDist: 100,
+                trailLength: 0.1,
+                primaryColor: '#00ff00',
+                secondaryColor: '#003300',
+                bgColor: '#000000',
+                mouseEffect: 'attract',
+                particleShape: 'square',
+                blendMode: 'lighter',
+                showConnections: true,
+                rainbow: false,
+                glow: true,
+                pulse: false
+            }
+        };
+
+        function applyPreset(presetName) {
+            const preset = presets[presetName];
+            if (!preset) return;
+
+            Object.assign(state, preset);
+            updateUI();
+            initParticles();
+            saveState();
+            showNotification(`${presetName.charAt(0).toUpperCase() + presetName.slice(1)} preset applied!`);
+        }
+
+        // Update UI from state
+        function updateUI() {
+            document.getElementById('particleCount').value = state.particleCount;
+            document.getElementById('countValue').textContent = state.particleCount;
+
+            document.getElementById('particleSize').value = state.particleSize;
+            document.getElementById('sizeValue').textContent = state.particleSize;
+
+            document.getElementById('speed').value = state.speed;
+            document.getElementById('speedValue').textContent = state.speed;
+
+            document.getElementById('mouseRadius').value = state.mouseRadius;
+            document.getElementById('radiusValue').textContent = state.mouseRadius;
+
+            document.getElementById('connectionDist').value = state.connectionDist;
+            document.getElementById('connectionValue').textContent = state.connectionDist;
+
+            document.getElementById('trailLength').value = state.trailLength;
+            document.getElementById('trailValue').textContent = state.trailLength;
+
+            document.getElementById('primaryColor').value = state.primaryColor;
+            document.getElementById('secondaryColor').value = state.secondaryColor;
+            document.getElementById('bgColor').value = state.bgColor;
+
+            document.getElementById('mouseEffect').value = state.mouseEffect;
+            document.getElementById('particleShape').value = state.particleShape;
+            document.getElementById('blendMode').value = state.blendMode;
+
+            document.getElementById('showConnections').checked = state.showConnections;
+            document.getElementById('rainbow').checked = state.rainbow;
+            document.getElementById('glow').checked = state.glow;
+            document.getElementById('pulse').checked = state.pulse;
+
+            if (!state.controlsVisible) {
+                document.getElementById('controls').classList.add('hidden');
+            }
+        }
+
+        // Save state to localStorage
+        function saveState() {
+            try {
+                localStorage.setItem('particlePlaygroundState', JSON.stringify(state));
+            } catch (e) {
+                console.warn('Could not save state:', e);
+            }
+        }
+
+        // Load state from localStorage
+        function loadState() {
+            try {
+                const saved = localStorage.getItem('particlePlaygroundState');
+                if (saved) {
+                    const parsed = JSON.parse(saved);
+                    Object.assign(state, parsed);
+                }
+            } catch (e) {
+                console.warn('Could not load state:', e);
+            }
+        }
+
+        // Export state
+        function exportState() {
+            const dataStr = JSON.stringify(state, null, 2);
+            const dataUri = 'data:application/json;charset=utf-8,' + encodeURIComponent(dataStr);
+            
+            const link = document.createElement('a');
+            link.setAttribute('href', dataUri);
+            link.setAttribute('download', 'particle-playground-config.json');
+            link.click();
+            
+            showNotification('Configuration exported!');
+        }
+
+        // Randomize settings
+        function randomize() {
+            state.particleCount = Math.floor(Math.random() * 500) + 100;
+            state.particleSize = Math.floor(Math.random() * 10) + 2;
+            state.speed = Math.random() * 5 + 0.5;
+            state.mouseRadius = Math.floor(Math.random() * 300) + 50;
+            state.connectionDist = Math.floor(Math.random() * 150) + 50;
+            state.trailLength = Math.random() * 0.3 + 0.02;
+            state.primaryColor = '#' + Math.floor(Math.random()*16777215).toString(16).padStart(6, '0');
+            state.secondaryColor = '#' + Math.floor(Math.random()*16777215).toString(16).padStart(6, '0');
+            state.bgColor = '#' + Math.floor(Math.random()*2236962).toString(16).padStart(6, '0');
+            
+            const effects = ['attract', 'repel', 'orbit', 'explode', 'vortex'];
+            state.mouseEffect = effects[Math.floor(Math.random() * effects.length)];
+            
+            const shapes = ['circle', 'square', 'triangle', 'star', 'heart'];
+            state.particleShape = shapes[Math.floor(Math.random() * shapes.length)];
+            
+            const blends = ['source-over', 'lighter', 'screen', 'overlay'];
+            state.blendMode = blends[Math.floor(Math.random() * blends.length)];
+            
+            state.showConnections = Math.random() > 0.3;
+            state.rainbow = Math.random() > 0.7;
+            state.glow = Math.random() > 0.3;
+            state.pulse = Math.random() > 0.6;
+
+            updateUI();
+            initParticles();
+            saveState();
+            showNotification('Randomized!');
+        }
+
+        // Reset to defaults
+        function resetState() {
+            state = {
+                particleCount: 200,
+                particleSize: 3,
+                speed: 2,
+                mouseRadius: 150,
+                connectionDist: 120,
+                trailLength: 0.1,
+                primaryColor: '#64b5f6',
+                secondaryColor: '#f06292',
+                bgColor: '#0a0a1a',
+                mouseEffect: 'attract',
+                particleShape: 'circle',
+                blendMode: 'source-over',
+                showConnections: true,
+                rainbow: false,
+                glow: true,
+                pulse: false,
+                controlsVisible: true
+            };
+
+            updateUI();
+            initParticles();
+            saveState();
+            showNotification('Reset to defaults!');
+        }
+
+        // Notification
+        function showNotification(message) {
+            const notification = document.createElement('div');
+            notification.style.cssText = `
+                position: fixed;
+                top: 80px;
+                left: 50%;
+                transform: translateX(-50%);
+                background: rgba(100, 181, 246, 0.9);
+                color: white;
+                padding: 12px 24px;
+                border-radius: 25px;
+                font-weight: 600;
+                z-index: 1000;
+                animation: slideDown 0.3s ease;
+                box-shadow: 0 4px 20px rgba(100, 181, 246, 0.4);
+            `;
+            notification.textContent = message;
+            document.body.appendChild(notification);
+
+            setTimeout(() => {
+                notification.style.animation = 'slideUp 0.3s ease forwards';
+                setTimeout(() => notification.remove(), 300);
+            }, 2000);
+        }
+
+        // Add notification animations
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes slideDown {
+                from { opacity: 0; transform: translateX(-50%) translateY(-20px); }
+                to { opacity: 1; transform: translateX(-50%) translateY(0); }
+            }
+            @keyframes slideUp {
+                from { opacity: 1; transform: translateX(-50%) translateY(0); }
+                to { opacity: 0; transform: translateX(-50%) translateY(-20px); }
+            }
+        `;
+        document.head.appendChild(style);
+
+        // Initialize
+        function init() {
+            loadState();
+            resizeCanvas();
+            updateUI();
+            setupEventListeners();
+            animate();
+        }
+
+        // Start the application
+        init();
+    </script>
+</body>
+</html>
