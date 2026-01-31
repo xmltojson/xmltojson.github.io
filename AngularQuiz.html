@@ -1,0 +1,2334 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Angular Quiz</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #dd0031 0%, #c3002f 50%, #8b0000 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .quiz-container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+        }
+
+        .quiz-header {
+            background: linear-gradient(135deg, #dd0031, #c3002f);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .quiz-header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+        }
+
+        .quiz-header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+
+        .progress-container {
+            background: #f0f0f0;
+            padding: 15px 30px;
+            border-bottom: 1px solid #ddd;
+        }
+
+        .progress-bar {
+            height: 10px;
+            background: #e0e0e0;
+            border-radius: 5px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #dd0031, #ff6b6b);
+            border-radius: 5px;
+            transition: width 0.3s ease;
+        }
+
+        .progress-text {
+            margin-top: 10px;
+            font-size: 0.9rem;
+            color: #666;
+            display: flex;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .quiz-content {
+            padding: 30px;
+        }
+
+        .question-card {
+            display: none;
+        }
+
+        .question-card.active {
+            display: block;
+            animation: fadeIn 0.5s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .question-meta {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .question-number {
+            color: #dd0031;
+            font-size: 0.9rem;
+            font-weight: bold;
+        }
+
+        .question-category {
+            background: linear-gradient(135deg, #dd0031, #c3002f);
+            color: white;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+        }
+
+        .question-difficulty {
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: bold;
+        }
+
+        .question-difficulty.easy {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .question-difficulty.medium {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        .question-text {
+            font-size: 1.3rem;
+            color: #333;
+            margin-bottom: 25px;
+            line-height: 1.5;
+        }
+
+        .options {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .option {
+            padding: 15px 20px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 1rem;
+        }
+
+        .option:hover {
+            border-color: #dd0031;
+            background: #fff5f5;
+        }
+
+        .option.selected {
+            border-color: #dd0031;
+            background: #fff0f0;
+        }
+
+        .option.correct {
+            border-color: #28a745;
+            background: #d4edda;
+        }
+
+        .option.incorrect {
+            border-color: #dc3545;
+            background: #f8d7da;
+        }
+
+        .option.disabled {
+            pointer-events: none;
+        }
+
+        .explanation {
+            margin-top: 20px;
+            padding: 15px;
+            background: #f8f9fa;
+            border-left: 4px solid #dd0031;
+            border-radius: 0 8px 8px 0;
+            display: none;
+        }
+
+        .explanation.show {
+            display: block;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .explanation h4 {
+            color: #dd0031;
+            margin-bottom: 8px;
+        }
+
+        .btn-container {
+            margin-top: 25px;
+            display: flex;
+            justify-content: space-between;
+            gap: 15px;
+        }
+
+        .btn {
+            padding: 12px 30px;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 600;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #dd0031, #c3002f);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(221, 0, 49, 0.4);
+        }
+
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background: #545b62;
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .results-card {
+            display: none;
+            text-align: center;
+            padding: 40px;
+        }
+
+        .results-card.active {
+            display: block;
+            animation: fadeIn 0.5s ease;
+        }
+
+        .score-circle {
+            width: 180px;
+            height: 180px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #dd0031, #c3002f);
+            margin: 0 auto 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+        }
+
+        .score-text {
+            text-align: center;
+        }
+
+        .score-number {
+            font-size: 3rem;
+            font-weight: bold;
+        }
+
+        .score-label {
+            font-size: 1rem;
+        }
+
+        .results-message {
+            font-size: 1.5rem;
+            color: #333;
+            margin-bottom: 15px;
+        }
+
+        .results-details {
+            color: #666;
+            margin-bottom: 30px;
+        }
+
+        .category-scores {
+            text-align: left;
+            max-width: 600px;
+            margin: 0 auto 30px;
+            max-height: 300px;
+            overflow-y: auto;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 10px;
+        }
+
+        .category-score-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px 0;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        .category-score-item:last-child {
+            border-bottom: none;
+        }
+
+        .category-score-bar {
+            width: 100px;
+            height: 10px;
+            background: #e0e0e0;
+            border-radius: 5px;
+            overflow: hidden;
+        }
+
+        .category-score-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #dd0031, #ff6b6b);
+            border-radius: 5px;
+        }
+
+        .start-screen {
+            text-align: center;
+            padding: 40px;
+        }
+
+        .start-screen h2 {
+            color: #333;
+            margin-bottom: 20px;
+        }
+
+        .start-screen p {
+            color: #666;
+            margin-bottom: 30px;
+            line-height: 1.6;
+        }
+
+        .categories-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 30px;
+            text-align: left;
+        }
+
+        .category-item {
+            display: flex;
+            align-items: center;
+            padding: 10px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            font-size: 0.9rem;
+        }
+
+        .category-item::before {
+            content: "✓";
+            color: #dd0031;
+            font-weight: bold;
+            margin-right: 10px;
+        }
+
+        .quiz-options {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 30px;
+        }
+
+        .quiz-options h3 {
+            margin-bottom: 15px;
+            color: #333;
+        }
+
+        .option-group {
+            margin-bottom: 15px;
+        }
+
+        .option-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: #555;
+            font-weight: 600;
+        }
+
+        .option-group select {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 1rem;
+            cursor: pointer;
+        }
+
+        .option-group select:focus {
+            outline: none;
+            border-color: #dd0031;
+        }
+
+        .angular-logo {
+            font-size: 4rem;
+            margin-bottom: 20px;
+        }
+
+        .stats-bar {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            flex-wrap: wrap;
+            margin-top: 15px;
+        }
+
+        .stat-item {
+            background: #f8f9fa;
+            padding: 10px 20px;
+            border-radius: 8px;
+        }
+
+        .stat-item strong {
+            color: #dd0031;
+        }
+
+        @media (max-width: 600px) {
+            .quiz-header h1 {
+                font-size: 1.8rem;
+            }
+
+            .question-text {
+                font-size: 1.1rem;
+            }
+
+            .btn-container {
+                flex-direction: column;
+            }
+
+            .btn {
+                width: 100%;
+            }
+
+            .categories-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="quiz-container">
+        <div class="quiz-header">
+            <h1>🅰️ Angular Master Quiz</h1>
+            <p>200 Questions across 20 Categories</p>
+        </div>
+
+        <div class="progress-container" id="progressContainer" style="display: none;">
+            <div class="progress-bar">
+                <div class="progress-fill" id="progressFill" style="width: 0%"></div>
+            </div>
+            <div class="progress-text">
+                <span>Question <span id="currentQuestion">1</span> of <span id="totalQuestions">20</span></span>
+                <span>Score: <span id="currentScore">0</span> | Correct: <span id="correctCount">0</span> | Wrong: <span id="wrongCount">0</span></span>
+            </div>
+        </div>
+
+        <div class="quiz-content">
+            <!-- Start Screen -->
+            <div class="start-screen" id="startScreen">
+                <div class="angular-logo">🅰️</div>
+                <h2>Welcome to the Ultimate Angular Quiz!</h2>
+                <p>Test your Angular knowledge with 200 carefully crafted questions covering all aspects of the Angular framework.</p>
+                
+                <div class="quiz-options">
+                    <h3>Quiz Settings</h3>
+                    <div class="option-group">
+                        <label for="categorySelect">Select Category:</label>
+                        <select id="categorySelect">
+                            <option value="all">All Categories (Random 20 Questions)</option>
+                            <option value="components">1. Components</option>
+                            <option value="templates">2. Templates & Data Binding</option>
+                            <option value="directives">3. Directives</option>
+                            <option value="pipes">4. Pipes</option>
+                            <option value="services">5. Services & Dependency Injection</option>
+                            <option value="routing">6. Routing & Navigation</option>
+                            <option value="templateForms">7. Template-Driven Forms</option>
+                            <option value="reactiveForms">8. Reactive Forms</option>
+                            <option value="httpClient">9. HTTP Client</option>
+                            <option value="rxjs">10. Observables & RxJS</option>
+                            <option value="lifecycle">11. Lifecycle Hooks</option>
+                            <option value="modules">12. Modules</option>
+                            <option value="cli">13. Angular CLI</option>
+                            <option value="testing">14. Testing</option>
+                            <option value="changeDetection">15. Change Detection</option>
+                            <option value="decorators">16. Decorators</option>
+                            <option value="signals">17. Signals</option>
+                            <option value="standalone">18. Standalone Components</option>
+                            <option value="performance">19. Performance Optimization</option>
+                            <option value="security">20. Security</option>
+                        </select>
+                    </div>
+                    <div class="option-group">
+                        <label for="difficultySelect">Select Difficulty:</label>
+                        <select id="difficultySelect">
+                            <option value="all">All Difficulties</option>
+                            <option value="easy">Easy Only</option>
+                            <option value="medium">Medium Only</option>
+                        </select>
+                    </div>
+                    <div class="option-group">
+                        <label for="questionCount">Number of Questions:</label>
+                        <select id="questionCount">
+                            <option value="10">10 Questions</option>
+                            <option value="20" selected>20 Questions</option>
+                            <option value="50">50 Questions</option>
+                            <option value="100">100 Questions</option>
+                            <option value="200">All 200 Questions</option>
+                        </select>
+                    </div>
+                </div>
+
+                <h3 style="margin-bottom: 15px; color: #333;">20 Categories Covered:</h3>
+                <div class="categories-grid">
+                    <div class="category-item">Components</div>
+                    <div class="category-item">Templates & Data Binding</div>
+                    <div class="category-item">Directives</div>
+                    <div class="category-item">Pipes</div>
+                    <div class="category-item">Services & DI</div>
+                    <div class="category-item">Routing & Navigation</div>
+                    <div class="category-item">Template-Driven Forms</div>
+                    <div class="category-item">Reactive Forms</div>
+                    <div class="category-item">HTTP Client</div>
+                    <div class="category-item">Observables & RxJS</div>
+                    <div class="category-item">Lifecycle Hooks</div>
+                    <div class="category-item">Modules</div>
+                    <div class="category-item">Angular CLI</div>
+                    <div class="category-item">Testing</div>
+                    <div class="category-item">Change Detection</div>
+                    <div class="category-item">Decorators</div>
+                    <div class="category-item">Signals</div>
+                    <div class="category-item">Standalone Components</div>
+                    <div class="category-item">Performance</div>
+                    <div class="category-item">Security</div>
+                </div>
+
+                <button class="btn btn-primary" onclick="startQuiz()">Start Quiz</button>
+            </div>
+
+            <!-- Questions will be inserted here -->
+            <div id="questionsContainer"></div>
+
+            <!-- Results Screen -->
+            <div class="results-card" id="resultsCard">
+                <div class="score-circle">
+                    <div class="score-text">
+                        <div class="score-number" id="finalScore">0%</div>
+                        <div class="score-label">Score</div>
+                    </div>
+                </div>
+                <div class="results-message" id="resultsMessage"></div>
+                <div class="results-details" id="resultsDetails"></div>
+                
+                <h3 style="margin-bottom: 15px;">Score by Category:</h3>
+                <div class="category-scores" id="categoryScores"></div>
+                
+                <div style="display: flex; gap: 15px; justify-content: center; flex-wrap: wrap;">
+                    <button class="btn btn-primary" onclick="restartQuiz()">Try Again</button>
+                    <button class="btn btn-secondary" onclick="backToMenu()">Back to Menu</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Complete quiz data with 200 questions across 20 categories
+        const allQuestions = {
+            // Category 1: Components (10 questions)
+            components: [
+                {
+                    question: "What decorator is used to define an Angular component?",
+                    options: ["@NgModule", "@Component", "@Injectable", "@Directive"],
+                    correct: 1,
+                    explanation: "The @Component decorator is used to define a component in Angular. It provides metadata about the component including selector, template, and styles.",
+                    difficulty: "easy"
+                },
+                {
+                    question: "What is the purpose of the 'selector' property in a component?",
+                    options: ["To select database records", "To define the HTML tag name for the component", "To select CSS styles", "To select other components"],
+                    correct: 1,
+                    explanation: "The selector property defines the custom HTML tag name that will be used to include this component in templates.",
+                    difficulty: "easy"
+                },
+                {
+                    question: "Which property in @Component decorator specifies the HTML template file?",
+                    options: ["template", "templateUrl", "htmlFile", "viewUrl"],
+                    correct: 1,
+                    explanation: "templateUrl is used to specify an external HTML template file, while 'template' is used for inline templates.",
+                    difficulty: "easy"
+                },
+                {
+                    question: "How do you pass data from a parent component to a child component?",
+                    options: ["@Output decorator", "@Input decorator", "@Inject decorator", "@Data decorator"],
+                    correct: 1,
+                    explanation: "@Input decorator allows a parent component to pass data to a child component through property binding.",
+                    difficulty: "easy"
+                },
+                {
+                    question: "How do you emit events from a child component to a parent?",
+                    options: ["@Input with EventEmitter", "@Output with EventEmitter", "@Emit decorator", "@Event decorator"],
+                    correct: 1,
+                    explanation: "@Output decorator combined with EventEmitter is used to emit custom events from child to parent components.",
+                    difficulty: "easy"
+                },
+                {
+                    question: "What is the default encapsulation mode for Angular components?",
+                    options: ["None", "Native", "Emulated", "ShadowDom"],
+                    correct: 2,
+                    explanation: "Emulated is the default encapsulation mode, which emulates Shadow DOM behavior by adding unique attributes to component elements.",
+                    difficulty: "medium"
+                },
+                {
+                    question: "Which ViewEncapsulation option uses native Shadow DOM?",
+                    options: ["ViewEncapsulation.Emulated", "ViewEncapsulation.None", "ViewEncapsulation.ShadowDom", "ViewEncapsulation.Native"],
+                    correct: 2,
+                    explanation: "ViewEncapsulation.ShadowDom uses the browser's native Shadow DOM implementation for true style encapsulation.",
+                    difficulty: "medium"
+                },
+                {
+                    question: "What does ViewEncapsulation.None do?",
+                    options: ["Enables Shadow DOM", "Disables all styling", "Makes styles global", "Enables style scoping"],
+                    correct: 2,
+                    explanation: "ViewEncapsulation.None disables style encapsulation, making the component's styles global and affecting the entire application.",
+                    difficulty: "medium"
+                },
+                {
+                    question: "How can you access a child component instance from a parent?",
+                    options: ["@Input", "@Output", "@ViewChild", "@Component"],
+                    correct: 2,
+                    explanation: "@ViewChild decorator allows a parent component to get a reference to a child component, directive, or DOM element.",
+                    difficulty: "medium"
+                },
+                {
+                    question: "What is the purpose of @ViewChildren decorator?",
+                    options: ["To inject services", "To query multiple child elements", "To define child routes", "To create child components"],
+                    correct: 1,
+                    explanation: "@ViewChildren is used to query and get references to multiple child components, directives, or DOM elements as a QueryList.",
+                    difficulty: "medium"
+                }
+            ],
+
+            // Category 2: Templates & Data Binding (10 questions)
+            templates: [
+                {
+                    question: "What is the syntax for interpolation in Angular templates?",
+                    options: ["[value]", "(value)", "{{value}}", "*value"],
+                    correct: 2,
+                    explanation: "Double curly braces {{value}} are used for interpolation to display component property values in the template.",
+                    difficulty: "easy"
+                },
+                {
+                    question: "What is the syntax for property binding in Angular?",
+                    options: ["{{property}}", "(property)", "[property]", "#property"],
+                    correct: 2,
+                    explanation: "Square brackets [property] are used for property binding to bind a DOM property to a component property.",
+                    difficulty: "easy"
+                },
+                {
+                    question: "What is the syntax for event binding in Angular?",
+                    options: ["[event]", "(event)", "{{event}}", "@event"],
+                    correct: 1,
+                    explanation: "Parentheses (event) are used for event binding to listen to DOM events and call component methods.",
+                    difficulty: "easy"
+                },
+                {
+                    question: "What is the syntax for two-way data binding?",
+                    options: ["[[ngModel]]", "((ngModel))", "[(ngModel)]", "{(ngModel)}"],
+                    correct: 2,
+                    explanation: "[(ngModel)] is the banana-in-a-box syntax for two-way data binding, combining property and event binding.",
+                    difficulty: "easy"
+                },
+                {
+                    question: "What does the # symbol create in a template?",
+                    options: ["A variable", "A template reference variable", "A comment", "A style"],
+                    correct: 1,
+                    explanation: "The # symbol creates a template reference variable that provides a reference to a DOM element or directive.",
+                    difficulty: "easy"
+                },
+                {
+                    question: "How do you bind to the 'class' attribute conditionally?",
+                    options: ["class={{condition}}", "[class.active]='condition'", "(class)='condition'", "class.bind='condition'"],
+                    correct: 1,
+                    explanation: "[class.className]='condition' syntax allows conditional class binding based on a boolean expression.",
+                    difficulty: "medium"
+                },
+                {
+                    question: "How do you bind to inline styles conditionally?",
+                    options: ["style={{value}}", "[style.color]='value'", "(style)='value'", "style.bind='value'"],
+                    correct: 1,
+                    explanation: "[style.property]='value' syntax allows binding CSS properties to component values dynamically.",
+                    difficulty: "medium"
+                },
+                {
+                    question: "What is the purpose of ng-template?",
+                    options: ["To create components", "To define reusable template fragments", "To import modules", "To export data"],
+                    correct: 1,
+                    explanation: "ng-template defines a template fragment that is not rendered directly but can be used by structural directives or rendered programmatically.",
+                    difficulty: "medium"
+                },
+                {
+                    question: "What is ng-container used for?",
+                    options: ["To create a DOM element", "To group elements without adding extra DOM nodes", "To contain services", "To store data"],
+                    correct: 1,
+                    explanation: "ng-container is a grouping element that doesn't render in the DOM, useful for applying structural directives without adding extra elements.",
+                    difficulty: "medium"
+                },
+                {
+                    question: "How do you safely navigate null values in templates?",
+                    options: ["value!.property", "value?.property", "value&&property", "value||property"],
+                    correct: 1,
+                    explanation: "The safe navigation operator ?. (optional chaining) prevents errors when accessing properties of null or undefined values.",
+                    difficulty: "medium"
+                }
+            ],
+
+            // Category 3: Directives (10 questions)
+            directives: [
+                {
+                    question: "Which directive is used to conditionally display elements?",
+                    options: ["*ngFor", "*ngIf", "*ngSwitch", "*ngShow"],
+                    correct: 1,
+                    explanation: "*ngIf is a structural directive that conditionally includes or removes an element from the DOM based on a boolean expression.",
+                    difficulty: "easy"
+                },
+                {
+                    question: "Which directive is used to iterate over a collection?",
+                    options: ["*ngIf", "*ngFor", "*ngRepeat", "*ngLoop"],
+                    correct: 1,
+                    explanation: "*ngFor is a structural directive used to iterate over arrays or iterables and render a template for each item.",
+                    difficulty: "easy"
+                },
+                {
+                    question: "What are the two types of directives in Angular?",
+                    options: ["Input and Output", "Structural and Attribute", "Component and Service", "Public and Private"],
+                    correct: 1,
+                    explanation: "Angular has structural directives (that change DOM structure with *) and attribute directives (that change appearance or behavior).",
+                    difficulty: "easy"
+                },
+                {
+                    question: "Which built-in directive is used for multiple conditions?",
+                    options: ["*ngIf-else", "*ngSwitch", "*ngCases", "*ngMultiple"],
+                    correct: 1,
+                    explanation: "*ngSwitch along with *ngSwitchCase and *ngSwitchDefault is used to switch between multiple conditions.",
+                    difficulty: "easy"
+                },
+                {
+                    question: "What prefix indicates a structural directive?",
+                    options: ["@", "#", "*", "$"],
+                    correct: 2,
+                    explanation: "The asterisk (*) prefix indicates a structural directive that manipulates the DOM structure.",
+                    difficulty: "easy"
+                },
+                {
+                    question: "How do you get the index in *ngFor?",
+                    options: ["*ngFor='let item of items; index as i'", "*ngFor='let item of items; let i = index'", "Both A and B are correct", "*ngFor='let item, i of items'"],
+                    correct: 2,
+                    explanation: "Both syntaxes work: 'let i = index' or 'index as i' can be used to get the current index in *ngFor.",
+                    difficulty: "medium"
+                },
+                {
+                    question: "What is the purpose of trackBy in *ngFor?",
+                    options: ["To track user clicks", "To improve performance by tracking item identity", "To track errors", "To track time"],
+                    correct: 1,
+                    explanation: "trackBy provides a function that returns a unique identifier for each item, improving performance by reducing DOM manipulations.",
+                    difficulty: "medium"
+                },
+                {
+                    question: "Which decorator is used to create a custom attribute directive?",
+                    options: ["@Component", "@Directive", "@Attribute", "@Custom"],
+                    correct: 1,
+                    explanation: "@Directive decorator is used to create custom attribute directives that can modify element behavior or appearance.",
+                    difficulty: "medium"
+                },
+                {
+                    question: "How do you access the host element in a directive?",
+                    options: ["@HostElement", "ElementRef", "@Element", "HostRef"],
+                    correct: 1,
+                    explanation: "ElementRef is injected into the directive constructor to get a reference to the host element.",
+                    difficulty: "medium"
+                },
+                {
+                    question: "What does @HostListener do in a directive?",
+                    options: ["Creates a new element", "Listens to host element events", "Modifies host styles", "Binds properties"],
+                    correct: 1,
+                    explanation: "@HostListener decorator allows a directive to listen to events on its host element and execute methods in response.",
+                    difficulty: "medium"
+                }
+            ],
+
+            // Category 4: Pipes (10 questions)
+            pipes: [
+                {
+                    question: "What is the syntax to use a pipe in Angular templates?",
+                    options: ["value.pipe()", "value | pipeName", "pipe(value)", "{{value:pipe}}"],
+                    correct: 1,
+                    explanation: "The pipe operator | is used to apply pipes: value | pipeName transforms the value using the specified pipe.",
+                    difficulty: "easy"
+                },
+                {
+                    question: "Which pipe is used to format dates?",
+                    options: ["formatDate", "dateFormat", "date", "datetime"],
+                    correct: 2,
+                    explanation: "The 'date' pipe formats date values according to locale rules and format patterns.",
+                    difficulty: "easy"
+                },
+                {
+                    question: "Which pipe is used to format numbers as currency?",
+                    options: ["money", "currency", "price", "dollar"],
+                    correct: 1,
+                    explanation: "The 'currency' pipe formats numbers as currency values with proper symbols and formatting.",
+                    difficulty: "easy"
+                },
+                {
+                    question: "Which pipe converts text to uppercase?",
+                    options: ["upper", "uppercase", "toUpper", "caps"],
+                    correct: 1,
+                    explanation: "The 'uppercase' pipe transforms text to all uppercase letters.",
+                    difficulty: "easy"
+                },
+                {
+                    question: "Which pipe converts text to lowercase?",
+                    options: ["lower", "lowercase", "toLower", "small"],
+                    correct: 1,
+                    explanation: "The 'lowercase' pipe transforms text to all lowercase letters.",
+                    difficulty: "easy"
+                },
+                {
+                    question: "What pipe is used to format numbers with decimal places?",
+                    options: ["decimal", "number", "format", "digits"],
+                    correct: 1,
+                    explanation: "The 'number' pipe formats numbers with configurable decimal places and grouping.",
+                    difficulty: "medium"
+                },
+                {
+                    question: "How do you chain multiple pipes?",
+                    options: ["value | pipe1, pipe2", "value | pipe1 | pipe2", "value | (pipe1, pipe2)", "value.pipe1.pipe2"],
+                    correct: 1,
+                    explanation: "Multiple pipes are chained using multiple | operators: value | pipe1 | pipe2.",
+                    difficulty: "medium"
+                },
+                {
+                    question: "Which decorator is used to create a custom pipe?",
+                    options: ["@Pipe", "@CustomPipe", "@Transform", "@Filter"],
+                    correct: 0,
+                    explanation: "@Pipe decorator is used to define a custom pipe with its name and purity setting.",
+                    difficulty: "medium"
+                },
+                {
+                    question: "What is the difference between pure and impure pipes?",
+                    options: ["Pure pipes are faster", "Impure pipes run on every change detection", "Pure pipes don't transform data", "There is no difference"],
+                    correct: 1,
+                    explanation: "Pure pipes only execute when input values change, while impure pipes execute on every change detection cycle.",
+                    difficulty: "medium"
+                },
+                {
+                    question: "Which pipe is used to handle async data like Observables?",
+                    options: ["observable", "async", "await", "promise"],
+                    correct: 1,
+                    explanation: "The 'async' pipe subscribes to Observables/Promises and returns the latest emitted value, also handling unsubscription.",
+                    difficulty: "medium"
+                }
+            ],
+
+            // Category 5: Services & Dependency Injection (10 questions)
+            services: [
+                {
+                    question: "What decorator marks a class as injectable in Angular?",
+                    options: ["@Service", "@Injectable", "@Inject", "@Provider"],
+                    correct: 1,
+                    explanation: "@Injectable decorator marks a class as available for dependency injection by Angular's DI system.",
+                    difficulty: "easy"
+                },
+                {
+                    question: "What is the purpose of services in Angular?",
+                    options: ["Render UI", "Share data and logic across components", "Handle routing", "Style components"],
+                    correct: 1,
+                    explanation: "Services are used to share data, business logic, and functionality across multiple components.",
+                    difficulty: "easy"
+                },
+                {
+                    question: "What does 'providedIn: root' mean in @Injectable?",
+                    options: ["Service is provided in root component only", "Service is a singleton available application-wide", "Service needs manual registration", "Service is for root module only"],
+                    correct: 1,
+                    explanation: "'providedIn: root' creates a singleton service instance available throughout the entire application.",
+                    difficulty: "easy"
+                },
+                {
+                    question: "Where can services be provided in Angular?",
+                    options: ["Only in modules", "Only in components", "In modules, components, or with providedIn", "Only in root module"],
+                    correct: 2,
+                    explanation: "Services can be provided at module level, component level, or using the providedIn property in @Injectable.",
+                    difficulty: "easy"
+                },
+                {
+                    question: "How do you inject a service into a component?",
+                    options: ["Using @Service decorator", "Through the constructor", "Using import statement only", "Using @Use decorator"],
+                    correct: 1,
+                    explanation: "Services are injected through the component's constructor using TypeScript's constructor parameter syntax.",
+                    difficulty: "easy"
+                },
+                {
+                    question: "What is a hierarchical injector in Angular?",
+                    options: ["An injector that creates hierarchical data", "A tree of injectors matching the component tree", "An injector for inheritance", "A sorted injector"],
+                    correct: 1,
+                    explanation: "Angular's hierarchical injection system creates a tree of injectors that mirrors the component hierarchy.",
+                    difficulty: "medium"
+                },
+                {
+                    question: "How do you provide a different implementation of a service?",
+                    options: ["Using provide and useClass", "Using @Override", "Using extends keyword", "It's not possible"],
+                    correct: 0,
+                    explanation: "The 'provide' property with 'useClass' allows providing a different class implementation for a service token.",
+                    difficulty: "medium"
+                },
+                {
+                    question: "What is useValue used for in providers?",
+                    options: ["To provide a class", "To provide a constant value", "To provide a factory", "To provide an alias"],
+                    correct: 1,
+                    explanation: "useValue provides a constant value (like configuration objects) instead of a class instance.",
+                    difficulty: "medium"
+                },
+                {
+                    question: "What is useFactory used for in providers?",
+                    options: ["To create factory components", "To provide a function that creates the service", "To create multiple services", "To use design patterns"],
+                    correct: 1,
+                    explanation: "useFactory provides a factory function that creates and returns the service instance with custom logic.",
+                    difficulty: "medium"
+                },
+                {
+                    question: "What does @Optional decorator do in dependency injection?",
+                    options: ["Makes the parameter required", "Makes the dependency optional, returning null if not found", "Adds optional methods", "Creates optional services"],
+                    correct: 1,
+                    explanation: "@Optional allows a dependency to be optional - if not found, null is injected instead of throwing an error.",
+                    difficulty: "medium"
+                }
+            ],
+
+            // Category 6: Routing & Navigation (10 questions)
+            routing: [
+                {
+                    question: "Which module is used for routing in Angular?",
+                    options: ["BrowserModule", "RouterModule", "NavigationModule", "RouteModule"],
+                    correct: 1,
+                    explanation: "RouterModule from @angular/router provides the routing functionality in Angular applications.",
+                    difficulty: "easy"
+                },
+                {
+                    question: "What directive displays routed components?",
+                    options: ["<router-view>", "<ng-view>", "<router-outlet>", "<route-view>"],
+                    correct: 2,
+                    explanation: "<router-outlet> is the directive that acts as a placeholder where routed components are displayed.",
+                    difficulty: "easy"
+                },
+                {
+                    question: "Which directive is used for navigation links?",
+                    options: ["href", "routerLink", "navLink", "routeLink"],
+                    correct: 1,
+                    explanation: "routerLink directive is used on anchor tags to navigate between routes without page reload.",
+                    difficulty: "easy"
+                },
+                {
+                    question: "How do you define a route with a parameter?",
+                    options: ["path: 'user/:id'", "path: 'user/{id}'", "path: 'user?id'", "path: 'user[id]'"],
+                    correct: 0,
+                    explanation: "Route parameters are defined using colon syntax: 'user/:id' where :id is the parameter name.",
+                    difficulty: "easy"
+                },
+                {
+                    question: "Which service is used for programmatic navigation?",
+                    options: ["NavigationService", "Router", "RouteService", "Navigator"],
+                    correct: 1,
+                    explanation: "The Router service provides methods like navigate() and navigateByUrl() for programmatic navigation.",
+                    difficulty: "easy"
+                },
+                {
+                    question: "What is a route guard in Angular?",
+                    options: ["A security feature for routes", "An interface to control navigation", "A route debugger", "A route logger"],
+                    correct: 1,
+                    explanation: "Route guards are interfaces that allow you to control whether navigation to or from a route should be allowed.",
+                    difficulty: "medium"
+                },
+                {
+                    question: "Which guard prevents navigation to a route?",
+                    options: ["CanDeactivate", "CanActivate", "CanLoad", "CanNavigate"],
+                    correct: 1,
+                    explanation: "CanActivate guard determines if a route can be activated/accessed, useful for authentication checks.",
+                    difficulty: "medium"
+                },
+                {
+                    question: "How do you implement lazy loading in routing?",
+                    options: ["Using eager loading", "Using loadChildren with import()", "Using loadModule", "Using asyncLoad"],
+                    correct: 1,
+                    explanation: "Lazy loading is implemented using loadChildren property with dynamic import() syntax to load modules on demand.",
+                    difficulty: "medium"
+                },
+                {
+                    question: "What is ActivatedRoute used for?",
+                    options: ["To activate routes", "To access route parameters and data", "To guard routes", "To create routes"],
+                    correct: 1,
+                    explanation: "ActivatedRoute service provides access to route parameters, query parameters, and route data.",
+                    difficulty: "medium"
+                },
+                {
+                    question: "What is the purpose of a wildcard route '**'?",
+                    options: ["Match all parameters", "Match any unmatched routes (404)", "Match authenticated routes", "Match child routes"],
+                    correct: 1,
+                    explanation: "The wildcard route '**' matches any URL that doesn't match other routes, typically used for 404 pages.",
+                    difficulty: "medium"
+                }
+            ],
+
+            // Category 7: Template-Driven Forms (10 questions)
+            templateForms: [
+                {
+                    question: "Which module is required for template-driven forms?",
+                    options: ["ReactiveFormsModule", "FormsModule", "BrowserModule", "CommonModule"],
+                    correct: 1,
+                    explanation: "FormsModule from @angular/forms is required to use template-driven forms with ngModel.",
+                    difficulty: "easy"
+                },
+                {
+                    question: "What directive is used for two-way binding in forms?",
+                    options: ["ngBind", "ngModel", "ngForm", "ngValue"],
+                    correct: 1,
+                    explanation: "ngModel directive provides two-way data binding between form inputs and component properties.",
+                    difficulty: "easy"
+                },
+                {
+                    question: "What attribute is required on input elements with ngModel?",
+                    options: ["id", "name", "value", "type"],
+                    correct: 1,
+                    explanation: "The 'name' attribute is required on form controls with ngModel to register the control with the form.",
+                    difficulty: "easy"
+                },
+                {
+                    question: "How do you access the form state in template-driven forms?",
+                    options: ["Using formState", "Using template reference variable with ngForm", "Using @Form decorator", "Using form.state"],
+                    correct: 1,
+                    explanation: "A template reference variable (#form='ngForm') provides access to the form's state including validity and values.",
+                    difficulty: "easy"
+                },
+                {
+                    question: "Which directive creates a form group automatically?",
+                    options: ["ngFormGroup", "formGroup", "ngForm", "form"],
+                    correct: 2,
+                    explanation: "ngForm directive is automatically applied to <form> elements, creating a FormGroup and tracking form state.",
+                    difficulty: "easy"
+                },
+                {
+                    question: "How do you check if a form field is valid in template?",
+                    options: ["field.isValid", "field.valid", "field.validity", "field.check()"],
+                    correct: 1,
+                    explanation: "The 'valid' property on a form control reference indicates whether the control passes all validations.",
+                    difficulty: "medium"
+                },
+                {
+                    question: "What does 'touched' mean for a form control?",
+                    options: ["The field has been clicked", "The field has lost focus at least once", "The field has a value", "The field is being edited"],
+                    correct: 1,
+                    explanation: "'touched' is true when the user has focused and then blurred the control (lost focus at least once).",
+                    difficulty: "medium"
+                },
+                {
+                    question: "What does 'dirty' mean for a form control?",
+                    options: ["The field has validation errors", "The user has changed the value", "The field is required", "The field is empty"],
+                    correct: 1,
+                    explanation: "'dirty' is true when the user has modified the value, opposite of 'pristine'.",
+                    difficulty: "medium"
+                },
+                {
+                    question: "How do you add validation to template-driven form inputs?",
+                    options: ["Using validators array", "Using HTML5 attributes like required, minlength", "Using @Validate decorator", "Using validate directive"],
+                    correct: 1,
+                    explanation: "Template-driven forms use HTML5 validation attributes (required, minlength, maxlength, pattern) for validation.",
+                    difficulty: "medium"
+                },
+                {
+                    question: "What is ngModelGroup used for?",
+                    options: ["To create multiple models", "To group related form controls together", "To validate groups", "To style form groups"],
+                    correct: 1,
+                    explanation: "ngModelGroup creates a sub-group of form controls, useful for organizing complex forms into sections.",
+                    difficulty: "medium"
+                }
+            ],
+
+            // Category 8: Reactive Forms (10 questions)
+            reactiveForms: [
+                {
+                    question: "Which module is required for reactive forms?",
+                    options: ["FormsModule", "ReactiveFormsModule", "FormBuilderModule", "BrowserModule"],
+                    correct: 1,
+                    explanation: "ReactiveFormsModule from @angular/forms is required to use reactive forms.",
+                    difficulty: "easy"
+                },
+                {
+                    question: "What class represents a single form control in reactive forms?",
+                    options: ["FormField", "FormControl", "ReactiveControl", "InputControl"],
+                    correct: 1,
+                    explanation: "FormControl represents a single input field and tracks its value, validation status, and user interactions.",
+                    difficulty: "easy"
+                },
+                {
+                    question: "What class groups multiple FormControls?",
+                    options: ["ControlGroup", "FormGroup", "FormContainer", "GroupControl"],
+                    correct: 1,
+                    explanation: "FormGroup groups multiple FormControls into a single object with aggregate validity status.",
+                    difficulty: "easy"
+                },
+                {
+                    question: "What is FormBuilder used for?",
+                    options: ["Building form UI", "A shortcut service to create form controls", "Validating forms", "Styling forms"],
+                    correct: 1,
+                    explanation: "FormBuilder is a service that provides convenient methods to create FormControl, FormGroup, and FormArray instances.",
+                    difficulty: "easy"
+                },
+                {
+                    question: "Which directive binds a FormGroup to a form element?",
+                    options: ["[ngFormGroup]", "[formGroup]", "(formGroup)", "#formGroup"],
+                    correct: 1,
+                    explanation: "[formGroup] directive binds a FormGroup instance to a form element in the template.",
+                    difficulty: "easy"
+                },
+                {
+                    question: "How do you bind a FormControl to an input?",
+                    options: ["[formControl]='control'", "formControlName='controlName'", "Both A and B", "[ngModel]='control'"],
+                    correct: 2,
+                    explanation: "Both [formControl] and formControlName can bind FormControls - formControlName is used within a formGroup.",
+                    difficulty: "medium"
+                },
+                {
+                    question: "What class is used for dynamic lists of controls?",
+                    options: ["FormList", "FormArray", "ControlArray", "DynamicForm"],
+                    correct: 1,
+                    explanation: "FormArray manages a dynamic collection of controls that can be added or removed at runtime.",
+                    difficulty: "medium"
+                },
+                {
+                    question: "How do you add validators to a FormControl?",
+                    options: ["control.addValidator()", "Pass validators as second argument", "Using @Validate", "Using validate attribute"],
+                    correct: 1,
+                    explanation: "Validators are passed as the second argument when creating a FormControl: new FormControl(value, validators).",
+                    difficulty: "medium"
+                },
+                {
+                    question: "What is the difference between setValue and patchValue?",
+                    options: ["setValue updates all, patchValue updates partial", "They are the same", "patchValue is for arrays only", "setValue is deprecated"],
+                    correct: 0,
+                    explanation: "setValue requires all form control values, while patchValue allows updating only some controls.",
+                    difficulty: "medium"
+                },
+                {
+                    question: "How do you create a custom validator?",
+                    options: ["Using @Validator decorator", "A function returning null or error object", "Extending ValidatorBase", "Using ValidatorFactory"],
+                    correct: 1,
+                    explanation: "Custom validators are functions that return null (valid) or an error object (invalid).",
+                    difficulty: "medium"
+                }
+            ],
+
+            // Category 9: HTTP Client (10 questions)
+            httpClient: [
+                {
+                    question: "Which module provides HTTP functionality in Angular?",
+                    options: ["HttpModule", "HttpClientModule", "AjaxModule", "RequestModule"],
+                    correct: 1,
+                    explanation: "HttpClientModule from @angular/common/http provides the modern HTTP client for Angular applications.",
+                    difficulty: "easy"
+                },
+                {
+                    question: "Which service is used to make HTTP requests?",
+                    options: ["Http", "HttpClient", "HttpService", "AjaxService"],
+                    correct: 1,
+                    explanation: "HttpClient service provides methods for making HTTP requests (get, post, put, delete, etc.).",
+                    difficulty: "easy"
+                },
+                {
+                    question: "What type of object does HttpClient return?",
+                    options: ["Promise", "Observable", "Callback", "Response"],
+                    correct: 1,
+                    explanation: "HttpClient methods return Observables, which must be subscribed to execute the request.",
+                    difficulty: "easy"
+                },
+                {
+                    question: "How do you make a GET request with HttpClient?",
+                    options: ["http.request('GET', url)", "http.get(url)", "http.fetch(url)", "http.load(url)"],
+                    correct: 1,
+                    explanation: "http.get(url) is the method to make GET requests, returning an Observable of the response.",
+                    difficulty: "easy"
+                },
+                {
+                    question: "How do you send data with a POST request?",
+                    options: ["http.post(url, data)", "http.post(url).send(data)", "http.post(url).body(data)", "http.post(url, {data: data})"],
+                    correct: 0,
+                    explanation: "http.post(url, data) sends data as the request body in a POST request.",
+                    difficulty: "easy"
+                },
+                {
+                    question: "How do you add headers to an HTTP request?",
+                    options: ["http.get(url).headers()", "http.get(url, {headers: httpHeaders})", "http.setHeaders().get(url)", "http.get(url).addHeaders()"],
+                    correct: 1,
+                    explanation: "Headers are passed as an options object: http.get(url, { headers: new HttpHeaders({...}) }).",
+                    difficulty: "medium"
+                },
+                {
+                    question: "What is an HTTP Interceptor?",
+                    options: ["A way to block requests", "Middleware to intercept and modify HTTP requests/responses", "An error handler", "A caching mechanism"],
+                    correct: 1,
+                    explanation: "Interceptors are middleware that can inspect and transform HTTP requests and responses.",
+                    difficulty: "medium"
+                },
+                {
+                    question: "Which interface do interceptors implement?",
+                    options: ["HttpHandler", "HttpInterceptor", "InterceptorInterface", "RequestInterceptor"],
+                    correct: 1,
+                    explanation: "HTTP Interceptors implement the HttpInterceptor interface with an intercept() method.",
+                    difficulty: "medium"
+                },
+                {
+                    question: "How do you handle HTTP errors?",
+                    options: ["try-catch block", "Using catchError operator", "Using onError callback", "Using errorHandler"],
+                    correct: 1,
+                    explanation: "The catchError RxJS operator is used to handle errors in the Observable pipeline.",
+                    difficulty: "medium"
+                },
+                {
+                    question: "How do you add query parameters to a request?",
+                    options: ["Append to URL string", "Using HttpParams", "Both A and B", "Using params property only"],
+                    correct: 2,
+                    explanation: "Query params can be appended to the URL or passed via HttpParams in the options object.",
+                    difficulty: "medium"
+                }
+            ],
+
+            // Category 10: Observables & RxJS (10 questions)
+            rxjs: [
+                {
+                    question: "What library provides Observables in Angular?",
+                    options: ["Angular Core", "RxJS", "NgRx", "Zone.js"],
+                    correct: 1,
+                    explanation: "RxJS (Reactive Extensions for JavaScript) is the library that provides Observable implementation.",
+                    difficulty: "easy"
+                },
+                {
+                    question: "What method is used to listen to Observable values?",
+                    options: ["listen()", "observe()", "subscribe()", "watch()"],
+                    correct: 2,
+                    explanation: "subscribe() is called on an Observable to start receiving emitted values.",
+                    difficulty: "easy"
+                },
+                {
+                    question: "What is a Subject in RxJS?",
+                    options: ["A read-only Observable", "An Observable that can also emit values", "A type of operator", "An error handler"],
+                    correct: 1,
+                    explanation: "A Subject is both an Observable and an Observer - it can emit values and be subscribed to.",
+                    difficulty: "easy"
+                },
+                {
+                    question: "Which operator transforms emitted values?",
+                    options: ["filter", "map", "tap", "take"],
+                    correct: 1,
+                    explanation: "The map operator transforms each emitted value using a provided function.",
+                    difficulty: "easy"
+                },
+                {
+                    question: "Which operator filters emitted values?",
+                    options: ["map", "filter", "reduce", "select"],
+                    correct: 1,
+                    explanation: "The filter operator emits only values that pass a provided condition function.",
+                    difficulty: "easy"
+                },
+                {
+                    question: "What is the purpose of the pipe() method?",
+                    options: ["To connect to databases", "To chain RxJS operators", "To log values", "To handle errors"],
+                    correct: 1,
+                    explanation: "pipe() is used to compose multiple RxJS operators in a readable chain.",
+                    difficulty: "medium"
+                },
+                {
+                    question: "What does BehaviorSubject do differently than Subject?",
+                    options: ["It's faster", "It stores and emits the last value to new subscribers", "It filters values", "It's for errors only"],
+                    correct: 1,
+                    explanation: "BehaviorSubject stores the current value and immediately emits it to new subscribers.",
+                    difficulty: "medium"
+                },
+                {
+                    question: "Which operator combines multiple Observables?",
+                    options: ["map", "merge", "filter", "take"],
+                    correct: 1,
+                    explanation: "merge combines multiple Observables into one, emitting values from all sources.",
+                    difficulty: "medium"
+                },
+                {
+                    question: "What does the tap operator do?",
+                    options: ["Transforms values", "Performs side effects without modifying values", "Filters values", "Combines observables"],
+                    correct: 1,
+                    explanation: "tap performs side effects (like logging) for each emission without modifying the values.",
+                    difficulty: "medium"
+                },
+                {
+                    question: "Why is it important to unsubscribe from Observables?",
+                    options: ["To improve type safety", "To prevent memory leaks", "To improve performance", "It's not necessary"],
+                    correct: 1,
+                    explanation: "Unsubscribing prevents memory leaks by cleaning up subscriptions when components are destroyed.",
+                    difficulty: "medium"
+                }
+            ],
+
+            // Category 11: Lifecycle Hooks (10 questions)
+            lifecycle: [
+                {
+                    question: "Which lifecycle hook is called once after the first ngOnChanges?",
+                    options: ["ngOnDestroy", "ngOnInit", "ngAfterViewInit", "ngDoCheck"],
+                    correct: 1,
+                    explanation: "ngOnInit is called once after the first ngOnChanges, used for initialization logic.",
+                    difficulty: "easy"
+                },
+                {
+                    question: "Which hook is called when the component is destroyed?",
+                    options: ["ngOnInit", "ngOnDestroy", "ngOnDelete", "ngOnRemove"],
+                    correct: 1,
+                    explanation: "ngOnDestroy is called just before Angular destroys the component, used for cleanup.",
+                    difficulty: "easy"
+                },
+                {
+                    question: "Which hook detects changes to @Input properties?",
+                    options: ["ngOnInit", "ngOnChanges", "ngDoCheck", "ngAfterViewInit"],
+                    correct: 1,
+                    explanation: "ngOnChanges is called when any @Input property value changes, receiving a SimpleChanges object.",
+                    difficulty: "easy"
+                },
+                {
+                    question: "In what order are lifecycle hooks called?",
+                    options: ["ngOnInit, ngOnChanges, ngAfterViewInit", "ngOnChanges, ngOnInit, ngAfterViewInit", "ngAfterViewInit, ngOnInit, ngOnChanges", "ngOnInit, ngAfterViewInit, ngOnChanges"],
+                    correct: 1,
+                    explanation: "The order is: ngOnChanges → ngOnInit → ngDoCheck → ngAfterViewInit → etc.",
+                    difficulty: "easy"
+                },
+                {
+                    question: "Which hook is called after the component's view is initialized?",
+                    options: ["ngOnInit", "ngAfterViewInit", "ngAfterContentInit", "ngOnViewInit"],
+                    correct: 1,
+                    explanation: "ngAfterViewInit is called after Angular initializes the component's view and child views.",
+                    difficulty: "easy"
+                },
+                {
+                    question: "What is ngDoCheck used for?",
+                    options: ["Error checking", "Custom change detection", "Checking templates", "Checking services"],
+                    correct: 1,
+                    explanation: "ngDoCheck allows you to implement custom change detection logic that Angular's default detection doesn't catch.",
+                    difficulty: "medium"
+                },
+                {
+                    question: "When is ngAfterContentInit called?",
+                    options: ["After component's own content is initialized", "After projected content is initialized", "After view is ready", "After services are injected"],
+                    correct: 1,
+                    explanation: "ngAfterContentInit is called after Angular projects external content into the component (ng-content).",
+                    difficulty: "medium"
+                },
+                {
+                    question: "What interface must be implemented to use ngOnInit?",
+                    options: ["OnInit", "Initializable", "NgOnInit", "InitHook"],
+                    correct: 0,
+                    explanation: "The OnInit interface declares the ngOnInit method signature.",
+                    difficulty: "medium"
+                },
+                {
+                    question: "Which hook is called after every change detection run?",
+                    options: ["ngOnChanges", "ngAfterViewChecked", "ngOnInit", "ngDoCheck"],
+                    correct: 1,
+                    explanation: "ngAfterViewChecked is called after every change detection cycle that checks the component's view.",
+                    difficulty: "medium"
+                },
+                {
+                    question: "What is the best place to unsubscribe from Observables?",
+                    options: ["ngOnInit", "ngOnChanges", "ngOnDestroy", "Constructor"],
+                    correct: 2,
+                    explanation: "ngOnDestroy is the ideal place to unsubscribe from Observables to prevent memory leaks.",
+                    difficulty: "medium"
+                }
+            ],
+
+            // Category 12: Modules (10 questions)
+            modules: [
+                {
+                    question: "What decorator defines an Angular module?",
+                    options: ["@Component", "@NgModule", "@Module", "@Injectable"],
+                    correct: 1,
+                    explanation: "@NgModule decorator defines an Angular module with its metadata including declarations, imports, and providers.",
+                    difficulty: "easy"
+                },
+                {
+                    question: "What is the root module typically called?",
+                    options: ["RootModule", "MainModule", "AppModule", "CoreModule"],
+                    correct: 2,
+                    explanation: "AppModule is the conventional name for the root module that bootstraps the Angular application.",
+                    difficulty: "easy"
+                },
+                {
+                    question: "What array contains components, directives, and pipes that belong to a module?",
+                    options: ["imports", "exports", "declarations", "providers"],
+                    correct: 2,
+                    explanation: "The declarations array lists all components, directives, and pipes that belong to this module.",
+                    difficulty: "easy"
+                },
+                {
+                    question: "What array lists other modules whose exported classes are needed?",
+                    options: ["declarations", "imports", "exports", "providers"],
+                    correct: 1,
+                    explanation: "The imports array lists modules whose exported components, directives, or pipes are needed by this module's templates.",
+                    difficulty: "easy"
+                },
+                {
+                    question: "What array makes declarations available to other modules?",
+                    options: ["imports", "exports", "declarations", "providers"],
+                    correct: 1,
+                    explanation: "The exports array makes the module's declarations available for use in templates of other importing modules.",
+                    difficulty: "easy"
+                },
+                {
+                    question: "Which module provides browser-specific services?",
+                    options: ["CommonModule", "BrowserModule", "CoreModule", "AppModule"],
+                    correct: 1,
+                    explanation: "BrowserModule provides essential services for running Angular apps in the browser, imported only in AppModule.",
+                    difficulty: "medium"
+                },
+                {
+                    question: "Which module provides common directives like NgIf and NgFor?",
+                    options: ["BrowserModule", "CommonModule", "DirectivesModule", "CoreModule"],
+                    correct: 1,
+                    explanation: "CommonModule provides common directives (NgIf, NgFor, NgSwitch) and pipes used across the application.",
+                    difficulty: "medium"
+                },
+                {
+                    question: "What is a feature module?",
+                    options: ["The main module", "A module that groups related functionality", "A testing module", "A routing module"],
+                    correct: 1,
+                    explanation: "Feature modules organize code related to a specific feature or domain, promoting separation of concerns.",
+                    difficulty: "medium"
+                },
+                {
+                    question: "What is a shared module?",
+                    options: ["A module that shares services", "A module containing commonly used components/directives/pipes", "A module shared with other apps", "A module for sharing data"],
+                    correct: 1,
+                    explanation: "A shared module contains commonly used declarations that are exported for use by other feature modules.",
+                    difficulty: "medium"
+                },
+                {
+                    question: "What is the bootstrap array used for?",
+                    options: ["Adding CSS frameworks", "Specifying the root component(s) to launch", "Bootstrapping services", "Loading modules"],
+                    correct: 1,
+                    explanation: "The bootstrap array specifies the component(s) that Angular creates and inserts into the index.html host page.",
+                    difficulty: "medium"
+                }
+            ],
+
+            // Category 13: Angular CLI (10 questions)
+            cli: [
+                {
+                    question: "What command creates a new Angular project?",
+                    options: ["ng create", "ng new", "ng init", "ng start"],
+                    correct: 1,
+                    explanation: "'ng new project-name' creates a new Angular workspace with initial configuration and files.",
+                    difficulty: "easy"
+                },
+                {
+                    question: "What command generates a new component?",
+                    options: ["ng generate component", "ng create component", "ng new component", "ng add component"],
+                    correct: 0,
+                    explanation: "'ng generate component' (or 'ng g c') creates a new component with all necessary files.",
+                    difficulty: "easy"
+                },
+                {
+                    question: "What is the short form of 'ng generate'?",
+                    options: ["ng gen", "ng g", "ng ge", "ng cr"],
+                    correct: 1,
+                    explanation: "'ng g' is the short alias for 'ng generate' command.",
+                    difficulty: "easy"
+                },
+                {
+                    question: "What command starts the development server?",
+                    options: ["ng start", "ng serve", "ng run", "ng dev"],
+                    correct: 1,
+                    explanation: "'ng serve' builds and serves the application, rebuilding on file changes.",
+                    difficulty: "easy"
+                },
+                {
+                    question: "What command builds the application for production?",
+                    options: ["ng build --prod", "ng build", "ng compile", "ng make"],
+                    correct: 1,
+                    explanation: "'ng build' builds the application. Use 'ng build --configuration production' for production builds.",
+                    difficulty: "easy"
+                },
+                {
+                    question: "What command runs unit tests?",
+                    options: ["ng test", "ng unit", "ng spec", "ng karma"],
+                    correct: 0,
+                    explanation: "'ng test' executes unit tests using Karma test runner.",
+                    difficulty: "medium"
+                },
+                {
+                    question: "What command runs end-to-end tests?",
+                    options: ["ng test --e2e", "ng e2e", "ng cypress", "ng protractor"],
+                    correct: 1,
+                    explanation: "'ng e2e' executes end-to-end tests using a configured e2e test runner.",
+                    difficulty: "medium"
+                },
+                {
+                    question: "What command adds a package or capability to the project?",
+                    options: ["ng install", "ng add", "ng package", "ng import"],
+                    correct: 1,
+                    explanation: "'ng add' adds a package to the project and runs installation schematics.",
+                    difficulty: "medium"
+                },
+                {
+                    question: "What command updates Angular and its dependencies?",
+                    options: ["ng upgrade", "ng update", "ng refresh", "ng sync"],
+                    correct: 1,
+                    explanation: "'ng update' updates Angular packages and runs migration schematics.",
+                    difficulty: "medium"
+                },
+                {
+                    question: "What file contains Angular CLI configuration?",
+                    options: ["angular.json", "angular.config.js", "cli.json", "ng.config.json"],
+                    correct: 0,
+                    explanation: "angular.json contains workspace and project configuration for Angular CLI.",
+                    difficulty: "medium"
+                }
+            ],
+
+            // Category 14: Testing (10 questions)
+            testing: [
+                {
+                    question: "What testing framework comes with Angular by default?",
+                    options: ["Mocha", "Jest", "Jasmine", "QUnit"],
+                    correct: 2,
+                    explanation: "Jasmine is the default testing framework included with Angular projects.",
+                    difficulty: "easy"
+                },
+                {
+                    question: "What test runner does Angular CLI use by default?",
+                    options: ["Mocha", "Karma", "Jest", "Cypress"],
+                    correct: 1,
+                    explanation: "Karma is the default test runner used by Angular CLI for unit tests.",
+                    difficulty: "easy"
+                },
+                {
+                    question: "What is TestBed in Angular testing?",
+                    options: ["A test database", "A testing utility for configuring test modules", "A test runner", "A mocking library"],
+                    correct: 1,
+                    explanation: "TestBed is Angular's primary testing utility that creates a testing module environment.",
+                    difficulty: "easy"
+                },
+                {
+                    question: "What file extension do Angular test files have?",
+                    options: [".test.ts", ".spec.ts", ".unit.ts", ".karma.ts"],
+                    correct: 1,
+                    explanation: "Angular test files use the .spec.ts extension by convention.",
+                    difficulty: "easy"
+                },
+                {
+                    question: "What function defines a test suite in Jasmine?",
+                    options: ["test()", "suite()", "describe()", "group()"],
+                    correct: 2,
+                    explanation: "describe() function creates a test suite that groups related test cases.",
+                    difficulty: "easy"
+                },
+                {
+                    question: "What function defines a single test case in Jasmine?",
+                    options: ["test()", "it()", "case()", "spec()"],
+                    correct: 1,
+                    explanation: "it() function defines a single test case (spec) within a describe block.",
+                    difficulty: "medium"
+                },
+                {
+                    question: "How do you create a component fixture in tests?",
+                    options: ["new ComponentFixture()", "TestBed.createComponent()", "ComponentFactory.create()", "fixture.create()"],
+                    correct: 1,
+                    explanation: "TestBed.createComponent() creates a fixture for the component being tested.",
+                    difficulty: "medium"
+                },
+                {
+                    question: "What does fixture.detectChanges() do?",
+                    options: ["Detects test failures", "Triggers change detection for the component", "Checks for DOM changes", "Validates component state"],
+                    correct: 1,
+                    explanation: "detectChanges() triggers change detection, updating the component's view.",
+                    difficulty: "medium"
+                },
+                {
+                    question: "How do you mock a service in Angular tests?",
+                    options: ["Using @Mock decorator", "Using providers with useValue or useClass", "Using mock() function", "Using fakeService()"],
+                    correct: 1,
+                    explanation: "Services are mocked by providing alternative implementations using useValue, useClass, or useFactory.",
+                    difficulty: "medium"
+                },
+                {
+                    question: "What is the purpose of async() or waitForAsync() in tests?",
+                    options: ["To speed up tests", "To handle asynchronous operations in tests", "To delay test execution", "To skip async code"],
+                    correct: 1,
+                    explanation: "async()/waitForAsync() wraps test functions to properly handle async operations.",
+                    difficulty: "medium"
+                }
+            ],
+
+            // Category 15: Change Detection (10 questions)
+            changeDetection: [
+                {
+                    question: "What triggers change detection in Angular?",
+                    options: ["Only manual triggers", "Events, timers, and HTTP requests", "Only HTTP requests", "Only user events"],
+                    correct: 1,
+                    explanation: "Change detection is triggered by browser events, timers, XHR requests, and promises.",
+                    difficulty: "easy"
+                },
+                {
+                    question: "What is the default change detection strategy?",
+                    options: ["OnPush", "Default", "Automatic", "Manual"],
+                    correct: 1,
+                    explanation: "ChangeDetectionStrategy.Default checks all components on every change detection cycle.",
+                    difficulty: "easy"
+                },
+                {
+                    question: "What library enables automatic change detection triggering?",
+                    options: ["RxJS", "Zone.js", "NgRx", "Angular Core"],
+                    correct: 1,
+                    explanation: "Zone.js patches async APIs to automatically trigger change detection when async operations complete.",
+                    difficulty: "easy"
+                },
+                {
+                    question: "What is OnPush change detection strategy?",
+                    options: ["Always check changes", "Only check when inputs change or events occur", "Never check changes", "Check only on push events"],
+                    correct: 1,
+                    explanation: "OnPush strategy only runs change detection when input references change or component events occur.",
+                    difficulty: "easy"
+                },
+                {
+                    question: "How do you set OnPush change detection for a component?",
+                    options: ["changeDetection: 'OnPush'", "changeDetection: ChangeDetectionStrategy.OnPush", "@OnPush decorator", "onPush: true"],
+                    correct: 1,
+                    explanation: "Set changeDetection property in @Component to ChangeDetectionStrategy.OnPush.",
+                    difficulty: "easy"
+                },
+                {
+                    question: "What service is used to manually trigger change detection?",
+                    options: ["DetectorRef", "ChangeDetectorRef", "ChangeService", "DetectionService"],
+                    correct: 1,
+                    explanation: "ChangeDetectorRef provides methods like detectChanges() and markForCheck() for manual control.",
+                    difficulty: "medium"
+                },
+                {
+                    question: "What does markForCheck() do?",
+                    options: ["Immediately runs change detection", "Marks the component and ancestors for check in next cycle", "Disables change detection", "Checks only the current component"],
+                    correct: 1,
+                    explanation: "markForCheck() marks the component and its ancestors to be checked in the next change detection cycle.",
+                    difficulty: "medium"
+                },
+                {
+                    question: "What does detach() do on ChangeDetectorRef?",
+                    options: ["Removes the component", "Excludes the component from change detection", "Detaches event handlers", "Removes subscriptions"],
+                    correct: 1,
+                    explanation: "detach() excludes the component subtree from change detection until reattached.",
+                    difficulty: "medium"
+                },
+                {
+                    question: "How does OnPush improve performance?",
+                    options: ["By using less memory", "By reducing the number of components checked", "By using faster algorithms", "By caching results"],
+                    correct: 1,
+                    explanation: "OnPush reduces the number of components Angular needs to check by skipping subtrees when inputs haven't changed.",
+                    difficulty: "medium"
+                },
+                {
+                    question: "What triggers change detection in OnPush components?",
+                    options: ["Any change in the app", "Input reference changes, events, or async pipe", "Only manual triggers", "Timer events only"],
+                    correct: 1,
+                    explanation: "OnPush components are checked when input references change, when events are triggered within the component, or when async pipe receives new values.",
+                    difficulty: "medium"
+                }
+            ],
+
+            // Category 16: Decorators (10 questions)
+            decorators: [
+                {
+                    question: "What is a decorator in Angular?",
+                    options: ["A CSS styling method", "A function that adds metadata to classes/properties", "A type of component", "A testing utility"],
+                    correct: 1,
+                    explanation: "Decorators are functions that add metadata to classes, methods, properties, or parameters.",
+                    difficulty: "easy"
+                },
+                {
+                    question: "Which decorator defines a class as a component?",
+                    options: ["@NgModule", "@Injectable", "@Component", "@Directive"],
+                    correct: 2,
+                    explanation: "@Component decorator defines a class as an Angular component with its metadata.",
+                    difficulty: "easy"
+                },
+                {
+                    question: "Which decorator defines a class as a service?",
+                    options: ["@Service", "@Injectable", "@Provider", "@Inject"],
+                    correct: 1,
+                    explanation: "@Injectable decorator marks a class as available for dependency injection.",
+                    difficulty: "easy"
+                },
+                {
+                    question: "Which decorator marks a property as an input?",
+                    options: ["@Bind", "@Property", "@Input", "@Data"],
+                    correct: 2,
+                    explanation: "@Input decorator marks a property as an input that can receive data from parent components.",
+                    difficulty: "easy"
+                },
+                {
+                    question: "Which decorator marks a property as an output?",
+                    options: ["@Emit", "@Event", "@Output", "@Send"],
+                    correct: 2,
+                    explanation: "@Output decorator marks a property (EventEmitter) as an output for emitting events to parent components.",
+                    difficulty: "easy"
+                },
+                {
+                    question: "What does @HostBinding do?",
+                    options: ["Binds to route parameters", "Binds a property to a host element property", "Binds services to components", "Binds forms to models"],
+                    correct: 1,
+                    explanation: "@HostBinding binds a directive/component property to a property of the host element.",
+                    difficulty: "medium"
+                },
+                {
+                    question: "What does @HostListener do?",
+                    options: ["Creates event emitters", "Listens to events on the host element", "Listens to service events", "Listens to route changes"],
+                    correct: 1,
+                    explanation: "@HostListener declares a DOM event on the host element that triggers a method.",
+                    difficulty: "medium"
+                },
+                {
+                    question: "What does @ContentChild do?",
+                    options: ["Creates child components", "Queries projected content from parent", "Defines child routes", "Injects child services"],
+                    correct: 1,
+                    explanation: "@ContentChild queries and returns a reference to projected content (ng-content).",
+                    difficulty: "medium"
+                },
+                {
+                    question: "What does @Self decorator do in DI?",
+                    options: ["Creates a new instance", "Only looks for dependency in the current injector", "References itself", "Skips parent injectors"],
+                    correct: 1,
+                    explanation: "@Self tells the injector to only look for the dependency in the current component's injector.",
+                    difficulty: "medium"
+                },
+                {
+                    question: "What does @SkipSelf decorator do?",
+                    options: ["Skips the component itself", "Starts dependency search from parent injector", "Skips validation", "Skips change detection"],
+                    correct: 1,
+                    explanation: "@SkipSelf tells the injector to start searching for the dependency from the parent injector, skipping the current one.",
+                    difficulty: "medium"
+                }
+            ],
+
+            // Category 17: Signals (10 questions)
+            signals: [
+                {
+                    question: "What are Signals in Angular?",
+                    options: ["Event emitters", "A reactive primitive for managing state", "HTTP signals", "Route signals"],
+                    correct: 1,
+                    explanation: "Signals are a reactive primitive that provides a way to manage and react to state changes.",
+                    difficulty: "easy"
+                },
+                {
+                    question: "How do you create a writable signal?",
+                    options: ["new Signal(value)", "signal(value)", "createSignal(value)", "Signal.create(value)"],
+                    correct: 1,
+                    explanation: "The signal() function creates a writable signal with an initial value.",
+                    difficulty: "easy"
+                },
+                {
+                    question: "How do you read a signal's value?",
+                    options: ["signal.value", "signal.get()", "signal()", "signal.read()"],
+                    correct: 2,
+                    explanation: "Calling the signal as a function signal() returns its current value.",
+                    difficulty: "easy"
+                },
+                {
+                    question: "How do you update a signal's value?",
+                    options: ["signal.value = newValue", "signal.set(newValue)", "signal = newValue", "signal.update(newValue)"],
+                    correct: 1,
+                    explanation: "The set() method updates the signal to a new value.",
+                    difficulty: "easy"
+                },
+                {
+                    question: "What is a computed signal?",
+                    options: ["A signal that does math", "A signal derived from other signals", "A cached signal", "A const signal"],
+                    correct: 1,
+                    explanation: "A computed signal derives its value from other signals and automatically updates when dependencies change.",
+                    difficulty: "easy"
+                },
+                {
+                    question: "How do you create a computed signal?",
+                    options: ["signal.compute()", "computed(() => ...)", "createComputed()", "signal.derived()"],
+                    correct: 1,
+                    explanation: "The computed() function creates a signal that derives its value from a computation function.",
+                    difficulty: "medium"
+                },
+                {
+                    question: "What is the effect() function used for?",
+                    options: ["Adding CSS effects", "Running side effects when signals change", "Creating animations", "Handling errors"],
+                    correct: 1,
+                    explanation: "effect() creates a side effect that runs whenever the signals it reads change.",
+                    difficulty: "medium"
+                },
+                {
+                    question: "How do you update a signal based on its current value?",
+                    options: ["signal.set(signal() + 1)", "signal.update(v => v + 1)", "Both A and B work", "signal.increment()"],
+                    correct: 2,
+                    explanation: "Both approaches work, but update() is cleaner for value transformations based on current value.",
+                    difficulty: "medium"
+                },
+                {
+                    question: "Are computed signals writable?",
+                    options: ["Yes, always", "No, they are read-only", "Only with special syntax", "Depends on configuration"],
+                    correct: 1,
+                    explanation: "Computed signals are read-only; their value is derived from other signals.",
+                    difficulty: "medium"
+                },
+                {
+                    question: "What advantage do Signals provide over traditional change detection?",
+                    options: ["They are faster to type", "Fine-grained reactivity without Zone.js", "Better error messages", "Easier testing"],
+                    correct: 1,
+                    explanation: "Signals provide fine-grained reactivity, allowing Angular to track exactly what changed without relying on Zone.js.",
+                    difficulty: "medium"
+                }
+            ],
+
+            // Category 18: Standalone Components (10 questions)
+            standalone: [
+                {
+                    question: "What is a standalone component?",
+                    options: ["A component without template", "A component that doesn't need to be declared in NgModule", "A component without styles", "A component without services"],
+                    correct: 1,
+                    explanation: "Standalone components are self-contained and don't need to be declared in an NgModule.",
+                    difficulty: "easy"
+                },
+                {
+                    question: "How do you mark a component as standalone?",
+                    options: ["@Standalone decorator", "standalone: true in @Component", "extends StandaloneComponent", "Using StandaloneModule"],
+                    correct: 1,
+                    explanation: "Set standalone: true in the @Component decorator to make it standalone.",
+                    difficulty: "easy"
+                },
+                {
+                    question: "How do standalone components import dependencies?",
+                    options: ["Through NgModule", "Using the imports array in @Component", "They can't have dependencies", "Using @Import decorator"],
+                    correct: 1,
+                    explanation: "Standalone components use the imports array in @Component to import other components, directives, and pipes.",
+                    difficulty: "easy"
+                },
+                {
+                    question: "Can standalone components be used in traditional NgModule apps?",
+                    options: ["No, never", "Yes, by importing them in NgModule", "Only in the root module", "Only with special configuration"],
+                    correct: 1,
+                    explanation: "Standalone components can be imported directly into NgModule's imports array.",
+                    difficulty: "easy"
+                },
+                {
+                    question: "How do you bootstrap an app with a standalone component?",
+                    options: ["bootstrapModule()", "bootstrapApplication()", "standalone.bootstrap()", "initStandalone()"],
+                    correct: 1,
+                    explanation: "bootstrapApplication() is used to bootstrap an Angular application with a standalone component.",
+                    difficulty: "easy"
+                },
+                {
+                    question: "Can directives be standalone?",
+                    options: ["No, only components", "Yes, using standalone: true", "Only structural directives", "Only attribute directives"],
+                    correct: 1,
+                    explanation: "Directives can also be standalone by adding standalone: true to the @Directive decorator.",
+                    difficulty: "medium"
+                },
+                {
+                    question: "Can pipes be standalone?",
+                    options: ["No, pipes must be in modules", "Yes, using standalone: true", "Only impure pipes", "Only built-in pipes"],
+                    correct: 1,
+                    explanation: "Pipes can be standalone by adding standalone: true to the @Pipe decorator.",
+                    difficulty: "medium"
+                },
+                {
+                    question: "How do you provide services in standalone components?",
+                    options: ["Using providers in NgModule", "Using providers array in @Component or importProvidersFrom", "Services aren't supported", "Using @Provider decorator"],
+                    correct: 1,
+                    explanation: "Services can be provided in the component's providers array or using importProvidersFrom in bootstrapApplication.",
+                    difficulty: "medium"
+                },
+                {
+                    question: "What is importProvidersFrom used for?",
+                    options: ["Importing components", "Extracting providers from NgModules for standalone apps", "Importing styles", "Importing templates"],
+                    correct: 1,
+                    explanation: "importProvidersFrom extracts providers from NgModules for use in standalone application bootstrapping.",
+                    difficulty: "medium"
+                },
+                {
+                    question: "What are the benefits of standalone components?",
+                    options: ["Faster runtime", "Simplified code, reduced boilerplate, better tree-shaking", "Better styling options", "More template features"],
+                    correct: 1,
+                    explanation: "Standalone components reduce boilerplate, simplify mental model, and enable better tree-shaking for smaller bundles.",
+                    difficulty: "medium"
+                }
+            ],
+
+            // Category 19: Performance Optimization (10 questions)
+            performance: [
+                {
+                    question: "Which change detection strategy improves performance?",
+                    options: ["Default", "OnPush", "Automatic", "Manual"],
+                    correct: 1,
+                    explanation: "OnPush strategy reduces change detection cycles by only checking when inputs change or events occur.",
+                    difficulty: "easy"
+                },
+                {
+                    question: "What does lazy loading help with?",
+                    options: ["Runtime performance", "Initial bundle size and load time", "Memory usage", "API response time"],
+                    correct: 1,
+                    explanation: "Lazy loading loads modules on demand, reducing the initial bundle size and improving initial load time.",
+                    difficulty: "easy"
+                },
+                {
+                    question: "What is the purpose of trackBy in ngFor?",
+                    options: ["Tracking user actions", "Improving list rendering performance", "Tracking errors", "Tracking network requests"],
+                    correct: 1,
+                    explanation: "trackBy helps Angular identify items that have changed, avoiding unnecessary DOM manipulations.",
+                    difficulty: "easy"
+                },
+                {
+                    question: "What should you do to prevent memory leaks from subscriptions?",
+                    options: ["Use more memory", "Unsubscribe in ngOnDestroy", "Use try-catch", "Nothing, Angular handles it"],
+                    correct: 1,
+                    explanation: "Always unsubscribe from Observables in ngOnDestroy to prevent memory leaks.",
+                    difficulty: "easy"
+                },
+                {
+                    question: "Which pipe automatically handles subscription cleanup?",
+                    options: ["subscribe pipe", "auto pipe", "async pipe", "observable pipe"],
+                    correct: 2,
+                    explanation: "The async pipe automatically subscribes and unsubscribes, preventing memory leaks.",
+                    difficulty: "easy"
+                },
+                {
+                    question: "What does Ahead-of-Time (AOT) compilation provide?",
+                    options: ["Slower builds", "Faster rendering and smaller bundles", "More features", "Better debugging"],
+                    correct: 1,
+                    explanation: "AOT compilation compiles templates at build time, resulting in faster rendering and smaller bundles.",
+                    difficulty: "medium"
+                },
+                {
+                    question: "What is tree-shaking?",
+                    options: ["A testing technique", "Removing unused code from bundles", "A design pattern", "A debugging tool"],
+                    correct: 1,
+                    explanation: "Tree-shaking removes unused code from the final bundle, reducing bundle size.",
+                    difficulty: "medium"
+                },
+                {
+                    question: "How can you reduce bundle size?",
+                    options: ["Add more modules", "Lazy loading, tree-shaking, and removing unused imports", "Use more components", "Increase memory"],
+                    correct: 1,
+                    explanation: "Lazy loading, tree-shaking, and removing unused code/imports all help reduce bundle size.",
+                    difficulty: "medium"
+                },
+                {
+                    question: "What is preloading strategy in routing?",
+                    options: ["Loading all modules upfront", "Loading lazy modules in background after initial load", "Caching routes", "Preloading data"],
+                    correct: 1,
+                    explanation: "Preloading strategies load lazy modules in the background after the initial app load completes.",
+                    difficulty: "medium"
+                },
+                {
+                    question: "What does pure: true mean in a pipe?",
+                    options: ["The pipe is immutable", "The pipe only re-runs when input references change", "The pipe has no side effects", "The pipe is cached forever"],
+                    correct: 1,
+                    explanation: "Pure pipes only recalculate when their input reference changes, improving performance.",
+                    difficulty: "medium"
+                }
+            ],
+
+            // Category 20: Security (10 questions)
+            security: [
+                {
+                    question: "What does Angular automatically sanitize?",
+                    options: ["Database queries", "Untrusted values to prevent XSS attacks", "API responses", "User passwords"],
+                    correct: 1,
+                    explanation: "Angular automatically sanitizes untrusted values for HTML, styles, and URLs to prevent XSS attacks.",
+                    difficulty: "easy"
+                },
+                {
+                    question: "What is XSS in web security?",
+                    options: ["Extra Secure Sockets", "Cross-Site Scripting", "XML Security Standard", "Extended Style Sheets"],
+                    correct: 1,
+                    explanation: "Cross-Site Scripting (XSS) is an attack where malicious scripts are injected into trusted websites.",
+                    difficulty: "easy"
+                },
+                {
+                    question: "Which service is used to bypass Angular's built-in sanitization?",
+                    options: ["SecurityService", "DomSanitizer", "TrustService", "BypassService"],
+                    correct: 1,
+                    explanation: "DomSanitizer service provides methods to bypass sanitization when you trust the content.",
+                    difficulty: "easy"
+                },
+                {
+                    question: "What does Angular do with inline scripts in templates?",
+                    options: ["Executes them normally", "Blocks and removes them", "Logs warnings only", "Sends to server"],
+                    correct: 1,
+                    explanation: "Angular's security model blocks inline scripts in templates to prevent XSS attacks.",
+                    difficulty: "easy"
+                },
+                {
+                    question: "What HTTP header helps prevent clickjacking?",
+                    options: ["Content-Type", "X-Frame-Options", "Authorization", "Cache-Control"],
+                    correct: 1,
+                    explanation: "X-Frame-Options header controls whether a page can be displayed in frames, preventing clickjacking.",
+                    difficulty: "easy"
+                },
+                {
+                    question: "What method marks a URL as safe in Angular?",
+                    options: ["trustUrl()", "bypassSecurityTrustUrl()", "safeUrl()", "allowUrl()"],
+                    correct: 1,
+                    explanation: "bypassSecurityTrustUrl() marks a URL as trusted for use in links and navigation.",
+                    difficulty: "medium"
+                },
+                {
+                    question: "What is CSRF/XSRF protection?",
+                    options: ["A styling technique", "Protection against cross-site request forgery attacks", "A routing feature", "An encryption method"],
+                    correct: 1,
+                    explanation: "CSRF protection prevents attackers from tricking users into making unwanted requests.",
+                    difficulty: "medium"
+                },
+                {
+                    question: "How does Angular help with XSRF protection?",
+                    options: ["Automatic encryption", "HttpClient automatically reads XSRF tokens from cookies", "Blocking all requests", "Using HTTPS only"],
+                    correct: 1,
+                    explanation: "Angular's HttpClient can automatically read XSRF tokens from cookies and add them to requests.",
+                    difficulty: "medium"
+                },
+                {
+                    question: "What is Content Security Policy (CSP)?",
+                    options: ["A JavaScript API", "HTTP headers that control resource loading", "A design pattern", "An Angular module"],
+                    correct: 1,
+                    explanation: "CSP is a set of HTTP headers that control which resources can be loaded, helping prevent XSS.",
+                    difficulty: "medium"
+                },
+                {
+                    question: "Why should you avoid using innerHTML binding directly?",
+                    options: ["It's slow", "It can enable XSS if content isn't sanitized", "It doesn't work in Angular", "It uses too much memory"],
+                    correct: 1,
+                    explanation: "Direct innerHTML binding can enable XSS attacks if the content contains malicious scripts.",
+                    difficulty: "medium"
+                }
+            ]
+        };
+
+        let selectedQuestions = [];
+        let currentQuestionIndex = 0;
+        let score = 0;
+        let answered = false;
+        let correctAnswers = 0;
+        let wrongAnswers = 0;
+        let categoryScores = {};
+
+        function shuffleArray(array) {
+            const shuffled = [...array];
+            for (let i = shuffled.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+            }
+            return shuffled;
+        }
+
+        function getQuestionsByFilter(category, difficulty, count) {
+            let questions = [];
+            
+            if (category === 'all') {
+                // Get questions from all categories
+                Object.keys(allQuestions).forEach(cat => {
+                    questions = questions.concat(
+                        allQuestions[cat].map(q => ({ ...q, category: cat }))
+                    );
+                });
+            } else {
+                questions = allQuestions[category].map(q => ({ ...q, category: category }));
+            }
+
+            // Filter by difficulty
+            if (difficulty !== 'all') {
+                questions = questions.filter(q => q.difficulty === difficulty);
+            }
+
+            // Shuffle and limit
+            questions = shuffleArray(questions);
+            return questions.slice(0, Math.min(count, questions.length));
+        }
+
+        function getCategoryDisplayName(category) {
+            const names = {
+                components: "Components",
+                templates: "Templates & Data Binding",
+                directives: "Directives",
+                pipes: "Pipes",
+                services: "Services & DI",
+                routing: "Routing & Navigation",
+                templateForms: "Template-Driven Forms",
+                reactiveForms: "Reactive Forms",
+                httpClient: "HTTP Client",
+                rxjs: "Observables & RxJS",
+                lifecycle: "Lifecycle Hooks",
+                modules: "Modules",
+                cli: "Angular CLI",
+                testing: "Testing",
+                changeDetection: "Change Detection",
+                decorators: "Decorators",
+                signals: "Signals",
+                standalone: "Standalone Components",
+                performance: "Performance Optimization",
+                security: "Security"
+            };
+            return names[category] || category;
+        }
+
+        function startQuiz() {
+            const category = document.getElementById('categorySelect').value;
+            const difficulty = document.getElementById('difficultySelect').value;
+            const count = parseInt(document.getElementById('questionCount').value);
+
+            selectedQuestions = getQuestionsByFilter(category, difficulty, count);
+            
+            if (selectedQuestions.length === 0) {
+                alert('No questions match your criteria. Please adjust your filters.');
+                return;
+            }
+
+            currentQuestionIndex = 0;
+            score = 0;
+            correctAnswers = 0;
+            wrongAnswers = 0;
+            answered = false;
+            categoryScores = {};
+
+            document.getElementById('startScreen').style.display = 'none';
+            document.getElementById('progressContainer').style.display = 'block';
+            document.getElementById('totalQuestions').textContent = selectedQuestions.length;
+            document.getElementById('currentScore').textContent = '0';
+            document.getElementById('correctCount').textContent = '0';
+            document.getElementById('wrongCount').textContent = '0';
+            
+            renderQuestions();
+            showQuestion(0);
+        }
+
+        function renderQuestions() {
+            const container = document.getElementById('questionsContainer');
+            container.innerHTML = '';
+
+            selectedQuestions.forEach((q, index) => {
+                const questionHTML = `
+                    <div class="question-card" id="question-${index}">
+                        <div class="question-meta">
+                            <span class="question-number">Question ${index + 1} of ${selectedQuestions.length}</span>
+                            <span class="question-category">${getCategoryDisplayName(q.category)}</span>
+                            <span class="question-difficulty ${q.difficulty}">${q.difficulty.charAt(0).toUpperCase() + q.difficulty.slice(1)}</span>
+                        </div>
+                        <div class="question-text">${q.question}</div>
+                        <div class="options">
+                            ${q.options.map((opt, optIndex) => `
+                                <div class="option" onclick="selectOption(${index}, ${optIndex})" id="option-${index}-${optIndex}">
+                                    ${String.fromCharCode(65 + optIndex)}. ${opt}
+                                </div>
+                            `).join('')}
+                        </div>
+                        <div class="explanation" id="explanation-${index}">
+                            <h4>📚 Explanation:</h4>
+                            <p>${q.explanation}</p>
+                        </div>
+                        <div class="btn-container">
+                            <button class="btn btn-secondary" onclick="prevQuestion()" ${index === 0 ? 'disabled' : ''}>← Previous</button>
+                            <button class="btn btn-primary" onclick="nextQuestion()" id="nextBtn-${index}" disabled>
+                                ${index === selectedQuestions.length - 1 ? '📊 See Results' : 'Next →'}
+                            </button>
+                        </div>
+                    </div>
+                `;
+                container.innerHTML += questionHTML;
+            });
+        }
+
+        function showQuestion(index) {
+            document.querySelectorAll('.question-card').forEach(card => card.classList.remove('active'));
+            document.getElementById(`question-${index}`).classList.add('active');
+            
+            const progress = ((index + 1) / selectedQuestions.length) * 100;
+            document.getElementById('progressFill').style.width = `${progress}%`;
+            document.getElementById('currentQuestion').textContent = index + 1;
+            
+            answered = false;
+        }
+
+        function selectOption(questionIndex, optionIndex) {
+            if (answered) return;
+            answered = true;
+
+            const question = selectedQuestions[questionIndex];
+            const options = document.querySelectorAll(`#question-${questionIndex} .option`);
+            
+            options.forEach(opt => opt.classList.add('disabled'));
+
+            // Track category scores
+            if (!categoryScores[question.category]) {
+                categoryScores[question.category] = { correct: 0, total: 0 };
+            }
+            categoryScores[question.category].total++;
+
+            if (optionIndex === question.correct) {
+                document.getElementById(`option-${questionIndex}-${optionIndex}`).classList.add('correct');
+                score++;
+                correctAnswers++;
+                categoryScores[question.category].correct++;
+                document.getElementById('currentScore').textContent = score;
+                document.getElementById('correctCount').textContent = correctAnswers;
+            } else {
+                document.getElementById(`option-${questionIndex}-${optionIndex}`).classList.add('incorrect');
+                document.getElementById(`option-${questionIndex}-${question.correct}`).classList.add('correct');
+                wrongAnswers++;
+                document.getElementById('wrongCount').textContent = wrongAnswers;
+            }
+
+            document.getElementById(`explanation-${questionIndex}`).classList.add('show');
+            document.getElementById(`nextBtn-${questionIndex}`).disabled = false;
+        }
+
+        function nextQuestion() {
+            if (currentQuestionIndex < selectedQuestions.length - 1) {
+                currentQuestionIndex++;
+                showQuestion(currentQuestionIndex);
+            } else {
+                showResults();
+            }
+        }
+
+        function prevQuestion() {
+            if (currentQuestionIndex > 0) {
+                currentQuestionIndex--;
+                showQuestion(currentQuestionIndex);
+            }
+        }
+
+        function showResults() {
+            document.querySelectorAll('.question-card').forEach(card => card.classList.remove('active'));
+            document.getElementById('progressContainer').style.display = 'none';
+            
+            const resultsCard = document.getElementById('resultsCard');
+            resultsCard.classList.add('active');
+
+            const percentage = Math.round((score / selectedQuestions.length) * 100);
+            document.getElementById('finalScore').textContent = `${percentage}%`;
+            document.getElementById('resultsDetails').textContent = 
+                `You answered ${correctAnswers} out of ${selectedQuestions.length} questions correctly.`;
+
+            let message = '';
+            if (percentage >= 90) {
+                message = '🏆 Outstanding! You\'re an Angular Master!';
+            } else if (percentage >= 80) {
+                message = '🎉 Excellent! You have strong Angular skills!';
+            } else if (percentage >= 70) {
+                message = '👏 Great job! You know Angular well!';
+            } else if (percentage >= 60) {
+                message = '👍 Good effort! Keep practicing!';
+            } else if (percentage >= 50) {
+                message = '📚 Not bad! More study will help!';
+            } else {
+                message = '💪 Keep learning! Angular has much to offer!';
+            }
+            document.getElementById('resultsMessage').textContent = message;
+
+            // Show category scores
+            const categoryScoresDiv = document.getElementById('categoryScores');
+            categoryScoresDiv.innerHTML = '';
+            
+            Object.keys(categoryScores).sort().forEach(cat => {
+                const catScore = categoryScores[cat];
+                const catPercentage = Math.round((catScore.correct / catScore.total) * 100);
+                categoryScoresDiv.innerHTML += `
+                    <div class="category-score-item">
+                        <span>${getCategoryDisplayName(cat)}</span>
+                        <span>${catScore.correct}/${catScore.total} (${catPercentage}%)</span>
+                        <div class="category-score-bar">
+                            <div class="category-score-fill" style="width: ${catPercentage}%"></div>
+                        </div>
+                    </div>
+                `;
+            });
+        }
+
+        function restartQuiz() {
+            currentQuestionIndex = 0;
+            score = 0;
+            correctAnswers = 0;
+            wrongAnswers = 0;
+            answered = false;
+            categoryScores = {};
+            
+            document.getElementById('resultsCard').classList.remove('active');
+            document.getElementById('currentScore').textContent = '0';
+            document.getElementById('correctCount').textContent = '0';
+            document.getElementById('wrongCount').textContent = '0';
+            document.getElementById('progressContainer').style.display = 'block';
+            
+            // Reset all options
+            document.querySelectorAll('.option').forEach(opt => {
+                opt.classList.remove('selected', 'correct', 'incorrect', 'disabled');
+            });
+            
+            document.querySelectorAll('.explanation').forEach(exp => {
+                exp.classList.remove('show');
+            });
+            
+            document.querySelectorAll('[id^="nextBtn-"]').forEach(btn => {
+                btn.disabled = true;
+            });
+            
+            showQuestion(0);
+        }
+
+        function backToMenu() {
+            document.getElementById('resultsCard').classList.remove('active');
+            document.getElementById('questionsContainer').innerHTML = '';
+            document.getElementById('startScreen').style.display = 'block';
+            document.getElementById('progressContainer').style.display = 'none';
+        }
+    </script>
+</body>
+</html>
