@@ -1,0 +1,2938 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Angular Quiz - 200 Questions</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #dd0031 0%, #c3002f 50%, #8b0000 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .quiz-container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+        }
+
+        .quiz-header {
+            background: linear-gradient(135deg, #dd0031, #c3002f);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .quiz-header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+        }
+
+        .quiz-header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+
+        .progress-container {
+            background: #f0f0f0;
+            padding: 15px 30px;
+            border-bottom: 1px solid #ddd;
+        }
+
+        .progress-bar {
+            height: 10px;
+            background: #e0e0e0;
+            border-radius: 5px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #dd0031, #ff6b6b);
+            border-radius: 5px;
+            transition: width 0.3s ease;
+        }
+
+        .progress-text {
+            margin-top: 10px;
+            font-size: 0.9rem;
+            color: #666;
+            display: flex;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .timer-container {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-weight: bold;
+        }
+
+        .timer-icon {
+            font-size: 1.2rem;
+        }
+
+        .timer {
+            font-size: 1.1rem;
+            color: #dd0031;
+            font-family: 'Courier New', monospace;
+        }
+
+        .timer.warning {
+            color: #ff6b00;
+            animation: pulse 1s infinite;
+        }
+
+        .timer.danger {
+            color: #dc3545;
+            animation: pulse 0.5s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .quiz-content {
+            padding: 30px;
+        }
+
+        .question-card {
+            display: none;
+        }
+
+        .question-card.active {
+            display: block;
+            animation: fadeIn 0.5s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .question-meta {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .question-number {
+            color: #dd0031;
+            font-size: 0.9rem;
+            font-weight: bold;
+        }
+
+        .question-category {
+            background: linear-gradient(135deg, #dd0031, #c3002f);
+            color: white;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+        }
+
+        .question-difficulty {
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: bold;
+        }
+
+        .question-difficulty.easy {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .question-difficulty.medium {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        .question-text {
+            font-size: 1.3rem;
+            color: #333;
+            margin-bottom: 25px;
+            line-height: 1.5;
+        }
+
+        .time-up-message {
+            background: linear-gradient(135deg, #dc3545, #c82333);
+            color: white;
+            padding: 15px 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            display: none;
+            align-items: center;
+            gap: 10px;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .time-up-message.show {
+            display: flex;
+        }
+
+        .time-up-message .time-icon {
+            font-size: 1.5rem;
+        }
+
+        .time-up-message .time-text {
+            flex: 1;
+        }
+
+        .time-up-message .time-text strong {
+            display: block;
+            font-size: 1.1rem;
+            margin-bottom: 2px;
+        }
+
+        .time-up-message .time-text span {
+            font-size: 0.9rem;
+            opacity: 0.9;
+        }
+
+        .options {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .option {
+            padding: 15px 20px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            background: white;
+            min-height: 60px;
+        }
+
+        .option:hover:not(.disabled) {
+            border-color: #dd0031;
+            background: #fff5f5;
+            transform: translateX(5px);
+        }
+
+        .option.selected {
+            border-color: #dd0031;
+            background: #fff0f0;
+        }
+
+        .option.correct {
+            border-color: #28a745;
+            background: #d4edda;
+        }
+
+        .option.correct .option-text {
+            color: #155724 !important;
+        }
+
+        .option.incorrect {
+            border-color: #dc3545;
+            background: #f8d7da;
+        }
+
+        .option.incorrect .option-text {
+            color: #721c24 !important;
+        }
+
+        .option.disabled {
+            pointer-events: none;
+            opacity: 0.95;
+        }
+
+        .option.show-correct {
+            border-color: #28a745;
+            background: #d4edda;
+        }
+
+        .option.show-correct .option-text {
+            color: #155724 !important;
+        }
+
+        .option-letter {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 40px;
+            height: 40px;
+            min-width: 40px;
+            border-radius: 50%;
+            background: #dd0031;
+            color: white;
+            font-weight: bold;
+            margin-right: 15px;
+            flex-shrink: 0;
+            font-size: 1rem;
+        }
+
+        .option.correct .option-letter {
+            background: #28a745;
+        }
+
+        .option.incorrect .option-letter {
+            background: #dc3545;
+        }
+
+        .option.show-correct .option-letter {
+            background: #28a745;
+        }
+
+        .option-text {
+            flex: 1;
+            color: #1a1a1a;
+            font-size: 1.1rem;
+            line-height: 1.5;
+            word-wrap: break-word;
+            word-break: break-word;
+            font-weight: 500;
+            display: block;
+        }
+
+        .explanation {
+            margin-top: 20px;
+            padding: 20px;
+            background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+            border-left: 4px solid #dd0031;
+            border-radius: 0 10px 10px 0;
+            display: none;
+        }
+
+        .explanation.show {
+            display: block;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .explanation h4 {
+            color: #dd0031;
+            margin-bottom: 10px;
+            font-size: 1.1rem;
+        }
+
+        .explanation p {
+            color: #555;
+            line-height: 1.6;
+        }
+
+        .btn-container {
+            margin-top: 25px;
+            display: flex;
+            justify-content: space-between;
+            gap: 15px;
+        }
+
+        .btn {
+            padding: 12px 30px;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 600;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #dd0031, #c3002f);
+            color: white;
+        }
+
+        .btn-primary:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(221, 0, 49, 0.4);
+        }
+
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+        }
+
+        .btn-secondary:hover:not(:disabled) {
+            background: #545b62;
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .results-card {
+            display: none;
+            text-align: center;
+            padding: 40px;
+        }
+
+        .results-card.active {
+            display: block;
+            animation: fadeIn 0.5s ease;
+        }
+
+        .score-circle {
+            width: 200px;
+            height: 200px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #dd0031, #c3002f);
+            margin: 0 auto 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            box-shadow: 0 10px 30px rgba(221, 0, 49, 0.3);
+        }
+
+        .score-text {
+            text-align: center;
+        }
+
+        .score-number {
+            font-size: 3.5rem;
+            font-weight: bold;
+        }
+
+        .score-label {
+            font-size: 1rem;
+            opacity: 0.9;
+        }
+
+        .results-message {
+            font-size: 1.5rem;
+            color: #333;
+            margin-bottom: 15px;
+        }
+
+        .results-details {
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 1.1rem;
+        }
+
+        .results-stats {
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+        }
+
+        .stat-box {
+            padding: 20px 30px;
+            border-radius: 10px;
+            text-align: center;
+        }
+
+        .stat-box.correct {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .stat-box.wrong {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .stat-box.time {
+            background: #e7f1ff;
+            color: #004085;
+        }
+
+        .stat-box .stat-number {
+            font-size: 2rem;
+            font-weight: bold;
+        }
+
+        .stat-box .stat-label {
+            font-size: 0.9rem;
+        }
+
+        .category-scores {
+            text-align: left;
+            max-width: 600px;
+            margin: 0 auto 30px;
+            max-height: 300px;
+            overflow-y: auto;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 10px;
+        }
+
+        .category-score-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 0;
+            border-bottom: 1px solid #e0e0e0;
+            gap: 15px;
+        }
+
+        .category-score-item:last-child {
+            border-bottom: none;
+        }
+
+        .category-name {
+            flex: 1;
+            font-weight: 500;
+        }
+
+        .category-score-value {
+            min-width: 80px;
+            text-align: right;
+            font-weight: bold;
+            color: #dd0031;
+        }
+
+        .category-score-bar {
+            width: 100px;
+            height: 8px;
+            background: #e0e0e0;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .category-score-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #dd0031, #ff6b6b);
+            border-radius: 4px;
+            transition: width 0.3s ease;
+        }
+
+        .start-screen {
+            text-align: center;
+            padding: 40px;
+        }
+
+        .start-screen h2 {
+            color: #333;
+            margin-bottom: 20px;
+        }
+
+        .start-screen p {
+            color: #666;
+            margin-bottom: 30px;
+            line-height: 1.6;
+        }
+
+        .categories-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 10px;
+            margin-bottom: 30px;
+            text-align: left;
+        }
+
+        .category-item {
+            display: flex;
+            align-items: center;
+            padding: 10px 15px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            transition: all 0.3s ease;
+        }
+
+        .category-item:hover {
+            background: #fff0f0;
+            transform: translateX(5px);
+        }
+
+        .category-item::before {
+            content: "✓";
+            color: #dd0031;
+            font-weight: bold;
+            margin-right: 10px;
+        }
+
+        .quiz-options {
+            background: #f8f9fa;
+            padding: 25px;
+            border-radius: 15px;
+            margin-bottom: 30px;
+        }
+
+        .quiz-options h3 {
+            margin-bottom: 20px;
+            color: #333;
+            font-size: 1.2rem;
+        }
+
+        .options-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+        }
+
+        .option-group {
+            margin-bottom: 0;
+        }
+
+        .option-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: #555;
+            font-weight: 600;
+        }
+
+        .option-group select {
+            width: 100%;
+            padding: 12px 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 1rem;
+            cursor: pointer;
+            background: white;
+            transition: all 0.3s ease;
+        }
+
+        .option-group select:focus {
+            outline: none;
+            border-color: #dd0031;
+            box-shadow: 0 0 0 3px rgba(221, 0, 49, 0.1);
+        }
+
+        .angular-logo {
+            font-size: 5rem;
+            margin-bottom: 20px;
+        }
+
+        .btn-container-center {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .resume-banner {
+            background: linear-gradient(135deg, #17a2b8, #138496);
+            color: white;
+            padding: 15px 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+
+        .resume-banner .resume-text {
+            flex: 1;
+        }
+
+        .resume-banner .resume-text strong {
+            display: block;
+            font-size: 1.1rem;
+            margin-bottom: 5px;
+        }
+
+        .resume-banner .resume-text span {
+            font-size: 0.9rem;
+            opacity: 0.9;
+        }
+
+        .resume-banner .resume-buttons {
+            display: flex;
+            gap: 10px;
+        }
+
+        .resume-banner .btn-resume {
+            background: white;
+            color: #17a2b8;
+            padding: 8px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .resume-banner .btn-resume:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 3px 10px rgba(0,0,0,0.2);
+        }
+
+        .resume-banner .btn-dismiss {
+            background: transparent;
+            color: white;
+            border: 2px solid white;
+            padding: 8px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .resume-banner .btn-dismiss:hover {
+            background: rgba(255,255,255,0.1);
+        }
+
+        @media (max-width: 600px) {
+            .quiz-header h1 {
+                font-size: 1.8rem;
+            }
+
+            .question-text {
+                font-size: 1.1rem;
+            }
+
+            .btn-container {
+                flex-direction: column;
+            }
+
+            .btn {
+                width: 100%;
+            }
+
+            .categories-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .options-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .results-stats {
+                flex-direction: column;
+                align-items: center;
+            }
+
+            .option {
+                padding: 12px 15px;
+            }
+
+            .option-letter {
+                width: 36px;
+                height: 36px;
+                min-width: 36px;
+                font-size: 0.9rem;
+                margin-right: 12px;
+            }
+
+            .option-text {
+                font-size: 1rem;
+            }
+
+            .time-up-message {
+                flex-direction: column;
+                text-align: center;
+            }
+
+            .resume-banner {
+                flex-direction: column;
+                text-align: center;
+            }
+
+            .resume-banner .resume-buttons {
+                width: 100%;
+                justify-content: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="quiz-container">
+        <div class="quiz-header">
+            <h1>🅰️ Angular Quiz</h1>
+            <p>200 Questions across 20 Categories • 5 Random Options per Question</p>
+        </div>
+
+        <div class="progress-container" id="progressContainer" style="display: none;">
+            <div class="progress-bar">
+                <div class="progress-fill" id="progressFill" style="width: 0%"></div>
+            </div>
+            <div class="progress-text">
+                <span>Question <span id="currentQuestion">1</span> of <span id="totalQuestions">20</span></span>
+                <div class="timer-container">
+                    <span class="timer-icon">⏱️</span>
+                    <span class="timer" id="timer">00:00</span>
+                </div>
+                <span>✅ <span id="correctCount">0</span> | ❌ <span id="wrongCount">0</span> | Score: <span id="currentScore">0</span>%</span>
+            </div>
+        </div>
+
+        <div class="quiz-content">
+            <!-- Start Screen -->
+            <div class="start-screen" id="startScreen">
+                <div class="angular-logo">🅰️</div>
+                <h2>Welcome to the Angular Quiz!</h2>
+                <p>Test your Angular knowledge with 200 carefully crafted questions.<br>Each question shows 5 randomly selected options from 7 possible answers!</p>
+                
+                <!-- Resume Banner (hidden by default) -->
+                <div class="resume-banner" id="resumeBanner" style="display: none;">
+                    <div class="resume-text">
+                        <strong>📝 Resume Previous Quiz?</strong>
+                        <span id="resumeInfo">You have an unfinished quiz.</span>
+                    </div>
+                    <div class="resume-buttons">
+                        <button class="btn-resume" onclick="resumeQuiz()">Resume</button>
+                        <button class="btn-dismiss" onclick="dismissResume()">Start New</button>
+                    </div>
+                </div>
+                
+                <div class="quiz-options">
+                    <h3>⚙️ Quiz Settings</h3>
+                    <div class="options-grid">
+                        <div class="option-group">
+                            <label for="categorySelect">📁 Category:</label>
+                            <select id="categorySelect" onchange="saveSettings()">
+                                <option value="all">All Categories (Random Mix)</option>
+                                <option value="components">1. Components</option>
+                                <option value="templates">2. Templates & Data Binding</option>
+                                <option value="directives">3. Directives</option>
+                                <option value="pipes">4. Pipes</option>
+                                <option value="services">5. Services & DI</option>
+                                <option value="routing">6. Routing & Navigation</option>
+                                <option value="templateForms">7. Template-Driven Forms</option>
+                                <option value="reactiveForms">8. Reactive Forms</option>
+                                <option value="httpClient">9. HTTP Client</option>
+                                <option value="rxjs">10. Observables & RxJS</option>
+                                <option value="lifecycle">11. Lifecycle Hooks</option>
+                                <option value="modules">12. Modules</option>
+                                <option value="cli">13. Angular CLI</option>
+                                <option value="testing">14. Testing</option>
+                                <option value="changeDetection">15. Change Detection</option>
+                                <option value="decorators">16. Decorators</option>
+                                <option value="signals">17. Signals</option>
+                                <option value="standalone">18. Standalone Components</option>
+                                <option value="performance">19. Performance</option>
+                                <option value="security">20. Security</option>
+                            </select>
+                        </div>
+                        <div class="option-group">
+                            <label for="difficultySelect">📊 Difficulty:</label>
+                            <select id="difficultySelect" onchange="saveSettings()">
+                                <option value="all">All Difficulties</option>
+                                <option value="easy">Easy Only</option>
+                                <option value="medium">Medium Only</option>
+                            </select>
+                        </div>
+                        <div class="option-group">
+                            <label for="questionCount">🔢 Questions:</label>
+                            <select id="questionCount" onchange="saveSettings()">
+                                <option value="10">10 Questions</option>
+                                <option value="20" selected>20 Questions</option>
+                                <option value="50">50 Questions</option>
+                                <option value="100">100 Questions</option>
+                                <option value="200">All 200 Questions</option>
+                            </select>
+                        </div>
+                        <div class="option-group">
+                            <label for="timerSelect">⏱️ Timer:</label>
+                            <select id="timerSelect" onchange="saveSettings()">
+                                <option value="0">No Timer</option>
+                                <option value="15">15 seconds per question</option>
+                                <option value="30" selected>30 seconds per question</option>
+                                <option value="45">45 seconds per question</option>
+                                <option value="60">60 seconds per question</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <h3 style="margin-bottom: 15px; color: #333;">📚 20 Categories Covered:</h3>
+                <div class="categories-grid">
+                    <div class="category-item">Components</div>
+                    <div class="category-item">Templates & Binding</div>
+                    <div class="category-item">Directives</div>
+                    <div class="category-item">Pipes</div>
+                    <div class="category-item">Services & DI</div>
+                    <div class="category-item">Routing</div>
+                    <div class="category-item">Template Forms</div>
+                    <div class="category-item">Reactive Forms</div>
+                    <div class="category-item">HTTP Client</div>
+                    <div class="category-item">RxJS</div>
+                    <div class="category-item">Lifecycle Hooks</div>
+                    <div class="category-item">Modules</div>
+                    <div class="category-item">Angular CLI</div>
+                    <div class="category-item">Testing</div>
+                    <div class="category-item">Change Detection</div>
+                    <div class="category-item">Decorators</div>
+                    <div class="category-item">Signals</div>
+                    <div class="category-item">Standalone</div>
+                    <div class="category-item">Performance</div>
+                    <div class="category-item">Security</div>
+                </div>
+
+                <button class="btn btn-primary" onclick="startQuiz()" style="padding: 15px 50px; font-size: 1.2rem;">
+                    🚀 Start Quiz
+                </button>
+            </div>
+
+            <!-- Questions Container -->
+            <div id="questionsContainer"></div>
+
+            <!-- Results Screen -->
+            <div class="results-card" id="resultsCard">
+                <div class="score-circle">
+                    <div class="score-text">
+                        <div class="score-number" id="finalScore">0%</div>
+                        <div class="score-label">Final Score</div>
+                    </div>
+                </div>
+                <div class="results-message" id="resultsMessage"></div>
+                <div class="results-details" id="resultsDetails"></div>
+                
+                <div class="results-stats">
+                    <div class="stat-box correct">
+                        <div class="stat-number" id="finalCorrect">0</div>
+                        <div class="stat-label">Correct Answers</div>
+                    </div>
+                    <div class="stat-box wrong">
+                        <div class="stat-number" id="finalWrong">0</div>
+                        <div class="stat-label">Wrong Answers</div>
+                    </div>
+                    <div class="stat-box time">
+                        <div class="stat-number" id="finalTime">00:00</div>
+                        <div class="stat-label">Total Time</div>
+                    </div>
+                </div>
+                
+                <h3 style="margin-bottom: 15px;">📊 Score by Category:</h3>
+                <div class="category-scores" id="categoryScores"></div>
+                
+                <div class="btn-container-center">
+                    <button class="btn btn-primary" onclick="restartQuiz()">🔄 Try Again</button>
+                    <button class="btn btn-secondary" onclick="backToMenu()">🏠 Back to Menu</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Complete quiz data - 200 questions across 20 categories (10 each)
+        // Each question has 7 options, 5 will be randomly displayed
+        const allQuestions = {
+            components: [
+                {
+                    question: "What decorator is used to define an Angular component?",
+                    options: ["@Component", "@NgModule", "@Injectable", "@Directive", "@Service", "@Controller", "@Element"],
+                    correct: 0,
+                    explanation: "The @Component decorator is used to define a component in Angular with metadata including selector, template, and styles.",
+                    difficulty: "easy"
+                },
+                {
+                    question: "What is the purpose of the 'selector' property in a component?",
+                    options: ["To define the HTML tag name for the component", "To select database records", "To select CSS styles", "To select other components", "To query DOM elements", "To filter data", "To select modules"],
+                    correct: 0,
+                    explanation: "The selector property defines the custom HTML tag name that will be used to include this component in templates.",
+                    difficulty: "easy"
+                },
+                {
+                    question: "Which property in @Component decorator specifies the HTML template file?",
+                    options: ["templateUrl", "template", "htmlFile", "viewUrl", "htmlUrl", "markupUrl", "viewTemplate"],
+                    correct: 0,
+                    explanation: "templateUrl is used to specify an external HTML template file, while 'template' is used for inline templates.",
+                    difficulty: "easy"
+                },
+                {
+                    question: "How do you pass data from a parent component to a child component?",
+                    options: ["@Input decorator", "@Output decorator", "@Inject decorator", "@Data decorator", "@Bind decorator", "@Property decorator", "@Pass decorator"],
+                    correct: 0,
+                    explanation: "@Input decorator allows a parent component to pass data to a child component through property binding.",
+                    difficulty: "easy"
+                },
+                {
+                    question: "How do you emit events from a child component to a parent?",
+                    options: ["@Output with EventEmitter", "@Input with EventEmitter", "@Emit decorator", "@Event decorator", "@Signal decorator", "@Dispatch decorator", "@Broadcast decorator"],
+                    correct: 0,
+                    explanation: "@Output decorator combined with EventEmitter is used to emit custom events from child to parent components.",
+                    difficulty: "easy"
+                },
+                {
+                    question: "What is the default encapsulation mode for Angular components?",
+                    options: ["Emulated", "None", "Native", "ShadowDom", "Scoped", "Isolated", "Global"],
+                    correct: 0,
+                    explanation: "Emulated is the default encapsulation mode, which emulates Shadow DOM behavior by adding unique attributes.",
+                    difficulty: "medium"
+                },
+                {
+                    question: "Which ViewEncapsulation option uses native Shadow DOM?",
+                    options: ["ViewEncapsulation.ShadowDom", "ViewEncapsulation.Emulated", "ViewEncapsulation.None", "ViewEncapsulation.Native", "ViewEncapsulation.Shadow", "ViewEncapsulation.Isolated", "ViewEncapsulation.Scoped"],
+                    correct: 0,
+                    explanation: "ViewEncapsulation.ShadowDom uses the browser's native Shadow DOM implementation for true style encapsulation.",
+                    difficulty: "medium"
+                },
+                {
+                    question: "What does ViewEncapsulation.None do?",
+                    options: ["Makes styles global", "Enables Shadow DOM", "Disables all styling", "Enables style scoping", "Removes all styles", "Blocks external styles", "Inherits parent styles"],
+                    correct: 0,
+                    explanation: "ViewEncapsulation.None disables style encapsulation, making the component's styles global.",
+                    difficulty: "medium"
+                },
+                {
+                    question: "How can you access a child component instance from a parent?",
+                    options: ["@ViewChild", "@Input", "@Output", "@Component", "@ChildRef", "@Reference", "@Instance"],
+                    correct: 0,
+                    explanation: "@ViewChild decorator allows a parent component to get a reference to a child component, directive, or DOM element.",
+                    difficulty: "medium"
+                },
+                {
+                    question: "What is the purpose of @ViewChildren decorator?",
+                    options: ["To query multiple child elements", "To inject services", "To define child routes", "To create child components", "To style children", "To validate children", "To count children"],
+                    correct: 0,
+                    explanation: "@ViewChildren is used to query and get references to multiple child components as a QueryList.",
+                    difficulty: "medium"
+                }
+            ],
+            templates: [
+                {
+                    question: "What is the syntax for interpolation in Angular templates?",
+                    options: ["{{value}}", "[value]", "(value)", "*value", "#value", "@value", "$value"],
+                    correct: 0,
+                    explanation: "Double curly braces {{value}} are used for interpolation to display component property values.",
+                    difficulty: "easy"
+                },
+                {
+                    question: "What is the syntax for property binding in Angular?",
+                    options: ["[property]", "{{property}}", "(property)", "#property", "*property", "@property", "&property"],
+                    correct: 0,
+                    explanation: "Square brackets [property] are used for property binding to bind a DOM property to a component property.",
+                    difficulty: "easy"
+                },
+                {
+                    question: "What is the syntax for event binding in Angular?",
+                    options: ["(event)", "[event]", "{{event}}", "@event", "#event", "*event", "&event"],
+                    correct: 0,
+                    explanation: "Parentheses (event) are used for event binding to listen to DOM events and call component methods.",
+                    difficulty: "easy"
+                },
+                {
+                    question: "What is the syntax for two-way data binding?",
+                    options: ["[(ngModel)]", "[[ngModel]]", "((ngModel))", "{(ngModel)}", "[ngModel]", "(ngModel)", "{{ngModel}}"],
+                    correct: 0,
+                    explanation: "[(ngModel)] is the banana-in-a-box syntax for two-way data binding, combining property and event binding.",
+                    difficulty: "easy"
+                },
+                {
+                    question: "What does the # symbol create in a template?",
+                    options: ["A template reference variable", "A JavaScript variable", "A comment", "A style", "An ID selector", "A class binding", "A directive"],
+                    correct: 0,
+                    explanation: "The # symbol creates a template reference variable that provides a reference to a DOM element or directive.",
+                    difficulty: "easy"
+                },
+                {
+                    question: "How do you bind to the 'class' attribute conditionally?",
+                    options: ["[class.active]='condition'", "class={{condition}}", "(class)='condition'", "class.bind='condition'", "*class='condition'", "#class='condition'", "@class='condition'"],
+                    correct: 0,
+                    explanation: "[class.className]='condition' syntax allows conditional class binding based on a boolean expression.",
+                    difficulty: "medium"
+                },
+                {
+                    question: "How do you bind to inline styles conditionally?",
+                    options: ["[style.color]='value'", "style={{value}}", "(style)='value'", "style.bind='value'", "*style='value'", "#style='value'", "@style='value'"],
+                    correct: 0,
+                    explanation: "[style.property]='value' syntax allows binding CSS properties to component values dynamically.",
+                    difficulty: "medium"
+                },
+                {
+                    question: "What is the purpose of ng-template?",
+                    options: ["To define reusable template fragments", "To create components", "To import modules", "To export data", "To define services", "To create routes", "To style elements"],
+                    correct: 0,
+                    explanation: "ng-template defines a template fragment that is not rendered directly but can be used by structural directives.",
+                    difficulty: "medium"
+                },
+                {
+                    question: "What is ng-container used for?",
+                    options: ["To group elements without adding extra DOM nodes", "To create a DOM element", "To contain services", "To store data", "To wrap components", "To create modules", "To define routes"],
+                    correct: 0,
+                    explanation: "ng-container is a grouping element that doesn't render in the DOM, useful for applying structural directives.",
+                    difficulty: "medium"
+                },
+                {
+                    question: "How do you safely navigate null values in templates?",
+                    options: ["value?.property", "value!.property", "value&&property", "value||property", "value??property", "value#property", "value@property"],
+                    correct: 0,
+                    explanation: "The safe navigation operator ?. prevents errors when accessing properties of null or undefined values.",
+                    difficulty: "medium"
+                }
+            ],
+            directives: [
+                {
+                    question: "Which directive is used to conditionally display elements?",
+                    options: ["*ngIf", "*ngFor", "*ngSwitch", "*ngShow", "*ngHide", "*ngVisible", "*ngDisplay"],
+                    correct: 0,
+                    explanation: "*ngIf is a structural directive that conditionally includes or removes an element from the DOM.",
+                    difficulty: "easy"
+                },
+                {
+                    question: "Which directive is used to iterate over a collection?",
+                    options: ["*ngFor", "*ngIf", "*ngRepeat", "*ngLoop", "*ngEach", "*ngIterate", "*ngList"],
+                    correct: 0,
+                    explanation: "*ngFor is a structural directive used to iterate over arrays and render a template for each item.",
+                    difficulty: "easy"
+                },
+                {
+                    question: "What are the two main types of directives in Angular?",
+                    options: ["Structural and Attribute", "Input and Output", "Component and Service", "Public and Private", "Static and Dynamic", "Sync and Async", "Local and Global"],
+                    correct: 0,
+                    explanation: "Angular has structural directives (that change DOM structure) and attribute directives (that change appearance).",
+                    difficulty: "easy"
+                },
+                {
+                    question: "Which built-in directive is used for multiple conditions?",
+                    options: ["*ngSwitch", "*ngIf-else", "*ngCases", "*ngMultiple", "*ngCondition", "*ngSelect", "*ngChoice"],
+                    correct: 0,
+                    explanation: "*ngSwitch along with *ngSwitchCase and *ngSwitchDefault is used to switch between multiple conditions.",
+                    difficulty: "easy"
+                },
+                {
+                    question: "What prefix indicates a structural directive?",
+                    options: ["*", "@", "#", "$", "&", "^", "!"],
+                    correct: 0,
+                    explanation: "The asterisk (*) prefix indicates a structural directive that manipulates the DOM structure.",
+                    difficulty: "easy"
+                },
+                {
+                    question: "How do you get the index in *ngFor?",
+                    options: ["let i = index", "get index", "index(i)", "@index", "#index", "$index", "this.index"],
+                    correct: 0,
+                    explanation: "Use 'let i = index' syntax to get the current index in *ngFor loop.",
+                    difficulty: "medium"
+                },
+                {
+                    question: "What is the purpose of trackBy in *ngFor?",
+                    options: ["To improve performance by tracking item identity", "To track user clicks", "To track errors", "To track time", "To track changes", "To track memory", "To track requests"],
+                    correct: 0,
+                    explanation: "trackBy provides a function that returns a unique identifier, improving performance by reducing DOM manipulations.",
+                    difficulty: "medium"
+                },
+                {
+                    question: "Which decorator is used to create a custom attribute directive?",
+                    options: ["@Directive", "@Component", "@Attribute", "@Custom", "@Handler", "@Behavior", "@Modifier"],
+                    correct: 0,
+                    explanation: "@Directive decorator is used to create custom attribute directives.",
+                    difficulty: "medium"
+                },
+                {
+                    question: "How do you access the host element in a directive?",
+                    options: ["ElementRef", "@HostElement", "@Element", "HostRef", "DomRef", "NodeRef", "ViewRef"],
+                    correct: 0,
+                    explanation: "ElementRef is injected into the directive constructor to get a reference to the host element.",
+                    difficulty: "medium"
+                },
+                {
+                    question: "What does @HostListener do in a directive?",
+                    options: ["Listens to host element events", "Creates a new element", "Modifies host styles", "Binds properties", "Creates event emitters", "Handles errors", "Manages state"],
+                    correct: 0,
+                    explanation: "@HostListener decorator allows a directive to listen to events on its host element.",
+                    difficulty: "medium"
+                }
+            ],
+            pipes: [
+                {
+                    question: "What is the syntax to use a pipe in Angular templates?",
+                    options: ["value | pipeName", "value.pipe()", "pipe(value)", "{{value:pipe}}", "value->pipe", "value.pipeName", "pipeName(value)"],
+                    correct: 0,
+                    explanation: "The pipe operator | is used to apply pipes: value | pipeName transforms the value.",
+                    difficulty: "easy"
+                },
+                {
+                    question: "Which pipe is used to format dates?",
+                    options: ["date", "formatDate", "dateFormat", "datetime", "time", "calendar", "moment"],
+                    correct: 0,
+                    explanation: "The 'date' pipe formats date values according to locale rules and format patterns.",
+                    difficulty: "easy"
+                },
+                {
+                    question: "Which pipe is used to format numbers as currency?",
+                    options: ["currency", "money", "price", "dollar", "cash", "payment", "amount"],
+                    correct: 0,
+                    explanation: "The 'currency' pipe formats numbers as currency values with proper symbols and formatting.",
+                    difficulty: "easy"
+                },
+                {
+                    question: "Which pipe converts text to uppercase?",
+                    options: ["uppercase", "upper", "toUpper", "caps", "capitalize", "allCaps", "upperCase"],
+                    correct: 0,
+                    explanation: "The 'uppercase' pipe transforms text to all uppercase letters.",
+                    difficulty: "easy"
+                },
+                {
+                    question: "Which pipe converts text to lowercase?",
+                    options: ["lowercase", "lower", "toLower", "small", "downcase", "lowerCase", "uncapitalize"],
+                    correct: 0,
+                    explanation: "The 'lowercase' pipe transforms text to all lowercase letters.",
+                    difficulty: "easy"
+                },
+                {
+                    question: "What pipe is used to format numbers with decimal places?",
+                    options: ["number", "decimal", "format", "digits", "numeric", "float", "precision"],
+                    correct: 0,
+                    explanation: "The 'number' pipe formats numbers with configurable decimal places and grouping.",
+                    difficulty: "medium"
+                },
+                {
+                    question: "How do you chain multiple pipes?",
+                    options: ["value | pipe1 | pipe2", "value | pipe1, pipe2", "value | (pipe1, pipe2)", "value.pipe1.pipe2", "pipe1(pipe2(value))", "value |> pipe1 |> pipe2", "value -> pipe1 -> pipe2"],
+                    correct: 0,
+                    explanation: "Multiple pipes are chained using multiple | operators: value | pipe1 | pipe2.",
+                    difficulty: "medium"
+                },
+                {
+                    question: "Which decorator is used to create a custom pipe?",
+                    options: ["@Pipe", "@CustomPipe", "@Transform", "@Filter", "@Formatter", "@Convert", "@Process"],
+                    correct: 0,
+                    explanation: "@Pipe decorator is used to define a custom pipe with its name and purity setting.",
+                    difficulty: "medium"
+                },
+                {
+                    question: "What is the difference between pure and impure pipes?",
+                    options: ["Impure pipes run on every change detection", "Pure pipes are faster", "Pure pipes don't transform data", "There is no difference", "Impure pipes are deprecated", "Pure pipes run on every cycle", "Impure pipes are cached"],
+                    correct: 0,
+                    explanation: "Pure pipes only execute when input values change, while impure pipes execute on every change detection cycle.",
+                    difficulty: "medium"
+                },
+                {
+                    question: "Which pipe is used to handle async data like Observables?",
+                    options: ["async", "observable", "await", "promise", "subscribe", "stream", "future"],
+                    correct: 0,
+                    explanation: "The 'async' pipe subscribes to Observables/Promises and returns the latest emitted value.",
+                    difficulty: "medium"
+                }
+            ],
+            services: [
+                {
+                    question: "What decorator marks a class as injectable in Angular?",
+                    options: ["@Injectable", "@Service", "@Inject", "@Provider", "@Singleton", "@Bean", "@Dependency"],
+                    correct: 0,
+                    explanation: "@Injectable decorator marks a class as available for dependency injection.",
+                    difficulty: "easy"
+                },
+                {
+                    question: "What is the purpose of services in Angular?",
+                    options: ["Share data and logic across components", "Render UI", "Handle routing", "Style components", "Validate forms", "Parse templates", "Compile code"],
+                    correct: 0,
+                    explanation: "Services are used to share data, business logic, and functionality across multiple components.",
+                    difficulty: "easy"
+                },
+                {
+                    question: "What does 'providedIn: root' mean in @Injectable?",
+                    options: ["Service is a singleton available application-wide", "Service is provided in root component only", "Service needs manual registration", "Service is for root module only", "Service runs at startup", "Service has root access", "Service is immutable"],
+                    correct: 0,
+                    explanation: "'providedIn: root' creates a singleton service instance available throughout the entire application.",
+                    difficulty: "easy"
+                },
+                {
+                    question: "Where can services be provided in Angular?",
+                    options: ["In modules, components, or with providedIn", "Only in modules", "Only in components", "Only in root module", "Only in app.config", "Only in main.ts", "Only in environment files"],
+                    correct: 0,
+                    explanation: "Services can be provided at module level, component level, or using the providedIn property.",
+                    difficulty: "easy"
+                },
+                {
+                    question: "How do you inject a service into a component?",
+                    options: ["Through the constructor", "Using @Service decorator", "Using import statement only", "Using @Use decorator", "Using inject property", "Using @Autowired", "Using service.get()"],
+                    correct: 0,
+                    explanation: "Services are injected through the component's constructor using TypeScript's constructor parameter syntax.",
+                    difficulty: "easy"
+                },
+                {
+                    question: "What is a hierarchical injector in Angular?",
+                    options: ["A tree of injectors matching the component tree", "An injector that creates hierarchical data", "An injector for inheritance", "A sorted injector", "A priority-based injector", "A nested configuration", "A layered architecture"],
+                    correct: 0,
+                    explanation: "Angular's hierarchical injection system creates a tree of injectors that mirrors the component hierarchy.",
+                    difficulty: "medium"
+                },
+                {
+                    question: "How do you provide a different implementation of a service?",
+                    options: ["Using provide and useClass", "Using @Override", "Using extends keyword", "It's not possible", "Using replace()", "Using swap()", "Using mock()"],
+                    correct: 0,
+                    explanation: "The 'provide' property with 'useClass' allows providing a different class implementation for a service token.",
+                    difficulty: "medium"
+                },
+                {
+                    question: "What is useValue used for in providers?",
+                    options: ["To provide a constant value", "To provide a class", "To provide a factory", "To provide an alias", "To provide a function", "To provide a module", "To provide a component"],
+                    correct: 0,
+                    explanation: "useValue provides a constant value (like configuration objects) instead of a class instance.",
+                    difficulty: "medium"
+                },
+                {
+                    question: "What is useFactory used for in providers?",
+                    options: ["To provide a function that creates the service", "To create factory components", "To create multiple services", "To use design patterns", "To build templates", "To compile modules", "To generate code"],
+                    correct: 0,
+                    explanation: "useFactory provides a factory function that creates and returns the service instance with custom logic.",
+                    difficulty: "medium"
+                },
+                {
+                    question: "What does @Optional decorator do in dependency injection?",
+                    options: ["Makes the dependency optional, returning null if not found", "Makes the parameter required", "Adds optional methods", "Creates optional services", "Marks as deprecated", "Enables lazy loading", "Adds default value"],
+                    correct: 0,
+                    explanation: "@Optional allows a dependency to be optional - if not found, null is injected instead of throwing an error.",
+                    difficulty: "medium"
+                }
+            ],
+            routing: [
+                {
+                    question: "Which module is used for routing in Angular?",
+                    options: ["RouterModule", "BrowserModule", "NavigationModule", "RouteModule", "PathModule", "LinkModule", "UrlModule"],
+                    correct: 0,
+                    explanation: "RouterModule from @angular/router provides the routing functionality in Angular applications.",
+                    difficulty: "easy"
+                },
+                {
+                    question: "What directive displays routed components?",
+                    options: ["router-outlet", "router-view", "ng-view", "route-view", "view-container", "page-view", "content-outlet"],
+                    correct: 0,
+                    explanation: "The <router-outlet> directive acts as a placeholder where routed components are displayed.",
+                    difficulty: "easy"
+                },
+                {
+                    question: "Which directive is used for navigation links?",
+                    options: ["routerLink", "href", "navLink", "routeLink", "navigate", "link", "goTo"],
+                    correct: 0,
+                    explanation: "routerLink directive is used on anchor tags to navigate between routes without page reload.",
+                    difficulty: "easy"
+                },
+                {
+                    question: "How do you define a route with a parameter?",
+                    options: ["path: 'user/:id'", "path: 'user/{id}'", "path: 'user?id'", "path: 'user[id]'", "path: 'user<id>'", "path: 'user(id)'", "path: 'user$id'"],
+                    correct: 0,
+                    explanation: "Route parameters are defined using colon syntax: 'user/:id' where :id is the parameter name.",
+                    difficulty: "easy"
+                },
+                {
+                    question: "Which service is used for programmatic navigation?",
+                    options: ["Router", "NavigationService", "RouteService", "Navigator", "LocationService", "UrlService", "PathService"],
+                    correct: 0,
+                    explanation: "The Router service provides methods like navigate() and navigateByUrl() for programmatic navigation.",
+                    difficulty: "easy"
+                },
+                {
+                    question: "What is a route guard in Angular?",
+                    options: ["An interface to control navigation", "A security feature for routes", "A route debugger", "A route logger", "A route optimizer", "A route cache", "A route validator"],
+                    correct: 0,
+                    explanation: "Route guards are interfaces that allow you to control whether navigation to or from a route should be allowed.",
+                    difficulty: "medium"
+                },
+                {
+                    question: "Which guard prevents navigation to a route?",
+                    options: ["CanActivate", "CanDeactivate", "CanLoad", "CanNavigate", "CanAccess", "CanEnter", "CanView"],
+                    correct: 0,
+                    explanation: "CanActivate guard determines if a route can be activated/accessed, useful for authentication checks.",
+                    difficulty: "medium"
+                },
+                {
+                    question: "How do you implement lazy loading in routing?",
+                    options: ["Using loadChildren with import()", "Using eager loading", "Using loadModule", "Using asyncLoad", "Using deferLoad", "Using lazyImport", "Using onDemand"],
+                    correct: 0,
+                    explanation: "Lazy loading is implemented using loadChildren property with dynamic import() syntax.",
+                    difficulty: "medium"
+                },
+                {
+                    question: "What is ActivatedRoute used for?",
+                    options: ["To access route parameters and data", "To activate routes", "To guard routes", "To create routes", "To delete routes", "To cache routes", "To log routes"],
+                    correct: 0,
+                    explanation: "ActivatedRoute service provides access to route parameters, query parameters, and route data.",
+                    difficulty: "medium"
+                },
+                {
+                    question: "What is the purpose of a wildcard route '**'?",
+                    options: ["Match any unmatched routes (404)", "Match all parameters", "Match authenticated routes", "Match child routes", "Match lazy routes", "Match secure routes", "Match dynamic routes"],
+                    correct: 0,
+                    explanation: "The wildcard route '**' matches any URL that doesn't match other routes, typically used for 404 pages.",
+                    difficulty: "medium"
+                }
+            ],
+            templateForms: [
+                {
+                    question: "Which module is required for template-driven forms?",
+                    options: ["FormsModule", "ReactiveFormsModule", "BrowserModule", "CommonModule", "FormBuilderModule", "InputModule", "ValidationModule"],
+                    correct: 0,
+                    explanation: "FormsModule from @angular/forms is required to use template-driven forms with ngModel.",
+                    difficulty: "easy"
+                },
+                {
+                    question: "What directive is used for two-way binding in forms?",
+                    options: ["ngModel", "ngBind", "ngForm", "ngValue", "ngInput", "ngData", "ngField"],
+                    correct: 0,
+                    explanation: "ngModel directive provides two-way data binding between form inputs and component properties.",
+                    difficulty: "easy"
+                },
+                {
+                    question: "What attribute is required on input elements with ngModel?",
+                    options: ["name", "id", "value", "type", "class", "ref", "key"],
+                    correct: 0,
+                    explanation: "The 'name' attribute is required on form controls with ngModel to register the control with the form.",
+                    difficulty: "easy"
+                },
+                {
+                    question: "How do you access the form state in template-driven forms?",
+                    options: ["Using template reference variable with ngForm", "Using formState", "Using @Form decorator", "Using form.state", "Using getFormState()", "Using this.form", "Using formRef"],
+                    correct: 0,
+                    explanation: "A template reference variable (#form='ngForm') provides access to the form's state.",
+                    difficulty: "easy"
+                },
+                {
+                    question: "Which directive creates a form group automatically?",
+                    options: ["ngForm", "ngFormGroup", "formGroup", "form", "ngGroup", "formControl", "ngContainer"],
+                    correct: 0,
+                    explanation: "ngForm directive is automatically applied to <form> elements, creating a FormGroup.",
+                    difficulty: "easy"
+                },
+                {
+                    question: "How do you check if a form field is valid in template?",
+                    options: ["field.valid", "field.isValid", "field.validity", "field.check()", "field.validate()", "field.ok", "field.pass"],
+                    correct: 0,
+                    explanation: "The 'valid' property on a form control reference indicates whether the control passes all validations.",
+                    difficulty: "medium"
+                },
+                {
+                    question: "What does 'touched' mean for a form control?",
+                    options: ["The field has lost focus at least once", "The field has been clicked", "The field has a value", "The field is being edited", "The field has changed", "The field is focused", "The field is active"],
+                    correct: 0,
+                    explanation: "'touched' is true when the user has focused and then blurred the control.",
+                    difficulty: "medium"
+                },
+                {
+                    question: "What does 'dirty' mean for a form control?",
+                    options: ["The user has changed the value", "The field has validation errors", "The field is required", "The field is empty", "The field needs validation", "The field is invalid", "The field is new"],
+                    correct: 0,
+                    explanation: "'dirty' is true when the user has modified the value, opposite of 'pristine'.",
+                    difficulty: "medium"
+                },
+                {
+                    question: "How do you add validation to template-driven form inputs?",
+                    options: ["Using HTML5 attributes like required, minlength", "Using validators array", "Using @Validate decorator", "Using validate directive", "Using validation service", "Using form.addValidator()", "Using ngValidate"],
+                    correct: 0,
+                    explanation: "Template-driven forms use HTML5 validation attributes (required, minlength, maxlength, pattern).",
+                    difficulty: "medium"
+                },
+                {
+                    question: "What is ngModelGroup used for?",
+                    options: ["To group related form controls together", "To create multiple models", "To validate groups", "To style form groups", "To nest forms", "To create subforms", "To merge forms"],
+                    correct: 0,
+                    explanation: "ngModelGroup creates a sub-group of form controls, useful for organizing complex forms.",
+                    difficulty: "medium"
+                }
+            ],
+            reactiveForms: [
+                {
+                    question: "Which module is required for reactive forms?",
+                    options: ["ReactiveFormsModule", "FormsModule", "FormBuilderModule", "BrowserModule", "FormControlModule", "InputModule", "ValidationModule"],
+                    correct: 0,
+                    explanation: "ReactiveFormsModule from @angular/forms is required to use reactive forms.",
+                    difficulty: "easy"
+                },
+                {
+                    question: "What class represents a single form control in reactive forms?",
+                    options: ["FormControl", "FormField", "ReactiveControl", "InputControl", "FieldControl", "Control", "FormInput"],
+                    correct: 0,
+                    explanation: "FormControl represents a single input field and tracks its value and validation status.",
+                    difficulty: "easy"
+                },
+                {
+                    question: "What class groups multiple FormControls?",
+                    options: ["FormGroup", "ControlGroup", "FormContainer", "GroupControl", "FormCollection", "ControlSet", "FormSet"],
+                    correct: 0,
+                    explanation: "FormGroup groups multiple FormControls into a single object with aggregate validity status.",
+                    difficulty: "easy"
+                },
+                {
+                    question: "What is FormBuilder used for?",
+                    options: ["A shortcut service to create form controls", "Building form UI", "Validating forms", "Styling forms", "Compiling forms", "Rendering forms", "Parsing forms"],
+                    correct: 0,
+                    explanation: "FormBuilder is a service that provides convenient methods to create form controls.",
+                    difficulty: "easy"
+                },
+                {
+                    question: "Which directive binds a FormGroup to a form element?",
+                    options: ["[formGroup]", "[ngFormGroup]", "(formGroup)", "#formGroup", "*formGroup", "@formGroup", "formGroup="],
+                    correct: 0,
+                    explanation: "[formGroup] directive binds a FormGroup instance to a form element in the template.",
+                    difficulty: "easy"
+                },
+                {
+                    question: "How do you bind a FormControl to an input within a FormGroup?",
+                    options: ["formControlName='controlName'", "[formControl]='control'", "ngModel='control'", "name='control'", "bind='control'", "control='name'", "field='control'"],
+                    correct: 0,
+                    explanation: "formControlName is used within a [formGroup] to bind an input to a specific FormControl by name.",
+                    difficulty: "medium"
+                },
+                {
+                    question: "What class is used for dynamic lists of controls?",
+                    options: ["FormArray", "FormList", "ControlArray", "DynamicForm", "FormCollection", "ControlList", "ArrayControl"],
+                    correct: 0,
+                    explanation: "FormArray manages a dynamic collection of controls that can be added or removed at runtime.",
+                    difficulty: "medium"
+                },
+                {
+                    question: "How do you add validators to a FormControl?",
+                    options: ["Pass validators as second argument", "control.addValidator()", "Using @Validate", "Using validate attribute", "control.setValidator()", "Using validator directive", "control.validate()"],
+                    correct: 0,
+                    explanation: "Validators are passed as the second argument when creating a FormControl.",
+                    difficulty: "medium"
+                },
+                {
+                    question: "What is the difference between setValue and patchValue?",
+                    options: ["setValue updates all, patchValue updates partial", "They are the same", "patchValue is for arrays only", "setValue is deprecated", "patchValue is slower", "setValue is async", "patchValue validates"],
+                    correct: 0,
+                    explanation: "setValue requires all form control values, while patchValue allows updating only some controls.",
+                    difficulty: "medium"
+                },
+                {
+                    question: "How do you create a custom validator?",
+                    options: ["A function returning null or error object", "Using @Validator decorator", "Extending ValidatorBase", "Using ValidatorFactory", "Implementing IValidator", "Using createValidator()", "Extending FormValidator"],
+                    correct: 0,
+                    explanation: "Custom validators are functions that return null (valid) or an error object (invalid).",
+                    difficulty: "medium"
+                }
+            ],
+            httpClient: [
+                {
+                    question: "Which module provides HTTP functionality in Angular?",
+                    options: ["HttpClientModule", "HttpModule", "AjaxModule", "RequestModule", "NetworkModule", "ApiModule", "FetchModule"],
+                    correct: 0,
+                    explanation: "HttpClientModule from @angular/common/http provides the modern HTTP client.",
+                    difficulty: "easy"
+                },
+                {
+                    question: "Which service is used to make HTTP requests?",
+                    options: ["HttpClient", "Http", "HttpService", "AjaxService", "RequestService", "ApiClient", "FetchService"],
+                    correct: 0,
+                    explanation: "HttpClient service provides methods for making HTTP requests (get, post, put, delete).",
+                    difficulty: "easy"
+                },
+                {
+                    question: "What type of object does HttpClient return?",
+                    options: ["Observable", "Promise", "Callback", "Response", "Stream", "Future", "Result"],
+                    correct: 0,
+                    explanation: "HttpClient methods return Observables, which must be subscribed to execute the request.",
+                    difficulty: "easy"
+                },
+                {
+                    question: "How do you make a GET request with HttpClient?",
+                    options: ["http.get(url)", "http.request('GET', url)", "http.fetch(url)", "http.load(url)", "http.read(url)", "http.retrieve(url)", "http.query(url)"],
+                    correct: 0,
+                    explanation: "http.get(url) is the method to make GET requests, returning an Observable.",
+                    difficulty: "easy"
+                },
+                {
+                    question: "How do you send data with a POST request?",
+                    options: ["http.post(url, data)", "http.post(url).send(data)", "http.post(url).body(data)", "http.post(url, {data: data})", "http.post(url).data(data)", "http.post(url).payload(data)", "http.post(url).content(data)"],
+                    correct: 0,
+                    explanation: "http.post(url, data) sends data as the request body in a POST request.",
+                    difficulty: "easy"
+                },
+                {
+                    question: "How do you add headers to an HTTP request?",
+                    options: ["http.get(url, {headers: httpHeaders})", "http.get(url).headers()", "http.setHeaders().get(url)", "http.get(url).addHeaders()", "http.headers().get(url)", "http.get(url).withHeaders()", "http.get(url).setHeaders()"],
+                    correct: 0,
+                    explanation: "Headers are passed as an options object: http.get(url, { headers: new HttpHeaders({...}) }).",
+                    difficulty: "medium"
+                },
+                {
+                    question: "What is an HTTP Interceptor?",
+                    options: ["Middleware to intercept and modify HTTP requests/responses", "A way to block requests", "An error handler", "A caching mechanism", "A logging tool", "A retry mechanism", "A timeout handler"],
+                    correct: 0,
+                    explanation: "Interceptors are middleware that can inspect and transform HTTP requests and responses.",
+                    difficulty: "medium"
+                },
+                {
+                    question: "Which interface do interceptors implement?",
+                    options: ["HttpInterceptor", "HttpHandler", "InterceptorInterface", "RequestInterceptor", "ResponseInterceptor", "Interceptable", "IHttpInterceptor"],
+                    correct: 0,
+                    explanation: "HTTP Interceptors implement the HttpInterceptor interface with an intercept() method.",
+                    difficulty: "medium"
+                },
+                {
+                    question: "How do you handle HTTP errors?",
+                    options: ["Using catchError operator", "try-catch block", "Using onError callback", "Using errorHandler", "Using .error()", "Using handleError()", "Using throwError()"],
+                    correct: 0,
+                    explanation: "The catchError RxJS operator is used to handle errors in the Observable pipeline.",
+                    difficulty: "medium"
+                },
+                {
+                    question: "How do you add query parameters to a request?",
+                    options: ["Using HttpParams", "Append to URL string only", "Using queryParams option", "Using params property only", "Using addParams()", "Using setParams()", "Using withParams()"],
+                    correct: 0,
+                    explanation: "HttpParams provides a clean way to build query parameters for HTTP requests.",
+                    difficulty: "medium"
+                }
+            ],
+            rxjs: [
+                {
+                    question: "What library provides Observables in Angular?",
+                    options: ["RxJS", "Angular Core", "NgRx", "Zone.js", "Lodash", "Ramda", "Bacon.js"],
+                    correct: 0,
+                    explanation: "RxJS (Reactive Extensions for JavaScript) is the library that provides Observable implementation.",
+                    difficulty: "easy"
+                },
+                {
+                    question: "What method is used to listen to Observable values?",
+                    options: ["subscribe()", "listen()", "observe()", "watch()", "on()", "bind()", "attach()"],
+                    correct: 0,
+                    explanation: "subscribe() is called on an Observable to start receiving emitted values.",
+                    difficulty: "easy"
+                },
+                {
+                    question: "What is a Subject in RxJS?",
+                    options: ["An Observable that can also emit values", "A read-only Observable", "A type of operator", "An error handler", "A filter function", "A transform utility", "A merge strategy"],
+                    correct: 0,
+                    explanation: "A Subject is both an Observable and an Observer - it can emit values and be subscribed to.",
+                    difficulty: "easy"
+                },
+                {
+                    question: "Which operator transforms emitted values?",
+                    options: ["map", "filter", "tap", "take", "skip", "first", "last"],
+                    correct: 0,
+                    explanation: "The map operator transforms each emitted value using a provided function.",
+                    difficulty: "easy"
+                },
+                {
+                    question: "Which operator filters emitted values?",
+                    options: ["filter", "map", "reduce", "select", "where", "find", "match"],
+                    correct: 0,
+                    explanation: "The filter operator emits only values that pass a provided condition function.",
+                    difficulty: "easy"
+                },
+                {
+                    question: "What is the purpose of the pipe() method?",
+                    options: ["To chain RxJS operators", "To connect to databases", "To log values", "To handle errors", "To create streams", "To merge observables", "To split streams"],
+                    correct: 0,
+                    explanation: "pipe() is used to compose multiple RxJS operators in a readable chain.",
+                    difficulty: "medium"
+                },
+                {
+                    question: "What does BehaviorSubject do differently than Subject?",
+                    options: ["It stores and emits the last value to new subscribers", "It's faster", "It filters values", "It's for errors only", "It caches all values", "It replays all values", "It delays emissions"],
+                    correct: 0,
+                    explanation: "BehaviorSubject stores the current value and immediately emits it to new subscribers.",
+                    difficulty: "medium"
+                },
+                {
+                    question: "Which operator combines multiple Observables?",
+                    options: ["merge", "map", "filter", "take", "skip", "tap", "scan"],
+                    correct: 0,
+                    explanation: "merge combines multiple Observables into one, emitting values from all sources.",
+                    difficulty: "medium"
+                },
+                {
+                    question: "What does the tap operator do?",
+                    options: ["Performs side effects without modifying values", "Transforms values", "Filters values", "Combines observables", "Delays emissions", "Buffers values", "Throttles values"],
+                    correct: 0,
+                    explanation: "tap performs side effects (like logging) for each emission without modifying the values.",
+                    difficulty: "medium"
+                },
+                {
+                    question: "Why is it important to unsubscribe from Observables?",
+                    options: ["To prevent memory leaks", "To improve type safety", "To improve performance", "It's not necessary", "To reduce bundle size", "To enable tree-shaking", "To improve security"],
+                    correct: 0,
+                    explanation: "Unsubscribing prevents memory leaks by cleaning up subscriptions when components are destroyed.",
+                    difficulty: "medium"
+                }
+            ],
+            lifecycle: [
+                {
+                    question: "Which lifecycle hook is called once after the first ngOnChanges?",
+                    options: ["ngOnInit", "ngOnDestroy", "ngAfterViewInit", "ngDoCheck", "ngAfterContentInit", "ngOnStart", "ngOnLoad"],
+                    correct: 0,
+                    explanation: "ngOnInit is called once after the first ngOnChanges, used for initialization logic.",
+                    difficulty: "easy"
+                },
+                {
+                    question: "Which hook is called when the component is destroyed?",
+                    options: ["ngOnDestroy", "ngOnInit", "ngOnDelete", "ngOnRemove", "ngOnDispose", "ngOnCleanup", "ngOnTerminate"],
+                    correct: 0,
+                    explanation: "ngOnDestroy is called just before Angular destroys the component, used for cleanup.",
+                    difficulty: "easy"
+                },
+                {
+                    question: "Which hook detects changes to @Input properties?",
+                    options: ["ngOnChanges", "ngOnInit", "ngDoCheck", "ngAfterViewInit", "ngOnInput", "ngOnUpdate", "ngOnModify"],
+                    correct: 0,
+                    explanation: "ngOnChanges is called when any @Input property value changes.",
+                    difficulty: "easy"
+                },
+                {
+                    question: "Which hook is called first in the lifecycle?",
+                    options: ["ngOnChanges", "ngOnInit", "ngAfterViewInit", "ngAfterContentInit", "ngDoCheck", "constructor", "ngOnStart"],
+                    correct: 0,
+                    explanation: "ngOnChanges is called first (if there are inputs), before ngOnInit.",
+                    difficulty: "easy"
+                },
+                {
+                    question: "Which hook is called after the component's view is initialized?",
+                    options: ["ngAfterViewInit", "ngOnInit", "ngAfterContentInit", "ngOnViewInit", "ngViewReady", "ngOnRender", "ngAfterRender"],
+                    correct: 0,
+                    explanation: "ngAfterViewInit is called after Angular initializes the component's view and child views.",
+                    difficulty: "easy"
+                },
+                {
+                    question: "What is ngDoCheck used for?",
+                    options: ["Custom change detection", "Error checking", "Checking templates", "Checking services", "Checking routes", "Checking forms", "Checking styles"],
+                    correct: 0,
+                    explanation: "ngDoCheck allows you to implement custom change detection logic.",
+                    difficulty: "medium"
+                },
+                {
+                    question: "When is ngAfterContentInit called?",
+                    options: ["After projected content is initialized", "After component's own content is initialized", "After view is ready", "After services are injected", "After inputs are set", "After outputs are bound", "After styles are applied"],
+                    correct: 0,
+                    explanation: "ngAfterContentInit is called after Angular projects external content into the component.",
+                    difficulty: "medium"
+                },
+                {
+                    question: "What interface must be implemented to use ngOnInit?",
+                    options: ["OnInit", "Initializable", "NgOnInit", "InitHook", "IOnInit", "Initialize", "Initable"],
+                    correct: 0,
+                    explanation: "The OnInit interface declares the ngOnInit method signature.",
+                    difficulty: "medium"
+                },
+                {
+                    question: "Which hook is called after every change detection run?",
+                    options: ["ngAfterViewChecked", "ngOnChanges", "ngOnInit", "ngDoCheck", "ngOnCheck", "ngAfterCheck", "ngViewChecked"],
+                    correct: 0,
+                    explanation: "ngAfterViewChecked is called after every change detection cycle.",
+                    difficulty: "medium"
+                },
+                {
+                    question: "What is the best place to unsubscribe from Observables?",
+                    options: ["ngOnDestroy", "ngOnInit", "ngOnChanges", "Constructor", "ngAfterViewInit", "ngDoCheck", "ngAfterContentInit"],
+                    correct: 0,
+                    explanation: "ngOnDestroy is the ideal place to unsubscribe from Observables to prevent memory leaks.",
+                    difficulty: "medium"
+                }
+            ],
+            modules: [
+                {
+                    question: "What decorator defines an Angular module?",
+                    options: ["@NgModule", "@Component", "@Module", "@Injectable", "@AppModule", "@Package", "@Bundle"],
+                    correct: 0,
+                    explanation: "@NgModule decorator defines an Angular module with its metadata.",
+                    difficulty: "easy"
+                },
+                {
+                    question: "What is the root module typically called?",
+                    options: ["AppModule", "RootModule", "MainModule", "CoreModule", "IndexModule", "StartModule", "BaseModule"],
+                    correct: 0,
+                    explanation: "AppModule is the conventional name for the root module that bootstraps the application.",
+                    difficulty: "easy"
+                },
+                {
+                    question: "What array contains components, directives, and pipes?",
+                    options: ["declarations", "imports", "exports", "providers", "components", "members", "contents"],
+                    correct: 0,
+                    explanation: "The declarations array lists all components, directives, and pipes that belong to this module.",
+                    difficulty: "easy"
+                },
+                {
+                    question: "What array lists other modules whose exported classes are needed?",
+                    options: ["imports", "declarations", "exports", "providers", "requires", "dependencies", "uses"],
+                    correct: 0,
+                    explanation: "The imports array lists modules whose exported components, directives, or pipes are needed.",
+                    difficulty: "easy"
+                },
+                {
+                    question: "What array makes declarations available to other modules?",
+                    options: ["exports", "imports", "declarations", "providers", "publishes", "shares", "exposes"],
+                    correct: 0,
+                    explanation: "The exports array makes the module's declarations available to other importing modules.",
+                    difficulty: "easy"
+                },
+                {
+                    question: "Which module provides browser-specific services?",
+                    options: ["BrowserModule", "CommonModule", "CoreModule", "AppModule", "PlatformModule", "DomModule", "WebModule"],
+                    correct: 0,
+                    explanation: "BrowserModule provides essential services for running Angular apps in the browser.",
+                    difficulty: "medium"
+                },
+                {
+                    question: "Which module provides common directives like NgIf and NgFor?",
+                    options: ["CommonModule", "BrowserModule", "DirectivesModule", "CoreModule", "SharedModule", "UtilsModule", "HelpersModule"],
+                    correct: 0,
+                    explanation: "CommonModule provides common directives (NgIf, NgFor, NgSwitch) and pipes.",
+                    difficulty: "medium"
+                },
+                {
+                    question: "What is a feature module?",
+                    options: ["A module that groups related functionality", "The main module", "A testing module", "A routing module", "A lazy module", "A shared module", "A core module"],
+                    correct: 0,
+                    explanation: "Feature modules organize code related to a specific feature or domain.",
+                    difficulty: "medium"
+                },
+                {
+                    question: "What is a shared module?",
+                    options: ["A module containing commonly used components/directives/pipes", "A module that shares services", "A module shared with other apps", "A module for sharing data", "A module for common config", "A module for utilities", "A module for helpers"],
+                    correct: 0,
+                    explanation: "A shared module contains commonly used declarations that are exported for use by other modules.",
+                    difficulty: "medium"
+                },
+                {
+                    question: "What is the bootstrap array used for?",
+                    options: ["Specifying the root component(s) to launch", "Adding CSS frameworks", "Bootstrapping services", "Loading modules", "Starting servers", "Initializing config", "Loading styles"],
+                    correct: 0,
+                    explanation: "The bootstrap array specifies the component(s) that Angular creates and inserts into index.html.",
+                    difficulty: "medium"
+                }
+            ],
+            cli: [
+                {
+                    question: "What command creates a new Angular project?",
+                    options: ["ng new", "ng create", "ng init", "ng start", "ng generate project", "ng make", "ng setup"],
+                    correct: 0,
+                    explanation: "'ng new project-name' creates a new Angular workspace with initial configuration.",
+                    difficulty: "easy"
+                },
+                {
+                    question: "What command generates a new component?",
+                    options: ["ng generate component", "ng create component", "ng new component", "ng add component", "ng make component", "ng build component", "ng init component"],
+                    correct: 0,
+                    explanation: "'ng generate component' (or 'ng g c') creates a new component with all necessary files.",
+                    difficulty: "easy"
+                },
+                {
+                    question: "What is the short form of 'ng generate'?",
+                    options: ["ng g", "ng gen", "ng ge", "ng cr", "ng n", "ng mk", "ng gn"],
+                    correct: 0,
+                    explanation: "'ng g' is the short alias for 'ng generate' command.",
+                    difficulty: "easy"
+                },
+                {
+                    question: "What command starts the development server?",
+                    options: ["ng serve", "ng start", "ng run", "ng dev", "ng launch", "ng begin", "ng open"],
+                    correct: 0,
+                    explanation: "'ng serve' builds and serves the application, rebuilding on file changes.",
+                    difficulty: "easy"
+                },
+                {
+                    question: "What command builds the application for production?",
+                    options: ["ng build", "ng build --prod", "ng compile", "ng make", "ng package", "ng bundle", "ng deploy"],
+                    correct: 0,
+                    explanation: "'ng build' builds the application. Use '--configuration production' for production builds.",
+                    difficulty: "easy"
+                },
+                {
+                    question: "What command runs unit tests?",
+                    options: ["ng test", "ng unit", "ng spec", "ng karma", "ng check", "ng verify", "ng validate"],
+                    correct: 0,
+                    explanation: "'ng test' executes unit tests using Karma test runner.",
+                    difficulty: "medium"
+                },
+                {
+                    question: "What command runs end-to-end tests?",
+                    options: ["ng e2e", "ng test --e2e", "ng cypress", "ng protractor", "ng integration", "ng end2end", "ng functional"],
+                    correct: 0,
+                    explanation: "'ng e2e' executes end-to-end tests using a configured e2e test runner.",
+                    difficulty: "medium"
+                },
+                {
+                    question: "What command adds a package or capability to the project?",
+                    options: ["ng add", "ng install", "ng package", "ng import", "ng include", "ng use", "ng require"],
+                    correct: 0,
+                    explanation: "'ng add' adds a package to the project and runs installation schematics.",
+                    difficulty: "medium"
+                },
+                {
+                    question: "What command updates Angular and its dependencies?",
+                    options: ["ng update", "ng upgrade", "ng refresh", "ng sync", "ng migrate", "ng patch", "ng fix"],
+                    correct: 0,
+                    explanation: "'ng update' updates Angular packages and runs migration schematics.",
+                    difficulty: "medium"
+                },
+                {
+                    question: "What file contains Angular CLI configuration?",
+                    options: ["angular.json", "angular.config.js", "cli.json", "ng.config.json", ".angularrc", "config.json", "settings.json"],
+                    correct: 0,
+                    explanation: "angular.json contains workspace and project configuration for Angular CLI.",
+                    difficulty: "medium"
+                }
+            ],
+            testing: [
+                {
+                    question: "What testing framework comes with Angular by default?",
+                    options: ["Jasmine", "Mocha", "Jest", "QUnit", "AVA", "Tape", "Chai"],
+                    correct: 0,
+                    explanation: "Jasmine is the default testing framework included with Angular projects.",
+                    difficulty: "easy"
+                },
+                {
+                    question: "What test runner does Angular CLI use by default?",
+                    options: ["Karma", "Mocha", "Jest", "Cypress", "Protractor", "Playwright", "TestCafe"],
+                    correct: 0,
+                    explanation: "Karma is the default test runner used by Angular CLI for unit tests.",
+                    difficulty: "easy"
+                },
+                {
+                    question: "What is TestBed in Angular testing?",
+                    options: ["A testing utility for configuring test modules", "A test database", "A test runner", "A mocking library", "A test server", "A test framework", "A test reporter"],
+                    correct: 0,
+                    explanation: "TestBed is Angular's primary testing utility that creates a testing module environment.",
+                    difficulty: "easy"
+                },
+                {
+                    question: "What file extension do Angular test files have?",
+                    options: [".spec.ts", ".test.ts", ".unit.ts", ".karma.ts", ".jasmine.ts", ".check.ts", ".verify.ts"],
+                    correct: 0,
+                    explanation: "Angular test files use the .spec.ts extension by convention.",
+                    difficulty: "easy"
+                },
+                {
+                    question: "What function defines a test suite in Jasmine?",
+                    options: ["describe()", "test()", "suite()", "group()", "context()", "specify()", "section()"],
+                    correct: 0,
+                    explanation: "describe() function creates a test suite that groups related test cases.",
+                    difficulty: "easy"
+                },
+                {
+                    question: "What function defines a single test case in Jasmine?",
+                    options: ["it()", "test()", "case()", "spec()", "check()", "verify()", "assert()"],
+                    correct: 0,
+                    explanation: "it() function defines a single test case (spec) within a describe block.",
+                    difficulty: "medium"
+                },
+                {
+                    question: "How do you create a component fixture in tests?",
+                    options: ["TestBed.createComponent()", "new ComponentFixture()", "ComponentFactory.create()", "fixture.create()", "createFixture()", "buildComponent()", "makeComponent()"],
+                    correct: 0,
+                    explanation: "TestBed.createComponent() creates a fixture for the component being tested.",
+                    difficulty: "medium"
+                },
+                {
+                    question: "What does fixture.detectChanges() do?",
+                    options: ["Triggers change detection for the component", "Detects test failures", "Checks for DOM changes", "Validates component state", "Updates test results", "Refreshes the view", "Resets the component"],
+                    correct: 0,
+                    explanation: "detectChanges() triggers change detection, updating the component's view.",
+                    difficulty: "medium"
+                },
+                {
+                    question: "How do you mock a service in Angular tests?",
+                    options: ["Using providers with useValue or useClass", "Using @Mock decorator", "Using mock() function", "Using fakeService()", "Using createMock()", "Using stub()", "Using spy()"],
+                    correct: 0,
+                    explanation: "Services are mocked by providing alternative implementations using useValue, useClass, or useFactory.",
+                    difficulty: "medium"
+                },
+                {
+                    question: "What is the purpose of async() or waitForAsync() in tests?",
+                    options: ["To handle asynchronous operations in tests", "To speed up tests", "To delay test execution", "To skip async code", "To mock promises", "To fake timers", "To simulate delays"],
+                    correct: 0,
+                    explanation: "async()/waitForAsync() wraps test functions to properly handle async operations.",
+                    difficulty: "medium"
+                }
+            ],
+            changeDetection: [
+                {
+                    question: "What triggers change detection in Angular?",
+                    options: ["Events, timers, and HTTP requests", "Only manual triggers", "Only HTTP requests", "Only user events", "Only async operations", "Only state changes", "Only data mutations"],
+                    correct: 0,
+                    explanation: "Change detection is triggered by browser events, timers, XHR requests, and promises.",
+                    difficulty: "easy"
+                },
+                {
+                    question: "What is the default change detection strategy?",
+                    options: ["Default", "OnPush", "Automatic", "Manual", "Smart", "Reactive", "Optimized"],
+                    correct: 0,
+                    explanation: "ChangeDetectionStrategy.Default checks all components on every change detection cycle.",
+                    difficulty: "easy"
+                },
+                {
+                    question: "What library enables automatic change detection triggering?",
+                    options: ["Zone.js", "RxJS", "NgRx", "Angular Core", "Lodash", "Immutable.js", "Redux"],
+                    correct: 0,
+                    explanation: "Zone.js patches async APIs to automatically trigger change detection.",
+                    difficulty: "easy"
+                },
+                {
+                    question: "What is OnPush change detection strategy?",
+                    options: ["Only check when inputs change or events occur", "Always check changes", "Never check changes", "Check only on push events", "Check on every cycle", "Check manually only", "Check on subscription"],
+                    correct: 0,
+                    explanation: "OnPush strategy only runs change detection when input references change or component events occur.",
+                    difficulty: "easy"
+                },
+                {
+                    question: "How do you set OnPush change detection for a component?",
+                    options: ["changeDetection: ChangeDetectionStrategy.OnPush", "changeDetection: 'OnPush'", "@OnPush decorator", "onPush: true", "detection: 'onpush'", "strategy: OnPush", "mode: 'onpush'"],
+                    correct: 0,
+                    explanation: "Set changeDetection property in @Component to ChangeDetectionStrategy.OnPush.",
+                    difficulty: "easy"
+                },
+                {
+                    question: "What service is used to manually trigger change detection?",
+                    options: ["ChangeDetectorRef", "DetectorRef", "ChangeService", "DetectionService", "UpdateService", "RefreshService", "RenderService"],
+                    correct: 0,
+                    explanation: "ChangeDetectorRef provides methods like detectChanges() and markForCheck() for manual control.",
+                    difficulty: "medium"
+                },
+                {
+                    question: "What does markForCheck() do?",
+                    options: ["Marks the component and ancestors for check in next cycle", "Immediately runs change detection", "Disables change detection", "Checks only the current component", "Resets the component state", "Forces immediate update", "Queues a refresh"],
+                    correct: 0,
+                    explanation: "markForCheck() marks the component and its ancestors to be checked in the next change detection cycle.",
+                    difficulty: "medium"
+                },
+                {
+                    question: "What does detach() do on ChangeDetectorRef?",
+                    options: ["Excludes the component from change detection", "Removes the component", "Detaches event handlers", "Removes subscriptions", "Clears the view", "Destroys the component", "Hides the component"],
+                    correct: 0,
+                    explanation: "detach() excludes the component subtree from change detection until reattached.",
+                    difficulty: "medium"
+                },
+                {
+                    question: "How does OnPush improve performance?",
+                    options: ["By reducing the number of components checked", "By using less memory", "By using faster algorithms", "By caching results", "By lazy loading", "By tree shaking", "By minification"],
+                    correct: 0,
+                    explanation: "OnPush reduces the number of components Angular needs to check by skipping subtrees when inputs haven't changed.",
+                    difficulty: "medium"
+                },
+                {
+                    question: "What triggers change detection in OnPush components?",
+                    options: ["Input reference changes, events, or async pipe", "Any change in the app", "Only manual triggers", "Timer events only", "HTTP requests only", "DOM events only", "State changes only"],
+                    correct: 0,
+                    explanation: "OnPush components are checked when input references change, events occur, or async pipe receives new values.",
+                    difficulty: "medium"
+                }
+            ],
+            decorators: [
+                {
+                    question: "What is a decorator in Angular?",
+                    options: ["A function that adds metadata to classes/properties", "A CSS styling method", "A type of component", "A testing utility", "A routing feature", "A form validator", "An animation trigger"],
+                    correct: 0,
+                    explanation: "Decorators are functions that add metadata to classes, methods, properties, or parameters.",
+                    difficulty: "easy"
+                },
+                {
+                    question: "Which decorator defines a class as a component?",
+                    options: ["@Component", "@NgModule", "@Injectable", "@Directive", "@Element", "@View", "@Template"],
+                    correct: 0,
+                    explanation: "@Component decorator defines a class as an Angular component with its metadata.",
+                    difficulty: "easy"
+                },
+                {
+                    question: "Which decorator defines a class as a service?",
+                    options: ["@Injectable", "@Service", "@Provider", "@Inject", "@Singleton", "@Bean", "@Factory"],
+                    correct: 0,
+                    explanation: "@Injectable decorator marks a class as available for dependency injection.",
+                    difficulty: "easy"
+                },
+                {
+                    question: "Which decorator marks a property as an input?",
+                    options: ["@Input", "@Bind", "@Property", "@Data", "@Prop", "@Receive", "@Accept"],
+                    correct: 0,
+                    explanation: "@Input decorator marks a property as an input that can receive data from parent components.",
+                    difficulty: "easy"
+                },
+                {
+                    question: "Which decorator marks a property as an output?",
+                    options: ["@Output", "@Emit", "@Event", "@Send", "@Dispatch", "@Fire", "@Trigger"],
+                    correct: 0,
+                    explanation: "@Output decorator marks a property (EventEmitter) as an output for emitting events.",
+                    difficulty: "easy"
+                },
+                {
+                    question: "What does @HostBinding do?",
+                    options: ["Binds a property to a host element property", "Binds to route parameters", "Binds services to components", "Binds forms to models", "Binds styles globally", "Binds events to methods", "Binds templates to data"],
+                    correct: 0,
+                    explanation: "@HostBinding binds a directive/component property to a property of the host element.",
+                    difficulty: "medium"
+                },
+                {
+                    question: "What does @HostListener do?",
+                    options: ["Listens to events on the host element", "Creates event emitters", "Listens to service events", "Listens to route changes", "Listens to form changes", "Listens to state changes", "Listens to HTTP responses"],
+                    correct: 0,
+                    explanation: "@HostListener declares a DOM event on the host element that triggers a method.",
+                    difficulty: "medium"
+                },
+                {
+                    question: "What does @ContentChild do?",
+                    options: ["Queries projected content from parent", "Creates child components", "Defines child routes", "Injects child services", "Styles child elements", "Validates child data", "Binds child properties"],
+                    correct: 0,
+                    explanation: "@ContentChild queries and returns a reference to projected content (ng-content).",
+                    difficulty: "medium"
+                },
+                {
+                    question: "What does @Self decorator do in DI?",
+                    options: ["Only looks for dependency in the current injector", "Creates a new instance", "References itself", "Skips parent injectors", "Uses local scope only", "Prevents inheritance", "Forces local resolution"],
+                    correct: 0,
+                    explanation: "@Self tells the injector to only look for the dependency in the current component's injector.",
+                    difficulty: "medium"
+                },
+                {
+                    question: "What does @SkipSelf decorator do?",
+                    options: ["Starts dependency search from parent injector", "Skips the component itself", "Skips validation", "Skips change detection", "Skips lifecycle hooks", "Skips rendering", "Skips initialization"],
+                    correct: 0,
+                    explanation: "@SkipSelf tells the injector to start searching from the parent injector, skipping the current one.",
+                    difficulty: "medium"
+                }
+            ],
+            signals: [
+                {
+                    question: "What are Signals in Angular?",
+                    options: ["A reactive primitive for managing state", "Event emitters", "HTTP signals", "Route signals", "Form validators", "Animation triggers", "Testing utilities"],
+                    correct: 0,
+                    explanation: "Signals are a reactive primitive that provides a way to manage and react to state changes.",
+                    difficulty: "easy"
+                },
+                {
+                    question: "How do you create a writable signal?",
+                    options: ["signal(value)", "new Signal(value)", "createSignal(value)", "Signal.create(value)", "makeSignal(value)", "buildSignal(value)", "initSignal(value)"],
+                    correct: 0,
+                    explanation: "The signal() function creates a writable signal with an initial value.",
+                    difficulty: "easy"
+                },
+                {
+                    question: "How do you read a signal's value?",
+                    options: ["signal()", "signal.value", "signal.get()", "signal.read()", "signal.current", "signal.data", "signal.state"],
+                    correct: 0,
+                    explanation: "Calling the signal as a function signal() returns its current value.",
+                    difficulty: "easy"
+                },
+                {
+                    question: "How do you update a signal's value?",
+                    options: ["signal.set(newValue)", "signal.value = newValue", "signal = newValue", "signal.update(newValue)", "signal.write(newValue)", "signal.change(newValue)", "signal.modify(newValue)"],
+                    correct: 0,
+                    explanation: "The set() method updates the signal to a new value.",
+                    difficulty: "easy"
+                },
+                {
+                    question: "What is a computed signal?",
+                    options: ["A signal derived from other signals", "A signal that does math", "A cached signal", "A const signal", "A lazy signal", "An async signal", "A merged signal"],
+                    correct: 0,
+                    explanation: "A computed signal derives its value from other signals and automatically updates when dependencies change.",
+                    difficulty: "easy"
+                },
+                {
+                    question: "How do you create a computed signal?",
+                    options: ["computed(() => ...)", "signal.compute()", "createComputed()", "signal.derived()", "derive(() => ...)", "calculate(() => ...)", "memo(() => ...)"],
+                    correct: 0,
+                    explanation: "The computed() function creates a signal that derives its value from a computation function.",
+                    difficulty: "medium"
+                },
+                {
+                    question: "What is the effect() function used for?",
+                    options: ["Running side effects when signals change", "Adding CSS effects", "Creating animations", "Handling errors", "Logging data", "Transforming values", "Filtering signals"],
+                    correct: 0,
+                    explanation: "effect() creates a side effect that runs whenever the signals it reads change.",
+                    difficulty: "medium"
+                },
+                {
+                    question: "How do you update a signal based on its current value?",
+                    options: ["signal.update(v => v + 1)", "signal.set(signal() + 1)", "signal.modify(v => v + 1)", "signal.change(v => v + 1)", "signal.transform(v => v + 1)", "signal.mutate(v => v + 1)", "signal.apply(v => v + 1)"],
+                    correct: 0,
+                    explanation: "update() accepts a function that receives the current value and returns the new value.",
+                    difficulty: "medium"
+                },
+                {
+                    question: "Are computed signals writable?",
+                    options: ["No, they are read-only", "Yes, always", "Only with special syntax", "Depends on configuration", "Only in development", "Only with permissions", "Only when derived"],
+                    correct: 0,
+                    explanation: "Computed signals are read-only; their value is derived from other signals.",
+                    difficulty: "medium"
+                },
+                {
+                    question: "What advantage do Signals provide over traditional change detection?",
+                    options: ["Fine-grained reactivity without Zone.js", "They are faster to type", "Better error messages", "Easier testing", "Smaller bundle size", "Better debugging", "More features"],
+                    correct: 0,
+                    explanation: "Signals provide fine-grained reactivity, allowing Angular to track exactly what changed without Zone.js.",
+                    difficulty: "medium"
+                }
+            ],
+            standalone: [
+                {
+                    question: "What is a standalone component?",
+                    options: ["A component that doesn't need to be declared in NgModule", "A component without template", "A component without styles", "A component without services", "A component without inputs", "A component without outputs", "A component without lifecycle"],
+                    correct: 0,
+                    explanation: "Standalone components are self-contained and don't need to be declared in an NgModule.",
+                    difficulty: "easy"
+                },
+                {
+                    question: "How do you mark a component as standalone?",
+                    options: ["standalone: true in @Component", "@Standalone decorator", "extends StandaloneComponent", "Using StandaloneModule", "implements Standalone", "type: 'standalone'", "mode: standalone"],
+                    correct: 0,
+                    explanation: "Set standalone: true in the @Component decorator to make it standalone.",
+                    difficulty: "easy"
+                },
+                {
+                    question: "How do standalone components import dependencies?",
+                    options: ["Using the imports array in @Component", "Through NgModule", "They can't have dependencies", "Using @Import decorator", "Using require()", "Using include()", "Using load()"],
+                    correct: 0,
+                    explanation: "Standalone components use the imports array in @Component to import other components, directives, and pipes.",
+                    difficulty: "easy"
+                },
+                {
+                    question: "Can standalone components be used in traditional NgModule apps?",
+                    options: ["Yes, by importing them in NgModule", "No, never", "Only in the root module", "Only with special configuration", "Only in lazy modules", "Only in feature modules", "Only in shared modules"],
+                    correct: 0,
+                    explanation: "Standalone components can be imported directly into NgModule's imports array.",
+                    difficulty: "easy"
+                },
+                {
+                    question: "How do you bootstrap an app with a standalone component?",
+                    options: ["bootstrapApplication()", "bootstrapModule()", "standalone.bootstrap()", "initStandalone()", "startApplication()", "launchApp()", "runStandalone()"],
+                    correct: 0,
+                    explanation: "bootstrapApplication() is used to bootstrap an Angular application with a standalone component.",
+                    difficulty: "easy"
+                },
+                {
+                    question: "Can directives be standalone?",
+                    options: ["Yes, using standalone: true", "No, only components", "Only structural directives", "Only attribute directives", "Only built-in directives", "Only custom directives", "Only exported directives"],
+                    correct: 0,
+                    explanation: "Directives can also be standalone by adding standalone: true to the @Directive decorator.",
+                    difficulty: "medium"
+                },
+                {
+                    question: "Can pipes be standalone?",
+                    options: ["Yes, using standalone: true", "No, pipes must be in modules", "Only impure pipes", "Only built-in pipes", "Only pure pipes", "Only async pipes", "Only custom pipes"],
+                    correct: 0,
+                    explanation: "Pipes can be standalone by adding standalone: true to the @Pipe decorator.",
+                    difficulty: "medium"
+                },
+                {
+                    question: "How do you provide services in standalone components?",
+                    options: ["Using providers array in @Component or importProvidersFrom", "Using providers in NgModule", "Services aren't supported", "Using @Provider decorator", "Using inject only", "Using service.provide()", "Using registerService()"],
+                    correct: 0,
+                    explanation: "Services can be provided in the component's providers array or using importProvidersFrom.",
+                    difficulty: "medium"
+                },
+                {
+                    question: "What is importProvidersFrom used for?",
+                    options: ["Extracting providers from NgModules for standalone apps", "Importing components", "Importing styles", "Importing templates", "Importing routes", "Importing assets", "Importing configs"],
+                    correct: 0,
+                    explanation: "importProvidersFrom extracts providers from NgModules for use in standalone application bootstrapping.",
+                    difficulty: "medium"
+                },
+                {
+                    question: "What are the benefits of standalone components?",
+                    options: ["Simplified code, reduced boilerplate, better tree-shaking", "Faster runtime", "Better styling options", "More template features", "Better animations", "Improved security", "Faster compilation"],
+                    correct: 0,
+                    explanation: "Standalone components reduce boilerplate, simplify mental model, and enable better tree-shaking.",
+                    difficulty: "medium"
+                }
+            ],
+            performance: [
+                {
+                    question: "Which change detection strategy improves performance?",
+                    options: ["OnPush", "Default", "Automatic", "Manual", "Smart", "Optimized", "Fast"],
+                    correct: 0,
+                    explanation: "OnPush strategy reduces change detection cycles by only checking when inputs change or events occur.",
+                    difficulty: "easy"
+                },
+                {
+                    question: "What does lazy loading help with?",
+                    options: ["Initial bundle size and load time", "Runtime performance", "Memory usage", "API response time", "Database queries", "Animation speed", "Form validation"],
+                    correct: 0,
+                    explanation: "Lazy loading loads modules on demand, reducing the initial bundle size.",
+                    difficulty: "easy"
+                },
+                {
+                    question: "What is the purpose of trackBy in ngFor?",
+                    options: ["Improving list rendering performance", "Tracking user actions", "Tracking errors", "Tracking network requests", "Tracking time", "Tracking memory", "Tracking changes"],
+                    correct: 0,
+                    explanation: "trackBy helps Angular identify items that have changed, avoiding unnecessary DOM manipulations.",
+                    difficulty: "easy"
+                },
+                {
+                    question: "What should you do to prevent memory leaks from subscriptions?",
+                    options: ["Unsubscribe in ngOnDestroy", "Use more memory", "Use try-catch", "Nothing, Angular handles it", "Restart the app", "Clear the cache", "Refresh the page"],
+                    correct: 0,
+                    explanation: "Always unsubscribe from Observables in ngOnDestroy to prevent memory leaks.",
+                    difficulty: "easy"
+                },
+                {
+                    question: "Which pipe automatically handles subscription cleanup?",
+                    options: ["async pipe", "subscribe pipe", "auto pipe", "observable pipe", "stream pipe", "data pipe", "clean pipe"],
+                    correct: 0,
+                    explanation: "The async pipe automatically subscribes and unsubscribes, preventing memory leaks.",
+                    difficulty: "easy"
+                },
+                {
+                    question: "What does Ahead-of-Time (AOT) compilation provide?",
+                    options: ["Faster rendering and smaller bundles", "Slower builds", "More features", "Better debugging", "More flexibility", "Dynamic templates", "Runtime compilation"],
+                    correct: 0,
+                    explanation: "AOT compilation compiles templates at build time, resulting in faster rendering and smaller bundles.",
+                    difficulty: "medium"
+                },
+                {
+                    question: "What is tree-shaking?",
+                    options: ["Removing unused code from bundles", "A testing technique", "A design pattern", "A debugging tool", "A build step", "A lint rule", "A code style"],
+                    correct: 0,
+                    explanation: "Tree-shaking removes unused code from the final bundle, reducing bundle size.",
+                    difficulty: "medium"
+                },
+                {
+                    question: "How can you reduce bundle size?",
+                    options: ["Lazy loading, tree-shaking, and removing unused imports", "Add more modules", "Use more components", "Increase memory", "Add more dependencies", "Use larger images", "Include more fonts"],
+                    correct: 0,
+                    explanation: "Lazy loading, tree-shaking, and removing unused code/imports all help reduce bundle size.",
+                    difficulty: "medium"
+                },
+                {
+                    question: "What is preloading strategy in routing?",
+                    options: ["Loading lazy modules in background after initial load", "Loading all modules upfront", "Caching routes", "Preloading data", "Prefetching APIs", "Precompiling templates", "Preprocessing styles"],
+                    correct: 0,
+                    explanation: "Preloading strategies load lazy modules in the background after the initial app load completes.",
+                    difficulty: "medium"
+                },
+                {
+                    question: "What does pure: true mean in a pipe?",
+                    options: ["The pipe only re-runs when input references change", "The pipe is immutable", "The pipe has no side effects", "The pipe is cached forever", "The pipe is stateless", "The pipe is synchronous", "The pipe is simple"],
+                    correct: 0,
+                    explanation: "Pure pipes only recalculate when their input reference changes, improving performance.",
+                    difficulty: "medium"
+                }
+            ],
+            security: [
+                {
+                    question: "What does Angular automatically sanitize?",
+                    options: ["Untrusted values to prevent XSS attacks", "Database queries", "API responses", "User passwords", "Session tokens", "Cookie data", "Form inputs"],
+                    correct: 0,
+                    explanation: "Angular automatically sanitizes untrusted values for HTML, styles, and URLs to prevent XSS attacks.",
+                    difficulty: "easy"
+                },
+                {
+                    question: "What is XSS in web security?",
+                    options: ["Cross-Site Scripting", "Extra Secure Sockets", "XML Security Standard", "Extended Style Sheets", "Cross Server Session", "External Script Source", "Executable Script System"],
+                    correct: 0,
+                    explanation: "XSS (Cross-Site Scripting) is a security vulnerability where attackers inject malicious scripts.",
+                    difficulty: "easy"
+                },
+                {
+                    question: "What service is used to bypass Angular's built-in sanitization?",
+                    options: ["DomSanitizer", "SecurityBypass", "TrustService", "SanitizeService", "SecurityService", "BypassService", "TrustManager"],
+                    correct: 0,
+                    explanation: "DomSanitizer service provides methods to bypass sanitization when you trust the content.",
+                    difficulty: "easy"
+                },
+                {
+                    question: "What method marks a URL as safe for navigation?",
+                    options: ["bypassSecurityTrustUrl", "trustUrl", "safeUrl", "secureUrl", "allowUrl", "approveUrl", "validateUrl"],
+                    correct: 0,
+                    explanation: "bypassSecurityTrustUrl marks a URL value as safe for navigation.",
+                    difficulty: "easy"
+                },
+                {
+                    question: "What is CSRF in web security?",
+                    options: ["Cross-Site Request Forgery", "Client-Side Resource Fetch", "Cross-Server Resource Format", "Client Security Request Filter", "Cross-Site Resource Failure", "Client-Side Request Form", "Cross-Server Request Forward"],
+                    correct: 0,
+                    explanation: "CSRF (Cross-Site Request Forgery) tricks users into executing unwanted actions on authenticated sites.",
+                    difficulty: "easy"
+                },
+                {
+                    question: "How does Angular help prevent CSRF attacks?",
+                    options: ["HttpClient supports XSRF token handling", "It blocks all requests", "It encrypts data", "It validates forms", "It sanitizes inputs", "It checks cookies", "It verifies sessions"],
+                    correct: 0,
+                    explanation: "Angular's HttpClient can automatically send XSRF tokens with requests to prevent CSRF attacks.",
+                    difficulty: "medium"
+                },
+                {
+                    question: "What should you avoid to prevent XSS?",
+                    options: ["Using innerHTML with untrusted content", "Using interpolation", "Using property binding", "Using event binding", "Using template variables", "Using pipes", "Using directives"],
+                    correct: 0,
+                    explanation: "Using innerHTML with untrusted user content can expose your app to XSS vulnerabilities.",
+                    difficulty: "medium"
+                },
+                {
+                    question: "What is Content Security Policy (CSP)?",
+                    options: ["A browser security feature to prevent XSS", "Angular's security module", "A form validation policy", "A data encryption standard", "A cookie policy", "A session policy", "A cache policy"],
+                    correct: 0,
+                    explanation: "CSP is a security layer that helps detect and mitigate XSS and data injection attacks.",
+                    difficulty: "medium"
+                },
+                {
+                    question: "How should you handle user authentication tokens?",
+                    options: ["Store in HttpOnly cookies or secure storage", "Store in localStorage always", "Store in global variables", "Store in URL parameters", "Store in component state", "Store in session storage", "Store in local variables"],
+                    correct: 0,
+                    explanation: "Authentication tokens should be stored securely, preferably in HttpOnly cookies to prevent XSS access.",
+                    difficulty: "medium"
+                },
+                {
+                    question: "What is the security context for style bindings?",
+                    options: ["SecurityContext.STYLE", "SecurityContext.CSS", "SecurityContext.HTML", "SecurityContext.URL", "SecurityContext.NONE", "SecurityContext.DOM", "SecurityContext.SCRIPT"],
+                    correct: 0,
+                    explanation: "SecurityContext.STYLE is used for sanitizing style bindings to prevent CSS injection attacks.",
+                    difficulty: "medium"
+                }
+            ]
+        };
+
+        // Category display names
+        const categoryNames = {
+            components: "Components",
+            templates: "Templates & Data Binding",
+            directives: "Directives",
+            pipes: "Pipes",
+            services: "Services & DI",
+            routing: "Routing & Navigation",
+            templateForms: "Template-Driven Forms",
+            reactiveForms: "Reactive Forms",
+            httpClient: "HTTP Client",
+            rxjs: "Observables & RxJS",
+            lifecycle: "Lifecycle Hooks",
+            modules: "Modules",
+            cli: "Angular CLI",
+            testing: "Testing",
+            changeDetection: "Change Detection",
+            decorators: "Decorators",
+            signals: "Signals",
+            standalone: "Standalone Components",
+            performance: "Performance",
+            security: "Security"
+        };
+
+        // Local storage keys
+        const STORAGE_KEYS = {
+            settings: 'angularQuiz_settings',
+            quizState: 'angularQuiz_state'
+        };
+
+        // Quiz state
+        let currentQuiz = [];
+        let currentQuestionIndex = 0;
+        let correctAnswers = 0;
+        let wrongAnswers = 0;
+        let answered = false;
+        let categoryScores = {};
+        let answeredQuestions = [];
+        
+        // Timer state
+        let timerInterval = null;
+        let questionTimeLimit = 30;
+        let questionTimeRemaining = 30;
+        let totalTimeElapsed = 0;
+        let quizStartTime = null;
+        let timeUpHandled = false;
+
+        // Save settings to localStorage
+        function saveSettings() {
+            const settings = {
+                category: document.getElementById('categorySelect').value,
+                difficulty: document.getElementById('difficultySelect').value,
+                questionCount: document.getElementById('questionCount').value,
+                timer: document.getElementById('timerSelect').value
+            };
+            localStorage.setItem(STORAGE_KEYS.settings, JSON.stringify(settings));
+        }
+
+        // Load settings from localStorage
+        function loadSettings() {
+            const saved = localStorage.getItem(STORAGE_KEYS.settings);
+            if (saved) {
+                try {
+                    const settings = JSON.parse(saved);
+                    if (settings.category) document.getElementById('categorySelect').value = settings.category;
+                    if (settings.difficulty) document.getElementById('difficultySelect').value = settings.difficulty;
+                    if (settings.questionCount) document.getElementById('questionCount').value = settings.questionCount;
+                    if (settings.timer) document.getElementById('timerSelect').value = settings.timer;
+                } catch (e) {
+                    console.error('Error loading settings:', e);
+                }
+            }
+        }
+
+        // Save quiz state to localStorage
+        function saveQuizState() {
+            const state = {
+                currentQuiz: currentQuiz,
+                currentQuestionIndex: currentQuestionIndex,
+                correctAnswers: correctAnswers,
+                wrongAnswers: wrongAnswers,
+                categoryScores: categoryScores,
+                answeredQuestions: answeredQuestions,
+                questionTimeLimit: questionTimeLimit,
+                quizStartTime: quizStartTime,
+                totalTimeElapsed: totalTimeElapsed
+            };
+            localStorage.setItem(STORAGE_KEYS.quizState, JSON.stringify(state));
+        }
+
+        // Load quiz state from localStorage
+        function loadQuizState() {
+            const saved = localStorage.getItem(STORAGE_KEYS.quizState);
+            if (saved) {
+                try {
+                    return JSON.parse(saved);
+                } catch (e) {
+                    console.error('Error loading quiz state:', e);
+                    return null;
+                }
+            }
+            return null;
+        }
+
+        // Clear quiz state from localStorage
+        function clearQuizState() {
+            localStorage.removeItem(STORAGE_KEYS.quizState);
+        }
+
+        // Check for saved quiz state on page load
+        function checkForSavedQuiz() {
+            const savedState = loadQuizState();
+            if (savedState && savedState.currentQuiz && savedState.currentQuiz.length > 0) {
+                const answeredCount = savedState.answeredQuestions ? savedState.answeredQuestions.length : 0;
+                const totalCount = savedState.currentQuiz.length;
+                
+                // Only show resume if quiz is not complete
+                if (answeredCount < totalCount) {
+                    const resumeBanner = document.getElementById('resumeBanner');
+                    const resumeInfo = document.getElementById('resumeInfo');
+                    
+                    resumeInfo.textContent = `Progress: ${answeredCount}/${totalCount} questions answered (${savedState.correctAnswers} correct, ${savedState.wrongAnswers} wrong)`;
+                    resumeBanner.style.display = 'flex';
+                }
+            }
+        }
+
+        // Resume saved quiz
+        function resumeQuiz() {
+            const savedState = loadQuizState();
+            if (savedState) {
+                currentQuiz = savedState.currentQuiz;
+                currentQuestionIndex = savedState.currentQuestionIndex;
+                correctAnswers = savedState.correctAnswers;
+                wrongAnswers = savedState.wrongAnswers;
+                categoryScores = savedState.categoryScores;
+                answeredQuestions = savedState.answeredQuestions || [];
+                questionTimeLimit = savedState.questionTimeLimit;
+                quizStartTime = savedState.quizStartTime;
+                totalTimeElapsed = savedState.totalTimeElapsed || 0;
+
+                document.getElementById('startScreen').style.display = 'none';
+                document.getElementById('progressContainer').style.display = 'block';
+                document.getElementById('totalQuestions').textContent = currentQuiz.length;
+
+                // Start elapsed time counter if no timer
+                if (questionTimeLimit === 0) {
+                    timerInterval = setInterval(() => {
+                        updateTimerDisplay();
+                    }, 1000);
+                }
+
+                renderQuestion();
+            }
+        }
+
+        // Dismiss resume banner
+        function dismissResume() {
+            document.getElementById('resumeBanner').style.display = 'none';
+            clearQuizState();
+        }
+
+        // Shuffle array helper
+        function shuffleArray(array) {
+            const shuffled = [...array];
+            for (let i = shuffled.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+            }
+            return shuffled;
+        }
+
+        // Get 5 random options from 7, always including the correct answer
+        function getRandomOptions(question) {
+            const correctOption = question.options[question.correct];
+            const otherOptions = question.options.filter((_, index) => index !== question.correct);
+            
+            // Shuffle other options and take 4
+            const shuffledOthers = shuffleArray(otherOptions).slice(0, 4);
+            
+            // Combine correct answer with 4 random others
+            const selectedOptions = [correctOption, ...shuffledOthers];
+            
+            // Shuffle the combined options
+            const shuffledOptions = shuffleArray(selectedOptions);
+            
+            // Find new correct index
+            const newCorrectIndex = shuffledOptions.indexOf(correctOption);
+            
+            return {
+                options: shuffledOptions,
+                correctIndex: newCorrectIndex
+            };
+        }
+
+        // Format time as MM:SS
+        function formatTime(seconds) {
+            const mins = Math.floor(seconds / 60);
+            const secs = seconds % 60;
+            return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+        }
+
+        // Start question timer
+        function startTimer() {
+            if (questionTimeLimit === 0) return; // No timer mode
+            
+            questionTimeRemaining = questionTimeLimit;
+            timeUpHandled = false;
+            updateTimerDisplay();
+            
+            timerInterval = setInterval(() => {
+                questionTimeRemaining--;
+                updateTimerDisplay();
+                
+                if (questionTimeRemaining <= 0) {
+                    clearInterval(timerInterval);
+                    handleTimeUp();
+                }
+            }, 1000);
+        }
+
+        // Stop timer
+        function stopTimer() {
+            if (timerInterval) {
+                clearInterval(timerInterval);
+                timerInterval = null;
+            }
+        }
+
+        // Update timer display
+        function updateTimerDisplay() {
+            const timerElement = document.getElementById('timer');
+            if (questionTimeLimit === 0) {
+                // Show elapsed time instead
+                const elapsed = Math.floor((Date.now() - quizStartTime) / 1000);
+                timerElement.textContent = formatTime(elapsed);
+                timerElement.className = 'timer';
+            } else {
+                timerElement.textContent = formatTime(questionTimeRemaining);
+                
+                // Add warning classes
+                timerElement.classList.remove('warning', 'danger');
+                if (questionTimeRemaining <= 5) {
+                    timerElement.classList.add('danger');
+                } else if (questionTimeRemaining <= 10) {
+                    timerElement.classList.add('warning');
+                }
+            }
+        }
+
+        // Handle time up - inline message instead of popup
+        function handleTimeUp() {
+            if (timeUpHandled || answered) return;
+            timeUpHandled = true;
+            answered = true;
+            
+            // Mark as wrong answer
+            wrongAnswers++;
+            
+            // Track answered question
+            answeredQuestions.push({
+                index: currentQuestionIndex,
+                selectedOption: -1,
+                correct: false,
+                timedOut: true
+            });
+            
+            const q = currentQuiz[currentQuestionIndex];
+            const options = document.querySelectorAll('.option');
+            
+            // Show time up message
+            const timeUpMsg = document.getElementById('timeUpMessage');
+            if (timeUpMsg) {
+                timeUpMsg.classList.add('show');
+            }
+            
+            options.forEach((opt, i) => {
+                opt.classList.add('disabled');
+                if (i === q.displayCorrect) {
+                    opt.classList.add('show-correct');
+                }
+            });
+            
+            document.getElementById('explanation').classList.add('show');
+            document.getElementById('nextBtn').disabled = false;
+            updateProgress();
+            saveQuizState();
+        }
+
+        // Escape HTML to prevent XSS and display issues
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // Start quiz
+        function startQuiz() {
+            const category = document.getElementById('categorySelect').value;
+            const difficulty = document.getElementById('difficultySelect').value;
+            const count = parseInt(document.getElementById('questionCount').value);
+            questionTimeLimit = parseInt(document.getElementById('timerSelect').value);
+
+            // Save settings
+            saveSettings();
+
+            // Gather questions
+            let questions = [];
+            
+            if (category === 'all') {
+                // Get questions from all categories
+                Object.keys(allQuestions).forEach(cat => {
+                    allQuestions[cat].forEach(q => {
+                        questions.push({ ...q, category: cat });
+                    });
+                });
+            } else {
+                // Get questions from selected category
+                allQuestions[category].forEach(q => {
+                    questions.push({ ...q, category: category });
+                });
+            }
+
+            // Filter by difficulty
+            if (difficulty !== 'all') {
+                questions = questions.filter(q => q.difficulty === difficulty);
+            }
+
+            // Shuffle and limit
+            questions = shuffleArray(questions).slice(0, Math.min(count, questions.length));
+
+            // Process questions to have 5 random options
+            currentQuiz = questions.map(q => {
+                const { options, correctIndex } = getRandomOptions(q);
+                return {
+                    ...q,
+                    displayOptions: options,
+                    displayCorrect: correctIndex
+                };
+            });
+
+            // Reset state
+            currentQuestionIndex = 0;
+            correctAnswers = 0;
+            wrongAnswers = 0;
+            categoryScores = {};
+            answeredQuestions = [];
+            totalTimeElapsed = 0;
+            quizStartTime = Date.now();
+
+            // Initialize category scores
+            currentQuiz.forEach(q => {
+                if (!categoryScores[q.category]) {
+                    categoryScores[q.category] = { correct: 0, total: 0 };
+                }
+                categoryScores[q.category].total++;
+            });
+
+            // Hide start screen, show quiz
+            document.getElementById('startScreen').style.display = 'none';
+            document.getElementById('progressContainer').style.display = 'block';
+            document.getElementById('totalQuestions').textContent = currentQuiz.length;
+            document.getElementById('resumeBanner').style.display = 'none';
+
+            // Start elapsed time counter if no timer
+            if (questionTimeLimit === 0) {
+                timerInterval = setInterval(() => {
+                    updateTimerDisplay();
+                }, 1000);
+            }
+
+            // Save initial state
+            saveQuizState();
+
+            renderQuestion();
+        }
+
+        // Render current question
+        function renderQuestion() {
+            const q = currentQuiz[currentQuestionIndex];
+            answered = false;
+            timeUpHandled = false;
+
+            const container = document.getElementById('questionsContainer');
+            const letters = ['A', 'B', 'C', 'D', 'E'];
+
+            container.innerHTML = `
+                <div class="question-card active">
+                    <div class="question-meta">
+                        <span class="question-number">Question ${currentQuestionIndex + 1}</span>
+                        <span class="question-category">${categoryNames[q.category]}</span>
+                        <span class="question-difficulty ${q.difficulty}">${q.difficulty.charAt(0).toUpperCase() + q.difficulty.slice(1)}</span>
+                    </div>
+                    <div class="time-up-message" id="timeUpMessage">
+                        <span class="time-icon">⏰</span>
+                        <div class="time-text">
+                            <strong>Time's Up!</strong>
+                            <span>You ran out of time for this question.</span>
+                        </div>
+                    </div>
+                    <div class="question-text">${escapeHtml(q.question)}</div>
+                    <div class="options">
+                        ${q.displayOptions.map((opt, i) => `
+                            <div class="option" onclick="selectOption(${i})" data-index="${i}">
+                                <span class="option-letter">${letters[i]}</span>
+                                <span class="option-text">${escapeHtml(opt)}</span>
+                            </div>
+                        `).join('')}
+                    </div>
+                    <div class="explanation" id="explanation">
+                        <h4>💡 Explanation</h4>
+                        <p>${escapeHtml(q.explanation)}</p>
+                    </div>
+                    <div class="btn-container">
+                        <button class="btn btn-secondary" onclick="backToMenu()">🏠 Quit</button>
+                        <button class="btn btn-primary" id="nextBtn" onclick="nextQuestion()" disabled>
+                            ${currentQuestionIndex < currentQuiz.length - 1 ? 'Next Question ➡️' : 'See Results 🏆'}
+                        </button>
+                    </div>
+                </div>
+            `;
+
+            updateProgress();
+            
+            // Start timer for this question
+            stopTimer();
+            if (questionTimeLimit > 0) {
+                startTimer();
+            }
+        }
+
+        // Select option
+        function selectOption(index) {
+            if (answered) return;
+            answered = true;
+            stopTimer();
+
+            const q = currentQuiz[currentQuestionIndex];
+            const options = document.querySelectorAll('.option');
+            const isCorrect = index === q.displayCorrect;
+
+            // Track answered question
+            answeredQuestions.push({
+                index: currentQuestionIndex,
+                selectedOption: index,
+                correct: isCorrect,
+                timedOut: false
+            });
+
+            if (isCorrect) {
+                correctAnswers++;
+                categoryScores[q.category].correct++;
+                options[index].classList.add('correct');
+            } else {
+                wrongAnswers++;
+                options[index].classList.add('incorrect');
+                options[q.displayCorrect].classList.add('correct');
+            }
+
+            // Disable all options
+            options.forEach(opt => opt.classList.add('disabled'));
+
+            // Show explanation
+            document.getElementById('explanation').classList.add('show');
+            document.getElementById('nextBtn').disabled = false;
+
+            updateProgress();
+            saveQuizState();
+        }
+
+        // Update progress display
+        function updateProgress() {
+            const progress = ((currentQuestionIndex + 1) / currentQuiz.length) * 100;
+            document.getElementById('progressFill').style.width = `${progress}%`;
+            document.getElementById('currentQuestion').textContent = currentQuestionIndex + 1;
+            document.getElementById('correctCount').textContent = correctAnswers;
+            document.getElementById('wrongCount').textContent = wrongAnswers;
+            
+            const totalAnswered = correctAnswers + wrongAnswers;
+            const scorePercent = totalAnswered > 0 ? Math.round((correctAnswers / totalAnswered) * 100) : 0;
+            document.getElementById('currentScore').textContent = scorePercent;
+        }
+
+        // Next question
+        function nextQuestion() {
+            currentQuestionIndex++;
+
+            if (currentQuestionIndex >= currentQuiz.length) {
+                showResults();
+            } else {
+                saveQuizState();
+                renderQuestion();
+            }
+        }
+
+        // Show results
+        function showResults() {
+            stopTimer();
+            clearQuizState();
+
+            // Calculate total time
+            totalTimeElapsed = Math.floor((Date.now() - quizStartTime) / 1000);
+
+            const totalQuestions = currentQuiz.length;
+            const scorePercent = Math.round((correctAnswers / totalQuestions) * 100);
+
+            document.getElementById('questionsContainer').innerHTML = '';
+            document.getElementById('progressContainer').style.display = 'none';
+
+            // Set results
+            document.getElementById('finalScore').textContent = `${scorePercent}%`;
+            document.getElementById('finalCorrect').textContent = correctAnswers;
+            document.getElementById('finalWrong').textContent = wrongAnswers;
+            document.getElementById('finalTime').textContent = formatTime(totalTimeElapsed);
+
+            // Set message based on score
+            let message = '';
+            if (scorePercent >= 90) {
+                message = '🏆 Outstanding! You\'re an Angular Expert!';
+            } else if (scorePercent >= 70) {
+                message = '🌟 Great job! You know Angular well!';
+            } else if (scorePercent >= 50) {
+                message = '👍 Good effort! Keep learning!';
+            } else {
+                message = '📚 Keep practicing! You\'ll get better!';
+            }
+            document.getElementById('resultsMessage').textContent = message;
+            document.getElementById('resultsDetails').textContent = 
+                `You answered ${correctAnswers} out of ${totalQuestions} questions correctly.`;
+
+            // Category breakdown
+            const categoryScoresDiv = document.getElementById('categoryScores');
+            let categoryHtml = '';
+            
+            Object.keys(categoryScores).sort().forEach(cat => {
+                const score = categoryScores[cat];
+                const percent = score.total > 0 ? Math.round((score.correct / score.total) * 100) : 0;
+                categoryHtml += `
+                    <div class="category-score-item">
+                        <span class="category-name">${categoryNames[cat]}</span>
+                        <div class="category-score-bar">
+                            <div class="category-score-fill" style="width: ${percent}%"></div>
+                        </div>
+                        <span class="category-score-value">${score.correct}/${score.total}</span>
+                    </div>
+                `;
+            });
+            categoryScoresDiv.innerHTML = categoryHtml;
+
+            document.getElementById('resultsCard').classList.add('active');
+        }
+
+        // Restart quiz with same settings
+        function restartQuiz() {
+            document.getElementById('resultsCard').classList.remove('active');
+            startQuiz();
+        }
+
+        // Back to menu
+        function backToMenu() {
+            stopTimer();
+            clearQuizState();
+            document.getElementById('resultsCard').classList.remove('active');
+            document.getElementById('questionsContainer').innerHTML = '';
+            document.getElementById('progressContainer').style.display = 'none';
+            document.getElementById('startScreen').style.display = 'block';
+            document.getElementById('resumeBanner').style.display = 'none';
+        }
+
+        // Initialize on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            loadSettings();
+            checkForSavedQuiz();
+        });
+    </script>
+</body>
+</html>
