@@ -16,7 +16,7 @@ Tired of messy browser bookmarks scattered everywhere? I've built a sleek web ap
 
 📱 **Fully Responsive** — Works seamlessly on mobile, tablet, and desktop
 
-💾 **Privacy-First** — All data stored locally in your browser
+💾 **Cloud Storage** — All data securely stored on the server in your profile
 
 📤 **Export/Import** — Easy JSON backup and restore
 
