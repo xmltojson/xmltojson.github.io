@@ -1,0 +1,1788 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LeetCode Top 150 Interview Quiz</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .quiz-container {
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            max-width: 800px;
+            width: 100%;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        }
+
+        .quiz-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 2px solid #eee;
+        }
+
+        .timer {
+            background: #ff6b6b;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 25px;
+            font-weight: bold;
+            font-size: 1.2em;
+        }
+
+        .timer.warning {
+            background: #ffa502;
+            animation: pulse 1s infinite;
+        }
+
+        .timer.danger {
+            background: #ff4757;
+            animation: pulse 0.5s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+
+        .progress-info {
+            color: #666;
+            font-size: 1.1em;
+        }
+
+        .score-display {
+            background: #2ed573;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 25px;
+            font-weight: bold;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 10px;
+            background: #eee;
+            border-radius: 5px;
+            margin-bottom: 30px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+            transition: width 0.3s ease;
+            border-radius: 5px;
+        }
+
+        .category-badge {
+            display: inline-block;
+            background: #667eea;
+            color: white;
+            padding: 5px 15px;
+            border-radius: 15px;
+            font-size: 0.9em;
+            margin-bottom: 15px;
+        }
+
+        .difficulty-badge {
+            display: inline-block;
+            padding: 5px 15px;
+            border-radius: 15px;
+            font-size: 0.9em;
+            margin-left: 10px;
+        }
+
+        .difficulty-easy { background: #2ed573; color: white; }
+        .difficulty-medium { background: #ffa502; color: white; }
+        .difficulty-hard { background: #ff4757; color: white; }
+
+        .question {
+            font-size: 1.3em;
+            color: #2d3436;
+            margin-bottom: 25px;
+            line-height: 1.6;
+        }
+
+        .options {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .option {
+            padding: 15px 20px;
+            border: 2px solid #ddd;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+        }
+
+        .option:hover:not(.disabled) {
+            border-color: #667eea;
+            background: #f8f9ff;
+        }
+
+        .option.selected {
+            border-color: #667eea;
+            background: #667eea;
+            color: white;
+        }
+
+        .option.correct {
+            border-color: #2ed573;
+            background: #2ed573;
+            color: white;
+        }
+
+        .option.incorrect {
+            border-color: #ff4757;
+            background: #ff4757;
+            color: white;
+        }
+
+        .option.disabled {
+            cursor: not-allowed;
+            opacity: 0.7;
+        }
+
+        .option-letter {
+            width: 35px;
+            height: 35px;
+            border-radius: 50%;
+            background: #eee;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-right: 15px;
+            font-weight: bold;
+            flex-shrink: 0;
+        }
+
+        .option.selected .option-letter,
+        .option.correct .option-letter,
+        .option.incorrect .option-letter {
+            background: rgba(255, 255, 255, 0.3);
+        }
+
+        .btn {
+            padding: 15px 40px;
+            border: none;
+            border-radius: 10px;
+            font-size: 1.1em;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-top: 25px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-primary:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .start-screen, .result-screen {
+            text-align: center;
+            padding: 40px 20px;
+        }
+
+        .start-screen h1, .result-screen h1 {
+            color: #2d3436;
+            margin-bottom: 20px;
+            font-size: 2.5em;
+        }
+
+        .start-screen p, .result-screen p {
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 1.2em;
+        }
+
+        .result-score {
+            font-size: 4em;
+            color: #667eea;
+            margin: 30px 0;
+        }
+
+        .result-breakdown {
+            display: flex;
+            justify-content: center;
+            gap: 40px;
+            margin: 30px 0;
+        }
+
+        .breakdown-item {
+            text-align: center;
+        }
+
+        .breakdown-number {
+            font-size: 2em;
+            font-weight: bold;
+        }
+
+        .breakdown-label {
+            color: #666;
+        }
+
+        .correct-color { color: #2ed573; }
+        .incorrect-color { color: #ff4757; }
+        .skipped-color { color: #ffa502; }
+
+        .explanation {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 10px;
+            margin-top: 20px;
+            border-left: 4px solid #667eea;
+            text-align: left;
+            display: none;
+        }
+
+        .explanation.show {
+            display: block;
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        code {
+            background: #f1f2f6;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+        }
+    </style>
+</head>
+<body>
+    <div class="quiz-container">
+        <!-- Start Screen -->
+        <div id="start-screen" class="start-screen">
+            <h1>🎯 LeetCode Top 150</h1>
+            <h2>Interview Quiz</h2>
+            <p>Test your knowledge of algorithms and data structures!</p>
+            <p>150 Questions • 30 seconds per question</p>
+            <div style="margin: 30px 0;">
+                <label for="question-count" style="color: #666; display: block; margin-bottom: 10px;">
+                    Number of Questions:
+                </label>
+                <select id="question-count" style="padding: 10px 20px; font-size: 1em; border-radius: 10px; border: 2px solid #ddd;">
+                    <option value="10">10 Questions</option>
+                    <option value="25">25 Questions</option>
+                    <option value="50">50 Questions</option>
+                    <option value="100">100 Questions</option>
+                    <option value="150" selected>150 Questions (Full)</option>
+                </select>
+            </div>
+            <button class="btn btn-primary" onclick="startQuiz()">Start Quiz</button>
+        </div>
+
+        <!-- Quiz Screen -->
+        <div id="quiz-screen" class="hidden">
+            <div class="quiz-header">
+                <div class="progress-info">
+                    Question <span id="current-question">1</span> of <span id="total-questions">150</span>
+                </div>
+                <div class="timer" id="timer">30s</div>
+                <div class="score-display">Score: <span id="score">0</span></div>
+            </div>
+            
+            <div class="progress-bar">
+                <div class="progress-fill" id="progress-fill"></div>
+            </div>
+
+            <div id="badges"></div>
+            <div class="question" id="question"></div>
+            <div class="options" id="options"></div>
+            <div class="explanation" id="explanation"></div>
+            
+            <button class="btn btn-primary" id="next-btn" onclick="nextQuestion()" disabled>Next Question</button>
+        </div>
+
+        <!-- Result Screen -->
+        <div id="result-screen" class="result-screen hidden">
+            <h1>🏆 Quiz Complete!</h1>
+            <div class="result-score" id="final-score">0%</div>
+            <div class="result-breakdown">
+                <div class="breakdown-item">
+                    <div class="breakdown-number correct-color" id="correct-count">0</div>
+                    <div class="breakdown-label">Correct</div>
+                </div>
+                <div class="breakdown-item">
+                    <div class="breakdown-number incorrect-color" id="incorrect-count">0</div>
+                    <div class="breakdown-label">Incorrect</div>
+                </div>
+                <div class="breakdown-item">
+                    <div class="breakdown-number skipped-color" id="skipped-count">0</div>
+                    <div class="breakdown-label">Skipped</div>
+                </div>
+            </div>
+            <p id="result-message"></p>
+            <div class="btn-group">
+                <button class="btn btn-primary" onclick="restartQuiz()">Try Again</button>
+                <button class="btn btn-primary" onclick="reviewAnswers()">Review Answers</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Quiz Questions - Conceptual questions about LeetCode Top 150 Interview Problems
+        const allQuestions = [
+            // Array / String Questions
+            {
+                category: "Array",
+                difficulty: "easy",
+                question: "What is the optimal time complexity for finding two numbers in an array that sum to a target value?",
+                options: ["O(n²)", "O(n)", "O(n log n)", "O(log n)"],
+                correct: 1,
+                explanation: "Using a hash map, we can achieve O(n) time complexity by storing seen values and checking if the complement exists."
+            },
+            {
+                category: "Array",
+                difficulty: "easy",
+                question: "When removing duplicates from a sorted array in-place, what technique is most commonly used?",
+                options: ["Binary search", "Two pointers", "Stack", "Recursion"],
+                correct: 1,
+                explanation: "The two-pointer technique efficiently handles this by maintaining a slow and fast pointer."
+            },
+            {
+                category: "Array",
+                difficulty: "medium",
+                question: "What is the time complexity of the Boyer-Moore Voting Algorithm for finding majority element?",
+                options: ["O(n²)", "O(n log n)", "O(n)", "O(1)"],
+                correct: 2,
+                explanation: "Boyer-Moore Voting Algorithm runs in O(n) time with O(1) space complexity."
+            },
+            {
+                category: "Array",
+                difficulty: "hard",
+                question: "For the 'Best Time to Buy and Sell Stock' problem, what's the key insight for an O(n) solution?",
+                options: ["Sort the prices first", "Track minimum price seen so far", "Use dynamic programming table", "Binary search for optimal days"],
+                correct: 1,
+                explanation: "Track the minimum price seen so far and calculate profit at each step - update max profit accordingly."
+            },
+            {
+                category: "Array",
+                difficulty: "medium",
+                question: "In the 'Jump Game' problem, what greedy approach works?",
+                options: ["Always jump maximum distance", "Track the farthest reachable index", "Use BFS from each position", "Sort jumps by distance"],
+                correct: 1,
+                explanation: "Track the farthest index you can reach; if current index exceeds this, return false."
+            },
+            {
+                category: "Array",
+                difficulty: "hard",
+                question: "What data structure is optimal for finding the median in a stream of numbers?",
+                options: ["Single sorted array", "Two heaps (max-heap and min-heap)", "Binary search tree", "Stack"],
+                correct: 1,
+                explanation: "Two heaps allow O(log n) insertion and O(1) median retrieval."
+            },
+            {
+                category: "Array",
+                difficulty: "easy",
+                question: "What's the space complexity of merging two sorted arrays into one?",
+                options: ["O(1)", "O(n)", "O(m+n)", "O(n²)"],
+                correct: 2,
+                explanation: "We need O(m+n) space to store all elements from both arrays."
+            },
+            {
+                category: "Array",
+                difficulty: "medium",
+                question: "In the 'Product of Array Except Self' problem, how can we achieve O(1) extra space (excluding output)?",
+                options: ["Use division", "Use prefix and suffix products in output array", "Use recursion", "Not possible"],
+                correct: 1,
+                explanation: "Store prefix products in output array, then multiply by suffix products in reverse pass."
+            },
+            {
+                category: "Array",
+                difficulty: "medium",
+                question: "What's the time complexity of the 'H-Index' problem using sorting?",
+                options: ["O(n)", "O(n log n)", "O(n²)", "O(log n)"],
+                correct: 1,
+                explanation: "Sorting takes O(n log n), then we iterate once through the sorted array."
+            },
+            {
+                category: "Array",
+                difficulty: "easy",
+                question: "For rotating an array by k positions, which approach uses O(1) space?",
+                options: ["Create new array", "Reverse segments", "Use queue", "Use recursion with array copy"],
+                correct: 1,
+                explanation: "Reverse entire array, then reverse first k elements, then reverse remaining - all in-place."
+            },
+            // Two Pointers Questions
+            {
+                category: "Two Pointers",
+                difficulty: "medium",
+                question: "In the 'Container With Most Water' problem, why do we move the pointer with smaller height?",
+                options: ["To increase width", "Smaller height limits area, moving might find taller line", "Random choice", "To decrease iterations"],
+                correct: 1,
+                explanation: "The smaller height is the bottleneck; moving it gives a chance to find a taller line that could increase area."
+            },
+            {
+                category: "Two Pointers",
+                difficulty: "medium",
+                question: "What's the time complexity of the 3Sum problem using sorting and two pointers?",
+                options: ["O(n)", "O(n²)", "O(n³)", "O(n log n)"],
+                correct: 1,
+                explanation: "O(n log n) for sorting + O(n²) for the nested loops = O(n²) overall."
+            },
+            {
+                category: "Two Pointers",
+                difficulty: "easy",
+                question: "In a sorted array, how do two pointers help find a pair with given sum?",
+                options: ["Start both at beginning", "Start both at end", "Start at opposite ends, move based on sum comparison", "Random positions"],
+                correct: 2,
+                explanation: "Start at opposite ends: if sum is too large, move right pointer left; if too small, move left pointer right."
+            },
+            {
+                category: "Two Pointers",
+                difficulty: "easy",
+                question: "What is the 'tortoise and hare' algorithm used for?",
+                options: ["Sorting arrays", "Detecting cycles in linked lists", "Binary search", "Graph traversal"],
+                correct: 1,
+                explanation: "Floyd's cycle detection uses two pointers moving at different speeds to detect cycles."
+            },
+            {
+                category: "Two Pointers",
+                difficulty: "medium",
+                question: "In the 'Trapping Rain Water' problem, what do two pointers track?",
+                options: ["Current and next element", "Left and right boundaries with max heights", "Start and end of water", "Two water containers"],
+                correct: 1,
+                explanation: "Track left and right pointers with their respective maximum heights to calculate trapped water."
+            },
+            // Sliding Window Questions
+            {
+                category: "Sliding Window",
+                difficulty: "medium",
+                question: "What's the key characteristic of a sliding window problem?",
+                options: ["Requires sorting", "Contiguous subarray/substring optimization", "Graph traversal", "Recursive solution only"],
+                correct: 1,
+                explanation: "Sliding window is used for problems involving contiguous sequences (subarrays or substrings)."
+            },
+            {
+                category: "Sliding Window",
+                difficulty: "medium",
+                question: "In 'Longest Substring Without Repeating Characters', what data structure tracks seen characters?",
+                options: ["Stack", "Queue", "Hash Set/Map", "Heap"],
+                correct: 2,
+                explanation: "A hash set or map efficiently tracks which characters are in the current window."
+            },
+            {
+                category: "Sliding Window",
+                difficulty: "hard",
+                question: "For 'Minimum Window Substring', when do we shrink the window?",
+                options: ["When window is too large", "When all required characters are found", "After each character", "Never"],
+                correct: 1,
+                explanation: "Once we have all required characters, shrink from left to find minimum valid window."
+            },
+            {
+                category: "Sliding Window",
+                difficulty: "medium",
+                question: "What's the time complexity of finding maximum sum subarray of size k?",
+                options: ["O(n*k)", "O(n)", "O(n²)", "O(k)"],
+                correct: 1,
+                explanation: "Sliding window allows O(n) by adding new element and removing old one as window slides."
+            },
+            {
+                category: "Sliding Window",
+                difficulty: "hard",
+                question: "In 'Substring with Concatenation of All Words', what makes it challenging?",
+                options: ["Words can be any length", "Words can overlap", "Words are of same length but must match exact concatenation", "Case sensitivity"],
+                correct: 2,
+                explanation: "All words have same length and must all appear exactly once in the substring."
+            },
+            // Matrix Questions
+            {
+                category: "Matrix",
+                difficulty: "medium",
+                question: "What's the time complexity of rotating a square matrix 90 degrees in-place?",
+                options: ["O(n)", "O(n²)", "O(n³)", "O(n log n)"],
+                correct: 1,
+                explanation: "We visit each element once or twice, giving O(n²) where n is the side length."
+            },
+            {
+                category: "Matrix",
+                difficulty: "medium",
+                question: "To rotate a matrix 90° clockwise, which operation sequence works?",
+                options: ["Reverse rows then transpose", "Transpose then reverse rows", "Reverse columns then transpose", "Transpose then reverse columns"],
+                correct: 1,
+                explanation: "Transpose the matrix, then reverse each row to achieve 90° clockwise rotation."
+            },
+            {
+                category: "Matrix",
+                difficulty: "medium",
+                question: "In spiral matrix traversal, how many direction changes occur for an m×n matrix?",
+                options: ["4", "m+n", "Varies with matrix size", "2*(m+n)"],
+                correct: 2,
+                explanation: "Direction changes depend on matrix dimensions; we change direction when hitting boundaries."
+            },
+            {
+                category: "Matrix",
+                difficulty: "easy",
+                question: "For setting matrix zeros, why is O(1) space solution tricky?",
+                options: ["Need to track rows and columns to zero out", "Matrix is immutable", "Need sorting first", "Recursive calls need space"],
+                correct: 0,
+                explanation: "Must mark rows/columns for zeroing without extra arrays - use first row/column as markers."
+            },
+            {
+                category: "Matrix",
+                difficulty: "medium",
+                question: "What's the valid approach for 'Game of Life' in-place update?",
+                options: ["Update cells randomly", "Use intermediate states to encode both old and new values", "Only update after full scan", "Update from corners"],
+                correct: 1,
+                explanation: "Encode both states in each cell (e.g., 2 for 0→1, 3 for 1→1) then decode in second pass."
+            },
+            // HashMap Questions
+            {
+                category: "HashMap",
+                difficulty: "easy",
+                question: "What's the average time complexity of hash map insertion?",
+                options: ["O(1)", "O(n)", "O(log n)", "O(n²)"],
+                correct: 0,
+                explanation: "Hash maps provide O(1) average case for insertion, deletion, and lookup."
+            },
+            {
+                category: "HashMap",
+                difficulty: "easy",
+                question: "In the 'Valid Anagram' problem, what does the hash map store?",
+                options: ["Word positions", "Character frequencies", "Sorted strings", "ASCII values"],
+                correct: 1,
+                explanation: "Count frequency of each character in both strings and compare."
+            },
+            {
+                category: "HashMap",
+                difficulty: "medium",
+                question: "For 'Group Anagrams', what serves as a good hash map key?",
+                options: ["First character", "String length", "Sorted string or character count tuple", "Last character"],
+                correct: 2,
+                explanation: "Sorted string or character frequency tuple uniquely identifies an anagram group."
+            },
+            {
+                category: "HashMap",
+                difficulty: "medium",
+                question: "In 'Longest Consecutive Sequence', why use a hash set?",
+                options: ["For sorting", "O(1) lookup to check if adjacent numbers exist", "For counting", "For removing duplicates only"],
+                correct: 1,
+                explanation: "Hash set allows O(1) lookup to check if n-1 or n+1 exists when finding sequences."
+            },
+            {
+                category: "HashMap",
+                difficulty: "easy",
+                question: "What data structure is best for checking if a pattern matches word mapping?",
+                options: ["Array", "Two hash maps (pattern→word and word→pattern)", "Stack", "Queue"],
+                correct: 1,
+                explanation: "Two maps ensure bijection: each pattern char maps to unique word and vice versa."
+            },
+            // Stack Questions
+            {
+                category: "Stack",
+                difficulty: "easy",
+                question: "Why is a stack ideal for validating parentheses?",
+                options: ["FIFO property", "LIFO property matches nested structure", "Fixed size", "Random access"],
+                correct: 1,
+                explanation: "LIFO (Last In First Out) naturally handles nested matching - most recent open bracket should match first."
+            },
+            {
+                category: "Stack",
+                difficulty: "medium",
+                question: "In 'Evaluate Reverse Polish Notation', what's pushed onto the stack?",
+                options: ["Operators only", "Operands only", "Both operators and operands", "Operands, operators trigger computation"],
+                correct: 3,
+                explanation: "Push numbers; when operator encountered, pop operands, compute, push result."
+            },
+            {
+                category: "Stack",
+                difficulty: "hard",
+                question: "What's the time complexity of 'Largest Rectangle in Histogram' using monotonic stack?",
+                options: ["O(n²)", "O(n)", "O(n log n)", "O(n³)"],
+                correct: 1,
+                explanation: "Each bar is pushed and popped at most once, giving O(n) complexity."
+            },
+            {
+                category: "Stack",
+                difficulty: "easy",
+                question: "In 'Min Stack', what's the trick for O(1) getMin()?",
+                options: ["Sort on each push", "Maintain separate stack tracking minimums", "Binary search", "Check all elements"],
+                correct: 1,
+                explanation: "Auxiliary stack stores minimum at each level, or store pairs of (value, currentMin)."
+            },
+            {
+                category: "Stack",
+                difficulty: "medium",
+                question: "What is a monotonic stack?",
+                options: ["Stack with fixed size", "Stack maintaining increasing or decreasing order", "Stack using recursion", "Stack of stacks"],
+                correct: 1,
+                explanation: "Monotonic stack maintains elements in sorted (increasing or decreasing) order."
+            },
+            // Linked List Questions
+            {
+                category: "Linked List",
+                difficulty: "easy",
+                question: "How do you find the middle of a linked list in one pass?",
+                options: ["Count nodes first", "Use slow and fast pointers", "Use recursion", "Use a hash map"],
+                correct: 1,
+                explanation: "Slow pointer moves 1 step, fast moves 2 steps; when fast reaches end, slow is at middle."
+            },
+            {
+                category: "Linked List",
+                difficulty: "medium",
+                question: "What's the key insight for reversing a linked list iteratively?",
+                options: ["Use extra array", "Track previous, current, and next pointers", "Use recursion only", "Swap node values"],
+                correct: 1,
+                explanation: "Maintain prev, curr, next pointers; redirect curr.next to prev, then advance all pointers."
+            },
+            {
+                category: "Linked List",
+                difficulty: "medium",
+                question: "To merge k sorted linked lists optimally, which data structure helps?",
+                options: ["Stack", "Queue", "Min-heap (priority queue)", "Hash map"],
+                correct: 2,
+                explanation: "Min-heap efficiently finds the smallest among k elements in O(log k) time."
+            },
+            {
+                category: "Linked List",
+                difficulty: "medium",
+                question: "In 'Copy List with Random Pointer', what's the interleaving approach?",
+                options: ["Use hash map for all nodes", "Insert copy after each original node", "Sort nodes first", "Use two passes with array"],
+                correct: 1,
+                explanation: "Insert copies next to originals (A→A'→B→B'), set random pointers, then separate lists."
+            },
+            {
+                category: "Linked List",
+                difficulty: "medium",
+                question: "How to detect where a cycle begins in a linked list?",
+                options: ["Use hash set only", "After detection, reset one pointer to head, move both at same speed", "Count total nodes", "Use BFS"],
+                correct: 1,
+                explanation: "After cycle detection, move one pointer to head; advance both at same speed; they meet at cycle start."
+            },
+            {
+                category: "Linked List",
+                difficulty: "hard",
+                question: "In 'LRU Cache', which data structures are combined?",
+                options: ["Array and stack", "Hash map and doubly linked list", "Tree and queue", "Graph and heap"],
+                correct: 1,
+                explanation: "Hash map for O(1) lookup, doubly linked list for O(1) insertion/deletion at any position."
+            },
+            // Binary Tree Questions
+            {
+                category: "Binary Tree",
+                difficulty: "easy",
+                question: "What's the time complexity of tree traversal (inorder, preorder, postorder)?",
+                options: ["O(log n)", "O(n)", "O(n²)", "O(n log n)"],
+                correct: 1,
+                explanation: "Each node is visited exactly once, giving O(n) time complexity."
+            },
+            {
+                category: "Binary Tree",
+                difficulty: "easy",
+                question: "Which traversal visits nodes in order: left, root, right?",
+                options: ["Preorder", "Inorder", "Postorder", "Level order"],
+                correct: 1,
+                explanation: "Inorder traversal visits left subtree, then root, then right subtree."
+            },
+            {
+                category: "Binary Tree",
+                difficulty: "medium",
+                question: "To check if a binary tree is symmetric, what do we compare?",
+                options: ["All node values", "Left subtree's left with right subtree's right, and vice versa", "Only leaf nodes", "Only root's children"],
+                correct: 1,
+                explanation: "Mirror check: left subtree's left = right subtree's right, left's right = right's left."
+            },
+            {
+                category: "Binary Tree",
+                difficulty: "medium",
+                question: "In 'Maximum Depth of Binary Tree', what's the recursive formula?",
+                options: ["max(left, right)", "1 + max(depth(left), depth(right))", "left + right", "min(left, right)"],
+                correct: 1,
+                explanation: "Depth = 1 (current node) + max of depths of left and right subtrees."
+            },
+            {
+                category: "Binary Tree",
+                difficulty: "medium",
+                question: "How do you flatten a binary tree to linked list (preorder)?",
+                options: ["Use array then rebuild", "Reverse postorder traversal with threading", "Morris traversal only", "BFS traversal"],
+                correct: 1,
+                explanation: "Process right-left-root (reverse preorder), threading each node to previously processed."
+            },
+            {
+                category: "Binary Tree",
+                difficulty: "hard",
+                question: "In 'Binary Tree Maximum Path Sum', why is it tricky?",
+                options: ["Path must include root", "Path can start and end at any nodes, may not pass through root", "Only leaves count", "Must use BFS"],
+                correct: 1,
+                explanation: "Maximum path might not go through root; track both max path through node and max path ending at node."
+            },
+            // Binary Search Tree Questions
+            {
+                category: "BST",
+                difficulty: "easy",
+                question: "What property defines a valid Binary Search Tree?",
+                options: ["All left nodes < root < all right nodes", "Balanced height", "Complete tree", "No duplicate values only"],
+                correct: 0,
+                explanation: "For every node, all values in left subtree are less, all in right subtree are greater."
+            },
+            {
+                category: "BST",
+                difficulty: "medium",
+                question: "What's the time complexity of search in a balanced BST?",
+                options: ["O(n)", "O(log n)", "O(1)", "O(n log n)"],
+                correct: 1,
+                explanation: "In a balanced BST, we eliminate half the remaining nodes at each step: O(log n)."
+            },
+            {
+                category: "BST",
+                difficulty: "medium",
+                question: "To validate a BST, what must each node check?",
+                options: ["Only immediate children", "All descendants respect min/max bounds from ancestors", "Only parent relationship", "Leaf nodes only"],
+                correct: 1,
+                explanation: "Pass down valid ranges; each node must be within bounds set by all ancestors."
+            },
+            {
+                category: "BST",
+                difficulty: "medium",
+                question: "What traversal of a BST produces sorted output?",
+                options: ["Preorder", "Postorder", "Inorder", "Level order"],
+                correct: 2,
+                explanation: "Inorder traversal (left-root-right) of BST visits nodes in ascending order."
+            },
+            {
+                category: "BST",
+                difficulty: "medium",
+                question: "To find kth smallest element in BST, which approach is most efficient?",
+                options: ["Sort all values", "Inorder traversal counting k nodes", "BFS", "Preorder traversal"],
+                correct: 1,
+                explanation: "Inorder traversal visits nodes in sorted order; stop after visiting k nodes."
+            },
+            // Graph Questions
+            {
+                category: "Graph",
+                difficulty: "medium",
+                question: "What's the difference between BFS and DFS time complexity on a graph?",
+                options: ["BFS is faster", "DFS is faster", "Both are O(V+E)", "Depends on graph density only"],
+                correct: 2,
+                explanation: "Both BFS and DFS visit each vertex and edge once: O(V+E) for adjacency list."
+            },
+            {
+                category: "Graph",
+                difficulty: "medium",
+                question: "Which algorithm finds the shortest path in an unweighted graph?",
+                options: ["DFS", "BFS", "Dijkstra's", "Bellman-Ford"],
+                correct: 1,
+                explanation: "BFS naturally finds shortest path in unweighted graphs due to level-by-level exploration."
+            },
+            {
+                category: "Graph",
+                difficulty: "medium",
+                question: "How do you detect a cycle in an undirected graph?",
+                options: ["Check if edges > vertices", "DFS/BFS finding visited node that's not parent", "Count connected components", "Sort edges"],
+                correct: 1,
+                explanation: "During traversal, if we reach an already-visited node that's not the immediate parent, there's a cycle."
+            },
+            {
+                category: "Graph",
+                difficulty: "medium",
+                question: "What data structure represents graph connections efficiently for sparse graphs?",
+                options: ["Adjacency matrix", "Adjacency list", "Edge list", "Incidence matrix"],
+                correct: 1,
+                explanation: "Adjacency list uses O(V+E) space, efficient for sparse graphs; matrix uses O(V²)."
+            },
+            {
+                category: "Graph",
+                difficulty: "medium",
+                question: "In 'Number of Islands', what represents an island?",
+                options: ["Connected region of 1s", "Any single 1", "Largest rectangle", "Diagonal connections"],
+                correct: 0,
+                explanation: "An island is a group of 1s connected horizontally or vertically."
+            },
+            {
+                category: "Graph",
+                difficulty: "hard",
+                question: "What is topological sorting used for?",
+                options: ["Sorting numbers", "Ordering tasks with dependencies (DAG)", "Finding shortest path", "Detecting cycles only"],
+                correct: 1,
+                explanation: "Topological sort orders vertices so all edges go from earlier to later in ordering (for DAGs)."
+            },
+            {
+                category: "Graph",
+                difficulty: "medium",
+                question: "Union-Find is optimal for which problem type?",
+                options: ["Shortest paths", "Dynamic connectivity / detecting connected components", "Sorting", "Tree traversal"],
+                correct: 1,
+                explanation: "Union-Find efficiently handles queries about connectivity between elements."
+            },
+            // Binary Search Questions
+            {
+                category: "Binary Search",
+                difficulty: "easy",
+                question: "What's the key requirement for binary search to work?",
+                options: ["Array must be unsorted", "Array must be sorted", "Array must have unique elements", "Array must be even length"],
+                correct: 1,
+                explanation: "Binary search requires a sorted array (or monotonic property) to eliminate half each iteration."
+            },
+            {
+                category: "Binary Search",
+                difficulty: "medium",
+                question: "In 'Search in Rotated Sorted Array', what's the key insight?",
+                options: ["Sort first", "At least one half is always sorted", "Use linear search", "Find rotation point first always"],
+                correct: 1,
+                explanation: "One of the two halves must be sorted; determine which and check if target is in that range."
+            },
+            {
+                category: "Binary Search",
+                difficulty: "medium",
+                question: "What's the time complexity of binary search?",
+                options: ["O(n)", "O(log n)", "O(n log n)", "O(1)"],
+                correct: 1,
+                explanation: "Each comparison eliminates half the search space: O(log n) iterations."
+            },
+            {
+                category: "Binary Search",
+                difficulty: "medium",
+                question: "In 'Find Peak Element', why does binary search work?",
+                options: ["Array is sorted", "Moving towards larger neighbor guarantees finding a peak", "Peak is always in middle", "Array has one peak only"],
+                correct: 1,
+                explanation: "If mid < mid+1, peak must exist on right side (including mid+1). Move towards increasing direction."
+            },
+            {
+                category: "Binary Search",
+                difficulty: "hard",
+                question: "For 'Median of Two Sorted Arrays', what's the time complexity of optimal solution?",
+                options: ["O(n + m)", "O(log(n+m))", "O(log(min(n,m)))", "O(n * m)"],
+                correct: 2,
+                explanation: "Binary search on the smaller array, finding correct partition: O(log(min(n,m)))."
+            },
+            // Heap / Priority Queue Questions
+            {
+                category: "Heap",
+                difficulty: "medium",
+                question: "What's the time complexity of building a heap from an array?",
+                options: ["O(n log n)", "O(n)", "O(log n)", "O(n²)"],
+                correct: 1,
+                explanation: "Bottom-up heap construction is O(n), more efficient than n insertions."
+            },
+            {
+                category: "Heap",
+                difficulty: "easy",
+                question: "What's the time complexity of inserting into a heap?",
+                options: ["O(1)", "O(log n)", "O(n)", "O(n log n)"],
+                correct: 1,
+                explanation: "Insert at end and bubble up through at most log n levels: O(log n)."
+            },
+            {
+                category: "Heap",
+                difficulty: "medium",
+                question: "For 'Kth Largest Element', which heap type and size is optimal?",
+                options: ["Max-heap of size n", "Min-heap of size k", "Max-heap of size k", "Min-heap of size n"],
+                correct: 1,
+                explanation: "Min-heap of size k: top element is kth largest; smaller elements naturally fall off."
+            },
+            {
+                category: "Heap",
+                difficulty: "hard",
+                question: "In 'Merge k Sorted Lists', what's the time complexity using a min-heap?",
+                options: ["O(nk)", "O(n log k)", "O(nk log k)", "O(n)"],
+                correct: 1,
+                explanation: "Each of n total elements is inserted/removed from heap of size k: O(n log k)."
+            },
+            {
+                category: "Heap",
+                difficulty: "medium",
+                question: "What property does a min-heap maintain?",
+                options: ["Parent ≥ children", "Parent ≤ children", "Left child < right child", "BST property"],
+                correct: 1,
+                explanation: "In a min-heap, each parent is smaller than or equal to its children."
+            },
+            // Backtracking Questions
+            {
+                category: "Backtracking",
+                difficulty: "medium",
+                question: "What characterizes a backtracking algorithm?",
+                options: ["Greedy choices only", "Try options, undo if they don't lead to solution", "Dynamic programming", "Always O(n) complexity"],
+                correct: 1,
+                explanation: "Backtracking explores paths, backs up when hitting dead ends, and tries alternatives."
+            },
+            {
+                category: "Backtracking",
+                difficulty: "medium",
+                question: "In 'N-Queens', what constraints must be checked before placing a queen?",
+                options: ["Row only", "Column only", "Row, column, and both diagonals", "Only other queens nearby"],
+                correct: 2,
+                explanation: "Queens attack along rows, columns, and diagonals; all must be checked."
+            },
+            {
+                category: "Backtracking",
+                difficulty: "medium",
+                question: "For generating all permutations of n elements, what's the time complexity?",
+                options: ["O(n)", "O(n²)", "O(n!)", "O(2^n)"],
+                correct: 2,
+                explanation: "There are n! permutations, and generating each takes O(n) work."
+            },
+            {
+                category: "Backtracking",
+                difficulty: "medium",
+                question: "In 'Combination Sum', how do we avoid duplicate combinations?",
+                options: ["Sort and skip duplicates, start from current index", "Always start from beginning", "Use hash set for results", "Random starting points"],
+                correct: 0,
+                explanation: "Sort input, avoid re-picking earlier elements (start from current index), skip consecutive duplicates."
+            },
+            {
+                category: "Backtracking",
+                difficulty: "medium",
+                question: "What's the key difference between combinations and permutations in backtracking?",
+                options: ["Same algorithm", "Combinations have fixed starting point, permutations swap all positions", "Combinations are faster", "No difference"],
+                correct: 1,
+                explanation: "Combinations pick from remaining elements (order doesn't matter); permutations consider all arrangements."
+            },
+            // Dynamic Programming Questions
+            {
+                category: "Dynamic Programming",
+                difficulty: "medium",
+                question: "What are the two main approaches to dynamic programming?",
+                options: ["BFS and DFS", "Top-down (memoization) and bottom-up (tabulation)", "Greedy and brute force", "Iterative and recursive only"],
+                correct: 1,
+                explanation: "Top-down uses recursion with memoization; bottom-up fills table from base cases."
+            },
+            {
+                category: "Dynamic Programming",
+                difficulty: "easy",
+                question: "In 'Climbing Stairs' (1 or 2 steps), what's the recurrence relation?",
+                options: ["dp[n] = dp[n-1]", "dp[n] = dp[n-1] + dp[n-2]", "dp[n] = 2 * dp[n-1]", "dp[n] = dp[n-1] * dp[n-2]"],
+                correct: 1,
+                explanation: "Ways to reach step n = ways to reach n-1 (then take 1 step) + ways to reach n-2 (then take 2 steps)."
+            },
+            {
+                category: "Dynamic Programming",
+                difficulty: "medium",
+                question: "What's the time complexity of the 'Longest Common Subsequence' problem?",
+                options: ["O(n)", "O(n²)", "O(m*n)", "O(2^n)"],
+                correct: 2,
+                explanation: "We fill an m×n table where m and n are lengths of the two strings."
+            },
+            {
+                category: "Dynamic Programming",
+                difficulty: "medium",
+                question: "In 'Coin Change', what does dp[i] represent?",
+                options: ["Number of coins used", "Minimum coins needed to make amount i", "Maximum coins possible", "Coin denominations"],
+                correct: 1,
+                explanation: "dp[i] = minimum number of coins needed to make amount i."
+            },
+            {
+                category: "Dynamic Programming",
+                difficulty: "hard",
+                question: "What makes the 'Edit Distance' problem a classic DP problem?",
+                options: ["Only insertions allowed", "Three choices at each step (insert, delete, replace) with optimal substructure", "Greedy solution exists", "No overlapping subproblems"],
+                correct: 1,
+                explanation: "Each position has multiple choices, solutions to subproblems are reused, optimal substructure exists."
+            },
+            {
+                category: "Dynamic Programming",
+                difficulty: "medium",
+                question: "In '0/1 Knapsack', why can't we use greedy approach?",
+                options: ["Items have no value", "Can't take fractional items; greedy may miss optimal combination", "Greedy actually works", "Too many items"],
+                correct: 1,
+                explanation: "Without fractional items, greedy by ratio may miss better combinations of whole items."
+            },
+            {
+                category: "Dynamic Programming",
+                difficulty: "hard",
+                question: "For 'Regular Expression Matching', what makes it challenging?",
+                options: ["Simple string matching", "'*' can match zero or more of preceding element, creating branching possibilities", "Only single character matching", "Fixed pattern length"],
+                correct: 1,
+                explanation: "The '*' operator creates multiple possibilities (match 0, 1, 2, ... times) requiring DP."
+            },
+            // Trie Questions
+            {
+                category: "Trie",
+                difficulty: "medium",
+                question: "What's the main advantage of a Trie for string operations?",
+                options: ["Less memory", "O(L) prefix operations where L is prefix length", "Automatic sorting", "Simpler implementation"],
+                correct: 1,
+                explanation: "Trie provides O(L) time for insert, search, and prefix operations independent of number of stored words."
+            },
+            {
+                category: "Trie",
+                difficulty: "medium",
+                question: "How is each Trie node typically structured?",
+                options: ["Array of children", "Single child pointer", "Hash map of children and end-of-word flag", "Linked list"],
+                correct: 2,
+                explanation: "Each node has children (map/array) for each character and a boolean for word endings."
+            },
+            {
+                category: "Trie",
+                difficulty: "medium",
+                question: "In 'Word Search II', why is a Trie better than checking each word separately?",
+                options: ["Trie is simpler", "Share common prefix computation across all words", "Trie uses less memory", "DFS doesn't work without Trie"],
+                correct: 1,
+                explanation: "Trie allows us to search for all words simultaneously, sharing prefix traversals."
+            },
+            // Bit Manipulation Questions
+            {
+                category: "Bit Manipulation",
+                difficulty: "easy",
+                question: "What does n & (n-1) do?",
+                options: ["Doubles n", "Removes rightmost set bit", "Adds 1 to n", "Shifts bits left"],
+                correct: 1,
+                explanation: "n & (n-1) clears the rightmost (lowest) set bit in n."
+            },
+            {
+                category: "Bit Manipulation",
+                difficulty: "easy",
+                question: "In 'Single Number' where every element appears twice except one, which operation helps?",
+                options: ["AND all elements", "OR all elements", "XOR all elements", "Add all elements"],
+                correct: 2,
+                explanation: "XOR: a^a=0, a^0=a. Pairs cancel out, leaving the single element."
+            },
+            {
+                category: "Bit Manipulation",
+                difficulty: "medium",
+                question: "How do you check if a number is a power of 2?",
+                options: ["n % 2 == 0", "n > 0 and (n & (n-1)) == 0", "n / 2 == integer", "Count factors"],
+                correct: 1,
+                explanation: "Powers of 2 have exactly one set bit; n & (n-1) removes it, leaving 0."
+            },
+            {
+                category: "Bit Manipulation",
+                difficulty: "medium",
+                question: "What's the result of n << 1?",
+                options: ["n / 2", "n * 2", "n + 1", "n - 1"],
+                correct: 1,
+                explanation: "Left shift by 1 multiplies by 2 (doubles the number)."
+            },
+            {
+                category: "Bit Manipulation",
+                difficulty: "medium",
+                question: "How many bits differ between two integers? This is called:",
+                options: ["Bit count", "Hamming distance", "Population count", "XOR count"],
+                correct: 1,
+                explanation: "Hamming distance counts differing bits; computed as popcount(a XOR b)."
+            },
+            // Math Questions
+            {
+                category: "Math",
+                difficulty: "easy",
+                question: "What's the time complexity of checking if a number is prime by trial division up to √n?",
+                options: ["O(n)", "O(√n)", "O(log n)", "O(n²)"],
+                correct: 1,
+                explanation: "We only need to check divisors up to √n."
+            },
+            {
+                category: "Math",
+                difficulty: "medium",
+                question: "In 'Pow(x, n)', what's the efficient approach?",
+                options: ["Multiply n times", "Binary exponentiation: x^n = (x^(n/2))²", "Use built-in power", "Logarithmic calculation"],
+                correct: 1,
+                explanation: "Binary exponentiation: x^n = (x^(n/2))², reducing to O(log n) multiplications."
+            },
+            {
+                category: "Math",
+                difficulty: "easy",
+                question: "What's the GCD of two numbers calculated using Euclidean algorithm?",
+                options: ["O(n) iterations", "O(log(min(a,b))) iterations", "O(1)", "O(a*b)"],
+                correct: 1,
+                explanation: "Euclidean algorithm: gcd(a,b) = gcd(b, a%b) runs in O(log(min(a,b))) iterations."
+            },
+            {
+                category: "Math",
+                difficulty: "medium",
+                question: "In 'Happy Number', how do you detect infinite loops?",
+                options: ["Set a iteration limit", "Floyd's cycle detection or hash set", "Never happens", "Count digit sum"],
+                correct: 1,
+                explanation: "Use a hash set to detect repeated sums, or Floyd's cycle detection."
+            },
+            {
+                category: "Math",
+                difficulty: "hard",
+                question: "What approach works for 'Integer to English Words'?",
+                options: ["Direct string conversion", "Recursive processing by thousands groups (billion, million, thousand)", "Character by character", "Mathematical formula"],
+                correct: 1,
+                explanation: "Process in groups of 3 digits, handling billion, million, thousand, and ones places."
+            },
+            // Intervals Questions
+            {
+                category: "Intervals",
+                difficulty: "medium",
+                question: "When merging overlapping intervals, what should you do first?",
+                options: ["Nothing special", "Sort by start time", "Sort by end time", "Sort by length"],
+                correct: 1,
+                explanation: "Sort by start time, then merge consecutive intervals if they overlap."
+            },
+            {
+                category: "Intervals",
+                difficulty: "medium",
+                question: "Two intervals [a,b] and [c,d] overlap if:",
+                options: ["a < c", "b < c OR d < a", "NOT (b < c OR d < a)", "a == c"],
+                correct: 2,
+                explanation: "Intervals overlap if they DON'T satisfy non-overlap condition (b < c OR d < a)."
+            },
+            {
+                category: "Intervals",
+                difficulty: "medium",
+                question: "In 'Insert Interval', what's the strategy?",
+                options: ["Sort all intervals including new one", "Add all non-overlapping before, merge overlapping, add remaining", "Binary search insertion", "Recursive merge"],
+                correct: 1,
+                explanation: "Collect intervals before overlap, merge all overlapping with new interval, collect intervals after."
+            },
+            {
+                category: "Intervals",
+                difficulty: "medium",
+                question: "For 'Minimum Meeting Rooms', which approach works?",
+                options: ["Count total meetings", "Track concurrent meetings using min-heap or sorted start/end times", "Sort by duration", "Greedy by earliest end"],
+                correct: 1,
+                explanation: "Use min-heap of end times or separate sorted lists of start/end times to track concurrent meetings."
+            },
+            // String Questions
+            {
+                category: "String",
+                difficulty: "easy",
+                question: "What's the time complexity of checking if two strings are equal?",
+                options: ["O(1)", "O(n)", "O(n²)", "O(log n)"],
+                correct: 1,
+                explanation: "Must compare each character: O(n) where n is string length."
+            },
+            {
+                category: "String",
+                difficulty: "medium",
+                question: "In 'Longest Palindromic Substring', what's the expand-around-center approach?",
+                options: ["Check all substrings", "For each position, expand outward while characters match", "Use KMP algorithm", "Reverse and compare"],
+                correct: 1,
+                explanation: "Treat each position (and between positions) as center, expand while palindrome condition holds."
+            },
+            {
+                category: "String",
+                difficulty: "easy",
+                question: "What's the key insight for 'Valid Palindrome'?",
+                options: ["Reverse entire string", "Two pointers from ends, skip non-alphanumeric, compare", "Use stack", "Check character frequencies"],
+                correct: 1,
+                explanation: "Two pointers from start and end, skip non-alphanumeric characters, compare case-insensitively."
+            },
+            {
+                category: "String",
+                difficulty: "medium",
+                question: "In 'String to Integer (atoi)', what edge cases matter?",
+                options: ["Only positive numbers", "Leading whitespace, sign, overflow, invalid characters", "Only digits", "No edge cases"],
+                correct: 1,
+                explanation: "Handle: leading whitespace, optional sign, overflow (clamp to INT_MAX/MIN), stop at invalid chars."
+            },
+            {
+                category: "String",
+                difficulty: "hard",
+                question: "What's the time complexity of KMP string matching?",
+                options: ["O(m*n)", "O(m+n)", "O(n log m)", "O(m²)"],
+                correct: 1,
+                explanation: "KMP runs in O(m+n) where m is pattern length and n is text length."
+            },
+            // Additional questions to reach 150
+            {
+                category: "Array",
+                difficulty: "medium",
+                question: "In 'Candy' problem (children with ratings), what approach ensures O(n) with O(n) space?",
+                options: ["Single pass greedy", "Two passes: left-to-right and right-to-left", "Dynamic programming table", "Heap-based solution"],
+                correct: 1,
+                explanation: "First pass ensures right neighbor condition, second pass ensures left neighbor condition."
+            },
+            {
+                category: "Array",
+                difficulty: "medium",
+                question: "For 'Gas Station' circular tour, what's the key insight?",
+                options: ["Try all starting points", "If total gas ≥ total cost, solution exists; start after failure point", "Greedy by highest gas", "BFS from each station"],
+                correct: 1,
+                explanation: "If sum(gas) ≥ sum(cost), solution exists. Start point is right after where tank goes negative."
+            },
+            {
+                category: "Dynamic Programming",
+                difficulty: "hard",
+                question: "In 'Interleaving String', what's the state definition?",
+                options: ["Single index", "dp[i][j] = s3[:i+j] can be formed by s1[:i] and s2[:j]", "Just lengths", "Character matching"],
+                correct: 1,
+                explanation: "dp[i][j] indicates if first i chars of s1 and first j chars of s2 can form first i+j chars of s3."
+            },
+            {
+                category: "Graph",
+                difficulty: "hard",
+                question: "In 'Word Ladder', why use BFS instead of DFS?",
+                options: ["DFS doesn't work", "BFS finds shortest path first in unweighted graph", "BFS uses less memory", "No reason, both work equally"],
+                correct: 1,
+                explanation: "BFS explores level by level, guaranteeing shortest path is found first."
+            },
+            {
+                category: "Binary Search",
+                difficulty: "medium",
+                question: "In 'Search a 2D Matrix' (sorted rows, first element of row > last of previous), how to search?",
+                options: ["Search each row", "Treat as 1D array with binary search", "DFS from corner", "BFS from center"],
+                correct: 1,
+                explanation: "Matrix can be viewed as sorted 1D array; use binary search with index conversion."
+            },
+            {
+                category: "Linked List",
+                difficulty: "hard",
+                question: "In 'Reverse Nodes in k-Group', what must be handled carefully?",
+                options: ["Just reverse all", "Reverse each k-group, keep remaining if < k nodes", "Sort then reverse", "Only reverse even groups"],
+                correct: 1,
+                explanation: "Reverse complete k-groups, leave partial group at end unchanged."
+            },
+            {
+                category: "Binary Tree",
+                difficulty: "medium",
+                question: "In 'Construct Binary Tree from Preorder and Inorder', what's preorder's first element?",
+                options: ["Leftmost leaf", "Rightmost leaf", "Root", "Random node"],
+                correct: 2,
+                explanation: "Preorder visits root first; use it to divide inorder traversal into left and right subtrees."
+            },
+            {
+                category: "Backtracking",
+                difficulty: "hard",
+                question: "In 'Sudoku Solver', what constraint propagation helps?",
+                options: ["No propagation needed", "Track valid numbers for each empty cell, reduce choices", "Only row checking", "Only column checking"],
+                correct: 1,
+                explanation: "Track valid candidates per cell; when placing a number, update constraints in row, column, and box."
+            },
+            {
+                category: "Design",
+                difficulty: "medium",
+                question: "In implementing a LRU Cache, why use a doubly linked list?",
+                options: ["Simpler code", "O(1) removal from middle with given node reference", "Less memory", "Faster traversal"],
+                correct: 1,
+                explanation: "Doubly linked list allows O(1) removal and reordering when we have direct node reference from hash map."
+            },
+            {
+                category: "Design",
+                difficulty: "hard",
+                question: "In 'Design Twitter', what data structure efficiently gets recent tweets from followees?",
+                options: ["Array of all tweets", "Min-heap merging each user's tweets", "Single sorted list", "Hash table only"],
+                correct: 1,
+                explanation: "Use min-heap to merge k sorted lists (each user's tweets), similar to merge k sorted lists."
+            },
+            {
+                category: "Array",
+                difficulty: "easy",
+                question: "In 'Remove Element' in-place, what technique is used?",
+                options: ["Create new array", "Two pointers: one for next write position, one for reading", "Binary search", "Sorting"],
+                correct: 1,
+                explanation: "Use write pointer for valid elements, read pointer scans all elements."
+            },
+            {
+                category: "String",
+                difficulty: "medium",
+                question: "In 'Zigzag Conversion', what's an efficient approach?",
+                options: ["Actually create 2D grid", "Simulate row movement, append to each row's string", "Mathematical formula for indices", "Reverse string"],
+                correct: 1,
+                explanation: "Track current row and direction, append each character to appropriate row's string builder."
+            },
+            {
+                category: "Math",
+                difficulty: "easy",
+                question: "To reverse an integer, what must you check?",
+                options: ["Only positivity", "Integer overflow before it happens", "String length", "Even/odd"],
+                correct: 1,
+                explanation: "Check if adding next digit would cause overflow before actually adding."
+            },
+            {
+                category: "Dynamic Programming",
+                difficulty: "medium",
+                question: "In 'House Robber', why can't we rob adjacent houses?",
+                options: ["Math constraint", "Security alarm connection is the constraint", "Random rule", "For simpler DP"],
+                correct: 1,
+                explanation: "Adjacent houses have connected security systems; the constraint creates the DP structure."
+            },
+            {
+                category: "Dynamic Programming",
+                difficulty: "medium",
+                question: "In 'House Robber', what's the recurrence?",
+                options: ["dp[i] = max(dp[i-1], dp[i-2])", "dp[i] = max(dp[i-1], dp[i-2] + nums[i])", "dp[i] = dp[i-1] + dp[i-2]", "dp[i] = nums[i]"],
+                correct: 1,
+                explanation: "Either skip current house (dp[i-1]) or rob it and add to best solution from 2 back (dp[i-2] + nums[i])."
+            },
+            {
+                category: "Graph",
+                difficulty: "medium",
+                question: "In 'Clone Graph', how do you handle cycles?",
+                options: ["Ignore them", "Use hash map to track original→clone mapping", "Remove cycles first", "Only process tree-like graphs"],
+                correct: 1,
+                explanation: "Hash map stores already-cloned nodes; if a node was seen before, return its clone instead of creating new."
+            },
+            {
+                category: "Binary Tree",
+                difficulty: "easy",
+                question: "What's the space complexity of recursive tree traversal?",
+                options: ["O(1)", "O(log n) for balanced, O(n) worst case (skewed tree)", "O(n) always", "O(n²)"],
+                correct: 1,
+                explanation: "Recursion stack depth equals tree height: O(log n) balanced, O(n) for skewed/worst case."
+            },
+            {
+                category: "Heap",
+                difficulty: "medium",
+                question: "In 'IPO' (maximize capital), what two heaps are used?",
+                options: ["Two max heaps", "Two min heaps", "Min-heap for capital, max-heap for profit", "No heaps needed"],
+                correct: 2,
+                explanation: "Min-heap to get affordable projects by capital; max-heap to pick most profitable among affordable."
+            },
+            {
+                category: "Greedy",
+                difficulty: "medium",
+                question: "When does greedy algorithm guarantee optimal solution?",
+                options: ["Always", "When optimal substructure and greedy choice property hold", "Never guaranteed", "Only for sorting"],
+                correct: 1,
+                explanation: "Greedy works when local optimal choices lead to global optimal (greedy choice property + optimal substructure)."
+            },
+            {
+                category: "Greedy",
+                difficulty: "medium",
+                question: "In 'Jump Game II' (minimum jumps), what greedy approach works?",
+                options: ["Always maximum jump", "BFS-like level tracking: track farthest reach in current 'level'", "DFS from end", "Dynamic programming only"],
+                correct: 1,
+                explanation: "Track current level's end and farthest reachable; increment jumps when reaching current level's end."
+            },
+            {
+                category: "Array",
+                difficulty: "medium",
+                question: "In 'Next Permutation', what's the algorithm?",
+                options: ["Sort descending", "Find rightmost ascending pair, swap with just-larger element, reverse suffix", "Random shuffle", "Reverse entire array"],
+                correct: 1,
+                explanation: "Find first decreasing element from right, swap with smallest larger element on right, reverse suffix."
+            },
+            {
+                category: "String",
+                difficulty: "medium",
+                question: "In 'Word Break', what does dp[i] represent?",
+                options: ["Count of words", "True if s[0:i] can be segmented into dictionary words", "Length of longest word", "Position of break"],
+                correct: 1,
+                explanation: "dp[i] = true if substring s[0:i] can be segmented into valid dictionary words."
+            },
+            {
+                category: "Binary Tree",
+                difficulty: "medium",
+                question: "In 'Path Sum II', how do you track the current path?",
+                options: ["Global array only", "Pass path in recursion, add current node, backtrack after returning", "BFS level tracking", "No tracking needed"],
+                correct: 1,
+                explanation: "Maintain path list, add node when entering, remove (backtrack) when returning from recursion."
+            },
+            {
+                category: "Binary Tree",
+                difficulty: "hard",
+                question: "What makes 'Serialize and Deserialize Binary Tree' challenging?",
+                options: ["Simple string conversion", "Must encode tree structure including null children", "Only leaf values matter", "Height is needed"],
+                correct: 1,
+                explanation: "Must encode structure completely, including null markers for missing children to reconstruct uniquely."
+            },
+            {
+                category: "Dynamic Programming",
+                difficulty: "hard",
+                question: "In 'Longest Increasing Subsequence', what's the O(n log n) approach?",
+                options: ["Standard DP only", "Maintain sorted array of smallest tail elements, binary search for insertion", "Greedy selection", "Graph approach"],
+                correct: 1,
+                explanation: "Track smallest ending element for each length; binary search to find position for new element."
+            },
+            {
+                category: "Graph",
+                difficulty: "hard",
+                question: "In 'Alien Dictionary', what graph represents the character ordering?",
+                options: ["Tree of characters", "Directed graph where edge a→b means a comes before b", "Undirected graph", "Matrix"],
+                correct: 1,
+                explanation: "Build directed graph from word pairs where first differing char shows ordering; topological sort gives result."
+            },
+            {
+                category: "Math",
+                difficulty: "medium",
+                question: "In 'Fraction to Recurring Decimal', how do you detect the repeating part?",
+                options: ["Compare digits", "Track remainders; repeated remainder indicates cycle start", "Check numerator", "No repeating possible"],
+                correct: 1,
+                explanation: "Store remainder→position mapping; when remainder repeats, we've found the cycle."
+            },
+            {
+                category: "Stack",
+                difficulty: "medium",
+                question: "In 'Simplify Path', why is a stack useful?",
+                options: ["For sorting", "Handle '..' by popping previous directory", "For recursion", "Memory efficiency"],
+                correct: 1,
+                explanation: "Stack naturally handles '..' (go up one directory) by popping the most recent directory."
+            },
+            {
+                category: "Array",
+                difficulty: "medium",
+                question: "In 'Insert Delete GetRandom O(1)', what combination of data structures achieves this?",
+                options: ["Just array", "Just hash map", "Array + hash map (value→index)", "Linked list"],
+                correct: 2,
+                explanation: "Array for O(1) random access, hash map for O(1) lookup of indices for deletion."
+            },
+            {
+                category: "BST",
+                difficulty: "easy",
+                question: "What's the minimum possible height of a BST with n nodes?",
+                options: ["n", "n-1", "⌊log₂n⌋", "⌈log₂(n+1)⌉ - 1"],
+                correct: 3,
+                explanation: "A complete binary tree gives minimum height of ⌈log₂(n+1)⌉ - 1, approximately log₂n."
+            },
+            {
+                category: "Dynamic Programming",
+                difficulty: "medium",
+                question: "In 'Unique Paths', what's the recurrence relation?",
+                options: ["dp[i][j] = dp[i-1][j-1]", "dp[i][j] = dp[i-1][j] + dp[i][j-1]", "dp[i][j] = max(dp[i-1][j], dp[i][j-1])", "dp[i][j] = dp[i-1][j] * dp[i][j-1]"],
+                correct: 1,
+                explanation: "Paths to (i,j) = paths from above + paths from left, since we can only move right or down."
+            },
+            {
+                category: "Graph",
+                difficulty: "medium",
+                question: "What's the time complexity of Dijkstra's algorithm with a binary heap?",
+                options: ["O(V²)", "O((V+E) log V)", "O(VE)", "O(V)"],
+                correct: 1,
+                explanation: "With binary heap: each vertex extracted once O(V log V), each edge relaxed once O(E log V)."
+            },
+            {
+                category: "Bit Manipulation",
+                difficulty: "medium",
+                question: "How do you get the rightmost set bit of n?",
+                options: ["n & 1", "n & (-n)", "n | (n-1)", "n ^ (n-1)"],
+                correct: 1,
+                explanation: "n & (-n) isolates the rightmost set bit. -n is two's complement (flip bits, add 1)."
+            },
+            {
+                category: "Array",
+                difficulty: "hard",
+                question: "In 'First Missing Positive', how to achieve O(n) time and O(1) space?",
+                options: ["Sort the array", "Use array itself as hash map by placing each number at index=value-1", "Binary search", "Counting sort"],
+                correct: 1,
+                explanation: "Place each positive number at index (value-1); first index not matching value+1 is the answer."
+            },
+            {
+                category: "String",
+                difficulty: "hard",
+                question: "What's Manacher's algorithm used for?",
+                options: ["String sorting", "Finding longest palindromic substring in O(n)", "String compression", "Pattern matching"],
+                correct: 1,
+                explanation: "Manacher's algorithm finds longest palindromic substring in linear O(n) time."
+            }
+        ];
+
+        // Add more questions to reach 150...
+        // Continuing with additional questions
+        const additionalQuestions = [
+            {
+                category: "Array",
+                difficulty: "medium",
+                question: "What's the time complexity of the Dutch National Flag algorithm (sort colors)?",
+                options: ["O(n log n)", "O(n)", "O(n²)", "O(1)"],
+                correct: 1,
+                explanation: "Single pass with three pointers: O(n) time, O(1) space."
+            },
+            {
+                category: "Two Pointers",
+                difficulty: "easy",
+                question: "To remove duplicates from sorted array, how many pointers are needed?",
+                options: ["One", "Two", "Three", "Four"],
+                correct: 1,
+                explanation: "One slow pointer for write position, one fast pointer for reading."
+            },
+            {
+                category: "Stack",
+                difficulty: "hard",
+                question: "In 'Maximal Rectangle' (in binary matrix), what's the approach?",
+                options: ["DFS each cell", "Build histogram for each row, find largest rectangle in histogram", "Dynamic programming only", "Sliding window"],
+                correct: 1,
+                explanation: "Treat each row as base of histogram, use largest rectangle in histogram algorithm."
+            },
+            {
+                category: "Dynamic Programming",
+                difficulty: "medium",
+                question: "In 'Decode Ways', if s[i] is '0', what's the recurrence?",
+                options: ["Always dp[i-2]", "dp[i-2] if s[i-1:i+1] is valid two-digit (10-26)", "Always 0", "dp[i-1]"],
+                correct: 1,
+                explanation: "'0' can only be part of '10' or '20'; must come from dp[i-2] with valid preceding digit."
+            },
+            {
+                category: "Binary Search",
+                difficulty: "hard",
+                question: "In 'Find Minimum in Rotated Sorted Array II' (with duplicates), worst case?",
+                options: ["Still O(log n)", "O(n) when all elements are same", "O(n log n)", "O(1)"],
+                correct: 1,
+                explanation: "Duplicates can make it impossible to determine which half to search; worst case O(n)."
+            },
+            {
+                category: "Graph",
+                difficulty: "hard",
+                question: "In 'Course Schedule', how do you detect if courses can be completed?",
+                options: ["Count courses", "Check for cycles in prerequisite graph (topological sort)", "Longest path", "Shortest path"],
+                correct: 1,
+                explanation: "Cycle in prerequisite graph means circular dependency; no valid ordering exists."
+            },
+            {
+                category: "Heap",
+                difficulty: "hard",
+                question: "In 'Sliding Window Maximum', what data structure gives O(n) solution?",
+                options: ["Heap only", "Monotonic deque", "Stack", "Hash map"],
+                correct: 1,
+                explanation: "Monotonic deque maintains candidates in decreasing order with O(1) amortized operations."
+            },
+            {
+                category: "Linked List",
+                difficulty: "medium",
+                question: "To find intersection of two linked lists, what's the elegant O(1) space solution?",
+                options: ["Hash all nodes", "When reaching end, redirect to other list's head; they meet at intersection", "Count lengths", "Reverse both lists"],
+                correct: 1,
+                explanation: "Two pointers traverse both lists; when reaching end, switch to other list's head. They meet at intersection or null."
+            },
+            {
+                category: "Design",
+                difficulty: "medium",
+                question: "In 'Implement Trie', what's the space complexity for storing n words of average length m?",
+                options: ["O(n)", "O(m)", "O(n*m)", "O(26^m)"],
+                correct: 2,
+                explanation: "Worst case is O(n*m) nodes if no prefixes are shared."
+            },
+            {
+                category: "Matrix",
+                difficulty: "medium",
+                question: "In 'Search a 2D Matrix II' (rows and columns sorted), what's the starting point?",
+                options: ["Center", "Top-left", "Top-right or bottom-left", "Random"],
+                correct: 2,
+                explanation: "From top-right: go left if target is smaller, go down if target is larger. O(m+n) time."
+            },
+            {
+                category: "Dynamic Programming",
+                difficulty: "hard",
+                question: "In 'Best Time to Buy and Sell Stock IV' (k transactions), what's the state?",
+                options: ["Single state", "dp[day][transactions][holding]", "Just transactions count", "Just day"],
+                correct: 1,
+                explanation: "Track day, number of transactions used, and whether currently holding stock."
+            },
+            {
+                category: "Greedy",
+                difficulty: "medium",
+                question: "In interval scheduling to maximize non-overlapping intervals, sort by what?",
+                options: ["Start time", "End time", "Duration", "Random order"],
+                correct: 1,
+                explanation: "Sort by end time; always pick earliest-ending interval that doesn't overlap previous."
+            },
+            {
+                category: "Binary Tree",
+                difficulty: "medium",
+                question: "In 'Binary Tree Level Order Traversal', what data structure is used?",
+                options: ["Stack", "Queue", "Heap", "Hash map"],
+                correct: 1,
+                explanation: "Queue (BFS) processes nodes level by level, which is exactly what level order requires."
+            },
+            {
+                category: "Graph",
+                difficulty: "medium",
+                question: "What's the time complexity of Union-Find with path compression and union by rank?",
+                options: ["O(n)", "O(log n)", "O(α(n)) ≈ O(1) amortized", "O(n log n)"],
+                correct: 2,
+                explanation: "With both optimizations, amortized time per operation is O(α(n)), effectively constant."
+            }
+        ];
+
+        // Combine all questions
+        const questions = [...allQuestions, ...additionalQuestions];
+
+        // Quiz state
+        let currentQuestion = 0;
+        let score = 0;
+        let selectedQuestions = [];
+        let answers = [];
+        let timer;
+        let timeLeft = 30;
+        let isAnswered = false;
+
+        function shuffleArray(array) {
+            const newArray = [...array];
+            for (let i = newArray.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [newArray[i], newArray[j]] = [newArray[j], newArray[i]];
+            }
+            return newArray;
+        }
+
+        function startQuiz() {
+            const count = parseInt(document.getElementById('question-count').value);
+            selectedQuestions = shuffleArray(questions).slice(0, count);
+            answers = new Array(count).fill(null);
+            currentQuestion = 0;
+            score = 0;
+            
+            document.getElementById('start-screen').classList.add('hidden');
+            document.getElementById('quiz-screen').classList.remove('hidden');
+            document.getElementById('result-screen').classList.add('hidden');
+            document.getElementById('total-questions').textContent = count;
+            
+            showQuestion();
+        }
+
+        function showQuestion() {
+            const q = selectedQuestions[currentQuestion];
+            isAnswered = false;
+            
+            document.getElementById('current-question').textContent = currentQuestion + 1;
+            document.getElementById('score').textContent = score;
+            document.getElementById('progress-fill').style.width = 
+                ((currentQuestion) / selectedQuestions.length * 100) + '%';
+            
+            document.getElementById('badges').innerHTML = `
+                <span class="category-badge">${q.category}</span>
+                <span class="difficulty-badge difficulty-${q.difficulty}">${q.difficulty}</span>
+            `;
+            
+            document.getElementById('question').textContent = q.question;
+            
+            const optionsHtml = q.options.map((option, index) => `
+                <div class="option" onclick="selectOption(${index})" data-index="${index}">
+                    <span class="option-letter">${String.fromCharCode(65 + index)}</span>
+                    <span>${option}</span>
+                </div>
+            `).join('');
+            
+            document.getElementById('options').innerHTML = optionsHtml;
+            document.getElementById('explanation').classList.remove('show');
+            document.getElementById('next-btn').disabled = true;
+            
+            // Start timer
+            timeLeft = 30;
+            updateTimer();
+            clearInterval(timer);
+            timer = setInterval(() => {
+                timeLeft--;
+                updateTimer();
+                if (timeLeft <= 0) {
+                    clearInterval(timer);
+                    timeUp();
+                }
+            }, 1000);
+        }
+
+        function updateTimer() {
+            const timerEl = document.getElementById('timer');
+            timerEl.textContent = timeLeft + 's';
+            timerEl.className = 'timer';
+            if (timeLeft <= 10) timerEl.classList.add('warning');
+            if (timeLeft <= 5) timerEl.classList.add('danger');
+        }
+
+        function timeUp() {
+            if (!isAnswered) {
+                answers[currentQuestion] = -1; // Skipped/timeout
+                showCorrectAnswer();
+            }
+        }
+
+        function selectOption(index) {
+            if (isAnswered) return;
+            
+            isAnswered = true;
+            clearInterval(timer);
+            answers[currentQuestion] = index;
+            
+            const q = selectedQuestions[currentQuestion];
+            const options = document.querySelectorAll('.option');
+            
+            options.forEach(opt => opt.classList.add('disabled'));
+            
+            if (index === q.correct) {
+                options[index].classList.add('correct');
+                score++;
+                document.getElementById('score').textContent = score;
+            } else {
+                options[index].classList.add('incorrect');
+                options[q.correct].classList.add('correct');
+            }
+            
+            document.getElementById('explanation').textContent = q.explanation;
+            document.getElementById('explanation').classList.add('show');
+            document.getElementById('next-btn').disabled = false;
+        }
+
+        function showCorrectAnswer() {
+            isAnswered = true;
+            const q = selectedQuestions[currentQuestion];
+            const options = document.querySelectorAll('.option');
+            
+            options.forEach(opt => opt.classList.add('disabled'));
+            options[q.correct].classList.add('correct');
+            
+            document.getElementById('explanation').textContent = q.explanation;
+            document.getElementById('explanation').classList.add('show');
+            document.getElementById('next-btn').disabled = false;
+        }
+
+        function nextQuestion() {
+            currentQuestion++;
+            if (currentQuestion < selectedQuestions.length) {
+                showQuestion();
+            } else {
+                showResults();
+            }
+        }
+
+        function showResults() {
+            clearInterval(timer);
+            document.getElementById('quiz-screen').classList.add('hidden');
+            document.getElementById('result-screen').classList.remove('hidden');
+            
+            const percentage = Math.round((score / selectedQuestions.length) * 100);
+            document.getElementById('final-score').textContent = percentage + '%';
+            
+            let correct = 0, incorrect = 0, skipped = 0;
+            answers.forEach((answer, index) => {
+                if (answer === -1) skipped++;
+                else if (answer === selectedQuestions[index].correct) correct++;
+                else incorrect++;
+            });
+            
+            document.getElementById('correct-count').textContent = correct;
+            document.getElementById('incorrect-count').textContent = incorrect;
+            document.getElementById('skipped-count').textContent = skipped;
+            
+            let message = '';
+            if (percentage >= 90) message = '🌟 Outstanding! You\'re a LeetCode master!';
+            else if (percentage >= 70) message = '👏 Great job! Keep practicing!';
+            else if (percentage >= 50) message = '📚 Good effort! Review the topics and try again.';
+            else message = '💪 Keep learning! Practice makes perfect.';
+            
+            document.getElementById('result-message').textContent = message;
+        }
+
+        function restartQuiz() {
+            document.getElementById('result-screen').classList.add('hidden');
+            document.getElementById('start-screen').classList.remove('hidden');
+        }
+
+        function reviewAnswers() {
+            alert('Review feature: Implement a detailed review screen showing all questions with your answers and correct answers.');
+        }
+    </script>
+</body>
+</html>
