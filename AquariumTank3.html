@@ -1,0 +1,1384 @@
+<!DOCTYPE html>
+<!-- MIT License
+Copyright (c) 2025 Yuliya Kolesnikova <0009-0000-6151-7415@orcid.org>
+-->
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <link rel="icon" type="image/x-icon" href="favicon.ico"/>
+    <meta name="theme-color" content="#0c0c1e">
+    <meta name="description" content="Aquarium Tank">
+    <title>🐠 Aquarium Tank</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            padding: 20px;
+            overflow-x: hidden;
+        }
+
+        h1 {
+            color: #00d4ff;
+            text-shadow: 0 0 20px rgba(0, 212, 255, 0.5);
+            margin-bottom: 20px;
+            font-size: 2.5rem;
+            text-align: center;
+        }
+
+        .controls {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-bottom: 20px;
+            justify-content: center;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: bold;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .btn-fish {
+            background: linear-gradient(135deg, #ff6b6b, #ff8e53);
+            color: white;
+            box-shadow: 0 4px 15px rgba(255, 107, 107, 0.4);
+        }
+
+        .btn-fish:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(255, 107, 107, 0.6);
+        }
+
+        .btn-bubble {
+            background: linear-gradient(135deg, #4facfe, #00f2fe);
+            color: white;
+            box-shadow: 0 4px 15px rgba(79, 172, 254, 0.4);
+        }
+
+        .btn-bubble:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(79, 172, 254, 0.6);
+        }
+
+        .btn-plant {
+            background: linear-gradient(135deg, #38ef7d, #11998e);
+            color: white;
+            box-shadow: 0 4px 15px rgba(56, 239, 125, 0.4);
+        }
+
+        .btn-plant:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(56, 239, 125, 0.6);
+        }
+
+        .btn-food {
+            background: linear-gradient(135deg, #f093fb, #f5576c);
+            color: white;
+            box-shadow: 0 4px 15px rgba(240, 147, 251, 0.4);
+        }
+
+        .btn-food:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(240, 147, 251, 0.6);
+        }
+
+        .btn-clear {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-clear:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.6);
+        }
+
+        .btn-reset {
+            background: linear-gradient(135deg, #fc4a1a, #f7b733);
+            color: white;
+            box-shadow: 0 4px 15px rgba(252, 74, 26, 0.4);
+        }
+
+        .btn-reset:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(252, 74, 26, 0.6);
+        }
+
+        .aquarium-container {
+            position: relative;
+            width: 100%;
+            max-width: 1200px;
+        }
+
+        .aquarium {
+            position: relative;
+            width: 100%;
+            height: 600px;
+            background: linear-gradient(180deg, 
+                #0077b6 0%, 
+                #0096c7 20%, 
+                #00b4d8 40%, 
+                #48cae4 60%, 
+                #90e0ef 80%, 
+                #ade8f4 100%);
+            border-radius: 20px;
+            overflow: hidden;
+            box-shadow: 
+                0 0 0 8px #2d4a5e,
+                0 0 0 12px #1a3a4a,
+                0 20px 60px rgba(0, 0, 0, 0.5),
+                inset 0 0 100px rgba(255, 255, 255, 0.1);
+        }
+
+        /* Light rays */
+        .light-rays {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            overflow: hidden;
+        }
+
+        .ray {
+            position: absolute;
+            top: -50px;
+            width: 150px;
+            height: 400px;
+            background: linear-gradient(180deg, 
+                rgba(255, 255, 255, 0.3) 0%, 
+                rgba(255, 255, 255, 0.1) 50%, 
+                transparent 100%);
+            transform: skewX(-20deg);
+            animation: rayShimmer 8s ease-in-out infinite;
+        }
+
+        .ray:nth-child(1) { left: 10%; animation-delay: 0s; }
+        .ray:nth-child(2) { left: 30%; animation-delay: 2s; width: 100px; }
+        .ray:nth-child(3) { left: 50%; animation-delay: 4s; width: 120px; }
+        .ray:nth-child(4) { left: 70%; animation-delay: 1s; width: 80px; }
+        .ray:nth-child(5) { left: 85%; animation-delay: 3s; width: 100px; }
+
+        @keyframes rayShimmer {
+            0%, 100% { opacity: 0.3; }
+            50% { opacity: 0.6; }
+        }
+
+        /* Sand bottom */
+        .sand {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 80px;
+            background: linear-gradient(180deg, 
+                #f4d03f 0%, 
+                #e6b800 30%, 
+                #c9a227 60%, 
+                #b8860b 100%);
+            border-radius: 0 0 12px 12px;
+        }
+
+        .sand::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: 
+                radial-gradient(circle at 10% 50%, rgba(255,255,255,0.3) 2px, transparent 2px),
+                radial-gradient(circle at 30% 30%, rgba(255,255,255,0.2) 3px, transparent 3px),
+                radial-gradient(circle at 50% 70%, rgba(255,255,255,0.3) 2px, transparent 2px),
+                radial-gradient(circle at 70% 40%, rgba(255,255,255,0.2) 2px, transparent 2px),
+                radial-gradient(circle at 90% 60%, rgba(255,255,255,0.3) 3px, transparent 3px);
+        }
+
+        /* Rocks */
+        .rocks {
+            position: absolute;
+            bottom: 60px;
+            left: 0;
+            width: 100%;
+            height: 60px;
+            pointer-events: none;
+        }
+
+        .rock {
+            position: absolute;
+            bottom: 0;
+            border-radius: 50% 50% 45% 45%;
+            background: linear-gradient(135deg, #6b7280, #4b5563, #374151);
+            box-shadow: inset -5px -5px 15px rgba(0,0,0,0.3), inset 3px 3px 10px rgba(255,255,255,0.1);
+        }
+
+        .rock:nth-child(1) { left: 5%; width: 80px; height: 50px; }
+        .rock:nth-child(2) { left: 12%; width: 60px; height: 40px; bottom: 10px; }
+        .rock:nth-child(3) { right: 8%; width: 90px; height: 55px; }
+        .rock:nth-child(4) { right: 18%; width: 50px; height: 35px; bottom: 15px; }
+        .rock:nth-child(5) { left: 45%; width: 70px; height: 45px; }
+
+        /* Decorations */
+        .castle {
+            position: absolute;
+            bottom: 70px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 120px;
+            height: 150px;
+            pointer-events: none;
+        }
+
+        .castle-body {
+            position: absolute;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 80px;
+            height: 80px;
+            background: linear-gradient(135deg, #8b7355, #6b5344, #5a4234);
+            border-radius: 5px;
+            box-shadow: inset -5px -5px 15px rgba(0,0,0,0.3);
+        }
+
+        .castle-tower {
+            position: absolute;
+            bottom: 70px;
+            width: 30px;
+            height: 70px;
+            background: linear-gradient(135deg, #9b8365, #7b6354, #6a5244);
+            border-radius: 5px 5px 0 0;
+        }
+
+        .castle-tower.left { left: 15px; }
+        .castle-tower.right { right: 15px; }
+
+        .castle-tower::before {
+            content: '';
+            position: absolute;
+            top: -15px;
+            left: 50%;
+            transform: translateX(-50%);
+            border-left: 20px solid transparent;
+            border-right: 20px solid transparent;
+            border-bottom: 20px solid #7b6354;
+        }
+
+        .castle-door {
+            position: absolute;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 25px;
+            height: 40px;
+            background: linear-gradient(180deg, #2c1810, #1a0f08);
+            border-radius: 15px 15px 0 0;
+        }
+
+        /* Treasure chest */
+        .treasure {
+            position: absolute;
+            bottom: 75px;
+            right: 10%;
+            width: 60px;
+            height: 45px;
+            pointer-events: none;
+        }
+
+        .treasure-body {
+            position: absolute;
+            bottom: 0;
+            width: 60px;
+            height: 35px;
+            background: linear-gradient(135deg, #b8860b, #8b6914, #6b5210);
+            border-radius: 5px;
+            border: 2px solid #5a4008;
+        }
+
+        .treasure-lid {
+            position: absolute;
+            bottom: 30px;
+            width: 60px;
+            height: 25px;
+            background: linear-gradient(135deg, #d4a017, #b8860b, #8b6914);
+            border-radius: 10px 10px 0 0;
+            border: 2px solid #5a4008;
+            transform-origin: bottom;
+            animation: treasureLid 5s ease-in-out infinite;
+        }
+
+        @keyframes treasureLid {
+            0%, 80%, 100% { transform: rotateX(0deg); }
+            85%, 95% { transform: rotateX(-30deg); }
+        }
+
+        .treasure-lock {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 12px;
+            height: 12px;
+            background: #ffd700;
+            border-radius: 50%;
+            border: 2px solid #b8860b;
+        }
+
+        /* Plants container */
+        .plants-container {
+            position: absolute;
+            bottom: 70px;
+            left: 0;
+            width: 100%;
+            height: 200px;
+            pointer-events: none;
+        }
+
+        /* Plant styles */
+        .plant {
+            position: absolute;
+            bottom: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .plant-leaf {
+            width: 20px;
+            height: 80px;
+            background: linear-gradient(90deg, #228b22, #32cd32, #228b22);
+            border-radius: 50% 50% 0 0;
+            transform-origin: bottom center;
+            animation: plantSway 3s ease-in-out infinite;
+            position: absolute;
+            bottom: 0;
+        }
+
+        .plant-leaf::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+            border-radius: inherit;
+        }
+
+        @keyframes plantSway {
+            0%, 100% { transform: rotate(-5deg) scaleY(1); }
+            50% { transform: rotate(5deg) scaleY(1.02); }
+        }
+
+        /* Seaweed */
+        .seaweed {
+            position: absolute;
+            bottom: 70px;
+            width: 25px;
+            pointer-events: none;
+        }
+
+        .seaweed-segment {
+            width: 100%;
+            height: 30px;
+            background: linear-gradient(90deg, #1e7b1e, #2e8b2e, #1e7b1e);
+            border-radius: 50%;
+            margin-bottom: -15px;
+            animation: seaweedWave 2s ease-in-out infinite;
+        }
+
+        @keyframes seaweedWave {
+            0%, 100% { transform: translateX(-3px) rotate(-3deg); }
+            50% { transform: translateX(3px) rotate(3deg); }
+        }
+
+        /* Fish styles */
+        .fish {
+            position: absolute;
+            cursor: pointer;
+            transition: filter 0.3s;
+            z-index: 10;
+        }
+
+        .fish:hover {
+            filter: brightness(1.2) drop-shadow(0 0 10px rgba(255,255,255,0.5));
+        }
+
+        .fish-body {
+            position: relative;
+            width: 60px;
+            height: 35px;
+            border-radius: 50% 40% 40% 50%;
+            box-shadow: inset -5px -5px 15px rgba(0,0,0,0.2), inset 5px 5px 15px rgba(255,255,255,0.3);
+        }
+
+        .fish-eye {
+            position: absolute;
+            top: 8px;
+            width: 12px;
+            height: 12px;
+            background: radial-gradient(circle at 30% 30%, white, #333);
+            border-radius: 50%;
+            box-shadow: 0 0 5px rgba(0,0,0,0.3);
+        }
+
+        .fish-eye::after {
+            content: '';
+            position: absolute;
+            top: 3px;
+            left: 3px;
+            width: 5px;
+            height: 5px;
+            background: #000;
+            border-radius: 50%;
+        }
+
+        .fish.right .fish-eye { right: 8px; }
+        .fish.left .fish-eye { left: 8px; }
+
+        .fish-tail {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 0;
+            height: 0;
+            border-style: solid;
+            animation: tailWag 0.3s ease-in-out infinite;
+        }
+
+        .fish.right .fish-tail {
+            left: -18px;
+            border-width: 15px 20px 15px 0;
+            border-color: transparent currentColor transparent transparent;
+        }
+
+        .fish.left .fish-tail {
+            right: -18px;
+            border-width: 15px 0 15px 20px;
+            border-color: transparent transparent transparent currentColor;
+        }
+
+        @keyframes tailWag {
+            0%, 100% { transform: translateY(-50%) scaleY(1); }
+            50% { transform: translateY(-50%) scaleY(0.8); }
+        }
+
+        .fish-fin-top {
+            position: absolute;
+            top: -12px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 0;
+            height: 0;
+            border-style: solid;
+            border-width: 0 10px 15px 10px;
+            border-color: transparent transparent currentColor transparent;
+            animation: finWave 1s ease-in-out infinite;
+        }
+
+        @keyframes finWave {
+            0%, 100% { transform: translateX(-50%) rotate(-5deg); }
+            50% { transform: translateX(-50%) rotate(5deg); }
+        }
+
+        .fish-fin-bottom {
+            position: absolute;
+            bottom: -8px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 0;
+            height: 0;
+            border-style: solid;
+            border-width: 10px 8px 0 8px;
+            border-color: currentColor transparent transparent transparent;
+        }
+
+        /* Special fish types */
+        .fish-type-angelfish .fish-body {
+            width: 40px;
+            height: 50px;
+            border-radius: 50%;
+        }
+
+        .fish-type-angelfish .fish-fin-top {
+            top: -20px;
+            border-width: 0 15px 25px 15px;
+        }
+
+        .fish-type-angelfish .fish-fin-bottom {
+            bottom: -15px;
+            border-width: 20px 12px 0 12px;
+        }
+
+        /* Bubbles */
+        .bubble {
+            position: absolute;
+            border-radius: 50%;
+            background: radial-gradient(circle at 30% 30%, 
+                rgba(255, 255, 255, 0.9), 
+                rgba(255, 255, 255, 0.4) 40%, 
+                rgba(255, 255, 255, 0.1) 60%, 
+                transparent);
+            box-shadow: inset -2px -2px 10px rgba(255,255,255,0.5),
+                        inset 2px 2px 10px rgba(0,100,150,0.2);
+            animation: bubbleRise linear forwards;
+            pointer-events: none;
+        }
+
+        @keyframes bubbleRise {
+            0% {
+                transform: translateY(0) translateX(0) scale(1);
+                opacity: 0.8;
+            }
+            25% {
+                transform: translateY(-25%) translateX(10px) scale(1.05);
+            }
+            50% {
+                transform: translateY(-50%) translateX(-5px) scale(1.1);
+            }
+            75% {
+                transform: translateY(-75%) translateX(8px) scale(1.05);
+            }
+            100% {
+                transform: translateY(-100%) translateX(0) scale(1);
+                opacity: 0;
+            }
+        }
+
+        /* Food particles */
+        .food {
+            position: absolute;
+            width: 8px;
+            height: 8px;
+            background: radial-gradient(circle, #f4a460, #d2691e);
+            border-radius: 50%;
+            animation: foodFall linear forwards;
+            pointer-events: none;
+            z-index: 5;
+        }
+
+        @keyframes foodFall {
+            0% {
+                transform: translateY(0) translateX(0);
+                opacity: 1;
+            }
+            100% {
+                transform: translateY(var(--fall-distance)) translateX(var(--drift));
+                opacity: 0;
+            }
+        }
+
+        /* Stats panel */
+        .stats {
+            position: absolute;
+            top: 15px;
+            left: 15px;
+            background: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(10px);
+            padding: 15px 20px;
+            border-radius: 15px;
+            color: white;
+            font-size: 14px;
+            z-index: 100;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .stats h3 {
+            margin-bottom: 10px;
+            color: #00d4ff;
+            font-size: 16px;
+        }
+
+        .stats p {
+            margin: 5px 0;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .stats span {
+            color: #ffd700;
+            font-weight: bold;
+        }
+
+        /* Coral decorations */
+        .coral {
+            position: absolute;
+            bottom: 70px;
+            pointer-events: none;
+        }
+
+        .coral-branch {
+            position: absolute;
+            bottom: 0;
+            width: 15px;
+            border-radius: 10px 10px 0 0;
+        }
+
+        .coral-1 {
+            left: 25%;
+        }
+
+        .coral-1 .coral-branch:nth-child(1) {
+            height: 60px;
+            background: linear-gradient(180deg, #ff6b6b, #ee5a5a);
+            left: 0;
+        }
+
+        .coral-1 .coral-branch:nth-child(2) {
+            height: 45px;
+            background: linear-gradient(180deg, #ff8585, #ff6b6b);
+            left: 18px;
+        }
+
+        .coral-1 .coral-branch:nth-child(3) {
+            height: 55px;
+            background: linear-gradient(180deg, #ff7070, #ee5a5a);
+            left: 36px;
+        }
+
+        .coral-2 {
+            right: 30%;
+        }
+
+        .coral-2 .coral-branch:nth-child(1) {
+            height: 50px;
+            background: linear-gradient(180deg, #ffa07a, #ff7f50);
+            left: 0;
+            width: 12px;
+        }
+
+        .coral-2 .coral-branch:nth-child(2) {
+            height: 70px;
+            background: linear-gradient(180deg, #ffb090, #ffa07a);
+            left: 15px;
+        }
+
+        .coral-2 .coral-branch:nth-child(3) {
+            height: 40px;
+            background: linear-gradient(180deg, #ffa07a, #ff7f50);
+            left: 33px;
+            width: 10px;
+        }
+
+        /* Starfish */
+        .starfish {
+            position: absolute;
+            bottom: 80px;
+            width: 40px;
+            height: 40px;
+            pointer-events: none;
+        }
+
+        .starfish svg {
+            width: 100%;
+            height: 100%;
+            fill: #ff6347;
+            filter: drop-shadow(2px 2px 3px rgba(0,0,0,0.3));
+        }
+
+        .starfish-1 { left: 15%; transform: rotate(15deg); }
+        .starfish-2 { right: 5%; transform: rotate(-20deg); }
+
+        /* Shell */
+        .shell {
+            position: absolute;
+            bottom: 75px;
+            width: 35px;
+            height: 25px;
+            background: linear-gradient(135deg, #ffe4c4, #deb887, #d2b48c);
+            border-radius: 50% 50% 0 0;
+            pointer-events: none;
+            box-shadow: inset -3px -3px 8px rgba(0,0,0,0.2);
+        }
+
+        .shell::before {
+            content: '';
+            position: absolute;
+            bottom: -5px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 30px;
+            height: 10px;
+            background: linear-gradient(180deg, #deb887, #c4a882);
+            border-radius: 0 0 50% 50%;
+        }
+
+        .shell-1 { left: 35%; }
+        .shell-2 { right: 25%; transform: rotate(10deg); }
+
+        /* Info tooltip */
+        .tooltip {
+            position: fixed;
+            background: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: 8px 12px;
+            border-radius: 8px;
+            font-size: 12px;
+            pointer-events: none;
+            z-index: 1000;
+            opacity: 0;
+            transition: opacity 0.2s;
+        }
+
+        .tooltip.visible {
+            opacity: 1;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            h1 {
+                font-size: 1.8rem;
+            }
+
+            .aquarium {
+                height: 450px;
+            }
+
+            .btn {
+                padding: 10px 16px;
+                font-size: 12px;
+            }
+
+            .stats {
+                font-size: 12px;
+                padding: 10px 15px;
+            }
+        }
+
+        /* Ambient particles */
+        .particle {
+            position: absolute;
+            width: 3px;
+            height: 3px;
+            background: rgba(255, 255, 255, 0.4);
+            border-radius: 50%;
+            pointer-events: none;
+            animation: particleFloat 10s linear infinite;
+        }
+
+        @keyframes particleFloat {
+            0% {
+                transform: translateY(100%) translateX(0);
+                opacity: 0;
+            }
+            10% {
+                opacity: 0.6;
+            }
+            90% {
+                opacity: 0.6;
+            }
+            100% {
+                transform: translateY(-100%) translateX(20px);
+                opacity: 0;
+            }
+        }
+
+        /* Water surface effect */
+        .water-surface {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 30px;
+            background: linear-gradient(180deg, 
+                rgba(255, 255, 255, 0.3) 0%, 
+                rgba(255, 255, 255, 0.1) 50%, 
+                transparent 100%);
+            pointer-events: none;
+            animation: waterRipple 3s ease-in-out infinite;
+        }
+
+        @keyframes waterRipple {
+            0%, 100% { transform: scaleY(1); }
+            50% { transform: scaleY(1.1); }
+        }
+    </style>
+</head>
+<body>
+    <h1>🐠 Aquarium Tank 🐟</h1>
+    
+    <div class="controls">
+        <button class="btn btn-fish" onclick="addFish()">🐟 Add Fish</button>
+        <button class="btn btn-bubble" onclick="addBubbleStream()">💨 Add Bubbles</button>
+        <button class="btn btn-plant" onclick="addPlant()">🌿 Add Plant</button>
+        <button class="btn btn-food" onclick="dropFood()">🍞 Drop Food</button>
+        <button class="btn btn-clear" onclick="clearFish()">🗑️ Clear Fish</button>
+        <button class="btn btn-reset" onclick="resetAquarium()">🔄 Reset All</button>
+    </div>
+
+    <div class="aquarium-container">
+        <div class="aquarium" id="aquarium" onclick="handleAquariumClick(event)">
+            <!-- Light rays -->
+            <div class="light-rays">
+                <div class="ray"></div>
+                <div class="ray"></div>
+                <div class="ray"></div>
+                <div class="ray"></div>
+                <div class="ray"></div>
+            </div>
+
+            <!-- Water surface -->
+            <div class="water-surface"></div>
+
+            <!-- Stats panel -->
+            <div class="stats">
+                <h3>📊 Aquarium Stats</h3>
+                <p>🐟 Fish: <span id="fishCount">0</span></p>
+                <p>🌿 Plants: <span id="plantCount">0</span></p>
+                <p>💨 Bubble Sources: <span id="bubbleCount">0</span></p>
+                <p>🍞 Food Given: <span id="foodCount">0</span></p>
+            </div>
+
+            <!-- Decorations -->
+            <div class="rocks">
+                <div class="rock"></div>
+                <div class="rock"></div>
+                <div class="rock"></div>
+                <div class="rock"></div>
+                <div class="rock"></div>
+            </div>
+
+            <!-- Castle -->
+            <div class="castle">
+                <div class="castle-tower left"></div>
+                <div class="castle-tower right"></div>
+                <div class="castle-body">
+                    <div class="castle-door"></div>
+                </div>
+            </div>
+
+            <!-- Treasure chest -->
+            <div class="treasure">
+                <div class="treasure-lid"></div>
+                <div class="treasure-body">
+                    <div class="treasure-lock"></div>
+                </div>
+            </div>
+
+            <!-- Coral -->
+            <div class="coral coral-1">
+                <div class="coral-branch"></div>
+                <div class="coral-branch"></div>
+                <div class="coral-branch"></div>
+            </div>
+            <div class="coral coral-2">
+                <div class="coral-branch"></div>
+                <div class="coral-branch"></div>
+                <div class="coral-branch"></div>
+            </div>
+
+            <!-- Starfish -->
+            <div class="starfish starfish-1">
+                <svg viewBox="0 0 100 100">
+                    <polygon points="50,0 61,35 98,35 68,57 79,91 50,70 21,91 32,57 2,35 39,35"/>
+                </svg>
+            </div>
+            <div class="starfish starfish-2">
+                <svg viewBox="0 0 100 100">
+                    <polygon points="50,0 61,35 98,35 68,57 79,91 50,70 21,91 32,57 2,35 39,35"/>
+                </svg>
+            </div>
+
+            <!-- Shells -->
+            <div class="shell shell-1"></div>
+            <div class="shell shell-2"></div>
+
+            <!-- Sand -->
+            <div class="sand"></div>
+
+            <!-- Plants container -->
+            <div class="plants-container" id="plantsContainer"></div>
+        </div>
+    </div>
+
+    <!-- Tooltip -->
+    <div class="tooltip" id="tooltip"></div>
+
+    <script>
+        // Aquarium state
+        let state = {
+            fish: [],
+            plants: [],
+            bubbleSources: [],
+            foodCount: 0,
+            lastSaved: null
+        };
+
+        // Map to store fish DOM elements for direct access
+        const fishElements = new Map();
+
+        // Fish colors and types
+        const fishColors = [
+            { body: '#ff6b6b', accent: '#ee5a5a', name: 'Red' },
+            { body: '#ffd93d', accent: '#f5c000', name: 'Yellow' },
+            { body: '#6bcb77', accent: '#4caf50', name: 'Green' },
+            { body: '#4d96ff', accent: '#2196f3', name: 'Blue' },
+            { body: '#ff6eb4', accent: '#ff1493', name: 'Pink' },
+            { body: '#9b59b6', accent: '#8e44ad', name: 'Purple' },
+            { body: '#ff8c42', accent: '#ff7315', name: 'Orange' },
+            { body: '#00d4aa', accent: '#00bcd4', name: 'Teal' },
+            { body: '#ffa07a', accent: '#fa8072', name: 'Salmon' },
+            { body: '#87ceeb', accent: '#6bb3d9', name: 'Sky Blue' }
+        ];
+
+        const fishTypes = ['normal', 'angelfish'];
+        const plantTypes = ['seaweed', 'broad'];
+
+        // Counter for unique IDs
+        let fishIdCounter = 0;
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            loadState();
+            restoreAquarium();
+            createAmbientParticles();
+            startBubbleStreams();
+            requestAnimationFrame(gameLoop);
+        });
+
+        // Save state to localStorage
+        function saveState() {
+            state.lastSaved = new Date().toISOString();
+            localStorage.setItem('aquariumState', JSON.stringify(state));
+        }
+
+        // Load state from localStorage
+        function loadState() {
+            const saved = localStorage.getItem('aquariumState');
+            if (saved) {
+                try {
+                    const loadedState = JSON.parse(saved);
+                    state = loadedState;
+                    // Find the highest ID to continue from
+                    state.fish.forEach(fish => {
+                        const numId = parseInt(fish.id, 10);
+                        if (!isNaN(numId) && numId >= fishIdCounter) {
+                            fishIdCounter = numId + 1;
+                        }
+                    });
+                } catch (e) {
+                    console.error('Error loading state:', e);
+                }
+            }
+        }
+
+        // Restore aquarium from saved state
+        function restoreAquarium() {
+            // Restore fish
+            state.fish.forEach(fishData => {
+                createFishElement(fishData);
+            });
+
+            // Restore plants
+            state.plants.forEach(plantData => {
+                createPlantElement(plantData);
+            });
+
+            updateStats();
+        }
+
+        // Create fish element
+        function createFishElement(fishData) {
+            const aquarium = document.getElementById('aquarium');
+            const fish = document.createElement('div');
+            fish.className = `fish fish-type-${fishData.type} ${fishData.direction}`;
+            fish.style.left = fishData.x + 'px';
+            fish.style.top = fishData.y + 'px';
+            fish.style.color = fishData.color.accent;
+
+            fish.innerHTML = `
+                <div class="fish-body" style="background: linear-gradient(135deg, ${fishData.color.body}, ${fishData.color.accent});">
+                    <div class="fish-eye"></div>
+                </div>
+                <div class="fish-tail"></div>
+                <div class="fish-fin-top"></div>
+                <div class="fish-fin-bottom"></div>
+            `;
+
+            fish.addEventListener('click', (e) => {
+                e.stopPropagation();
+                showFishInfo(fishData, e);
+            });
+
+            aquarium.appendChild(fish);
+            
+            // Store reference in map using the fish's ID
+            fishElements.set(fishData.id, fish);
+            
+            return fish;
+        }
+
+        // Add a new fish
+        function addFish() {
+            const aquarium = document.getElementById('aquarium');
+            const rect = aquarium.getBoundingClientRect();
+            
+            const fishData = {
+                id: String(fishIdCounter++),
+                x: Math.random() * (rect.width - 100) + 20,
+                y: Math.random() * (rect.height - 200) + 50,
+                speedX: (Math.random() * 2 + 1) * (Math.random() < 0.5 ? 1 : -1),
+                speedY: (Math.random() - 0.5) * 1,
+                color: fishColors[Math.floor(Math.random() * fishColors.length)],
+                type: fishTypes[Math.floor(Math.random() * fishTypes.length)],
+                direction: Math.random() < 0.5 ? 'left' : 'right',
+                name: generateFishName(),
+                birthDate: new Date().toISOString(),
+                fed: 0
+            };
+
+            state.fish.push(fishData);
+            createFishElement(fishData);
+            updateStats();
+            saveState();
+        }
+
+        // Generate random fish name
+        function generateFishName() {
+            const names = ['Bubbles', 'Nemo', 'Dory', 'Goldie', 'Finley', 'Splash', 'Coral', 'Neptune', 'Pearl', 'Sunny', 'Azure', 'Shimmer', 'Glitter', 'Wave', 'Aqua', 'Marina', 'Flash', 'Zippy', 'Dash', 'Spark'];
+            return names[Math.floor(Math.random() * names.length)];
+        }
+
+        // Show fish info
+        function showFishInfo(fishData, event) {
+            const tooltip = document.getElementById('tooltip');
+            const age = Math.floor((Date.now() - new Date(fishData.birthDate).getTime()) / 60000);
+            tooltip.innerHTML = `
+                <strong>${fishData.name}</strong><br>
+                Color: ${fishData.color.name}<br>
+                Type: ${fishData.type}<br>
+                Age: ${age} min<br>
+                Fed: ${fishData.fed} times
+            `;
+            tooltip.style.left = event.clientX + 10 + 'px';
+            tooltip.style.top = event.clientY + 10 + 'px';
+            tooltip.classList.add('visible');
+            
+            setTimeout(() => {
+                tooltip.classList.remove('visible');
+            }, 3000);
+        }
+
+        // Create plant element
+        function createPlantElement(plantData) {
+            const container = document.getElementById('plantsContainer');
+            
+            if (plantData.type === 'seaweed') {
+                const seaweed = document.createElement('div');
+                seaweed.className = 'seaweed';
+                seaweed.dataset.id = plantData.id;
+                seaweed.style.left = plantData.x + 'px';
+                
+                for (let i = 0; i < plantData.segments; i++) {
+                    const segment = document.createElement('div');
+                    segment.className = 'seaweed-segment';
+                    segment.style.background = `linear-gradient(90deg, ${plantData.color}, ${plantData.colorLight}, ${plantData.color})`;
+                    segment.style.animationDelay = (i * 0.1) + 's';
+                    seaweed.appendChild(segment);
+                }
+                
+                container.appendChild(seaweed);
+            } else {
+                const plant = document.createElement('div');
+                plant.className = 'plant';
+                plant.dataset.id = plantData.id;
+                plant.style.left = plantData.x + 'px';
+                
+                for (let i = 0; i < plantData.leaves; i++) {
+                    const leaf = document.createElement('div');
+                    leaf.className = 'plant-leaf';
+                    leaf.style.background = `linear-gradient(90deg, ${plantData.color}, ${plantData.colorLight}, ${plantData.color})`;
+                    leaf.style.height = (60 + Math.random() * 40) + 'px';
+                    leaf.style.transform = `rotate(${(i - Math.floor(plantData.leaves/2)) * 15}deg)`;
+                    leaf.style.animationDelay = (i * 0.2) + 's';
+                    leaf.style.zIndex = plantData.leaves - i;
+                    plant.appendChild(leaf);
+                }
+                
+                container.appendChild(plant);
+            }
+        }
+
+        // Add a new plant
+        function addPlant() {
+            const aquarium = document.getElementById('aquarium');
+            const rect = aquarium.getBoundingClientRect();
+            
+            const type = plantTypes[Math.floor(Math.random() * plantTypes.length)];
+            const greenShades = [
+                { color: '#228b22', colorLight: '#32cd32' },
+                { color: '#006400', colorLight: '#228b22' },
+                { color: '#2e8b57', colorLight: '#3cb371' },
+                { color: '#20b2aa', colorLight: '#48d1cc' }
+            ];
+            const shade = greenShades[Math.floor(Math.random() * greenShades.length)];
+            
+            const plantData = {
+                id: Date.now() + Math.random(),
+                x: Math.random() * (rect.width - 60) + 30,
+                type: type,
+                color: shade.color,
+                colorLight: shade.colorLight,
+                segments: type === 'seaweed' ? Math.floor(Math.random() * 4) + 4 : 0,
+                leaves: type === 'broad' ? Math.floor(Math.random() * 3) + 3 : 0
+            };
+
+            state.plants.push(plantData);
+            createPlantElement(plantData);
+            updateStats();
+            saveState();
+        }
+
+        // Add bubble stream source
+        function addBubbleStream() {
+            const aquarium = document.getElementById('aquarium');
+            const rect = aquarium.getBoundingClientRect();
+            
+            const sourceData = {
+                id: Date.now() + Math.random(),
+                x: Math.random() * (rect.width - 40) + 20,
+                interval: null
+            };
+
+            state.bubbleSources.push(sourceData);
+            updateStats();
+            saveState();
+            
+            // Start generating bubbles
+            startBubbleSource(sourceData);
+        }
+
+        // Start bubble source
+        function startBubbleSource(sourceData) {
+            const aquarium = document.getElementById('aquarium');
+            
+            sourceData.interval = setInterval(() => {
+                createBubble(sourceData.x + (Math.random() - 0.5) * 20, aquarium.offsetHeight - 80);
+            }, 500 + Math.random() * 1000);
+        }
+
+        // Start all bubble streams
+        function startBubbleStreams() {
+            state.bubbleSources.forEach(source => {
+                startBubbleSource(source);
+            });
+        }
+
+        // Create a single bubble
+        function createBubble(x, y) {
+            const aquarium = document.getElementById('aquarium');
+            const bubble = document.createElement('div');
+            bubble.className = 'bubble';
+            
+            const size = Math.random() * 15 + 8;
+            bubble.style.width = size + 'px';
+            bubble.style.height = size + 'px';
+            bubble.style.left = x + 'px';
+            bubble.style.bottom = (aquarium.offsetHeight - y) + 'px';
+            bubble.style.animationDuration = (3 + Math.random() * 3) + 's';
+            
+            aquarium.appendChild(bubble);
+            
+            setTimeout(() => {
+                bubble.remove();
+            }, 6000);
+        }
+
+        // Drop food
+        function dropFood() {
+            const aquarium = document.getElementById('aquarium');
+            const rect = aquarium.getBoundingClientRect();
+            
+            // Create multiple food particles
+            for (let i = 0; i < 10; i++) {
+                setTimeout(() => {
+                    const food = document.createElement('div');
+                    food.className = 'food';
+                    food.style.left = (Math.random() * (rect.width - 40) + 20) + 'px';
+                    food.style.top = '20px';
+                    food.style.setProperty('--fall-distance', (rect.height - 120) + 'px');
+                    food.style.setProperty('--drift', (Math.random() * 40 - 20) + 'px');
+                    food.style.animationDuration = (4 + Math.random() * 2) + 's';
+                    
+                    aquarium.appendChild(food);
+                    
+                    setTimeout(() => {
+                        food.remove();
+                    }, 6000);
+                }, i * 100);
+            }
+
+            state.foodCount++;
+            
+            // Fish react to food
+            state.fish.forEach(fishData => {
+                fishData.fed++;
+                fishData.speedX *= 1.5;
+                setTimeout(() => {
+                    fishData.speedX /= 1.5;
+                }, 3000);
+            });
+
+            updateStats();
+            saveState();
+        }
+
+        // Game loop for fish movement
+        function gameLoop() {
+            const aquarium = document.getElementById('aquarium');
+            const rect = aquarium.getBoundingClientRect();
+            
+            state.fish.forEach(fishData => {
+                // Update position
+                fishData.x += fishData.speedX;
+                fishData.y += fishData.speedY;
+                
+                // Boundary checking
+                if (fishData.x <= 20 || fishData.x >= rect.width - 80) {
+                    fishData.speedX *= -1;
+                    fishData.direction = fishData.speedX > 0 ? 'right' : 'left';
+                }
+                
+                if (fishData.y <= 50 || fishData.y >= rect.height - 150) {
+                    fishData.speedY *= -1;
+                }
+                
+                // Random direction changes
+                if (Math.random() < 0.01) {
+                    fishData.speedY = (Math.random() - 0.5) * 2;
+                }
+                
+                if (Math.random() < 0.005) {
+                    fishData.speedX *= -1;
+                    fishData.direction = fishData.speedX > 0 ? 'right' : 'left';
+                }
+                
+                // Update DOM element using the map
+                const fishEl = fishElements.get(fishData.id);
+                if (fishEl) {
+                    fishEl.style.left = fishData.x + 'px';
+                    fishEl.style.top = fishData.y + 'px';
+                    fishEl.className = `fish fish-type-${fishData.type} ${fishData.direction}`;
+                }
+            });
+            
+            requestAnimationFrame(gameLoop);
+        }
+
+        // Update stats display
+        function updateStats() {
+            document.getElementById('fishCount').textContent = state.fish.length;
+            document.getElementById('plantCount').textContent = state.plants.length;
+            document.getElementById('bubbleCount').textContent = state.bubbleSources.length;
+            document.getElementById('foodCount').textContent = state.foodCount;
+        }
+
+        // Clear all fish
+        function clearFish() {
+            state.fish.forEach(fishData => {
+                const fishEl = fishElements.get(fishData.id);
+                if (fishEl) {
+                    fishEl.remove();
+                    fishElements.delete(fishData.id);
+                }
+            });
+            state.fish = [];
+            updateStats();
+            saveState();
+        }
+
+        // Reset entire aquarium
+        function resetAquarium() {
+            if (!confirm('Are you sure you want to reset the entire aquarium?')) return;
+            
+            // Remove fish
+            state.fish.forEach(fishData => {
+                const fishEl = fishElements.get(fishData.id);
+                if (fishEl) {
+                    fishEl.remove();
+                }
+            });
+            fishElements.clear();
+            
+            // Remove plants
+            const plantsContainer = document.getElementById('plantsContainer');
+            plantsContainer.innerHTML = '';
+            
+            // Stop bubble streams
+            state.bubbleSources.forEach(source => {
+                if (source.interval) clearInterval(source.interval);
+            });
+            
+            // Reset state
+            state = {
+                fish: [],
+                plants: [],
+                bubbleSources: [],
+                foodCount: 0,
+                lastSaved: null
+            };
+            
+            fishIdCounter = 0;
+            
+            updateStats();
+            saveState();
+        }
+
+        // Handle click on aquarium
+        function handleAquariumClick(event) {
+            const rect = event.currentTarget.getBoundingClientRect();
+            const x = event.clientX - rect.left;
+            const y = event.clientY - rect.top;
+            
+            // Create small bubble burst at click location
+            for (let i = 0; i < 5; i++) {
+                setTimeout(() => {
+                    createBubble(x + (Math.random() - 0.5) * 30, event.currentTarget.offsetHeight - y);
+                }, i * 50);
+            }
+        }
+
+        // Create ambient floating particles
+        function createAmbientParticles() {
+            const aquarium = document.getElementById('aquarium');
+            
+            for (let i = 0; i < 20; i++) {
+                const particle = document.createElement('div');
+                particle.className = 'particle';
+                particle.style.left = Math.random() * 100 + '%';
+                particle.style.top = Math.random() * 100 + '%';
+                particle.style.animationDelay = Math.random() * 10 + 's';
+                particle.style.animationDuration = (8 + Math.random() * 4) + 's';
+                aquarium.appendChild(particle);
+            }
+        }
+
+        // Auto-save every 30 seconds
+        setInterval(saveState, 30000);
+
+        // Save state before page unload
+        window.addEventListener('beforeunload', saveState);
+    </script>
+</body>
+</html>
