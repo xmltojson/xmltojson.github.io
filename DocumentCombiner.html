@@ -1,0 +1,1694 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Об'єднувач Документів</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+    <style>
+        :root {
+            --primary: #2563eb;
+            --primary-dark: #1d4ed8;
+            --secondary: #64748b;
+            --success: #10b981;
+            --danger: #ef4444;
+            --warning: #f59e0b;
+            --bg-gradient-start: #667eea;
+            --bg-gradient-end: #764ba2;
+            --card-bg: rgba(255, 255, 255, 0.95);
+            --text-primary: #1e293b;
+            --text-secondary: #64748b;
+            --border-radius: 16px;
+            --shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            min-height: 100vh;
+            background: linear-gradient(135deg, var(--bg-gradient-start) 0%, var(--bg-gradient-end) 100%);
+            padding: 20px;
+            transition: all 0.3s ease;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            color: white;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 15px;
+        }
+
+        .header h1 svg {
+            width: 50px;
+            height: 50px;
+        }
+
+        .header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+
+        .main-content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 25px;
+        }
+
+        @media (max-width: 1024px) {
+            .main-content {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .card {
+            background: var(--card-bg);
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow);
+            padding: 25px;
+            backdrop-filter: blur(10px);
+        }
+
+        .card-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #e2e8f0;
+        }
+
+        .card-header svg {
+            width: 28px;
+            height: 28px;
+            color: var(--primary);
+        }
+
+        .card-header h2 {
+            color: var(--text-primary);
+            font-size: 1.3rem;
+        }
+
+        .file-upload-area {
+            border: 3px dashed #cbd5e1;
+            border-radius: 12px;
+            padding: 30px;
+            text-align: center;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            margin-bottom: 20px;
+        }
+
+        .file-upload-area:hover,
+        .file-upload-area.dragover {
+            border-color: var(--primary);
+            background: rgba(37, 99, 235, 0.05);
+            transform: scale(1.02);
+        }
+
+        .file-upload-area svg {
+            width: 60px;
+            height: 60px;
+            color: var(--secondary);
+            margin-bottom: 15px;
+        }
+
+        .file-upload-area p {
+            color: var(--text-secondary);
+            margin-bottom: 10px;
+        }
+
+        .file-upload-area .hint {
+            font-size: 0.85rem;
+            color: #94a3b8;
+        }
+
+        .file-list {
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .file-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 15px;
+            background: #f8fafc;
+            border-radius: 10px;
+            margin-bottom: 10px;
+            transition: all 0.3s ease;
+            animation: slideIn 0.3s ease;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateX(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        .file-item:hover {
+            background: #f1f5f9;
+            transform: translateX(5px);
+        }
+
+        .file-item.template {
+            background: linear-gradient(135deg, #dbeafe 0%, #e0e7ff 100%);
+            border: 2px solid var(--primary);
+        }
+
+        .file-icon {
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, var(--primary) 0%, #3b82f6 100%);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .file-icon svg {
+            width: 24px;
+            height: 24px;
+            color: white;
+        }
+
+        .file-info {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .file-name {
+            font-weight: 600;
+            color: var(--text-primary);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .file-meta {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            display: flex;
+            gap: 10px;
+            margin-top: 3px;
+        }
+
+        .file-badge {
+            background: var(--primary);
+            color: white;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 0.7rem;
+            font-weight: 600;
+        }
+
+        .file-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .btn-icon {
+            width: 32px;
+            height: 32px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
+        }
+
+        .btn-icon svg {
+            width: 18px;
+            height: 18px;
+        }
+
+        .btn-icon.move {
+            background: #e2e8f0;
+            color: var(--secondary);
+        }
+
+        .btn-icon.move:hover {
+            background: var(--primary);
+            color: white;
+        }
+
+        .btn-icon.delete {
+            background: #fee2e2;
+            color: var(--danger);
+        }
+
+        .btn-icon.delete:hover {
+            background: var(--danger);
+            color: white;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 10px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .btn svg {
+            width: 20px;
+            height: 20px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            color: white;
+            box-shadow: 0 4px 15px rgba(37, 99, 235, 0.4);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(37, 99, 235, 0.5);
+        }
+
+        .btn-primary:disabled {
+            background: #94a3b8;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .btn-secondary {
+            background: #e2e8f0;
+            color: var(--text-primary);
+        }
+
+        .btn-secondary:hover {
+            background: #cbd5e1;
+        }
+
+        .btn-success {
+            background: linear-gradient(135deg, var(--success) 0%, #059669 100%);
+            color: white;
+        }
+
+        .btn-success:hover {
+            transform: translateY(-2px);
+        }
+
+        .btn-danger {
+            background: linear-gradient(135deg, var(--danger) 0%, #dc2626 100%);
+            color: white;
+        }
+
+        .btn-danger:hover {
+            transform: translateY(-2px);
+        }
+
+        .actions-bar {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+            margin-top: 20px;
+        }
+
+        .merge-options {
+            margin-top: 20px;
+        }
+
+        .option-group {
+            margin-bottom: 20px;
+        }
+
+        .option-group label {
+            display: block;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 8px;
+        }
+
+        .option-group select,
+        .option-group input[type="text"] {
+            width: 100%;
+            padding: 12px 15px;
+            border: 2px solid #e2e8f0;
+            border-radius: 10px;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+        }
+
+        .option-group select:focus,
+        .option-group input[type="text"]:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+        }
+
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 12px;
+            background: #f8fafc;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .checkbox-group:hover {
+            background: #f1f5f9;
+        }
+
+        .checkbox-group input[type="checkbox"] {
+            width: 20px;
+            height: 20px;
+            accent-color: var(--primary);
+        }
+
+        .preview-section {
+            margin-top: 20px;
+        }
+
+        .preview-content {
+            background: #f8fafc;
+            border-radius: 10px;
+            padding: 20px;
+            max-height: 400px;
+            overflow-y: auto;
+            font-family: 'Consolas', monospace;
+            font-size: 0.9rem;
+            line-height: 1.6;
+        }
+
+        .preview-header {
+            background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+            color: white;
+            padding: 8px 15px;
+            border-radius: 6px;
+            margin-bottom: 10px;
+            font-weight: 600;
+        }
+
+        .preview-paragraph {
+            padding: 8px 12px;
+            background: white;
+            border-radius: 6px;
+            margin-bottom: 8px;
+            border-left: 3px solid #e2e8f0;
+        }
+
+        .preview-paragraph.merged {
+            border-left-color: var(--success);
+            background: #f0fdf4;
+        }
+
+        .progress-bar {
+            height: 8px;
+            background: #e2e8f0;
+            border-radius: 4px;
+            overflow: hidden;
+            margin-top: 15px;
+            display: none;
+        }
+
+        .progress-bar.active {
+            display: block;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--primary) 0%, var(--success) 100%);
+            border-radius: 4px;
+            transition: width 0.3s ease;
+            width: 0%;
+        }
+
+        .status-message {
+            padding: 12px 15px;
+            border-radius: 10px;
+            margin-top: 15px;
+            display: none;
+            animation: fadeIn 0.3s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .status-message.show {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .status-message.success {
+            background: #d1fae5;
+            color: #065f46;
+        }
+
+        .status-message.error {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+
+        .status-message.info {
+            background: #dbeafe;
+            color: #1e40af;
+        }
+
+        .status-message svg {
+            width: 24px;
+            height: 24px;
+            flex-shrink: 0;
+        }
+
+        .custom-rules {
+            margin-top: 20px;
+        }
+
+        .rule-item {
+            display: grid;
+            grid-template-columns: 1fr 1fr auto;
+            gap: 10px;
+            padding: 15px;
+            background: #f8fafc;
+            border-radius: 10px;
+            margin-bottom: 10px;
+            animation: slideIn 0.3s ease;
+        }
+
+        .rule-item input {
+            padding: 10px;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            font-size: 0.9rem;
+        }
+
+        .rule-item input:focus {
+            outline: none;
+            border-color: var(--primary);
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 40px;
+            color: var(--text-secondary);
+        }
+
+        .empty-state svg {
+            width: 80px;
+            height: 80px;
+            margin-bottom: 15px;
+            opacity: 0.5;
+        }
+
+        .tabs {
+            display: flex;
+            gap: 5px;
+            margin-bottom: 20px;
+            background: #f1f5f9;
+            padding: 5px;
+            border-radius: 12px;
+        }
+
+        .tab {
+            flex: 1;
+            padding: 12px;
+            border: none;
+            background: transparent;
+            border-radius: 8px;
+            font-size: 0.95rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .tab.active {
+            background: white;
+            color: var(--primary);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        /* Landscape orientation adjustments */
+        @media (orientation: landscape) and (max-height: 600px) {
+            .header h1 {
+                font-size: 1.8rem;
+            }
+            
+            .header {
+                margin-bottom: 15px;
+            }
+            
+            .card {
+                padding: 15px;
+            }
+            
+            .file-upload-area {
+                padding: 15px;
+            }
+            
+            .file-upload-area svg {
+                width: 40px;
+                height: 40px;
+            }
+        }
+
+        /* Mobile adjustments */
+        @media (max-width: 768px) {
+            .header h1 {
+                font-size: 1.8rem;
+                flex-direction: column;
+            }
+            
+            .actions-bar {
+                flex-direction: column;
+            }
+            
+            .btn {
+                width: 100%;
+                justify-content: center;
+            }
+            
+            .rule-item {
+                grid-template-columns: 1fr;
+            }
+            
+            .file-item {
+                flex-wrap: wrap;
+            }
+            
+            .file-actions {
+                width: 100%;
+                justify-content: flex-end;
+                margin-top: 10px;
+            }
+        }
+
+        /* Scrollbar styling */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #f1f5f9;
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+
+        .loading-overlay.show {
+            display: flex;
+        }
+
+        .loading-spinner {
+            width: 60px;
+            height: 60px;
+            border: 4px solid rgba(255, 255, 255, 0.3);
+            border-top-color: white;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .stat-card {
+            background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+            padding: 15px;
+            border-radius: 12px;
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: var(--primary);
+        }
+
+        .stat-label {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            margin-top: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <h1>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                    <polyline points="14 2 14 8 20 8"/>
+                    <line x1="16" y1="13" x2="8" y2="13"/>
+                    <line x1="16" y1="17" x2="8" y2="17"/>
+                    <polyline points="10 9 9 9 8 9"/>
+                </svg>
+                Об'єднувач Документів
+            </h1>
+            <p>Об'єднуйте до 5 DOCX файлів з розширеними налаштуваннями</p>
+        </header>
+
+        <div class="main-content">
+            <!-- Left Panel - File Management -->
+            <div class="card">
+                <div class="card-header">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/>
+                        <polyline points="13 2 13 9 20 9"/>
+                    </svg>
+                    <h2>Вхідні файли</h2>
+                </div>
+
+                <div class="file-upload-area" id="dropZone">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                        <polyline points="17 8 12 3 7 8"/>
+                        <line x1="12" y1="3" x2="12" y2="15"/>
+                    </svg>
+                    <p>Перетягніть файли сюди або натисніть для вибору</p>
+                    <p class="hint">Підтримується до 5 файлів DOCX. Перший файл буде шаблоном.</p>
+                    <input type="file" id="fileInput" multiple accept=".docx" style="display: none;">
+                </div>
+
+                <div class="file-list" id="fileList">
+                    <div class="empty-state" id="emptyState">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/>
+                            <polyline points="13 2 13 9 20 9"/>
+                        </svg>
+                        <p>Файли ще не додано</p>
+                    </div>
+                </div>
+
+                <div class="actions-bar">
+                    <button class="btn btn-danger" id="clearAllBtn" disabled>
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polyline points="3 6 5 6 21 6"/>
+                            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                        </svg>
+                        Очистити все
+                    </button>
+                </div>
+
+                <div class="stats-grid" id="statsGrid" style="display: none;">
+                    <div class="stat-card">
+                        <div class="stat-value" id="statFiles">0</div>
+                        <div class="stat-label">Файлів</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="statHeaders">0</div>
+                        <div class="stat-label">Заголовків</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="statParagraphs">0</div>
+                        <div class="stat-label">Абзаців</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="statSize">0</div>
+                        <div class="stat-label">КБ</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Panel - Settings & Preview -->
+            <div class="card">
+                <div class="tabs">
+                    <button class="tab active" data-tab="settings">Налаштування</button>
+                    <button class="tab" data-tab="rules">Правила</button>
+                    <button class="tab" data-tab="preview">Попередній перегляд</button>
+                </div>
+
+                <!-- Settings Tab -->
+                <div class="tab-content active" id="settingsTab">
+                    <div class="merge-options">
+                        <div class="option-group">
+                            <label>Режим об'єднання</label>
+                            <select id="mergeMode">
+                                <option value="append">Додавання в кінець</option>
+                                <option value="byHeaders">За заголовками</option>
+                                <option value="interleave">Чергування</option>
+                                <option value="custom">Користувацький</option>
+                            </select>
+                        </div>
+
+                        <div class="option-group">
+                            <label>Роздільник між документами</label>
+                            <select id="separator">
+                                <option value="none">Без роздільника</option>
+                                <option value="pageBreak">Розрив сторінки</option>
+                                <option value="line">Горизонтальна лінія</option>
+                                <option value="space">Порожній рядок</option>
+                            </select>
+                        </div>
+
+                        <div class="option-group">
+                            <label>Обробка заголовків</label>
+                            <select id="headerHandling">
+                                <option value="keep">Зберігати всі</option>
+                                <option value="merge">Об'єднувати однакові</option>
+                                <option value="firstOnly">Тільки з першого файлу</option>
+                            </select>
+                        </div>
+
+                        <div class="checkbox-group">
+                            <input type="checkbox" id="preserveStyles" checked>
+                            <label for="preserveStyles">Зберігати стилі з шаблону</label>
+                        </div>
+
+                        <div class="checkbox-group">
+                            <input type="checkbox" id="removeDuplicates">
+                            <label for="removeDuplicates">Видаляти дублікати рядків</label>
+                        </div>
+
+                        <div class="checkbox-group">
+                            <input type="checkbox" id="addSourceMarkers">
+                            <label for="addSourceMarkers">Додавати маркери джерела</label>
+                        </div>
+                    </div>
+
+                    <div class="actions-bar">
+                        <button class="btn btn-primary" id="mergeBtn" disabled>
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/>
+                            </svg>
+                            Об'єднати документи
+                        </button>
+                        <button class="btn btn-success" id="downloadBtn" disabled>
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                                <polyline points="7 10 12 15 17 10"/>
+                                <line x1="12" y1="15" x2="12" y2="3"/>
+                            </svg>
+                            Завантажити
+                        </button>
+                    </div>
+
+                    <div class="progress-bar" id="progressBar">
+                        <div class="progress-fill" id="progressFill"></div>
+                    </div>
+
+                    <div class="status-message" id="statusMessage">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+                            <polyline points="22 4 12 14.01 9 11.01"/>
+                        </svg>
+                        <span id="statusText"></span>
+                    </div>
+                </div>
+
+                <!-- Rules Tab -->
+                <div class="tab-content" id="rulesTab">
+                    <div class="custom-rules">
+                        <p style="margin-bottom: 15px; color: var(--text-secondary);">
+                            Додайте правила для пошуку та заміни тексту при об'єднанні:
+                        </p>
+                        <div id="rulesList"></div>
+                        <button class="btn btn-secondary" id="addRuleBtn">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <line x1="12" y1="5" x2="12" y2="19"/>
+                                <line x1="5" y1="12" x2="19" y2="12"/>
+                            </svg>
+                            Додати правило
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Preview Tab -->
+                <div class="tab-content" id="previewTab">
+                    <div class="preview-section">
+                        <div class="preview-content" id="previewContent">
+                            <div class="empty-state">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                                    <circle cx="12" cy="12" r="3"/>
+                                </svg>
+                                <p>Попередній перегляд буде доступний після об'єднання</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="loading-spinner"></div>
+    </div>
+
+    <script>
+        // Document Combiner Application
+        class DocumentCombiner {
+            constructor() {
+                this.files = [];
+                this.parsedDocuments = [];
+                this.mergedDocument = null;
+                this.rules = [];
+                this.settings = {
+                    mergeMode: 'append',
+                    separator: 'none',
+                    headerHandling: 'keep',
+                    preserveStyles: true,
+                    removeDuplicates: false,
+                    addSourceMarkers: false
+                };
+                
+                this.init();
+            }
+
+            init() {
+                this.loadState();
+                this.bindEvents();
+                this.updateUI();
+            }
+
+            bindEvents() {
+                // File upload events
+                const dropZone = document.getElementById('dropZone');
+                const fileInput = document.getElementById('fileInput');
+
+                dropZone.addEventListener('click', () => fileInput.click());
+                dropZone.addEventListener('dragover', (e) => {
+                    e.preventDefault();
+                    dropZone.classList.add('dragover');
+                });
+                dropZone.addEventListener('dragleave', () => {
+                    dropZone.classList.remove('dragover');
+                });
+                dropZone.addEventListener('drop', (e) => {
+                    e.preventDefault();
+                    dropZone.classList.remove('dragover');
+                    this.handleFiles(e.dataTransfer.files);
+                });
+                fileInput.addEventListener('change', (e) => {
+                    this.handleFiles(e.target.files);
+                    e.target.value = '';
+                });
+
+                // Button events
+                document.getElementById('clearAllBtn').addEventListener('click', () => this.clearAll());
+                document.getElementById('mergeBtn').addEventListener('click', () => this.mergeDocuments());
+                document.getElementById('downloadBtn').addEventListener('click', () => this.downloadResult());
+                document.getElementById('addRuleBtn').addEventListener('click', () => this.addRule());
+
+                // Settings events
+                document.getElementById('mergeMode').addEventListener('change', (e) => {
+                    this.settings.mergeMode = e.target.value;
+                    this.saveState();
+                });
+                document.getElementById('separator').addEventListener('change', (e) => {
+                    this.settings.separator = e.target.value;
+                    this.saveState();
+                });
+                document.getElementById('headerHandling').addEventListener('change', (e) => {
+                    this.settings.headerHandling = e.target.value;
+                    this.saveState();
+                });
+                document.getElementById('preserveStyles').addEventListener('change', (e) => {
+                    this.settings.preserveStyles = e.target.checked;
+                    this.saveState();
+                });
+                document.getElementById('removeDuplicates').addEventListener('change', (e) => {
+                    this.settings.removeDuplicates = e.target.checked;
+                    this.saveState();
+                });
+                document.getElementById('addSourceMarkers').addEventListener('change', (e) => {
+                    this.settings.addSourceMarkers = e.target.checked;
+                    this.saveState();
+                });
+
+                // Tab events
+                document.querySelectorAll('.tab').forEach(tab => {
+                    tab.addEventListener('click', (e) => {
+                        document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+                        document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+                        e.target.classList.add('active');
+                        document.getElementById(e.target.dataset.tab + 'Tab').classList.add('active');
+                    });
+                });
+
+                // Orientation change
+                window.addEventListener('orientationchange', () => {
+                    setTimeout(() => this.updateUI(), 100);
+                });
+            }
+
+            async handleFiles(fileList) {
+                const files = Array.from(fileList).filter(f => f.name.endsWith('.docx'));
+                
+                if (this.files.length + files.length > 5) {
+                    this.showStatus('Максимум 5 файлів дозволено!', 'error');
+                    return;
+                }
+
+                for (const file of files) {
+                    if (!this.files.find(f => f.name === file.name)) {
+                        const fileData = {
+                            name: file.name,
+                            size: file.size,
+                            lastModified: file.lastModified,
+                            content: await this.readFileAsArrayBuffer(file)
+                        };
+                        this.files.push(fileData);
+                        await this.parseDocument(fileData);
+                    }
+                }
+
+                this.saveState();
+                this.updateUI();
+                this.showStatus(`Додано ${files.length} файл(ів)`, 'success');
+            }
+
+            readFileAsArrayBuffer(file) {
+                return new Promise((resolve, reject) => {
+                    const reader = new FileReader();
+                    reader.onload = () => resolve(Array.from(new Uint8Array(reader.result)));
+                    reader.onerror = reject;
+                    reader.readAsArrayBuffer(file);
+                });
+            }
+
+            async parseDocument(fileData) {
+                try {
+                    const zip = await JSZip.loadAsync(new Uint8Array(fileData.content));
+                    const documentXml = await zip.file('word/document.xml').async('string');
+                    
+                    const parser = new DOMParser();
+                    const xmlDoc = parser.parseFromString(documentXml, 'text/xml');
+                    
+                    const paragraphs = [];
+                    const headers = [];
+                    
+                    const pElements = xmlDoc.getElementsByTagName('w:p');
+                    
+                    for (let i = 0; i < pElements.length; i++) {
+                        const p = pElements[i];
+                        const textContent = this.extractText(p);
+                        const style = this.extractStyle(p);
+                        
+                        const paragraphData = {
+                            text: textContent,
+                            style: style,
+                            isHeader: this.isHeader(p),
+                            xml: new XMLSerializer().serializeToString(p)
+                        };
+                        
+                        paragraphs.push(paragraphData);
+                        
+                        if (paragraphData.isHeader) {
+                            headers.push(paragraphData);
+                        }
+                    }
+                    
+                    this.parsedDocuments.push({
+                        fileName: fileData.name,
+                        paragraphs: paragraphs,
+                        headers: headers,
+                        zip: zip,
+                        documentXml: documentXml
+                    });
+                    
+                } catch (error) {
+                    console.error('Error parsing document:', error);
+                    this.showStatus(`Помилка при обробці ${fileData.name}`, 'error');
+                }
+            }
+
+            extractText(paragraph) {
+                let text = '';
+                const textElements = paragraph.getElementsByTagName('w:t');
+                for (let i = 0; i < textElements.length; i++) {
+                    text += textElements[i].textContent;
+                }
+                return text;
+            }
+
+            extractStyle(paragraph) {
+                const pPr = paragraph.getElementsByTagName('w:pPr')[0];
+                if (!pPr) return null;
+                
+                const pStyle = pPr.getElementsByTagName('w:pStyle')[0];
+                return pStyle ? pStyle.getAttribute('w:val') : null;
+            }
+
+            isHeader(paragraph) {
+                const style = this.extractStyle(paragraph);
+                if (style && style.toLowerCase().includes('heading')) return true;
+                
+                const pPr = paragraph.getElementsByTagName('w:pPr')[0];
+                if (pPr) {
+                    const outlineLvl = pPr.getElementsByTagName('w:outlineLvl')[0];
+                    if (outlineLvl) return true;
+                }
+                
+                return false;
+            }
+
+            async mergeDocuments() {
+                if (this.files.length < 2) {
+                    this.showStatus('Потрібно мінімум 2 файли для об\'єднання', 'error');
+                    return;
+                }
+
+                this.showLoading(true);
+                this.showProgress(true);
+
+                try {
+                    const templateDoc = this.parsedDocuments[0];
+                    const templateZip = templateDoc.zip;
+                    
+                    let mergedParagraphs = [];
+                    
+                    switch (this.settings.mergeMode) {
+                        case 'append':
+                            mergedParagraphs = this.mergeAppend();
+                            break;
+                        case 'byHeaders':
+                            mergedParagraphs = this.mergeByHeaders();
+                            break;
+                        case 'interleave':
+                            mergedParagraphs = this.mergeInterleave();
+                            break;
+                        case 'custom':
+                            mergedParagraphs = this.mergeCustom();
+                            break;
+                    }
+
+                    // Apply rules
+                    mergedParagraphs = this.applyRules(mergedParagraphs);
+
+                    // Remove duplicates if enabled
+                    if (this.settings.removeDuplicates) {
+                        mergedParagraphs = this.removeDuplicateParagraphs(mergedParagraphs);
+                    }
+
+                    // Build new document XML
+                    const newDocumentXml = this.buildDocumentXml(templateDoc.documentXml, mergedParagraphs);
+                    
+                    // Update the zip file
+                    templateZip.file('word/document.xml', newDocumentXml);
+                    
+                    this.mergedDocument = await templateZip.generateAsync({type: 'blob'});
+                    
+                    this.updatePreview(mergedParagraphs);
+                    this.setProgress(100);
+                    
+                    setTimeout(() => {
+                        this.showLoading(false);
+                        this.showProgress(false);
+                        this.showStatus('Документи успішно об\'єднано!', 'success');
+                        document.getElementById('downloadBtn').disabled = false;
+                    }, 500);
+
+                } catch (error) {
+                    console.error('Merge error:', error);
+                    this.showLoading(false);
+                    this.showProgress(false);
+                    this.showStatus('Помилка при об\'єднанні документів', 'error');
+                }
+            }
+
+            mergeAppend() {
+                const paragraphs = [];
+                
+                for (let i = 0; i < this.parsedDocuments.length; i++) {
+                    const doc = this.parsedDocuments[i];
+                    
+                    if (this.settings.addSourceMarkers && i > 0) {
+                        paragraphs.push({
+                            text: `--- Джерело: ${doc.fileName} ---`,
+                            isHeader: false,
+                            isMarker: true
+                        });
+                    }
+                    
+                    if (i > 0 && this.settings.separator !== 'none') {
+                        paragraphs.push({
+                            text: '',
+                            isSeparator: true,
+                            separatorType: this.settings.separator
+                        });
+                    }
+                    
+                    for (const p of doc.paragraphs) {
+                        if (this.settings.headerHandling === 'firstOnly' && i > 0 && p.isHeader) {
+                            continue;
+                        }
+                        paragraphs.push({...p, source: doc.fileName});
+                    }
+                    
+                    this.setProgress((i + 1) / this.parsedDocuments.length * 80);
+                }
+                
+                return paragraphs;
+            }
+
+            mergeByHeaders() {
+                const headerMap = new Map();
+                
+                // Group paragraphs by headers
+                for (const doc of this.parsedDocuments) {
+                    let currentHeader = '__no_header__';
+                    
+                    for (const p of doc.paragraphs) {
+                        if (p.isHeader) {
+                            currentHeader = p.text.trim().toLowerCase();
+                            if (!headerMap.has(currentHeader)) {
+                                headerMap.set(currentHeader, {
+                                    header: p,
+                                    paragraphs: []
+                                });
+                            }
+                        } else {
+                            if (!headerMap.has(currentHeader)) {
+                                headerMap.set(currentHeader, {
+                                    header: null,
+                                    paragraphs: []
+                                });
+                            }
+                            headerMap.get(currentHeader).paragraphs.push({...p, source: doc.fileName});
+                        }
+                    }
+                }
+                
+                const result = [];
+                for (const [key, value] of headerMap) {
+                    if (value.header) {
+                        result.push(value.header);
+                    }
+                    result.push(...value.paragraphs);
+                }
+                
+                return result;
+            }
+
+            mergeInterleave() {
+                const result = [];
+                const maxLength = Math.max(...this.parsedDocuments.map(d => d.paragraphs.length));
+                
+                for (let i = 0; i < maxLength; i++) {
+                    for (const doc of this.parsedDocuments) {
+                        if (i < doc.paragraphs.length) {
+                            result.push({...doc.paragraphs[i], source: doc.fileName});
+                        }
+                    }
+                    this.setProgress((i + 1) / maxLength * 80);
+                }
+                
+                return result;
+            }
+
+            mergeCustom() {
+                // Custom merge using rules
+                return this.mergeAppend();
+            }
+
+            applyRules(paragraphs) {
+                if (this.rules.length === 0) return paragraphs;
+                
+                return paragraphs.map(p => {
+                    let text = p.text;
+                    for (const rule of this.rules) {
+                        if (rule.find && rule.replace !== undefined) {
+                            text = text.split(rule.find).join(rule.replace);
+                        }
+                    }
+                    return {...p, text};
+                });
+            }
+
+            removeDuplicateParagraphs(paragraphs) {
+                const seen = new Set();
+                return paragraphs.filter(p => {
+                    const key = p.text.trim().toLowerCase();
+                    if (key === '' || p.isHeader || p.isSeparator) return true;
+                    if (seen.has(key)) return false;
+                    seen.add(key);
+                    return true;
+                });
+            }
+
+            buildDocumentXml(templateXml, paragraphs) {
+                const parser = new DOMParser();
+                const xmlDoc = parser.parseFromString(templateXml, 'text/xml');
+                
+                const body = xmlDoc.getElementsByTagName('w:body')[0];
+                
+                // Remove existing paragraphs except sectPr
+                const existingP = body.getElementsByTagName('w:p');
+                const toRemove = [];
+                for (let i = 0; i < existingP.length; i++) {
+                    toRemove.push(existingP[i]);
+                }
+                toRemove.forEach(p => p.parentNode.removeChild(p));
+                
+                // Get sectPr if exists
+                const sectPr = body.getElementsByTagName('w:sectPr')[0];
+                
+                // Add merged paragraphs
+                for (const p of paragraphs) {
+                    if (p.isSeparator) {
+                        const separatorP = this.createSeparatorElement(xmlDoc, p.separatorType);
+                        if (sectPr) {
+                            body.insertBefore(separatorP, sectPr);
+                        } else {
+                            body.appendChild(separatorP);
+                        }
+                    } else if (p.xml) {
+                        const tempDoc = parser.parseFromString(`<root xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">${p.xml}</root>`, 'text/xml');
+                        const importedP = xmlDoc.importNode(tempDoc.getElementsByTagName('w:p')[0], true);
+                        
+                        // Update text if modified by rules
+                        if (p.text !== this.extractText(importedP)) {
+                            const textElements = importedP.getElementsByTagName('w:t');
+                            if (textElements.length > 0) {
+                                textElements[0].textContent = p.text;
+                                for (let i = 1; i < textElements.length; i++) {
+                                    textElements[i].textContent = '';
+                                }
+                            }
+                        }
+                        
+                        if (sectPr) {
+                            body.insertBefore(importedP, sectPr);
+                        } else {
+                            body.appendChild(importedP);
+                        }
+                    } else {
+                        const newP = this.createParagraphElement(xmlDoc, p.text, p.isMarker);
+                        if (sectPr) {
+                            body.insertBefore(newP, sectPr);
+                        } else {
+                            body.appendChild(newP);
+                        }
+                    }
+                }
+                
+                return new XMLSerializer().serializeToString(xmlDoc);
+            }
+
+            createParagraphElement(xmlDoc, text, isMarker = false) {
+                const ns = 'http://schemas.openxmlformats.org/wordprocessingml/2006/main';
+                const p = xmlDoc.createElementNS(ns, 'w:p');
+                const r = xmlDoc.createElementNS(ns, 'w:r');
+                const t = xmlDoc.createElementNS(ns, 'w:t');
+                
+                if (isMarker) {
+                    const pPr = xmlDoc.createElementNS(ns, 'w:pPr');
+                    const pStyle = xmlDoc.createElementNS(ns, 'w:pStyle');
+                    pStyle.setAttribute('w:val', 'Quote');
+                    pPr.appendChild(pStyle);
+                    p.appendChild(pPr);
+                }
+                
+                t.textContent = text;
+                r.appendChild(t);
+                p.appendChild(r);
+                
+                return p;
+            }
+
+            createSeparatorElement(xmlDoc, type) {
+                const ns = 'http://schemas.openxmlformats.org/wordprocessingml/2006/main';
+                const p = xmlDoc.createElementNS(ns, 'w:p');
+                
+                if (type === 'pageBreak') {
+                    const r = xmlDoc.createElementNS(ns, 'w:r');
+                    const br = xmlDoc.createElementNS(ns, 'w:br');
+                    br.setAttribute('w:type', 'page');
+                    r.appendChild(br);
+                    p.appendChild(r);
+                } else if (type === 'line') {
+                    const pPr = xmlDoc.createElementNS(ns, 'w:pPr');
+                    const pBdr = xmlDoc.createElementNS(ns, 'w:pBdr');
+                    const bottom = xmlDoc.createElementNS(ns, 'w:bottom');
+                    bottom.setAttribute('w:val', 'single');
+                    bottom.setAttribute('w:sz', '12');
+                    bottom.setAttribute('w:space', '1');
+                    bottom.setAttribute('w:color', 'auto');
+                    pBdr.appendChild(bottom);
+                    pPr.appendChild(pBdr);
+                    p.appendChild(pPr);
+                }
+                
+                return p;
+            }
+
+            updatePreview(paragraphs) {
+                const previewContent = document.getElementById('previewContent');
+                let html = '';
+                
+                for (const p of paragraphs.slice(0, 50)) {
+                    if (p.isHeader) {
+                        html += `<div class="preview-header">${this.escapeHtml(p.text) || '(порожній заголовок)'}</div>`;
+                    } else if (p.isSeparator) {
+                        html += `<div class="preview-paragraph" style="text-align: center; color: #94a3b8;">--- ${this.getSeparatorName(p.separatorType)} ---</div>`;
+                    } else {
+                        const mergedClass = p.source && p.source !== this.files[0]?.name ? 'merged' : '';
+                        html += `<div class="preview-paragraph ${mergedClass}">${this.escapeHtml(p.text) || '(порожній рядок)'}</div>`;
+                    }
+                }
+                
+                if (paragraphs.length > 50) {
+                    html += `<div class="preview-paragraph" style="text-align: center; color: #94a3b8;">... та ще ${paragraphs.length - 50} абзаців</div>`;
+                }
+                
+                previewContent.innerHTML = html || '<div class="empty-state"><p>Немає даних для відображення</p></div>';
+            }
+
+            getSeparatorName(type) {
+                const names = {
+                    pageBreak: 'Розрив сторінки',
+                    line: 'Горизонтальна лінія',
+                    space: 'Порожній рядок'
+                };
+                return names[type] || type;
+            }
+
+            escapeHtml(text) {
+                const div = document.createElement('div');
+                div.textContent = text;
+                return div.innerHTML;
+            }
+
+            downloadResult() {
+                if (!this.mergedDocument) return;
+                
+                const fileName = `merged_${new Date().toISOString().slice(0, 10)}.docx`;
+                saveAs(this.mergedDocument, fileName);
+                this.showStatus(`Файл "${fileName}" завантажено`, 'success');
+            }
+
+            addRule(find = '', replace = '') {
+                const rule = { id: Date.now(), find, replace };
+                this.rules.push(rule);
+                this.renderRules();
+                this.saveState();
+            }
+
+            removeRule(id) {
+                this.rules = this.rules.filter(r => r.id !== id);
+                this.renderRules();
+                this.saveState();
+            }
+
+            updateRule(id, field, value) {
+                const rule = this.rules.find(r => r.id === id);
+                if (rule) {
+                    rule[field] = value;
+                    this.saveState();
+                }
+            }
+
+            renderRules() {
+                const container = document.getElementById('rulesList');
+                
+                if (this.rules.length === 0) {
+                    container.innerHTML = '<p style="color: var(--text-secondary); text-align: center; padding: 20px;">Правила не додано</p>';
+                    return;
+                }
+                
+                container.innerHTML = this.rules.map(rule => `
+                    <div class="rule-item" data-id="${rule.id}">
+                        <input type="text" placeholder="Знайти..." value="${this.escapeHtml(rule.find)}" 
+                               onchange="app.updateRule(${rule.id}, 'find', this.value)">
+                        <input type="text" placeholder="Замінити на..." value="${this.escapeHtml(rule.replace)}"
+                               onchange="app.updateRule(${rule.id}, 'replace', this.value)">
+                        <button class="btn-icon delete" onclick="app.removeRule(${rule.id})">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <line x1="18" y1="6" x2="6" y2="18"/>
+                                <line x1="6" y1="6" x2="18" y2="18"/>
+                            </svg>
+                        </button>
+                    </div>
+                `).join('');
+            }
+
+            moveFile(index, direction) {
+                const newIndex = index + direction;
+                if (newIndex < 0 || newIndex >= this.files.length) return;
+                
+                [this.files[index], this.files[newIndex]] = [this.files[newIndex], this.files[index]];
+                [this.parsedDocuments[index], this.parsedDocuments[newIndex]] = 
+                    [this.parsedDocuments[newIndex], this.parsedDocuments[index]];
+                
+                this.saveState();
+                this.updateUI();
+            }
+
+            removeFile(index) {
+                this.files.splice(index, 1);
+                this.parsedDocuments.splice(index, 1);
+                this.saveState();
+                this.updateUI();
+            }
+
+            clearAll() {
+                this.files = [];
+                this.parsedDocuments = [];
+                this.mergedDocument = null;
+                this.saveState();
+                this.updateUI();
+                document.getElementById('downloadBtn').disabled = true;
+                document.getElementById('previewContent').innerHTML = `
+                    <div class="empty-state">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                            <circle cx="12" cy="12" r="3"/>
+                        </svg>
+                        <p>Попередній перегляд буде доступний після об'єднання</p>
+                    </div>
+                `;
+                this.showStatus('Всі файли видалено', 'info');
+            }
+
+            updateUI() {
+                this.renderFileList();
+                this.renderRules();
+                this.updateStats();
+                this.updateSettings();
+                
+                const hasFiles = this.files.length > 0;
+                const canMerge = this.files.length >= 2;
+                
+                document.getElementById('clearAllBtn').disabled = !hasFiles;
+                document.getElementById('mergeBtn').disabled = !canMerge;
+                document.getElementById('emptyState').style.display = hasFiles ? 'none' : 'block';
+                document.getElementById('statsGrid').style.display = hasFiles ? 'grid' : 'none';
+            }
+
+            renderFileList() {
+                const container = document.getElementById('fileList');
+                const emptyState = document.getElementById('emptyState');
+                
+                if (this.files.length === 0) {
+                    container.innerHTML = '';
+                    container.appendChild(emptyState);
+                    return;
+                }
+                
+                container.innerHTML = this.files.map((file, index) => `
+                    <div class="file-item ${index === 0 ? 'template' : ''}">
+                        <div class="file-icon">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                                <polyline points="14 2 14 8 20 8"/>
+                            </svg>
+                        </div>
+                        <div class="file-info">
+                            <div class="file-name">${this.escapeHtml(file.name)}</div>
+                            <div class="file-meta">
+                                <span>${this.formatSize(file.size)}</span>
+                                ${index === 0 ? '<span class="file-badge">Шаблон</span>' : ''}
+                                ${this.parsedDocuments[index] ? `<span>${this.parsedDocuments[index].paragraphs.length} абзаців</span>` : ''}
+                            </div>
+                        </div>
+                        <div class="file-actions">
+                            <button class="btn-icon move" onclick="app.moveFile(${index}, -1)" ${index === 0 ? 'disabled' : ''}>
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <polyline points="18 15 12 9 6 15"/>
+                                </svg>
+                            </button>
+                            <button class="btn-icon move" onclick="app.moveFile(${index}, 1)" ${index === this.files.length - 1 ? 'disabled' : ''}>
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <polyline points="6 9 12 15 18 9"/>
+                                </svg>
+                            </button>
+                            <button class="btn-icon delete" onclick="app.removeFile(${index})">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <line x1="18" y1="6" x2="6" y2="18"/>
+                                    <line x1="6" y1="6" x2="18" y2="18"/>
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                `).join('');
+            }
+
+            updateStats() {
+                const totalHeaders = this.parsedDocuments.reduce((sum, doc) => sum + doc.headers.length, 0);
+                const totalParagraphs = this.parsedDocuments.reduce((sum, doc) => sum + doc.paragraphs.length, 0);
+                const totalSize = this.files.reduce((sum, file) => sum + file.size, 0);
+                
+                document.getElementById('statFiles').textContent = this.files.length;
+                document.getElementById('statHeaders').textContent = totalHeaders;
+                document.getElementById('statParagraphs').textContent = totalParagraphs;
+                document.getElementById('statSize').textContent = Math.round(totalSize / 1024);
+            }
+
+            updateSettings() {
+                document.getElementById('mergeMode').value = this.settings.mergeMode;
+                document.getElementById('separator').value = this.settings.separator;
+                document.getElementById('headerHandling').value = this.settings.headerHandling;
+                document.getElementById('preserveStyles').checked = this.settings.preserveStyles;
+                document.getElementById('removeDuplicates').checked = this.settings.removeDuplicates;
+                document.getElementById('addSourceMarkers').checked = this.settings.addSourceMarkers;
+            }
+
+            formatSize(bytes) {
+                if (bytes < 1024) return bytes + ' Б';
+                if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' КБ';
+                return (bytes / (1024 * 1024)).toFixed(1) + ' МБ';
+            }
+
+            showStatus(message, type) {
+                const statusEl = document.getElementById('statusMessage');
+                const textEl = document.getElementById('statusText');
+                
+                statusEl.className = `status-message show ${type}`;
+                textEl.textContent = message;
+                
+                setTimeout(() => {
+                    statusEl.classList.remove('show');
+                }, 5000);
+            }
+
+            showLoading(show) {
+                document.getElementById('loadingOverlay').classList.toggle('show', show);
+            }
+
+            showProgress(show) {
+                document.getElementById('progressBar').classList.toggle('active', show);
+                if (!show) {
+                    document.getElementById('progressFill').style.width = '0%';
+                }
+            }
+
+            setProgress(percent) {
+                document.getElementById('progressFill').style.width = percent + '%';
+            }
+
+            saveState() {
+                const state = {
+                    files: this.files,
+                    settings: this.settings,
+                    rules: this.rules
+                };
+                
+                try {
+                    localStorage.setItem('documentCombinerState', JSON.stringify(state));
+                } catch (e) {
+                    console.warn('Could not save state to localStorage:', e);
+                }
+            }
+
+            async loadState() {
+                try {
+                    const savedState = localStorage.getItem('documentCombinerState');
+                    if (!savedState) return;
+                    
+                    const state = JSON.parse(savedState);
+                    
+                    if (state.settings) {
+                        this.settings = {...this.settings, ...state.settings};
+                    }
+                    
+                    if (state.rules) {
+                        this.rules = state.rules;
+                    }
+                    
+                    if (state.files && state.files.length > 0) {
+                        this.files = state.files;
+                        
+                        // Re-parse documents
+                        for (const fileData of this.files) {
+                            await this.parseDocument(fileData);
+                        }
+                    }
+                    
+                } catch (e) {
+                    console.warn('Could not load state from localStorage:', e);
+                }
+            }
+        }
+
+        // Initialize application
+        const app = new DocumentCombiner();
+    </script>
+</body>
+</html>
