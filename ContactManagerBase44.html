@@ -1,0 +1,1019 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Менеджер Контактів</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        :root {
+            --primary: #6366f1;
+            --primary-dark: #4f46e5;
+            --primary-light: #818cf8;
+            --bg: #f8fafc;
+            --bg-card: #ffffff;
+            --bg-input: #f1f5f9;
+            --text: #1e293b;
+            --text-secondary: #64748b;
+            --border: #e2e8f0;
+            --danger: #ef4444;
+            --danger-dark: #dc2626;
+            --success: #22c55e;
+            --warning: #f59e0b;
+            --accent: #06b6d4;
+            --gradient-1: linear-gradient(135deg, #6366f1, #8b5cf6);
+            --shadow: 0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.06);
+            --shadow-lg: 0 10px 15px -3px rgba(0,0,0,0.08), 0 4px 6px -4px rgba(0,0,0,0.06);
+            --header-bg: #ffffff;
+            --sidebar-bg: #ffffff;
+            --modal-overlay: rgba(0,0,0,0.3);
+            --card-hover-border: #c7d2fe;
+            --group-active-bg: rgba(99,102,241,0.08);
+            --group-active-color: #4f46e5;
+            --avatar-text: #ffffff;
+            --tag-bg: rgba(99,102,241,0.08);
+            --tag-color: #4f46e5;
+            --notes-bg: #f8fafc;
+            --stats-bg: rgba(99,102,241,0.03);
+            --toast-bg: #ffffff;
+            --scrollbar-thumb: #cbd5e1;
+            --input-focus-ring: rgba(99,102,241,0.15);
+        }
+
+        [data-theme="dark"] {
+            --primary: #818cf8;
+            --primary-dark: #6366f1;
+            --primary-light: #a5b4fc;
+            --bg: #0f172a;
+            --bg-card: #1e293b;
+            --bg-input: #334155;
+            --text: #f1f5f9;
+            --text-secondary: #94a3b8;
+            --border: #334155;
+            --danger: #f87171;
+            --danger-dark: #ef4444;
+            --success: #4ade80;
+            --warning: #fbbf24;
+            --accent: #22d3ee;
+            --shadow: 0 1px 3px rgba(0,0,0,0.3), 0 1px 2px rgba(0,0,0,0.2);
+            --shadow-lg: 0 10px 15px -3px rgba(0,0,0,0.4), 0 4px 6px -4px rgba(0,0,0,0.3);
+            --header-bg: #1e293b;
+            --sidebar-bg: #1e293b;
+            --modal-overlay: rgba(0,0,0,0.7);
+            --card-hover-border: #6366f1;
+            --group-active-bg: rgba(99,102,241,0.15);
+            --group-active-color: #a5b4fc;
+            --avatar-text: #ffffff;
+            --tag-bg: rgba(99,102,241,0.15);
+            --tag-color: #a5b4fc;
+            --notes-bg: #0f172a;
+            --stats-bg: rgba(99,102,241,0.05);
+            --toast-bg: #1e293b;
+            --scrollbar-thumb: #475569;
+            --input-focus-ring: rgba(99,102,241,0.25);
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            overflow-x: hidden;
+            transition: background 0.3s, color 0.3s;
+        }
+
+        .app-container { display: flex; flex-direction: column; min-height: 100vh; }
+
+        .header {
+            background: var(--header-bg);
+            border-bottom: 1px solid var(--border);
+            padding: 14px 24px;
+            display: flex; align-items: center; justify-content: space-between;
+            flex-wrap: wrap; gap: 12px;
+            position: sticky; top: 0; z-index: 100;
+            box-shadow: var(--shadow);
+            transition: background 0.3s, border-color 0.3s;
+        }
+
+        .header-left { display: flex; align-items: center; gap: 12px; }
+
+        .logo {
+            width: 38px; height: 38px;
+            background: var(--gradient-1); border-radius: 10px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 18px;
+            box-shadow: 0 0 15px rgba(99,102,241,0.2);
+        }
+
+        .app-title {
+            font-size: 1.3rem; font-weight: 700;
+            background: var(--gradient-1);
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .header-actions { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+
+        .btn {
+            padding: 7px 14px; border: none; border-radius: 8px; cursor: pointer;
+            font-family: 'Inter', sans-serif; font-size: 0.82rem; font-weight: 500;
+            transition: all 0.2s ease;
+            display: flex; align-items: center; gap: 6px; white-space: nowrap;
+        }
+        .btn:hover { transform: translateY(-1px); box-shadow: var(--shadow); }
+        .btn:active { transform: translateY(0); }
+        .btn-primary { background: var(--gradient-1); color: #fff; }
+        .btn-primary:hover { box-shadow: 0 0 20px rgba(99,102,241,0.3); }
+        .btn-secondary { background: var(--bg-input); color: var(--text); border: 1px solid var(--border); }
+        .btn-secondary:hover { background: var(--border); }
+        .btn-danger { background: var(--danger); color: #fff; }
+        .btn-danger:hover { background: var(--danger-dark); }
+
+        .theme-toggle {
+            background: var(--bg-input); border: 1px solid var(--border); color: var(--text);
+            width: 36px; height: 36px; border-radius: 8px; cursor: pointer;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1.1rem; transition: all 0.2s;
+        }
+        .theme-toggle:hover { background: var(--border); }
+
+        .main-content { display: flex; flex: 1; overflow: hidden; }
+
+        .sidebar {
+            width: 270px; min-width: 270px;
+            background: var(--sidebar-bg); border-right: 1px solid var(--border);
+            display: flex; flex-direction: column; overflow-y: auto;
+            transition: all 0.3s ease;
+        }
+
+        .sidebar-section { padding: 16px; border-bottom: 1px solid var(--border); }
+
+        .sidebar-title {
+            font-size: 0.7rem; font-weight: 600; text-transform: uppercase;
+            letter-spacing: 1px; color: var(--text-secondary); margin-bottom: 10px;
+        }
+
+        .search-box { position: relative; }
+        .search-box input {
+            width: 100%; padding: 9px 12px 9px 34px;
+            background: var(--bg-input); border: 1px solid var(--border);
+            border-radius: 8px; color: var(--text);
+            font-family: 'Inter', sans-serif; font-size: 0.85rem;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+        .search-box input:focus {
+            outline: none; border-color: var(--primary);
+            box-shadow: 0 0 0 3px var(--input-focus-ring);
+        }
+        .search-icon {
+            position: absolute; left: 10px; top: 50%; transform: translateY(-50%);
+            color: var(--text-secondary); font-size: 13px;
+        }
+
+        .group-list { display: flex; flex-direction: column; gap: 2px; }
+        .group-item {
+            display: flex; align-items: center; padding: 8px 10px;
+            border-radius: 8px; cursor: pointer; transition: all 0.15s; gap: 8px;
+        }
+        .group-item:hover { background: var(--bg-input); }
+        .group-item.active { background: var(--group-active-bg); color: var(--group-active-color); }
+        .group-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+        .group-name { flex: 1; font-size: 0.85rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .group-count {
+            font-size: 0.7rem; color: var(--text-secondary);
+            background: var(--bg); padding: 1px 7px; border-radius: 10px; font-weight: 500;
+        }
+        .group-actions { display: flex; gap: 2px; opacity: 0; transition: opacity 0.2s; }
+        .group-item:hover .group-actions { opacity: 1; }
+        .group-action-btn {
+            background: none; border: none; color: var(--text-secondary);
+            cursor: pointer; padding: 2px 4px; font-size: 11px; border-radius: 4px; transition: all 0.2s;
+        }
+        .group-action-btn:hover { color: var(--text); background: var(--bg); }
+        .group-action-btn.delete:hover { color: var(--danger); }
+
+        .content-area { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+        .content-header {
+            padding: 14px 24px; border-bottom: 1px solid var(--border);
+            display: flex; align-items: center; justify-content: space-between;
+            flex-wrap: wrap; gap: 10px;
+        }
+        .content-title { font-size: 1.1rem; font-weight: 600; }
+        .contact-count { color: var(--text-secondary); font-size: 0.8rem; }
+
+        .contacts-container { flex: 1; overflow-y: auto; padding: 20px 24px; }
+        .contacts-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(310px, 1fr)); gap: 14px; }
+
+        .contact-card {
+            background: var(--bg-card); border: 1px solid var(--border);
+            border-radius: 14px; padding: 18px;
+            transition: all 0.25s ease; position: relative; overflow: hidden;
+            box-shadow: var(--shadow);
+        }
+        .contact-card::before {
+            content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
+            background: var(--gradient-1); opacity: 0; transition: opacity 0.25s;
+        }
+        .contact-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-lg); border-color: var(--card-hover-border); }
+        .contact-card:hover::before { opacity: 1; }
+
+        .contact-header { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
+        .contact-avatar {
+            width: 44px; height: 44px; border-radius: 12px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1.1rem; font-weight: 700; color: var(--avatar-text); flex-shrink: 0;
+        }
+        .contact-info { flex: 1; min-width: 0; }
+        .contact-name { font-size: 0.95rem; font-weight: 600; margin-bottom: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .contact-group-tag {
+            font-size: 0.65rem; padding: 2px 7px; border-radius: 5px;
+            background: var(--tag-bg); color: var(--tag-color); display: inline-block; font-weight: 500;
+        }
+        .contact-details { display: flex; flex-direction: column; gap: 6px; margin-bottom: 12px; }
+        .contact-detail { display: flex; align-items: center; gap: 8px; font-size: 0.82rem; color: var(--text-secondary); }
+        .contact-detail-icon { width: 15px; text-align: center; flex-shrink: 0; font-size: 12px; }
+        .contact-detail-value { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .contact-notes {
+            font-size: 0.78rem; color: var(--text-secondary); background: var(--notes-bg);
+            padding: 8px 10px; border-radius: 8px; margin-bottom: 12px;
+            line-height: 1.5; max-height: 56px; overflow: hidden; text-overflow: ellipsis;
+            border: 1px solid var(--border);
+        }
+        .contact-actions { display: flex; gap: 6px; justify-content: flex-end; }
+        .contact-actions .btn { padding: 5px 10px; font-size: 0.78rem; }
+
+        .modal-overlay {
+            position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+            background: var(--modal-overlay); backdrop-filter: blur(4px);
+            display: flex; align-items: center; justify-content: center;
+            z-index: 1000; opacity: 0; visibility: hidden;
+            transition: all 0.3s ease; padding: 20px;
+        }
+        .modal-overlay.active { opacity: 1; visibility: visible; }
+        .modal {
+            background: var(--bg-card); border: 1px solid var(--border);
+            border-radius: 18px; width: 100%; max-width: 500px; max-height: 90vh;
+            overflow-y: auto; transform: scale(0.95) translateY(20px);
+            transition: transform 0.3s ease; box-shadow: var(--shadow-lg);
+        }
+        .modal-overlay.active .modal { transform: scale(1) translateY(0); }
+        .modal-header {
+            padding: 18px 22px; border-bottom: 1px solid var(--border);
+            display: flex; align-items: center; justify-content: space-between;
+        }
+        .modal-title { font-size: 1.1rem; font-weight: 600; }
+        .modal-close {
+            background: none; border: none; color: var(--text-secondary);
+            cursor: pointer; font-size: 1.3rem; padding: 4px; border-radius: 8px; transition: all 0.2s;
+        }
+        .modal-close:hover { color: var(--text); background: var(--bg-input); }
+        .modal-body { padding: 22px; }
+        .form-group { margin-bottom: 14px; }
+        .form-label { display: block; font-size: 0.8rem; font-weight: 500; margin-bottom: 5px; color: var(--text-secondary); }
+        .form-input, .form-select, .form-textarea {
+            width: 100%; padding: 9px 12px;
+            background: var(--bg-input); border: 1px solid var(--border);
+            border-radius: 8px; color: var(--text);
+            font-family: 'Inter', sans-serif; font-size: 0.85rem; transition: border-color 0.2s, box-shadow 0.2s;
+        }
+        .form-input:focus, .form-select:focus, .form-textarea:focus {
+            outline: none; border-color: var(--primary);
+            box-shadow: 0 0 0 3px var(--input-focus-ring);
+        }
+        .form-textarea { resize: vertical; min-height: 70px; }
+        .form-select { cursor: pointer; }
+        .form-select option { background: var(--bg-card); color: var(--text); }
+        .modal-footer { padding: 14px 22px; border-top: 1px solid var(--border); display: flex; gap: 8px; justify-content: flex-end; }
+
+        .color-picker-group { display: flex; gap: 8px; flex-wrap: wrap; }
+        .color-option { width: 30px; height: 30px; border-radius: 8px; cursor: pointer; border: 2px solid transparent; transition: all 0.2s; }
+        .color-option:hover { transform: scale(1.1); }
+        .color-option.selected { border-color: var(--text); box-shadow: 0 0 8px rgba(99,102,241,0.3); }
+
+        .empty-state { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 60px 20px; text-align: center; }
+        .empty-icon { font-size: 3.5rem; margin-bottom: 14px; opacity: 0.4; }
+        .empty-title { font-size: 1.1rem; font-weight: 600; margin-bottom: 6px; }
+        .empty-text { color: var(--text-secondary); font-size: 0.85rem; }
+
+        .toast-container { position: fixed; bottom: 24px; right: 24px; z-index: 2000; display: flex; flex-direction: column; gap: 8px; }
+        .toast {
+            background: var(--toast-bg); border: 1px solid var(--border);
+            border-radius: 10px; padding: 10px 18px;
+            display: flex; align-items: center; gap: 8px;
+            box-shadow: var(--shadow-lg); animation: slideIn 0.3s ease; min-width: 240px;
+            font-size: 0.85rem;
+        }
+        .toast.success { border-left: 3px solid var(--success); }
+        .toast.error { border-left: 3px solid var(--danger); }
+        .toast.info { border-left: 3px solid var(--primary); }
+        @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+
+        .sidebar-toggle {
+            display: none; background: var(--bg-input); border: 1px solid var(--border);
+            color: var(--text); padding: 8px; border-radius: 8px; cursor: pointer; font-size: 1.1rem;
+        }
+
+        ::-webkit-scrollbar { width: 5px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: var(--scrollbar-thumb); border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: var(--text-secondary); }
+
+        @media (max-width: 768px) {
+            .sidebar { position: fixed; left: -270px; top: 0; bottom: 0; z-index: 200; transition: left 0.3s ease; }
+            .sidebar.open { left: 0; }
+            .sidebar-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.4); z-index: 199; display: none; }
+            .sidebar-overlay.active { display: block; }
+            .sidebar-toggle { display: flex; }
+            .contacts-grid { grid-template-columns: 1fr; }
+            .header { padding: 10px 14px; }
+            .contacts-container { padding: 14px; }
+            .header-actions { width: 100%; justify-content: flex-end; }
+            .app-title { font-size: 1rem; }
+            .btn span.btn-text { display: none; }
+        }
+        @media (max-width: 480px) {
+            .contacts-grid { grid-template-columns: 1fr; }
+            .modal { max-width: 100%; margin: 10px; border-radius: 14px; }
+        }
+        @media (max-height: 500px) and (orientation: landscape) {
+            .header { padding: 6px 14px; }
+            .modal { max-height: 95vh; }
+            .contacts-container { padding: 10px 14px; }
+            .contacts-grid { grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 10px; }
+            .contact-card { padding: 12px; }
+        }
+
+        .hidden-input { display: none; }
+        .lang-switch {
+            background: var(--bg-input); border: 1px solid var(--border); color: var(--text);
+            padding: 6px 10px; border-radius: 8px; cursor: pointer;
+            font-family: 'Inter', sans-serif; font-size: 0.78rem;
+        }
+        .lang-switch:focus { outline: none; border-color: var(--primary); }
+
+        .stats-bar {
+            display: flex; gap: 16px; padding: 10px 24px;
+            background: var(--stats-bg); border-bottom: 1px solid var(--border); flex-wrap: wrap;
+            transition: background 0.3s;
+        }
+        .stat-item { display: flex; align-items: center; gap: 5px; font-size: 0.78rem; color: var(--text-secondary); }
+        .stat-value { font-weight: 600; color: var(--text); }
+
+        .confirm-dialog { text-align: center; padding: 20px; }
+        .confirm-dialog p { margin-bottom: 20px; font-size: 0.95rem; line-height: 1.5; }
+        .confirm-actions { display: flex; gap: 12px; justify-content: center; }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <header class="header">
+            <div class="header-left">
+                <button class="sidebar-toggle" onclick="toggleSidebar()" title="Меню">☰</button>
+                <div class="logo">📇</div>
+                <h1 class="app-title" data-i18n="appTitle">Менеджер Контактів</h1>
+            </div>
+            <div class="header-actions">
+                <button class="theme-toggle" onclick="toggleTheme()" id="themeBtn" title="Тема">☀️</button>
+                <select class="lang-switch" onchange="switchLanguage(this.value)" id="langSwitch">
+                    <option value="uk">Українська</option>
+                    <option value="en">English</option>
+                </select>
+                <button class="btn btn-primary" onclick="openContactModal()">
+                    <span>➕</span><span class="btn-text" data-i18n="addContact">Додати контакт</span>
+                </button>
+                <button class="btn btn-secondary" onclick="importData()">
+                    <span>📥</span><span class="btn-text" data-i18n="import">Імпорт</span>
+                </button>
+                <button class="btn btn-secondary" onclick="exportJSON()">
+                    <span>📤</span><span class="btn-text" data-i18n="exportJSON">JSON</span>
+                </button>
+                <button class="btn btn-secondary" onclick="exportPDF()">
+                    <span>📄</span><span class="btn-text" data-i18n="exportPDF">PDF</span>
+                </button>
+            </div>
+        </header>
+
+        <div class="stats-bar">
+            <div class="stat-item">
+                <span>👥</span><span data-i18n="totalContacts">Всього контактів:</span>
+                <span class="stat-value" id="totalContacts">0</span>
+            </div>
+            <div class="stat-item">
+                <span>📁</span><span data-i18n="groups">Груп:</span>
+                <span class="stat-value" id="totalGroups">0</span>
+            </div>
+        </div>
+
+        <div class="main-content">
+            <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div>
+            <aside class="sidebar" id="sidebar">
+                <div class="sidebar-section">
+                    <div class="sidebar-title" data-i18n="search">Пошук</div>
+                    <div class="search-box">
+                        <span class="search-icon">🔍</span>
+                        <input type="text" id="searchInput" data-i18n-placeholder="searchPlaceholder" placeholder="Пошук контактів..." oninput="filterContacts()">
+                    </div>
+                </div>
+                <div class="sidebar-section">
+                    <div class="sidebar-title" data-i18n="contactGroups">Групи контактів</div>
+                    <div class="group-list" id="groupList"></div>
+                    <button class="btn btn-secondary" style="width:100%;margin-top:10px" onclick="openGroupModal()">
+                        <span>➕</span><span data-i18n="addGroup">Додати групу</span>
+                    </button>
+                </div>
+            </aside>
+            <main class="content-area">
+                <div class="content-header">
+                    <div>
+                        <h2 class="content-title" id="contentTitle" data-i18n="allContacts">Всі контакти</h2>
+                        <span class="contact-count" id="contactCount"></span>
+                    </div>
+                </div>
+                <div class="contacts-container" id="contactsContainer"></div>
+            </main>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="contactModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h3 class="modal-title" id="contactModalTitle" data-i18n="newContact">Новий контакт</h3>
+                <button class="modal-close" onclick="closeContactModal()">✕</button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="contactId">
+                <div class="form-group">
+                    <label class="form-label" data-i18n="firstName">Ім'я *</label>
+                    <input type="text" class="form-input" id="contactFirstName" data-i18n-placeholder="firstNamePlaceholder" placeholder="Введіть ім'я">
+                </div>
+                <div class="form-group">
+                    <label class="form-label" data-i18n="lastName">Прізвище</label>
+                    <input type="text" class="form-input" id="contactLastName" data-i18n-placeholder="lastNamePlaceholder" placeholder="Введіть прізвище">
+                </div>
+                <div class="form-group">
+                    <label class="form-label" data-i18n="phone">Телефон</label>
+                    <input type="tel" class="form-input" id="contactPhone" placeholder="+380 XX XXX XX XX">
+                </div>
+                <div class="form-group">
+                    <label class="form-label" data-i18n="email">Електронна пошта</label>
+                    <input type="email" class="form-input" id="contactEmail" placeholder="email@example.com">
+                </div>
+                <div class="form-group">
+                    <label class="form-label" data-i18n="group">Група</label>
+                    <select class="form-select" id="contactGroup">
+                        <option value="" data-i18n="noGroup">Без групи</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label" data-i18n="notes">Нотатки</label>
+                    <textarea class="form-textarea" id="contactNotes" data-i18n-placeholder="notesPlaceholder" placeholder="Додаткова інформація..."></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeContactModal()" data-i18n="cancel">Скасувати</button>
+                <button class="btn btn-primary" onclick="saveContact()" data-i18n="save">Зберегти</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="groupModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h3 class="modal-title" id="groupModalTitle" data-i18n="newGroup">Нова група</h3>
+                <button class="modal-close" onclick="closeGroupModal()">✕</button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="groupId">
+                <div class="form-group">
+                    <label class="form-label" data-i18n="groupName">Назва групи *</label>
+                    <input type="text" class="form-input" id="groupName" data-i18n-placeholder="groupNamePlaceholder" placeholder="Введіть назву групи">
+                </div>
+                <div class="form-group">
+                    <label class="form-label" data-i18n="color">Колір</label>
+                    <div class="color-picker-group" id="colorPicker">
+                        <div class="color-option selected" data-color="#6366f1" style="background:#6366f1"></div>
+                        <div class="color-option" data-color="#8b5cf6" style="background:#8b5cf6"></div>
+                        <div class="color-option" data-color="#ec4899" style="background:#ec4899"></div>
+                        <div class="color-option" data-color="#ef4444" style="background:#ef4444"></div>
+                        <div class="color-option" data-color="#f59e0b" style="background:#f59e0b"></div>
+                        <div class="color-option" data-color="#22c55e" style="background:#22c55e"></div>
+                        <div class="color-option" data-color="#06b6d4" style="background:#06b6d4"></div>
+                        <div class="color-option" data-color="#3b82f6" style="background:#3b82f6"></div>
+                        <div class="color-option" data-color="#a855f7" style="background:#a855f7"></div>
+                        <div class="color-option" data-color="#14b8a6" style="background:#14b8a6"></div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeGroupModal()" data-i18n="cancel">Скасувати</button>
+                <button class="btn btn-primary" onclick="saveGroup()" data-i18n="save">Зберегти</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="confirmModal">
+        <div class="modal" style="max-width:400px">
+            <div class="modal-body">
+                <div class="confirm-dialog">
+                    <div style="font-size:3rem;margin-bottom:12px">⚠️</div>
+                    <p id="confirmMessage"></p>
+                    <div class="confirm-actions">
+                        <button class="btn btn-secondary" onclick="closeConfirmModal()" data-i18n="cancel">Скасувати</button>
+                        <button class="btn btn-danger" id="confirmBtn" data-i18n="delete">Видалити</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="toast-container" id="toastContainer"></div>
+    <input type="file" class="hidden-input" id="fileInput" accept=".json" onchange="handleImport(event)">
+
+    <script>
+        const translations = {
+            uk: {
+                appTitle:'Менеджер Контактів',addContact:'Додати контакт',import:'Імпорт',
+                exportJSON:'JSON',exportPDF:'PDF',totalContacts:'Всього контактів:',
+                groups:'Груп:',search:'Пошук',searchPlaceholder:'Пошук контактів...',
+                contactGroups:'Групи контактів',addGroup:'Додати групу',allContacts:'Всі контакти',
+                newContact:'Новий контакт',editContact:'Редагувати контакт',
+                firstName:"Ім'я *",lastName:'Прізвище',
+                firstNamePlaceholder:"Введіть ім'я",lastNamePlaceholder:'Введіть прізвище',
+                phone:'Телефон',email:'Електронна пошта',group:'Група',
+                noGroup:'Без групи',notes:'Нотатки',notesPlaceholder:'Додаткова інформація...',
+                cancel:'Скасувати',save:'Зберегти',delete:'Видалити',edit:'Змінити',
+                newGroup:'Нова група',editGroup:'Редагувати групу',
+                groupName:'Назва групи *',groupNamePlaceholder:'Введіть назву групи',color:'Колір',
+                confirmDeleteContact:'Ви впевнені, що хочете видалити цей контакт?',
+                confirmDeleteGroup:'Ви впевнені, що хочете видалити цю групу? Контакти з цієї групи не будуть видалені.',
+                contactSaved:'Контакт збережено!',contactDeleted:'Контакт видалено!',
+                groupSaved:'Групу збережено!',groupDeleted:'Групу видалено!',
+                dataExported:'Дані експортовано!',dataImported:'Дані імпортовано!',
+                importError:'Помилка імпорту даних',nameRequired:"Ім'я обов'язкове!",
+                groupNameRequired:"Назва групи обов'язкова!",
+                noContacts:'Контактів поки немає',
+                noContactsText:'Натисніть "Додати контакт" щоб створити перший контакт',
+                noResults:'Нічого не знайдено',noResultsText:'Спробуйте змінити параметри пошуку',
+                contactsCount:'контактів',pdfTitle:'Менеджер Контактів',
+                pdfGenerated:'PDF файл створено!',all:'Всі',ungrouped:'Без групи',
+                pdfPhone:'Тел',pdfEmail:'Пошта',pdfGroup:'Група',pdfNotes:'Нотатки',
+                pdfDate:'Дата',pdfTotal:'Всього контактів',
+                themeLight:'Світла тема',themeDark:'Темна тема'
+            },
+            en: {
+                appTitle:'Contact Manager',addContact:'Add Contact',import:'Import',
+                exportJSON:'JSON',exportPDF:'PDF',totalContacts:'Total contacts:',
+                groups:'Groups:',search:'Search',searchPlaceholder:'Search contacts...',
+                contactGroups:'Contact Groups',addGroup:'Add Group',allContacts:'All Contacts',
+                newContact:'New Contact',editContact:'Edit Contact',
+                firstName:'First Name *',lastName:'Last Name',
+                firstNamePlaceholder:'Enter first name',lastNamePlaceholder:'Enter last name',
+                phone:'Phone',email:'Email',group:'Group',
+                noGroup:'No group',notes:'Notes',notesPlaceholder:'Additional information...',
+                cancel:'Cancel',save:'Save',delete:'Delete',edit:'Edit',
+                newGroup:'New Group',editGroup:'Edit Group',
+                groupName:'Group Name *',groupNamePlaceholder:'Enter group name',color:'Color',
+                confirmDeleteContact:'Are you sure you want to delete this contact?',
+                confirmDeleteGroup:'Are you sure you want to delete this group? Contacts in this group will not be deleted.',
+                contactSaved:'Contact saved!',contactDeleted:'Contact deleted!',
+                groupSaved:'Group saved!',groupDeleted:'Group deleted!',
+                dataExported:'Data exported!',dataImported:'Data imported!',
+                importError:'Import error',nameRequired:'First name is required!',
+                groupNameRequired:'Group name is required!',
+                noContacts:'No contacts yet',
+                noContactsText:'Click "Add Contact" to create your first contact',
+                noResults:'Nothing found',noResultsText:'Try changing your search criteria',
+                contactsCount:'contacts',pdfTitle:'Contact Manager',
+                pdfGenerated:'PDF file generated!',all:'All',ungrouped:'Ungrouped',
+                pdfPhone:'Phone',pdfEmail:'Email',pdfGroup:'Group',pdfNotes:'Notes',
+                pdfDate:'Date',pdfTotal:'Total contacts',
+                themeLight:'Light theme',themeDark:'Dark theme'
+            }
+        };
+
+        let state = { contacts:[], groups:[], activeGroup:'all', searchQuery:'', language:'uk', theme:'light' };
+
+        function init() {
+            loadState();
+            applyTheme();
+            applyLanguage();
+            renderGroups();
+            renderContacts();
+            updateStats();
+            setupColorPicker();
+        }
+
+        function saveState() { localStorage.setItem('contactManagerState', JSON.stringify(state)); }
+
+        function loadState() {
+            const s = localStorage.getItem('contactManagerState');
+            if (s) {
+                try {
+                    state = { ...state, ...JSON.parse(s) };
+                    document.getElementById('langSwitch').value = state.language;
+                    document.getElementById('searchInput').value = state.searchQuery || '';
+                } catch(e) {}
+            }
+        }
+
+        // ===== THEME =====
+        function toggleTheme() {
+            state.theme = state.theme === 'dark' ? 'light' : 'dark';
+            applyTheme();
+            saveState();
+        }
+
+        function applyTheme() {
+            if (state.theme === 'dark') {
+                document.documentElement.setAttribute('data-theme', 'dark');
+                document.getElementById('themeBtn').textContent = '☀️';
+                document.getElementById('themeBtn').title = t('themeLight');
+            } else {
+                document.documentElement.removeAttribute('data-theme');
+                document.getElementById('themeBtn').textContent = '🌙';
+                document.getElementById('themeBtn').title = t('themeDark');
+            }
+        }
+
+        // ===== LANGUAGE =====
+        function switchLanguage(lang) {
+            state.language = lang;
+            applyLanguage(); applyTheme(); renderGroups(); renderContacts(); updateStats(); updateContentTitle(); saveState();
+        }
+
+        function t(key) { return translations[state.language]?.[key] || translations['uk'][key] || key; }
+
+        function applyLanguage() {
+            document.querySelectorAll('[data-i18n]').forEach(el => {
+                const k = el.getAttribute('data-i18n');
+                if (translations[state.language]?.[k]) el.textContent = translations[state.language][k];
+            });
+            document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
+                const k = el.getAttribute('data-i18n-placeholder');
+                if (translations[state.language]?.[k]) el.placeholder = translations[state.language][k];
+            });
+        }
+
+        // ===== GROUPS =====
+        function renderGroups() {
+            const list = document.getElementById('groupList');
+            const allC = state.contacts.length;
+            const ungC = state.contacts.filter(c => !c.groupId).length;
+            let html = `
+                <div class="group-item ${state.activeGroup==='all'?'active':''}" onclick="selectGroup('all')">
+                    <div class="group-dot" style="background:var(--gradient-1)"></div>
+                    <span class="group-name">${t('all')}</span><span class="group-count">${allC}</span>
+                </div>
+                <div class="group-item ${state.activeGroup==='ungrouped'?'active':''}" onclick="selectGroup('ungrouped')">
+                    <div class="group-dot" style="background:var(--text-secondary)"></div>
+                    <span class="group-name">${t('ungrouped')}</span><span class="group-count">${ungC}</span>
+                </div>`;
+            state.groups.forEach(g => {
+                const cnt = state.contacts.filter(c => c.groupId===g.id).length;
+                html += `
+                <div class="group-item ${state.activeGroup===g.id?'active':''}" onclick="selectGroup('${g.id}')">
+                    <div class="group-dot" style="background:${g.color}"></div>
+                    <span class="group-name">${esc(g.name)}</span><span class="group-count">${cnt}</span>
+                    <div class="group-actions">
+                        <button class="group-action-btn" onclick="event.stopPropagation();editGroup('${g.id}')">✏️</button>
+                        <button class="group-action-btn delete" onclick="event.stopPropagation();deleteGroup('${g.id}')">🗑️</button>
+                    </div>
+                </div>`;
+            });
+            list.innerHTML = html;
+        }
+
+        function selectGroup(id) {
+            state.activeGroup = id; renderGroups(); renderContacts(); updateContentTitle(); saveState();
+            if (window.innerWidth <= 768) toggleSidebar();
+        }
+
+        function updateContentTitle() {
+            const el = document.getElementById('contentTitle');
+            if (state.activeGroup==='all') el.textContent = t('allContacts');
+            else if (state.activeGroup==='ungrouped') el.textContent = t('ungrouped');
+            else { const g = state.groups.find(x => x.id===state.activeGroup); el.textContent = g ? g.name : t('allContacts'); }
+        }
+
+        function openGroupModal(gid) {
+            document.getElementById('groupId').value = '';
+            document.getElementById('groupName').value = '';
+            document.querySelectorAll('.color-option').forEach(el => el.classList.remove('selected'));
+            document.querySelector('.color-option[data-color="#6366f1"]').classList.add('selected');
+            if (gid) {
+                const g = state.groups.find(x => x.id===gid);
+                if (g) {
+                    document.getElementById('groupModalTitle').textContent = t('editGroup');
+                    document.getElementById('groupId').value = g.id;
+                    document.getElementById('groupName').value = g.name;
+                    document.querySelectorAll('.color-option').forEach(el => el.classList.toggle('selected', el.dataset.color===g.color));
+                }
+            } else document.getElementById('groupModalTitle').textContent = t('newGroup');
+            document.getElementById('groupModal').classList.add('active');
+        }
+
+        function closeGroupModal() { document.getElementById('groupModal').classList.remove('active'); }
+
+        function saveGroup() {
+            const id = document.getElementById('groupId').value;
+            const name = document.getElementById('groupName').value.trim();
+            const sel = document.querySelector('.color-option.selected');
+            const color = sel ? sel.dataset.color : '#6366f1';
+            if (!name) { showToast(t('groupNameRequired'),'error'); return; }
+            if (id) { const g = state.groups.find(x => x.id===id); if (g) { g.name=name; g.color=color; } }
+            else state.groups.push({ id:genId(), name, color });
+            saveState(); renderGroups(); renderContacts(); updateStats(); closeGroupModal(); showToast(t('groupSaved'),'success');
+        }
+
+        function editGroup(id) { openGroupModal(id); }
+
+        function deleteGroup(id) {
+            showConfirm(t('confirmDeleteGroup'), () => {
+                state.contacts.forEach(c => { if (c.groupId===id) c.groupId=''; });
+                state.groups = state.groups.filter(g => g.id!==id);
+                if (state.activeGroup===id) state.activeGroup='all';
+                saveState(); renderGroups(); renderContacts(); updateStats(); updateContentTitle();
+                showToast(t('groupDeleted'),'success');
+            });
+        }
+
+        // ===== CONTACTS =====
+        function renderContacts() {
+            const container = document.getElementById('contactsContainer');
+            let contacts = getFiltered();
+            if (!contacts.length) {
+                const s = state.searchQuery.length > 0;
+                container.innerHTML = `<div class="empty-state"><div class="empty-icon">${s?'🔍':'📇'}</div><div class="empty-title">${s?t('noResults'):t('noContacts')}</div><div class="empty-text">${s?t('noResultsText'):t('noContactsText')}</div></div>`;
+                document.getElementById('contactCount').textContent = `0 ${t('contactsCount')}`;
+                return;
+            }
+            document.getElementById('contactCount').textContent = `${contacts.length} ${t('contactsCount')}`;
+            const cols = ['linear-gradient(135deg,#6366f1,#8b5cf6)','linear-gradient(135deg,#ec4899,#f43f5e)','linear-gradient(135deg,#06b6d4,#3b82f6)','linear-gradient(135deg,#22c55e,#16a34a)','linear-gradient(135deg,#f59e0b,#ef4444)','linear-gradient(135deg,#8b5cf6,#ec4899)','linear-gradient(135deg,#14b8a6,#06b6d4)'];
+            let html = '<div class="contacts-grid">';
+            contacts.forEach(c => {
+                const g = state.groups.find(x => x.id===c.groupId);
+                const ini = getInitials(c.firstName, c.lastName);
+                const ci = Math.abs(hash(c.id)) % cols.length;
+                html += `<div class="contact-card"><div class="contact-header"><div class="contact-avatar" style="background:${cols[ci]}">${ini}</div><div class="contact-info"><div class="contact-name">${esc(c.firstName)} ${esc(c.lastName||'')}</div>${g?`<span class="contact-group-tag" style="background:${g.color}15;color:${g.color}">${esc(g.name)}</span>`:''}</div></div><div class="contact-details">${c.phone?`<div class="contact-detail"><span class="contact-detail-icon">📞</span><span class="contact-detail-value">${esc(c.phone)}</span></div>`:''}${c.email?`<div class="contact-detail"><span class="contact-detail-icon">📧</span><span class="contact-detail-value">${esc(c.email)}</span></div>`:''}</div>${c.notes?`<div class="contact-notes">${esc(c.notes)}</div>`:''}<div class="contact-actions"><button class="btn btn-secondary" onclick="editContact('${c.id}')">✏️ ${t('edit')}</button><button class="btn btn-danger" onclick="deleteContact('${c.id}')">🗑️ ${t('delete')}</button></div></div>`;
+            });
+            container.innerHTML = html + '</div>';
+        }
+
+        function getFiltered() {
+            let c = [...state.contacts];
+            if (state.activeGroup==='ungrouped') c = c.filter(x => !x.groupId);
+            else if (state.activeGroup!=='all') c = c.filter(x => x.groupId===state.activeGroup);
+            if (state.searchQuery) {
+                const q = state.searchQuery.toLowerCase();
+                c = c.filter(x => [x.firstName,x.lastName,x.phone,x.email,x.notes].some(v => v && v.toLowerCase().includes(q)));
+            }
+            c.sort((a,b) => `${a.firstName} ${a.lastName}`.toLowerCase().localeCompare(`${b.firstName} ${b.lastName}`.toLowerCase(), state.language));
+            return c;
+        }
+
+        function filterContacts() { state.searchQuery = document.getElementById('searchInput').value; renderContacts(); saveState(); }
+
+        function openContactModal(cid) {
+            const gs = document.getElementById('contactGroup');
+            gs.innerHTML = `<option value="">${t('noGroup')}</option>`;
+            state.groups.forEach(g => gs.innerHTML += `<option value="${g.id}">${esc(g.name)}</option>`);
+            ['contactId','contactFirstName','contactLastName','contactPhone','contactEmail','contactNotes'].forEach(id => document.getElementById(id).value='');
+            document.getElementById('contactGroup').value = '';
+            if (cid) {
+                const c = state.contacts.find(x => x.id===cid);
+                if (c) {
+                    document.getElementById('contactModalTitle').textContent = t('editContact');
+                    document.getElementById('contactId').value = c.id;
+                    document.getElementById('contactFirstName').value = c.firstName;
+                    document.getElementById('contactLastName').value = c.lastName||'';
+                    document.getElementById('contactPhone').value = c.phone||'';
+                    document.getElementById('contactEmail').value = c.email||'';
+                    document.getElementById('contactGroup').value = c.groupId||'';
+                    document.getElementById('contactNotes').value = c.notes||'';
+                }
+            } else {
+                document.getElementById('contactModalTitle').textContent = t('newContact');
+                if (state.activeGroup!=='all' && state.activeGroup!=='ungrouped') document.getElementById('contactGroup').value = state.activeGroup;
+            }
+            document.getElementById('contactModal').classList.add('active');
+            setTimeout(() => document.getElementById('contactFirstName').focus(), 300);
+        }
+
+        function closeContactModal() { document.getElementById('contactModal').classList.remove('active'); }
+
+        function saveContact() {
+            const id = document.getElementById('contactId').value;
+            const fn = document.getElementById('contactFirstName').value.trim();
+            if (!fn) { showToast(t('nameRequired'),'error'); document.getElementById('contactFirstName').focus(); return; }
+            const d = {
+                firstName:fn, lastName:document.getElementById('contactLastName').value.trim(),
+                phone:document.getElementById('contactPhone').value.trim(),
+                email:document.getElementById('contactEmail').value.trim(),
+                groupId:document.getElementById('contactGroup').value,
+                notes:document.getElementById('contactNotes').value.trim()
+            };
+            if (id) { const c = state.contacts.find(x => x.id===id); if (c) Object.assign(c, d, {updatedAt:new Date().toISOString()}); }
+            else state.contacts.push({id:genId(),...d,createdAt:new Date().toISOString(),updatedAt:new Date().toISOString()});
+            saveState(); renderContacts(); renderGroups(); updateStats(); closeContactModal(); showToast(t('contactSaved'),'success');
+        }
+
+        function editContact(id) { openContactModal(id); }
+
+        function deleteContact(id) {
+            showConfirm(t('confirmDeleteContact'), () => {
+                state.contacts = state.contacts.filter(c => c.id!==id);
+                saveState(); renderContacts(); renderGroups(); updateStats(); showToast(t('contactDeleted'),'success');
+            });
+        }
+
+        // ===== IMPORT / EXPORT =====
+        function exportJSON() {
+            const blob = new Blob([JSON.stringify({contacts:state.contacts,groups:state.groups,exportDate:new Date().toISOString(),version:'1.0'},null,2)],{type:'application/json;charset=utf-8'});
+            const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+            a.download = `contacts_${new Date().toISOString().slice(0,10)}.json`; a.click();
+            URL.revokeObjectURL(a.href); showToast(t('dataExported'),'success');
+        }
+
+        function importData() { document.getElementById('fileInput').click(); }
+
+        function handleImport(e) {
+            const file = e.target.files[0]; if (!file) return;
+            const r = new FileReader();
+            r.onload = function(ev) {
+                try {
+                    const d = JSON.parse(ev.target.result);
+                    if (d.contacts && Array.isArray(d.contacts)) state.contacts = d.contacts;
+                    if (d.groups && Array.isArray(d.groups)) state.groups = d.groups;
+                    state.activeGroup = 'all'; saveState(); renderGroups(); renderContacts(); updateStats(); updateContentTitle();
+                    showToast(t('dataImported'),'success');
+                } catch(err) { showToast(t('importError'),'error'); }
+            };
+            r.readAsText(file); e.target.value = '';
+        }
+
+        // ===== PDF EXPORT =====
+        function exportPDF() {
+            const contacts = getFiltered();
+            const pw=595, ph=842, m=40, cw=pw-2*m;
+            const fontN='10px Inter,Arial,sans-serif', fontB='bold 10px Inter,Arial,sans-serif';
+            const rowH=13, headerH=22, cellPad=6;
+            const colW=[28,120,95,130,80,cw-28-120-95-130-80];
+            const colL=['#',t('firstName').replace(' *',''),t('pdfPhone'),t('pdfEmail'),t('pdfGroup'),t('pdfNotes')];
+
+            const mc=document.createElement('canvas'); mc.width=1; mc.height=1;
+            const mx=mc.getContext('2d');
+
+            function wrapTxt(ctx,text,mw,font){
+                ctx.font=font; if(!text) return [''];
+                const words=text.replace(/\n/g,' ').split(' '), lines=[]; let cur='';
+                words.forEach(w=>{const test=cur?cur+' '+w:w; if(ctx.measureText(test).width>mw&&cur){lines.push(cur);cur=w;}else cur=test;});
+                if(cur) lines.push(cur); return lines.length?lines:[''];
+            }
+
+            const rows=contacts.map((c,i)=>{
+                const g=state.groups.find(x=>x.id===c.groupId);
+                const cells=[String(i+1),`${c.firstName} ${c.lastName||''}`.trim(),c.phone||'',c.email||'',g?g.name:'',c.notes||''];
+                const cl=cells.map((t,ci)=>wrapTxt(mx,t,colW[ci]-cellPad*2,fontN));
+                const ml=Math.max(...cl.map(l=>l.length));
+                return {cells,cellLines:cl,height:Math.max(headerH,ml*rowH+cellPad*2)};
+            });
+
+            const pages=[]; let page, y;
+
+            function newPg(){
+                const c=document.createElement('canvas'); c.width=pw*2; c.height=ph*2;
+                const cx=c.getContext('2d'); cx.scale(2,2);
+                cx.fillStyle='#ffffff'; cx.fillRect(0,0,pw,ph);
+                return {canvas:c,ctx:cx};
+            }
+
+            function cx(){return page.ctx;}
+
+            function drawHdr(){
+                cx().fillStyle='#4f46e5'; cx().fillRect(m,y,cw,32);
+                cx().fillStyle='#ffffff'; cx().font='bold 12px Inter,Arial,sans-serif';
+                cx().fillText(t('pdfTitle'),m+10,y+21);
+                cx().font='8px Inter,Arial,sans-serif';
+                const ds=new Date().toLocaleDateString(state.language==='uk'?'uk-UA':'en-US');
+                const dt=`${t('pdfDate')}: ${ds}  |  ${t('pdfTotal')}: ${contacts.length}`;
+                const dw=cx().measureText(dt).width;
+                cx().fillText(dt,m+cw-dw-10,y+21);
+                y+=32; y+=6;
+            }
+
+            function drawTblHdr(){
+                cx().fillStyle='#1e293b'; cx().fillRect(m,y,cw,headerH);
+                cx().fillStyle='#ffffff'; cx().font='bold 8px Inter,Arial,sans-serif';
+                let x=m;
+                colL.forEach((l,i)=>{cx().fillText(l,x+cellPad,y+14);x+=colW[i];});
+                y+=headerH;
+            }
+
+            page=newPg(); pages.push(page); y=m;
+            drawHdr(); drawTblHdr();
+
+            rows.forEach((row,ri)=>{
+                if(y+row.height>ph-m-20){page=newPg();pages.push(page);y=m;drawTblHdr();}
+                cx().fillStyle=ri%2===0?'#ffffff':'#f8fafc';
+                cx().fillRect(m,y,cw,row.height);
+                cx().strokeStyle='#e2e8f0'; cx().lineWidth=0.5;
+                cx().beginPath(); cx().moveTo(m,y+row.height); cx().lineTo(m+cw,y+row.height); cx().stroke();
+
+                let x=m;
+                row.cellLines.forEach((lines,ci)=>{
+                    cx().fillStyle=ci===0?'#94a3b8':ci===1?'#1e293b':ci===3?'#4f46e5':ci===4?'#6366f1':'#475569';
+                    cx().font=ci===1?fontB:ci>=4?'9px Inter,Arial,sans-serif':fontN;
+                    lines.forEach((line,li)=>{
+                        cx().save(); cx().beginPath(); cx().rect(x,y,colW[ci],row.height); cx().clip();
+                        cx().fillText(line,x+cellPad,y+cellPad+rowH*(li+1)-2);
+                        cx().restore();
+                    });
+                    x+=colW[ci];
+                });
+
+                cx().strokeStyle='#e2e8f0'; cx().lineWidth=0.3;
+                x=m;
+                for(let ci=0;ci<=colW.length;ci++){cx().beginPath();cx().moveTo(x,y);cx().lineTo(x,y+row.height);cx().stroke();x+=(colW[ci]||0);}
+                y+=row.height;
+            });
+
+            cx().strokeStyle='#1e293b'; cx().lineWidth=1;
+            cx().beginPath(); cx().moveTo(m,y); cx().lineTo(m+cw,y); cx().stroke();
+
+            pages.forEach((p,pi)=>{
+                p.ctx.fillStyle='#94a3b8'; p.ctx.font='7px Inter,Arial,sans-serif';
+                const ft=`${pi+1} / ${pages.length}`;
+                const fw=p.ctx.measureText(ft).width;
+                p.ctx.fillText(ft,pw/2-fw/2,ph-16);
+            });
+
+            const {jsPDF}=window.jspdf;
+            const doc=new jsPDF({unit:'pt',format:'a4',compress:true});
+            pages.forEach((p,i)=>{
+                if(i>0) doc.addPage();
+                doc.addImage(p.canvas.toDataURL('image/jpeg',0.82),'JPEG',0,0,pw,ph,undefined,'FAST');
+            });
+            doc.save(`contacts_${new Date().toISOString().slice(0,10)}.pdf`);
+            showToast(t('pdfGenerated'),'success');
+        }
+
+        // ===== HELPERS =====
+        function updateStats(){
+            document.getElementById('totalContacts').textContent=state.contacts.length;
+            document.getElementById('totalGroups').textContent=state.groups.length;
+        }
+
+        function toggleSidebar(){
+            document.getElementById('sidebar').classList.toggle('open');
+            document.getElementById('sidebarOverlay').classList.toggle('active');
+        }
+
+        function setupColorPicker(){
+            document.querySelectorAll('.color-option').forEach(el=>{
+                el.addEventListener('click',function(){
+                    document.querySelectorAll('.color-option').forEach(o=>o.classList.remove('selected'));
+                    this.classList.add('selected');
+                });
+            });
+        }
+
+        function showConfirm(msg,onOk){
+            document.getElementById('confirmMessage').textContent=msg;
+            document.getElementById('confirmBtn').onclick=()=>{closeConfirmModal();onOk();};
+            document.getElementById('confirmModal').classList.add('active');
+        }
+
+        function closeConfirmModal(){document.getElementById('confirmModal').classList.remove('active');}
+
+        function showToast(msg,type='info'){
+            const c=document.getElementById('toastContainer');
+            const t=document.createElement('div'); t.className=`toast ${type}`;
+            const icons={success:'✅',error:'❌',info:'ℹ️'};
+            t.innerHTML=`<span>${icons[type]||'ℹ️'}</span><span>${esc(msg)}</span>`;
+            c.appendChild(t);
+            setTimeout(()=>{t.style.opacity='0';t.style.transform='translateX(100%)';t.style.transition='all 0.3s';setTimeout(()=>t.remove(),300);},3000);
+        }
+
+        function genId(){return Date.now().toString(36)+Math.random().toString(36).substr(2,9);}
+        function getInitials(f,l){let i='';if(f)i+=f.charAt(0).toUpperCase();if(l)i+=l.charAt(0).toUpperCase();return i||'?';}
+        function hash(s){let h=0;for(let i=0;i<s.length;i++){h=((h<<5)-h)+s.charCodeAt(i);h|=0;}return h;}
+        function esc(t){if(!t)return '';const d=document.createElement('div');d.textContent=t;return d.innerHTML;}
+
+        document.addEventListener('keydown',function(e){
+            if(e.key==='Escape'){closeContactModal();closeGroupModal();closeConfirmModal();}
+            if(e.ctrlKey&&e.key==='n'){e.preventDefault();openContactModal();}
+            if(e.ctrlKey&&e.key==='f'){e.preventDefault();document.getElementById('searchInput').focus();}
+        });
+
+        document.querySelectorAll('.modal-overlay').forEach(o=>{
+            o.addEventListener('click',function(e){if(e.target===this)this.classList.remove('active');});
+        });
+
+        init();
+    </script>
+</body>
+</html>
