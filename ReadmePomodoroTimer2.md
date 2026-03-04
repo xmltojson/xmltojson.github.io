@@ -26,7 +26,7 @@ A beautiful, feature-rich Pomodoro Timer application to boost your productivity.
 
 ## 🚀 Demo
 
-Visit the live application: [https://pomodorotimerjj.github.io](https://pomodorotimerjj.github.io)
+Visit the live application: [https://pomodorotimerj.github.io](https://pomodorotimerj.github.io)
 
 ## 🎮 Usage
 
@@ -78,8 +78,8 @@ Simply open `index.html` in your web browser.
 
 ### Option 2: Clone Repository
 ```bash
-git clone https://github.com/PomodoroTimerj/PomodoroTimerj.github.io.git
-cd PomodoroTimerj.github.io
+git clone https://github.com/pomodorotimerj/pomodorotimerj.github.io.git
+cd pomodorotimerj.github.io
 ```
 
 Then open `index.html` in your browser.
@@ -171,5 +171,5 @@ This project is licensed under the [MIT License](LICENSE).
 </p>
 
 <p align="center">
-  <a href="https://github.com/PomodoroTimerj/PomodoroTimerj.github.io">⭐ Star this repository if you found it helpful!</a>
+  <a href="https://github.com/pomodorotimerj/pomodorotimerj.github.io">⭐ Star this repository if you found it helpful!</a>
 </p>
