@@ -49,7 +49,7 @@ a beautiful, free productivity tool designed to help you stay focused and get mo
 • Auto-start pomodoros toggle
 • Sound notifications toggle
 
-🔗 **Try it free:** https://pomodorotimerjj.github.io
+🔗 **Try it free:** https://pomodorotimerj.github.io
 
 Wishing you focused, productive days ahead filled with accomplishments and well-deserved breaks!
 
