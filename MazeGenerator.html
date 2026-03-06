@@ -1,0 +1,1702 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>The Maze Generator</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #0c0c1d 0%, #1a1a3e 50%, #0c0c1d 100%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            color: #e0e0ff;
+            overflow-x: hidden;
+            -webkit-user-select: none;
+            user-select: none;
+        }
+
+        h1 {
+            margin-top: 15px;
+            font-size: 2rem;
+            background: linear-gradient(90deg, #00d4ff, #7b2ff7, #ff2d95);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            letter-spacing: 2px;
+        }
+
+        .controls {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin: 12px 0;
+            justify-content: center;
+            align-items: center;
+            padding: 0 10px;
+        }
+
+        .control-group {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            background: rgba(255,255,255,0.05);
+            padding: 7px 12px;
+            border-radius: 12px;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+
+        label {
+            font-size: 0.82rem;
+            color: #a0a0cc;
+            white-space: nowrap;
+        }
+
+        select, input[type="range"] {
+            background: rgba(255,255,255,0.1);
+            border: 1px solid rgba(255,255,255,0.2);
+            color: #e0e0ff;
+            padding: 5px 10px;
+            border-radius: 8px;
+            font-size: 0.82rem;
+            outline: none;
+        }
+
+        select:focus, input[type="range"]:focus {
+            border-color: #7b2ff7;
+        }
+
+        select option {
+            background: #1a1a3e;
+            color: #e0e0ff;
+        }
+
+        input[type="range"] {
+            -webkit-appearance: none;
+            width: 90px;
+            height: 6px;
+            border-radius: 3px;
+            background: linear-gradient(90deg, #00d4ff, #7b2ff7);
+            padding: 0;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: #fff;
+            cursor: pointer;
+            box-shadow: 0 0 8px rgba(123, 47, 247, 0.6);
+        }
+
+        button {
+            padding: 7px 16px;
+            border: none;
+            border-radius: 10px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            letter-spacing: 0.5px;
+            white-space: nowrap;
+        }
+
+        .btn-generate {
+            background: linear-gradient(135deg, #00d4ff, #0088cc);
+            color: #fff;
+            box-shadow: 0 4px 15px rgba(0, 212, 255, 0.3);
+        }
+        .btn-generate:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(0, 212, 255, 0.5); }
+
+        .btn-solve {
+            background: linear-gradient(135deg, #7b2ff7, #5a1fd0);
+            color: #fff;
+            box-shadow: 0 4px 15px rgba(123, 47, 247, 0.3);
+        }
+        .btn-solve:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(123, 47, 247, 0.5); }
+
+        .btn-manual {
+            background: linear-gradient(135deg, #00ff88, #00cc66);
+            color: #0a0a1a;
+            box-shadow: 0 4px 15px rgba(0, 255, 136, 0.3);
+        }
+        .btn-manual:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(0, 255, 136, 0.5); }
+        .btn-manual.active {
+            background: linear-gradient(135deg, #ff9500, #cc7700);
+            color: #fff;
+            box-shadow: 0 4px 15px rgba(255, 149, 0, 0.5);
+            animation: pulse-manual 1.5s infinite;
+        }
+
+        @keyframes pulse-manual {
+            0%, 100% { box-shadow: 0 4px 15px rgba(255, 149, 0, 0.5); }
+            50% { box-shadow: 0 4px 25px rgba(255, 149, 0, 0.8); }
+        }
+
+        .btn-reset {
+            background: linear-gradient(135deg, #ff2d95, #cc1a70);
+            color: #fff;
+            box-shadow: 0 4px 15px rgba(255, 45, 149, 0.3);
+        }
+        .btn-reset:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(255, 45, 149, 0.5); }
+
+        button:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+            transform: none !important;
+        }
+
+        .canvas-container {
+            position: relative;
+            margin: 8px;
+            border-radius: 16px;
+            overflow: hidden;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5), 0 0 60px rgba(123, 47, 247, 0.1);
+            border: 2px solid rgba(255,255,255,0.1);
+            touch-action: none;
+        }
+
+        canvas {
+            display: block;
+            background: #0a0a1a;
+        }
+
+        .status-bar {
+            display: flex;
+            gap: 15px;
+            margin: 8px 0 15px;
+            font-size: 0.8rem;
+            color: #a0a0cc;
+            flex-wrap: wrap;
+            justify-content: center;
+            padding: 0 10px;
+        }
+
+        .status-item {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .status-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            flex-shrink: 0;
+        }
+
+        .dot-start { background: #00ff88; box-shadow: 0 0 8px #00ff88; }
+        .dot-end { background: #ff2d95; box-shadow: 0 0 8px #ff2d95; }
+        .dot-visited { background: rgba(123, 47, 247, 0.6); }
+        .dot-path { background: #ffd700; box-shadow: 0 0 8px #ffd700; }
+        .dot-current { background: #00d4ff; box-shadow: 0 0 8px #00d4ff; }
+        .dot-player { background: #00ff88; box-shadow: 0 0 10px #00ff88; }
+
+        .speed-value {
+            min-width: 26px;
+            text-align: center;
+            font-weight: 600;
+            color: #7b2ff7;
+        }
+
+        .manual-hint {
+            font-size: 0.78rem;
+            color: #ff9500;
+            text-align: center;
+            margin-top: -4px;
+            margin-bottom: 4px;
+            min-height: 1.2em;
+            animation: fadeInHint 0.3s ease;
+        }
+
+        @keyframes fadeInHint {
+            from { opacity: 0; transform: translateY(-5px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .timer-display {
+            font-size: 0.85rem;
+            color: #00d4ff;
+            font-weight: 600;
+            font-variant-numeric: tabular-nums;
+        }
+
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.7);
+            backdrop-filter: blur(8px);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+        .modal-overlay.show {
+            display: flex;
+        }
+
+        .modal {
+            background: linear-gradient(145deg, #1a1a3e, #0c0c2d);
+            border: 2px solid rgba(255,255,255,0.15);
+            border-radius: 24px;
+            padding: 40px 50px;
+            text-align: center;
+            max-width: 420px;
+            width: 90%;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.6), 0 0 80px rgba(123, 47, 247, 0.2);
+            animation: modalPop 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        @keyframes modalPop {
+            from { opacity: 0; transform: scale(0.7) translateY(30px); }
+            to { opacity: 1; transform: scale(1) translateY(0); }
+        }
+
+        .modal-emoji {
+            font-size: 4rem;
+            margin-bottom: 10px;
+            animation: bounce 1s ease infinite;
+        }
+
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+
+        .modal h2 {
+            font-size: 1.8rem;
+            background: linear-gradient(90deg, #ffd700, #ff9500, #ff2d95);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 20px;
+        }
+
+        .modal-stats {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            margin-bottom: 25px;
+        }
+
+        .modal-stat {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: rgba(255,255,255,0.05);
+            padding: 12px 18px;
+            border-radius: 12px;
+            border: 1px solid rgba(255,255,255,0.08);
+        }
+
+        .modal-stat-label {
+            font-size: 0.9rem;
+            color: #a0a0cc;
+        }
+
+        .modal-stat-value {
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: #ffd700;
+            font-variant-numeric: tabular-nums;
+        }
+
+        .modal-stat-value.time-val { color: #00d4ff; }
+        .modal-stat-value.steps-val { color: #00ff88; }
+        .modal-stat-value.size-val { color: #7b2ff7; }
+
+        .btn-modal-close {
+            padding: 12px 40px;
+            border: none;
+            border-radius: 14px;
+            font-size: 1rem;
+            font-weight: 700;
+            cursor: pointer;
+            background: linear-gradient(135deg, #ffd700, #ff9500);
+            color: #0a0a1a;
+            box-shadow: 0 4px 20px rgba(255, 215, 0, 0.4);
+            transition: all 0.3s ease;
+            letter-spacing: 0.5px;
+        }
+
+        .btn-modal-close:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 25px rgba(255, 215, 0, 0.6);
+        }
+
+        #confettiCanvas {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            pointer-events: none;
+            z-index: 1001;
+        }
+
+        @media (max-width: 600px) {
+            h1 { font-size: 1.3rem; margin-top: 10px; }
+            .controls { gap: 6px; }
+            .control-group { padding: 5px 8px; }
+            button { padding: 6px 11px; font-size: 0.78rem; }
+            .modal { padding: 30px 25px; }
+            .modal h2 { font-size: 1.4rem; }
+            .modal-emoji { font-size: 3rem; }
+        }
+    </style>
+</head>
+<body>
+    <h1>🏰 The Maze Generator</h1>
+
+    <div class="controls">
+        <div class="control-group">
+            <label for="sizeSelect">Size:</label>
+            <select id="sizeSelect">
+                <option value="10">10×10</option>
+                <option value="15">15×15</option>
+                <option value="20" selected>20×20</option>
+                <option value="30">30×30</option>
+                <option value="40">40×40</option>
+                <option value="50">50×50</option>
+            </select>
+        </div>
+
+        <div class="control-group">
+            <label for="algoSelect">AI Solver:</label>
+            <select id="algoSelect">
+                <option value="dfs">DFS</option>
+                <option value="bfs">BFS</option>
+                <option value="astar">A*</option>
+            </select>
+        </div>
+
+        <div class="control-group">
+            <label for="speedRange">Speed:</label>
+            <input type="range" id="speedRange" min="1" max="100" value="50">
+            <span class="speed-value" id="speedValue">50</span>
+        </div>
+
+        <button class="btn-generate" id="btnGenerate">🔄 Generate</button>
+        <button class="btn-solve" id="btnSolve">🤖 AI Solve</button>
+        <button class="btn-manual" id="btnManual">🎮 Play</button>
+        <button class="btn-reset" id="btnReset">🗑️ Clear</button>
+    </div>
+
+    <div class="manual-hint" id="manualHint"></div>
+
+    <div class="canvas-container" id="canvasContainer">
+        <canvas id="mazeCanvas"></canvas>
+    </div>
+
+    <div class="status-bar">
+        <div class="status-item"><div class="status-dot dot-start"></div> Start</div>
+        <div class="status-item"><div class="status-dot dot-end"></div> End</div>
+        <div class="status-item"><div class="status-dot dot-player"></div> Player</div>
+        <div class="status-item"><div class="status-dot dot-visited"></div> Visited</div>
+        <div class="status-item"><div class="status-dot dot-current"></div> AI Current</div>
+        <div class="status-item"><div class="status-dot dot-path"></div> Solution</div>
+        <div class="status-item timer-display" id="timerDisplay"></div>
+        <div class="status-item" id="statusText">Ready</div>
+    </div>
+
+    <div class="modal-overlay" id="modalOverlay">
+        <div class="modal">
+            <div class="modal-emoji">🎉🏆🎉</div>
+            <h2>Congratulations!</h2>
+            <div class="modal-stats">
+                <div class="modal-stat">
+                    <span class="modal-stat-label">⏱️ Time</span>
+                    <span class="modal-stat-value time-val" id="modalTime">--</span>
+                </div>
+                <div class="modal-stat">
+                    <span class="modal-stat-label">👣 Steps</span>
+                    <span class="modal-stat-value steps-val" id="modalSteps">--</span>
+                </div>
+                <div class="modal-stat">
+                    <span class="modal-stat-label">📐 Path Length</span>
+                    <span class="modal-stat-value" id="modalPathLen">--</span>
+                </div>
+                <div class="modal-stat">
+                    <span class="modal-stat-label">📏 Maze Size</span>
+                    <span class="modal-stat-value size-val" id="modalSize">--</span>
+                </div>
+            </div>
+            <button class="btn-modal-close" id="btnModalClose">🎮 Play Again</button>
+        </div>
+    </div>
+
+    <canvas id="confettiCanvas"></canvas>
+
+    <script>
+    (function() {
+        // DOM elements
+        var canvas = document.getElementById('mazeCanvas');
+        var ctx = canvas.getContext('2d');
+        var canvasContainer = document.getElementById('canvasContainer');
+        var sizeSelect = document.getElementById('sizeSelect');
+        var algoSelect = document.getElementById('algoSelect');
+        var speedRange = document.getElementById('speedRange');
+        var speedValueEl = document.getElementById('speedValue');
+        var btnGenerate = document.getElementById('btnGenerate');
+        var btnSolve = document.getElementById('btnSolve');
+        var btnManual = document.getElementById('btnManual');
+        var btnReset = document.getElementById('btnReset');
+        var statusText = document.getElementById('statusText');
+        var manualHint = document.getElementById('manualHint');
+        var timerDisplay = document.getElementById('timerDisplay');
+        var modalOverlay = document.getElementById('modalOverlay');
+        var modalTime = document.getElementById('modalTime');
+        var modalSteps = document.getElementById('modalSteps');
+        var modalPathLen = document.getElementById('modalPathLen');
+        var modalSize = document.getElementById('modalSize');
+        var btnModalClose = document.getElementById('btnModalClose');
+        var confettiCanvas = document.getElementById('confettiCanvas');
+        var confettiCtx = confettiCanvas.getContext('2d');
+
+        // State variables
+        var maze = null;
+        var rows = 20;
+        var cols = 20;
+        var cellSize = 20;
+        var wallWidth = 2;
+        var animating = false;
+        var solveTimeoutId = null;
+
+        // Manual play state
+        var manualMode = false;
+        var playerRow = 0;
+        var playerCol = 0;
+        var playerPath = [];
+        var playerSteps = 0;
+        var manualStartTime = null;
+        var timerIntervalId = null;
+        var manualFinished = false;
+
+        // Swipe tracking
+        var touchStartX = 0;
+        var touchStartY = 0;
+        var touchStartTimeMs = 0;
+
+        // Confetti
+        var confettiPieces = [];
+        var confettiAnimId = null;
+
+        // ---- MAZE CELL ----
+        function createCell() {
+            return {
+                top: true,
+                right: true,
+                bottom: true,
+                left: true,
+                visited: false,
+                solveVisited: false,
+                onPath: false,
+                current: false,
+                playerVisited: false,
+                playerPath: false
+            };
+        }
+
+        function createGrid(r, c) {
+            var grid = [];
+            for (var i = 0; i < r; i++) {
+                grid[i] = [];
+                for (var j = 0; j < c; j++) {
+                    grid[i][j] = createCell();
+                }
+            }
+            return grid;
+        }
+
+        // ---- MAZE GENERATION ----
+        function generateMazeGrid(r, c) {
+            var grid = createGrid(r, c);
+            var stack = [];
+            grid[0][0].visited = true;
+            stack.push([0, 0]);
+
+            while (stack.length > 0) {
+                var top = stack[stack.length - 1];
+                var cr = top[0];
+                var cc = top[1];
+                var neighbors = [];
+
+                if (cr > 0 && !grid[cr - 1][cc].visited) neighbors.push([cr - 1, cc, 'top']);
+                if (cc < c - 1 && !grid[cr][cc + 1].visited) neighbors.push([cr, cc + 1, 'right']);
+                if (cr < r - 1 && !grid[cr + 1][cc].visited) neighbors.push([cr + 1, cc, 'bottom']);
+                if (cc > 0 && !grid[cr][cc - 1].visited) neighbors.push([cr, cc - 1, 'left']);
+
+                if (neighbors.length > 0) {
+                    var chosen = neighbors[Math.floor(Math.random() * neighbors.length)];
+                    var nr = chosen[0];
+                    var nc = chosen[1];
+                    var dir = chosen[2];
+
+                    if (dir === 'top') { grid[cr][cc].top = false; grid[nr][nc].bottom = false; }
+                    if (dir === 'right') { grid[cr][cc].right = false; grid[nr][nc].left = false; }
+                    if (dir === 'bottom') { grid[cr][cc].bottom = false; grid[nr][nc].top = false; }
+                    if (dir === 'left') { grid[cr][cc].left = false; grid[nr][nc].right = false; }
+
+                    grid[nr][nc].visited = true;
+                    stack.push([nr, nc]);
+                } else {
+                    stack.pop();
+                }
+            }
+
+            // Reset visited flags
+            for (var i = 0; i < r; i++) {
+                for (var j = 0; j < c; j++) {
+                    grid[i][j].visited = false;
+                }
+            }
+
+            return grid;
+        }
+
+        // ---- DIMENSIONS ----
+        function calculateDimensions() {
+            var padding = 50;
+            var maxW = window.innerWidth - padding;
+            var maxH = window.innerHeight - 300;
+
+            cellSize = Math.floor(Math.min(maxW / cols, maxH / rows));
+            if (cellSize < 6) cellSize = 6;
+            if (cellSize > 45) cellSize = 45;
+
+            wallWidth = cellSize > 15 ? 2 : 1;
+
+            canvas.width = cols * cellSize + wallWidth;
+            canvas.height = rows * cellSize + wallWidth;
+        }
+
+        // ---- DRAWING ----
+        function drawMaze() {
+            if (!maze) return;
+
+            ctx.fillStyle = '#0a0a1a';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            var startR = 0;
+            var startC = 0;
+            var endR = rows - 1;
+            var endC = cols - 1;
+
+            var i, j, x, y, cell, isStart, isEnd, isPlayer, grd, dotSize;
+
+            for (i = 0; i < rows; i++) {
+                for (j = 0; j < cols; j++) {
+                    x = j * cellSize;
+                    y = i * cellSize;
+                    cell = maze[i][j];
+
+                    isStart = (i === startR && j === startC);
+                    isEnd = (i === endR && j === endC);
+                    isPlayer = (manualMode && i === playerRow && j === playerCol && !manualFinished);
+
+                    // Cell backgrounds
+                    if (isPlayer && !isEnd) {
+                        grd = ctx.createRadialGradient(
+                            x + cellSize / 2, y + cellSize / 2, 0,
+                            x + cellSize / 2, y + cellSize / 2, cellSize * 0.7
+                        );
+                        grd.addColorStop(0, 'rgba(0, 255, 136, 0.6)');
+                        grd.addColorStop(1, 'rgba(0, 255, 136, 0)');
+                        ctx.fillStyle = grd;
+                        ctx.fillRect(x, y, cellSize, cellSize);
+                    } else if (isStart && !(manualMode && playerRow === 0 && playerCol === 0 && !manualFinished)) {
+                        ctx.fillStyle = 'rgba(0, 255, 136, 0.2)';
+                        ctx.fillRect(x + wallWidth, y + wallWidth, cellSize - wallWidth, cellSize - wallWidth);
+                        grd = ctx.createRadialGradient(
+                            x + cellSize / 2, y + cellSize / 2, 0,
+                            x + cellSize / 2, y + cellSize / 2, cellSize / 2
+                        );
+                        grd.addColorStop(0, 'rgba(0, 255, 136, 0.4)');
+                        grd.addColorStop(1, 'rgba(0, 255, 136, 0)');
+                        ctx.fillStyle = grd;
+                        ctx.fillRect(x, y, cellSize, cellSize);
+                    }
+
+                    if (isEnd) {
+                        ctx.fillStyle = 'rgba(255, 45, 149, 0.25)';
+                        ctx.fillRect(x + wallWidth, y + wallWidth, cellSize - wallWidth, cellSize - wallWidth);
+                        grd = ctx.createRadialGradient(
+                            x + cellSize / 2, y + cellSize / 2, 0,
+                            x + cellSize / 2, y + cellSize / 2, cellSize / 2
+                        );
+                        grd.addColorStop(0, 'rgba(255, 45, 149, 0.45)');
+                        grd.addColorStop(1, 'rgba(255, 45, 149, 0)');
+                        ctx.fillStyle = grd;
+                        ctx.fillRect(x, y, cellSize, cellSize);
+                    }
+
+                    if (!isPlayer && !isStart && !isEnd) {
+                        if (cell.playerPath) {
+                            ctx.fillStyle = 'rgba(0, 255, 136, 0.12)';
+                            ctx.fillRect(x + wallWidth, y + wallWidth, cellSize - wallWidth, cellSize - wallWidth);
+                        } else if (cell.onPath) {
+                            ctx.fillStyle = 'rgba(255, 215, 0, 0.3)';
+                            ctx.fillRect(x + wallWidth, y + wallWidth, cellSize - wallWidth, cellSize - wallWidth);
+                        } else if (cell.current) {
+                            ctx.fillStyle = 'rgba(0, 212, 255, 0.35)';
+                            ctx.fillRect(x + wallWidth, y + wallWidth, cellSize - wallWidth, cellSize - wallWidth);
+                        } else if (cell.solveVisited) {
+                            ctx.fillStyle = 'rgba(123, 47, 247, 0.12)';
+                            ctx.fillRect(x + wallWidth, y + wallWidth, cellSize - wallWidth, cellSize - wallWidth);
+                        }
+                    }
+
+                    // Player path trail dot
+                    if (cell.playerPath && cellSize > 6 && !(isPlayer)) {
+                        ctx.fillStyle = 'rgba(0, 255, 136, 0.5)';
+                        dotSize = Math.max(cellSize * 0.12, 1.5);
+                        ctx.beginPath();
+                        ctx.arc(x + cellSize / 2, y + cellSize / 2, dotSize, 0, Math.PI * 2);
+                        ctx.fill();
+                    }
+
+                    // AI solution path dots
+                    if (cell.onPath && !cell.playerPath && cellSize > 8) {
+                        ctx.fillStyle = 'rgba(255, 215, 0, 0.8)';
+                        dotSize = Math.max(cellSize * 0.2, 2);
+                        ctx.beginPath();
+                        ctx.arc(x + cellSize / 2, y + cellSize / 2, dotSize, 0, Math.PI * 2);
+                        ctx.fill();
+                    }
+
+                    // AI current cell marker
+                    if (cell.current && cellSize > 8) {
+                        ctx.fillStyle = 'rgba(0, 212, 255, 0.9)';
+                        dotSize = Math.max(cellSize * 0.25, 2);
+                        ctx.beginPath();
+                        ctx.arc(x + cellSize / 2, y + cellSize / 2, dotSize, 0, Math.PI * 2);
+                        ctx.fill();
+                    }
+
+                    // Draw walls
+                    ctx.strokeStyle = '#2a2a5a';
+                    ctx.lineWidth = wallWidth;
+                    ctx.lineCap = 'round';
+
+                    if (cell.top) {
+                        ctx.beginPath();
+                        ctx.moveTo(x, y);
+                        ctx.lineTo(x + cellSize, y);
+                        ctx.stroke();
+                    }
+                    if (cell.right) {
+                        ctx.beginPath();
+                        ctx.moveTo(x + cellSize, y);
+                        ctx.lineTo(x + cellSize, y + cellSize);
+                        ctx.stroke();
+                    }
+                    if (cell.bottom) {
+                        ctx.beginPath();
+                        ctx.moveTo(x, y + cellSize);
+                        ctx.lineTo(x + cellSize, y + cellSize);
+                        ctx.stroke();
+                    }
+                    if (cell.left) {
+                        ctx.beginPath();
+                        ctx.moveTo(x, y);
+                        ctx.lineTo(x, y + cellSize);
+                        ctx.stroke();
+                    }
+                }
+            }
+
+            // Draw player path connections
+            if (manualMode && playerPath.length > 1 && cellSize > 6) {
+                ctx.strokeStyle = 'rgba(0, 255, 136, 0.35)';
+                ctx.lineWidth = Math.max(cellSize * 0.15, 1.5);
+                ctx.lineCap = 'round';
+                ctx.lineJoin = 'round';
+                ctx.beginPath();
+                ctx.moveTo(
+                    playerPath[0].c * cellSize + cellSize / 2,
+                    playerPath[0].r * cellSize + cellSize / 2
+                );
+                for (var k = 1; k < playerPath.length; k++) {
+                    ctx.lineTo(
+                        playerPath[k].c * cellSize + cellSize / 2,
+                        playerPath[k].r * cellSize + cellSize / 2
+                    );
+                }
+                ctx.stroke();
+            }
+
+            // Start icon (play triangle)
+            if (cellSize >= 10 && !(manualMode && playerRow === 0 && playerCol === 0 && !manualFinished)) {
+                var sx = cellSize * 0.3;
+                var sy = cellSize * 0.25;
+                ctx.fillStyle = '#00ff88';
+                ctx.beginPath();
+                ctx.moveTo(sx, sy);
+                ctx.lineTo(sx + cellSize * 0.45, sy + cellSize * 0.25);
+                ctx.lineTo(sx, sy + cellSize * 0.5);
+                ctx.closePath();
+                ctx.fill();
+            }
+
+            // End icon (star)
+            if (cellSize >= 10) {
+                var ex = (cols - 1) * cellSize + cellSize * 0.5;
+                var ey = (rows - 1) * cellSize + cellSize * 0.5;
+                ctx.fillStyle = '#ff2d95';
+                ctx.beginPath();
+                var spikes = 5;
+                var outerR = cellSize * 0.32;
+                var innerR = cellSize * 0.14;
+                for (var s = 0; s < spikes * 2; s++) {
+                    var rad = (s % 2 === 0) ? outerR : innerR;
+                    var angle = (s * Math.PI / spikes) - Math.PI / 2;
+                    var px = ex + rad * Math.cos(angle);
+                    var py = ey + rad * Math.sin(angle);
+                    if (s === 0) {
+                        ctx.moveTo(px, py);
+                    } else {
+                        ctx.lineTo(px, py);
+                    }
+                }
+                ctx.closePath();
+                ctx.fill();
+            }
+
+            // Draw player character
+            if (manualMode && !manualFinished) {
+                var pcx = playerCol * cellSize + cellSize / 2;
+                var pcy = playerRow * cellSize + cellSize / 2;
+                var pr = cellSize * 0.32;
+
+                // Outer glow
+                grd = ctx.createRadialGradient(pcx, pcy, pr * 0.3, pcx, pcy, pr * 2);
+                grd.addColorStop(0, 'rgba(0, 255, 136, 0.4)');
+                grd.addColorStop(1, 'rgba(0, 255, 136, 0)');
+                ctx.fillStyle = grd;
+                ctx.beginPath();
+                ctx.arc(pcx, pcy, pr * 2, 0, Math.PI * 2);
+                ctx.fill();
+
+                // Player circle
+                ctx.fillStyle = '#00ff88';
+                ctx.shadowColor = '#00ff88';
+                ctx.shadowBlur = 12;
+                ctx.beginPath();
+                ctx.arc(pcx, pcy, pr, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.shadowBlur = 0;
+
+                // Inner highlight
+                if (cellSize > 12) {
+                    ctx.fillStyle = 'rgba(255,255,255,0.4)';
+                    ctx.beginPath();
+                    ctx.arc(pcx - pr * 0.2, pcy - pr * 0.2, pr * 0.35, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+            }
+        }
+
+        // ---- HELPERS ----
+        function getNeighbors(r, c) {
+            var neighbors = [];
+            var cell = maze[r][c];
+            if (!cell.top && r > 0) neighbors.push([r - 1, c]);
+            if (!cell.right && c < cols - 1) neighbors.push([r, c + 1]);
+            if (!cell.bottom && r < rows - 1) neighbors.push([r + 1, c]);
+            if (!cell.left && c > 0) neighbors.push([r, c - 1]);
+            return neighbors;
+        }
+
+        function getSpeed() {
+            var v = parseInt(speedRange.value, 10);
+            var d = Math.floor(201 - v * 2);
+            return d < 1 ? 1 : d;
+        }
+
+        function formatTime(ms) {
+            var totalSec = Math.floor(ms / 1000);
+            var min = Math.floor(totalSec / 60);
+            var sec = totalSec % 60;
+            var tenths = Math.floor((ms % 1000) / 100);
+            if (min > 0) {
+                return min + ':' + (sec < 10 ? '0' : '') + sec + '.' + tenths;
+            }
+            return sec + '.' + tenths + 's';
+        }
+
+        function clearSolveState() {
+            if (!maze) return;
+            for (var i = 0; i < rows; i++) {
+                for (var j = 0; j < cols; j++) {
+                    maze[i][j].solveVisited = false;
+                    maze[i][j].onPath = false;
+                    maze[i][j].current = false;
+                }
+            }
+        }
+
+        function clearPlayerState() {
+            if (!maze) return;
+            for (var i = 0; i < rows; i++) {
+                for (var j = 0; j < cols; j++) {
+                    maze[i][j].playerVisited = false;
+                    maze[i][j].playerPath = false;
+                }
+            }
+            playerPath = [];
+            playerSteps = 0;
+            playerRow = 0;
+            playerCol = 0;
+            manualStartTime = null;
+            manualFinished = false;
+            if (timerIntervalId !== null) {
+                clearInterval(timerIntervalId);
+                timerIntervalId = null;
+            }
+            timerDisplay.textContent = '';
+        }
+
+        function updateButtons() {
+            btnGenerate.disabled = animating;
+            btnSolve.disabled = animating || !maze || manualMode;
+            btnManual.disabled = animating || !maze;
+            btnReset.disabled = false;
+        }
+
+        // ---- MANUAL PLAY ----
+        function startManualMode() {
+            if (!maze || animating) return;
+            clearSolveState();
+            clearPlayerState();
+
+            manualMode = true;
+            manualFinished = false;
+            playerRow = 0;
+            playerCol = 0;
+            playerPath = [{ r: 0, c: 0 }];
+            playerSteps = 0;
+            maze[0][0].playerVisited = true;
+            maze[0][0].playerPath = true;
+            manualStartTime = Date.now();
+
+            btnManual.classList.add('active');
+            btnManual.textContent = '🎮 Playing...';
+            manualHint.textContent = '⌨️ Arrow keys / WASD / Swipe to move • Reach the ⭐ star!';
+            statusText.textContent = '🎮 Manual mode — Go!';
+
+            startTimer();
+            drawMaze();
+            saveState();
+            updateButtons();
+        }
+
+        function stopManualMode() {
+            manualMode = false;
+            manualFinished = false;
+            if (timerIntervalId !== null) {
+                clearInterval(timerIntervalId);
+                timerIntervalId = null;
+            }
+            btnManual.classList.remove('active');
+            btnManual.textContent = '🎮 Play';
+            manualHint.textContent = '';
+            timerDisplay.textContent = '';
+            updateButtons();
+        }
+
+        function startTimer() {
+            if (timerIntervalId !== null) {
+                clearInterval(timerIntervalId);
+            }
+            timerIntervalId = setInterval(function() {
+                if (manualStartTime && manualMode && !manualFinished) {
+                    var elapsed = Date.now() - manualStartTime;
+                    timerDisplay.textContent = '⏱️ ' + formatTime(elapsed);
+                }
+            }, 100);
+        }
+
+        function movePlayer(dr, dc) {
+            if (!manualMode || manualFinished || !maze) return;
+
+            var nr = playerRow + dr;
+            var nc = playerCol + dc;
+
+            // Check bounds
+            if (nr < 0 || nr >= rows || nc < 0 || nc >= cols) return;
+
+            // Check wall
+            var cell = maze[playerRow][playerCol];
+            if (dr === -1 && cell.top) return;
+            if (dr === 1 && cell.bottom) return;
+            if (dc === -1 && cell.left) return;
+            if (dc === 1 && cell.right) return;
+
+            playerRow = nr;
+            playerCol = nc;
+            playerSteps++;
+
+            // Check if backtracking on path
+            if (playerPath.length >= 2) {
+                var prev = playerPath[playerPath.length - 2];
+                if (prev.r === nr && prev.c === nc) {
+                    var removed = playerPath.pop();
+                    maze[removed.r][removed.c].playerPath = false;
+                } else {
+                    playerPath.push({ r: nr, c: nc });
+                    maze[nr][nc].playerPath = true;
+                }
+            } else {
+                playerPath.push({ r: nr, c: nc });
+                maze[nr][nc].playerPath = true;
+            }
+
+            maze[nr][nc].playerVisited = true;
+
+            drawMaze();
+            saveState();
+
+            // Check win
+            if (nr === rows - 1 && nc === cols - 1) {
+                manualFinished = true;
+                if (timerIntervalId !== null) {
+                    clearInterval(timerIntervalId);
+                    timerIntervalId = null;
+                }
+                var elapsed = Date.now() - manualStartTime;
+                timerDisplay.textContent = '⏱️ ' + formatTime(elapsed);
+                statusText.textContent = '🏆 You solved it!';
+
+                setTimeout(function() {
+                    showCongratulations(elapsed, playerSteps, playerPath.length);
+                }, 300);
+            }
+        }
+
+        // ---- CONGRATULATIONS ----
+        function showCongratulations(timeMs, steps, pathLength) {
+            modalTime.textContent = formatTime(timeMs);
+            modalSteps.textContent = String(steps);
+            modalPathLen.textContent = pathLength + ' cells';
+            modalSize.textContent = rows + '×' + cols;
+            modalOverlay.classList.add('show');
+            launchConfetti();
+        }
+
+        btnModalClose.addEventListener('click', function() {
+            modalOverlay.classList.remove('show');
+            stopConfetti();
+            stopManualMode();
+            clearPlayerState();
+            clearSolveState();
+            // Generate new maze
+            rows = parseInt(sizeSelect.value, 10);
+            cols = rows;
+            calculateDimensions();
+            maze = generateMazeGrid(rows, cols);
+            drawMaze();
+            saveState();
+            statusText.textContent = '✅ New ' + rows + '×' + cols + ' maze generated';
+            updateButtons();
+        });
+
+        modalOverlay.addEventListener('click', function(e) {
+            if (e.target === modalOverlay) {
+                modalOverlay.classList.remove('show');
+                stopConfetti();
+            }
+        });
+
+        // ---- CONFETTI ----
+        function launchConfetti() {
+            confettiCanvas.width = window.innerWidth;
+            confettiCanvas.height = window.innerHeight;
+            confettiPieces = [];
+
+            var colors = ['#ffd700', '#ff2d95', '#00d4ff', '#7b2ff7', '#00ff88', '#ff9500', '#ff4444', '#44ff44'];
+
+            for (var i = 0; i < 150; i++) {
+                confettiPieces.push({
+                    x: Math.random() * confettiCanvas.width,
+                    y: Math.random() * confettiCanvas.height - confettiCanvas.height,
+                    w: Math.random() * 10 + 5,
+                    h: Math.random() * 6 + 3,
+                    color: colors[Math.floor(Math.random() * colors.length)],
+                    vx: (Math.random() - 0.5) * 4,
+                    vy: Math.random() * 3 + 2,
+                    rot: Math.random() * 360,
+                    rotSpeed: (Math.random() - 0.5) * 10,
+                    opacity: 1
+                });
+            }
+
+            animateConfetti();
+        }
+
+        function animateConfetti() {
+            confettiCtx.clearRect(0, 0, confettiCanvas.width, confettiCanvas.height);
+            var alive = false;
+
+            for (var i = 0; i < confettiPieces.length; i++) {
+                var p = confettiPieces[i];
+                p.x += p.vx;
+                p.y += p.vy;
+                p.vy += 0.05;
+                p.rot += p.rotSpeed;
+
+                if (p.y > confettiCanvas.height + 50) {
+                    p.opacity -= 0.02;
+                }
+
+                if (p.opacity <= 0) continue;
+                alive = true;
+
+                confettiCtx.save();
+                confettiCtx.translate(p.x, p.y);
+                confettiCtx.rotate(p.rot * Math.PI / 180);
+                confettiCtx.globalAlpha = Math.max(0, p.opacity);
+                confettiCtx.fillStyle = p.color;
+                confettiCtx.fillRect(-p.w / 2, -p.h / 2, p.w, p.h);
+                confettiCtx.restore();
+            }
+
+            if (alive) {
+                confettiAnimId = requestAnimationFrame(animateConfetti);
+            }
+        }
+
+        function stopConfetti() {
+            if (confettiAnimId !== null) {
+                cancelAnimationFrame(confettiAnimId);
+                confettiAnimId = null;
+            }
+            confettiCtx.clearRect(0, 0, confettiCanvas.width, confettiCanvas.height);
+            confettiPieces = [];
+        }
+
+        // ---- KEYBOARD INPUT ----
+        document.addEventListener('keydown', function(e) {
+            if (!manualMode || manualFinished) return;
+
+            var dr = 0;
+            var dc = 0;
+            var key = e.key;
+
+            if (key === 'ArrowUp' || key === 'w' || key === 'W') { dr = -1; }
+            else if (key === 'ArrowDown' || key === 's' || key === 'S') { dr = 1; }
+            else if (key === 'ArrowLeft' || key === 'a' || key === 'A') { dc = -1; }
+            else if (key === 'ArrowRight' || key === 'd' || key === 'D') { dc = 1; }
+            else { return; }
+
+            e.preventDefault();
+            movePlayer(dr, dc);
+        });
+
+        // ---- TOUCH / SWIPE INPUT ----
+        canvasContainer.addEventListener('touchstart', function(e) {
+            if (!manualMode || manualFinished) return;
+            var touch = e.touches[0];
+            touchStartX = touch.clientX;
+            touchStartY = touch.clientY;
+            touchStartTimeMs = Date.now();
+            e.preventDefault();
+        }, { passive: false });
+
+        canvasContainer.addEventListener('touchend', function(e) {
+            if (!manualMode || manualFinished) return;
+            var touch = e.changedTouches[0];
+            var dx = touch.clientX - touchStartX;
+            var dy = touch.clientY - touchStartY;
+            var dist = Math.sqrt(dx * dx + dy * dy);
+            var elapsed = Date.now() - touchStartTimeMs;
+
+            // Tap detection: move toward tap position relative to player
+            if (dist < 15 && elapsed < 300) {
+                var rect = canvas.getBoundingClientRect();
+                var tapX = touch.clientX - rect.left;
+                var tapY = touch.clientY - rect.top;
+                var scaleX = canvas.width / rect.width;
+                var scaleY = canvas.height / rect.height;
+                tapX *= scaleX;
+                tapY *= scaleY;
+
+                var playerCX = playerCol * cellSize + cellSize / 2;
+                var playerCY = playerRow * cellSize + cellSize / 2;
+                dx = tapX - playerCX;
+                dy = tapY - playerCY;
+
+                // Check if tapped on adjacent cell
+                var tapRow = Math.floor(tapY / cellSize);
+                var tapCol = Math.floor(tapX / cellSize);
+                var tdr = tapRow - playerRow;
+                var tdc = tapCol - playerCol;
+                if (Math.abs(tdr) + Math.abs(tdc) === 1) {
+                    movePlayer(tdr, tdc);
+                    e.preventDefault();
+                    return;
+                }
+
+                dist = Math.sqrt(dx * dx + dy * dy);
+            }
+
+            if (dist < 10) {
+                e.preventDefault();
+                return;
+            }
+
+            if (Math.abs(dx) > Math.abs(dy)) {
+                movePlayer(0, dx > 0 ? 1 : -1);
+            } else {
+                movePlayer(dy > 0 ? 1 : -1, 0);
+            }
+            e.preventDefault();
+        }, { passive: false });
+
+        // Click on canvas for mouse-based movement
+        canvas.addEventListener('click', function(e) {
+            if (!manualMode || manualFinished) return;
+            var rect = canvas.getBoundingClientRect();
+            var clickX = (e.clientX - rect.left) * (canvas.width / rect.width);
+            var clickY = (e.clientY - rect.top) * (canvas.height / rect.height);
+
+            var clickRow = Math.floor(clickY / cellSize);
+            var clickCol = Math.floor(clickX / cellSize);
+
+            var dr = clickRow - playerRow;
+            var dc = clickCol - playerCol;
+
+            if (Math.abs(dr) + Math.abs(dc) === 1) {
+                movePlayer(dr, dc);
+            }
+        });
+
+        // ---- SOLVE ALGORITHMS (Promise-based with setTimeout) ----
+
+        function solveDelay(ms) {
+            return new Promise(function(resolve) {
+                solveTimeoutId = setTimeout(resolve, ms);
+            });
+        }
+
+        function clearAllCurrentFlags() {
+            for (var i = 0; i < rows; i++) {
+                for (var j = 0; j < cols; j++) {
+                    maze[i][j].current = false;
+                }
+            }
+        }
+
+        function tracePath(parentMap, endR, endC) {
+            var path = [];
+            var key = endR + ',' + endC;
+            while (key !== null && key !== undefined) {
+                var parts = key.split(',');
+                path.unshift([parseInt(parts[0], 10), parseInt(parts[1], 10)]);
+                key = parentMap[key];
+            }
+
+            var idx = 0;
+            return new Promise(function(resolve) {
+                function step() {
+                    if (idx >= path.length || !animating) {
+                        resolve();
+                        return;
+                    }
+                    var r = path[idx][0];
+                    var c = path[idx][1];
+                    maze[r][c].onPath = true;
+                    drawMaze();
+                    saveState();
+                    idx++;
+                    var spd = getSpeed() / 2;
+                    if (spd < 5) spd = 5;
+                    solveTimeoutId = setTimeout(step, spd);
+                }
+                step();
+            });
+        }
+
+        function solveDFS() {
+            animating = true;
+            updateButtons();
+            statusText.textContent = '🔍 Solving with DFS...';
+
+            var stack = [[0, 0]];
+            var parentMap = {};
+            var endR = rows - 1;
+            var endC = cols - 1;
+
+            maze[0][0].solveVisited = true;
+            parentMap['0,0'] = null;
+
+            function step() {
+                if (stack.length === 0 || !animating) {
+                    if (animating) {
+                        statusText.textContent = '❌ No path found';
+                    }
+                    clearAllCurrentFlags();
+                    drawMaze();
+                    animating = false;
+                    updateButtons();
+                    saveState();
+                    return;
+                }
+
+                var top = stack.pop();
+                var cr = top[0];
+                var cc = top[1];
+
+                clearAllCurrentFlags();
+                maze[cr][cc].current = true;
+                maze[cr][cc].solveVisited = true;
+                drawMaze();
+                saveState();
+
+                if (cr === endR && cc === endC) {
+                    tracePath(parentMap, endR, endC).then(function() {
+                        statusText.textContent = '✅ Path found!';
+                        clearAllCurrentFlags();
+                        drawMaze();
+                        animating = false;
+                        updateButtons();
+                        saveState();
+                    });
+                    return;
+                }
+
+                var neighbors = getNeighbors(cr, cc);
+                // Shuffle
+                for (var i = neighbors.length - 1; i > 0; i--) {
+                    var j = Math.floor(Math.random() * (i + 1));
+                    var temp = neighbors[i];
+                    neighbors[i] = neighbors[j];
+                    neighbors[j] = temp;
+                }
+
+                for (var n = 0; n < neighbors.length; n++) {
+                    var nr = neighbors[n][0];
+                    var nc = neighbors[n][1];
+                    var nkey = nr + ',' + nc;
+                    if (!maze[nr][nc].solveVisited) {
+                        maze[nr][nc].solveVisited = true;
+                        parentMap[nkey] = cr + ',' + cc;
+                        stack.push([nr, nc]);
+                    }
+                }
+
+                solveTimeoutId = setTimeout(step, getSpeed());
+            }
+
+            step();
+        }
+
+        function solveBFS() {
+            animating = true;
+            updateButtons();
+            statusText.textContent = '🔍 Solving with BFS...';
+
+            var queue = [[0, 0]];
+            var queueIdx = 0;
+            var parentMap = {};
+            var endR = rows - 1;
+            var endC = cols - 1;
+
+            maze[0][0].solveVisited = true;
+            parentMap['0,0'] = null;
+
+            function step() {
+                if (queueIdx >= queue.length || !animating) {
+                    if (animating) {
+                        statusText.textContent = '❌ No path found';
+                    }
+                    clearAllCurrentFlags();
+                    drawMaze();
+                    animating = false;
+                    updateButtons();
+                    saveState();
+                    return;
+                }
+
+                var item = queue[queueIdx];
+                queueIdx++;
+                var cr = item[0];
+                var cc = item[1];
+
+                clearAllCurrentFlags();
+                maze[cr][cc].current = true;
+                drawMaze();
+                saveState();
+
+                if (cr === endR && cc === endC) {
+                    tracePath(parentMap, endR, endC).then(function() {
+                        statusText.textContent = '✅ Path found!';
+                        clearAllCurrentFlags();
+                        drawMaze();
+                        animating = false;
+                        updateButtons();
+                        saveState();
+                    });
+                    return;
+                }
+
+                var neighbors = getNeighbors(cr, cc);
+                for (var n = 0; n < neighbors.length; n++) {
+                    var nr = neighbors[n][0];
+                    var nc = neighbors[n][1];
+                    var nkey = nr + ',' + nc;
+                    if (!maze[nr][nc].solveVisited) {
+                        maze[nr][nc].solveVisited = true;
+                        parentMap[nkey] = cr + ',' + cc;
+                        queue.push([nr, nc]);
+                    }
+                }
+
+                solveTimeoutId = setTimeout(step, getSpeed());
+            }
+
+            step();
+        }
+
+        function solveAStar() {
+            animating = true;
+            updateButtons();
+            statusText.textContent = '🔍 Solving with A*...';
+
+            var endR = rows - 1;
+            var endC = cols - 1;
+
+            function heuristic(r, c) {
+                return Math.abs(r - endR) + Math.abs(c - endC);
+            }
+
+            var openSet = [{ r: 0, c: 0, g: 0, f: heuristic(0, 0) }];
+            var gScore = {};
+            gScore['0,0'] = 0;
+            var parentMap = {};
+            parentMap['0,0'] = null;
+            var closedSet = {};
+
+            maze[0][0].solveVisited = true;
+
+            function step() {
+                if (openSet.length === 0 || !animating) {
+                    if (animating) {
+                        statusText.textContent = '❌ No path found';
+                    }
+                    clearAllCurrentFlags();
+                    drawMaze();
+                    animating = false;
+                    updateButtons();
+                    saveState();
+                    return;
+                }
+
+                // Find lowest f
+                var bestIdx = 0;
+                for (var i = 1; i < openSet.length; i++) {
+                    if (openSet[i].f < openSet[bestIdx].f) {
+                        bestIdx = i;
+                    }
+                }
+                var current = openSet[bestIdx];
+                openSet.splice(bestIdx, 1);
+
+                var cr = current.r;
+                var cc = current.c;
+                var key = cr + ',' + cc;
+
+                if (closedSet[key]) {
+                    // Skip and try next immediately
+                    step();
+                    return;
+                }
+                closedSet[key] = true;
+
+                clearAllCurrentFlags();
+                maze[cr][cc].current = true;
+                maze[cr][cc].solveVisited = true;
+                drawMaze();
+                saveState();
+
+                if (cr === endR && cc === endC) {
+                    tracePath(parentMap, endR, endC).then(function() {
+                        statusText.textContent = '✅ Path found!';
+                        clearAllCurrentFlags();
+                        drawMaze();
+                        animating = false;
+                        updateButtons();
+                        saveState();
+                    });
+                    return;
+                }
+
+                var neighbors = getNeighbors(cr, cc);
+                for (var n = 0; n < neighbors.length; n++) {
+                    var nr = neighbors[n][0];
+                    var nc = neighbors[n][1];
+                    var nkey = nr + ',' + nc;
+                    if (closedSet[nkey]) continue;
+
+                    var tentativeG = (gScore[key] !== undefined ? gScore[key] : Infinity) + 1;
+                    var currentG = gScore[nkey] !== undefined ? gScore[nkey] : Infinity;
+
+                    if (tentativeG < currentG) {
+                        gScore[nkey] = tentativeG;
+                        parentMap[nkey] = key;
+                        openSet.push({
+                            r: nr,
+                            c: nc,
+                            g: tentativeG,
+                            f: tentativeG + heuristic(nr, nc)
+                        });
+                        maze[nr][nc].solveVisited = true;
+                    }
+                }
+
+                solveTimeoutId = setTimeout(step, getSpeed());
+            }
+
+            step();
+        }
+
+        // ---- SAVE / LOAD STATE ----
+        function saveState() {
+            if (!maze) return;
+
+            var mazeData = [];
+            for (var i = 0; i < rows; i++) {
+                mazeData[i] = [];
+                for (var j = 0; j < cols; j++) {
+                    var c = maze[i][j];
+                    mazeData[i][j] = {
+                        t: c.top ? 1 : 0,
+                        r: c.right ? 1 : 0,
+                        b: c.bottom ? 1 : 0,
+                        l: c.left ? 1 : 0,
+                        sv: c.solveVisited ? 1 : 0,
+                        op: c.onPath ? 1 : 0,
+                        cu: c.current ? 1 : 0,
+                        pv: c.playerVisited ? 1 : 0,
+                        pp: c.playerPath ? 1 : 0
+                    };
+                }
+            }
+
+            var state = {
+                rows: rows,
+                cols: cols,
+                algorithm: algoSelect.value,
+                speed: speedRange.value,
+                size: sizeSelect.value,
+                manualMode: manualMode,
+                manualFinished: manualFinished,
+                playerRow: playerRow,
+                playerCol: playerCol,
+                playerPath: playerPath,
+                playerSteps: playerSteps,
+                manualStartTime: manualStartTime,
+                maze: mazeData
+            };
+
+            try {
+                localStorage.setItem('theMazeGenState', JSON.stringify(state));
+            } catch (e) {
+                // Storage full or unavailable
+            }
+        }
+
+        function loadState() {
+            try {
+                var data = localStorage.getItem('theMazeGenState');
+                if (!data) return false;
+
+                var state = JSON.parse(data);
+                if (!state || !state.maze || !state.rows || !state.cols) return false;
+
+                rows = state.rows;
+                cols = state.cols;
+
+                // Validate maze dimensions
+                if (state.maze.length !== rows) return false;
+                if (state.maze[0].length !== cols) return false;
+
+                sizeSelect.value = state.size || String(rows);
+                algoSelect.value = state.algorithm || 'dfs';
+                speedRange.value = state.speed || '50';
+                speedValueEl.textContent = speedRange.value;
+
+                maze = [];
+                for (var i = 0; i < rows; i++) {
+                    maze[i] = [];
+                    for (var j = 0; j < cols; j++) {
+                        var cell = createCell();
+                        var s = state.maze[i][j];
+                        cell.top = s.t === 1;
+                        cell.right = s.r === 1;
+                        cell.bottom = s.b === 1;
+                        cell.left = s.l === 1;
+                        cell.solveVisited = s.sv === 1;
+                        cell.onPath = s.op === 1;
+                        cell.current = s.cu === 1;
+                        cell.playerVisited = s.pv === 1;
+                        cell.playerPath = s.pp === 1;
+                        maze[i][j] = cell;
+                    }
+                }
+
+                // Restore manual mode
+                if (state.manualMode && !state.manualFinished) {
+                    manualMode = true;
+                    manualFinished = false;
+                    playerRow = state.playerRow || 0;
+                    playerCol = state.playerCol || 0;
+                    playerSteps = state.playerSteps || 0;
+                    manualStartTime = state.manualStartTime || Date.now();
+
+                    // Restore player path
+                    if (state.playerPath && state.playerPath.length > 0) {
+                        playerPath = [];
+                        for (var k = 0; k < state.playerPath.length; k++) {
+                            var pp = state.playerPath[k];
+                            playerPath.push({ r: pp.r, c: pp.c });
+                        }
+                    } else {
+                        playerPath = [{ r: 0, c: 0 }];
+                    }
+
+                    btnManual.classList.add('active');
+                    btnManual.textContent = '🎮 Playing...';
+                    manualHint.textContent = '⌨️ Arrow keys / WASD / Swipe to move • Reach the ⭐ star!';
+                    statusText.textContent = '🎮 Manual mode — Continue!';
+                    startTimer();
+                } else {
+                    manualMode = false;
+                    manualFinished = false;
+                    playerPath = [];
+                }
+
+                calculateDimensions();
+                drawMaze();
+                updateButtons();
+                if (!manualMode) {
+                    statusText.textContent = '🔄 Restored from save';
+                }
+                return true;
+            } catch (e) {
+                return false;
+            }
+        }
+
+        // ---- EVENT HANDLERS ----
+        btnGenerate.addEventListener('click', function() {
+            if (animating) return;
+            stopManualMode();
+            clearPlayerState();
+            rows = parseInt(sizeSelect.value, 10);
+            cols = rows;
+            calculateDimensions();
+            maze = generateMazeGrid(rows, cols);
+            drawMaze();
+            saveState();
+            statusText.textContent = '✅ Generated ' + rows + '×' + cols + ' maze';
+            updateButtons();
+        });
+
+        btnSolve.addEventListener('click', function() {
+            if (animating || !maze || manualMode) return;
+            clearSolveState();
+            clearPlayerState();
+            drawMaze();
+
+            var algo = algoSelect.value;
+            if (algo === 'dfs') solveDFS();
+            else if (algo === 'bfs') solveBFS();
+            else if (algo === 'astar') solveAStar();
+        });
+
+        btnManual.addEventListener('click', function() {
+            if (animating || !maze) return;
+            if (manualMode) {
+                stopManualMode();
+                clearPlayerState();
+                clearSolveState();
+                drawMaze();
+                saveState();
+                statusText.textContent = 'Ready';
+            } else {
+                clearSolveState();
+                startManualMode();
+            }
+        });
+
+        btnReset.addEventListener('click', function() {
+            if (animating) {
+                animating = false;
+                if (solveTimeoutId !== null) {
+                    clearTimeout(solveTimeoutId);
+                    solveTimeoutId = null;
+                }
+            }
+            stopManualMode();
+            if (maze) {
+                clearSolveState();
+                clearPlayerState();
+                drawMaze();
+                saveState();
+            }
+            statusText.textContent = 'Ready';
+            updateButtons();
+        });
+
+        speedRange.addEventListener('input', function() {
+            speedValueEl.textContent = speedRange.value;
+            saveState();
+        });
+
+        sizeSelect.addEventListener('change', function() {
+            saveState();
+        });
+
+        algoSelect.addEventListener('change', function() {
+            saveState();
+        });
+
+        function handleResize() {
+            if (maze) {
+                calculateDimensions();
+                drawMaze();
+            }
+            confettiCanvas.width = window.innerWidth;
+            confettiCanvas.height = window.innerHeight;
+        }
+
+        window.addEventListener('resize', handleResize);
+        window.addEventListener('orientationchange', function() {
+            setTimeout(handleResize, 150);
+        });
+
+        // ---- INIT ----
+        confettiCanvas.width = window.innerWidth;
+        confettiCanvas.height = window.innerHeight;
+
+        if (!loadState()) {
+            rows = parseInt(sizeSelect.value, 10);
+            cols = rows;
+            calculateDimensions();
+            maze = generateMazeGrid(rows, cols);
+            drawMaze();
+            saveState();
+            statusText.textContent = '✅ Generated ' + rows + '×' + cols + ' maze';
+        }
+        updateButtons();
+    })();
+    </script>
+</body>
+</html>
