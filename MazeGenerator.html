@@ -1,0 +1,1552 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, maximum-scale=1.0">
+    <title>The Maze Generator</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #0c0c1d 0%, #1a1a3e 50%, #0c0c1d 100%);
+            min-height: 100vh;
+            min-height: 100dvh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            color: #e0e0ff;
+            overflow-x: hidden;
+            -webkit-user-select: none;
+            user-select: none;
+            overflow-y: auto;
+        }
+
+        h1 {
+            margin-top: 8px;
+            font-size: clamp(1.1rem, 4vw, 2rem);
+            background: linear-gradient(90deg, #00d4ff, #7b2ff7, #ff2d95);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            letter-spacing: 2px;
+            text-align: center;
+            padding: 0 8px;
+        }
+
+        .controls {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            margin: 8px 0;
+            justify-content: center;
+            align-items: center;
+            padding: 0 6px;
+            max-width: 100%;
+        }
+
+        .control-group {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            background: rgba(255,255,255,0.05);
+            padding: 5px 8px;
+            border-radius: 10px;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+
+        label {
+            font-size: clamp(0.65rem, 2vw, 0.82rem);
+            color: #a0a0cc;
+            white-space: nowrap;
+        }
+
+        select, input[type="range"] {
+            background: rgba(255,255,255,0.1);
+            border: 1px solid rgba(255,255,255,0.2);
+            color: #e0e0ff;
+            padding: 4px 6px;
+            border-radius: 8px;
+            font-size: clamp(0.65rem, 2vw, 0.82rem);
+            outline: none;
+        }
+
+        select:focus, input[type="range"]:focus {
+            border-color: #7b2ff7;
+        }
+
+        select option {
+            background: #1a1a3e;
+            color: #e0e0ff;
+        }
+
+        input[type="range"] {
+            -webkit-appearance: none;
+            width: clamp(50px, 15vw, 90px);
+            height: 6px;
+            border-radius: 3px;
+            background: linear-gradient(90deg, #00d4ff, #7b2ff7);
+            padding: 0;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: #fff;
+            cursor: pointer;
+            box-shadow: 0 0 8px rgba(123, 47, 247, 0.6);
+        }
+
+        button {
+            padding: 5px 10px;
+            border: none;
+            border-radius: 8px;
+            font-size: clamp(0.65rem, 2vw, 0.85rem);
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            letter-spacing: 0.3px;
+            white-space: nowrap;
+        }
+
+        .btn-generate {
+            background: linear-gradient(135deg, #00d4ff, #0088cc);
+            color: #fff;
+            box-shadow: 0 3px 12px rgba(0, 212, 255, 0.3);
+        }
+        .btn-generate:hover { transform: translateY(-1px); box-shadow: 0 5px 16px rgba(0, 212, 255, 0.5); }
+
+        .btn-solve {
+            background: linear-gradient(135deg, #7b2ff7, #5a1fd0);
+            color: #fff;
+            box-shadow: 0 3px 12px rgba(123, 47, 247, 0.3);
+        }
+        .btn-solve:hover { transform: translateY(-1px); box-shadow: 0 5px 16px rgba(123, 47, 247, 0.5); }
+
+        .btn-manual {
+            background: linear-gradient(135deg, #00ff88, #00cc66);
+            color: #0a0a1a;
+            box-shadow: 0 3px 12px rgba(0, 255, 136, 0.3);
+        }
+        .btn-manual:hover { transform: translateY(-1px); box-shadow: 0 5px 16px rgba(0, 255, 136, 0.5); }
+        .btn-manual.active {
+            background: linear-gradient(135deg, #ff9500, #cc7700);
+            color: #fff;
+            box-shadow: 0 3px 12px rgba(255, 149, 0, 0.5);
+            animation: pulse-manual 1.5s infinite;
+        }
+
+        @keyframes pulse-manual {
+            0%, 100% { box-shadow: 0 3px 12px rgba(255, 149, 0, 0.5); }
+            50% { box-shadow: 0 3px 20px rgba(255, 149, 0, 0.8); }
+        }
+
+        .btn-reset {
+            background: linear-gradient(135deg, #ff2d95, #cc1a70);
+            color: #fff;
+            box-shadow: 0 3px 12px rgba(255, 45, 149, 0.3);
+        }
+        .btn-reset:hover { transform: translateY(-1px); box-shadow: 0 5px 16px rgba(255, 45, 149, 0.5); }
+
+        .btn-demo {
+            background: linear-gradient(135deg, #ffd700, #ff9500);
+            color: #0a0a1a;
+            box-shadow: 0 3px 12px rgba(255, 215, 0, 0.3);
+        }
+        .btn-demo:hover { transform: translateY(-1px); box-shadow: 0 5px 16px rgba(255, 215, 0, 0.5); }
+        .btn-demo.active {
+            background: linear-gradient(135deg, #ff4444, #cc2222);
+            color: #fff;
+            box-shadow: 0 3px 12px rgba(255, 68, 68, 0.5);
+        }
+
+        button:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+            transform: none !important;
+        }
+
+        .canvas-wrapper {
+            position: relative;
+            width: calc(100vw - 16px);
+            max-width: 700px;
+            flex: 1 1 auto;
+            min-height: 200px;
+            max-height: calc(100vh - 220px);
+            max-height: calc(100dvh - 220px);
+            margin: 4px 8px;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.5), 0 0 40px rgba(123, 47, 247, 0.1);
+            border: 2px solid rgba(255,255,255,0.1);
+            touch-action: none;
+            cursor: grab;
+        }
+
+        .canvas-wrapper:active {
+            cursor: grabbing;
+        }
+
+        canvas#mazeCanvas {
+            display: block;
+            background: #0a0a1a;
+            transform-origin: 0 0;
+            position: absolute;
+            top: 0;
+            left: 0;
+        }
+
+        .status-bar {
+            display: flex;
+            gap: 8px;
+            margin: 4px 0 8px;
+            font-size: clamp(0.6rem, 1.8vw, 0.8rem);
+            color: #a0a0cc;
+            flex-wrap: wrap;
+            justify-content: center;
+            padding: 0 6px;
+        }
+
+        .status-item {
+            display: flex;
+            align-items: center;
+            gap: 3px;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            flex-shrink: 0;
+        }
+
+        .dot-start { background: #00ff88; box-shadow: 0 0 6px #00ff88; }
+        .dot-end { background: #ff2d95; box-shadow: 0 0 6px #ff2d95; }
+        .dot-visited { background: rgba(123, 47, 247, 0.6); }
+        .dot-path { background: #ffd700; box-shadow: 0 0 6px #ffd700; }
+        .dot-current { background: #00d4ff; box-shadow: 0 0 6px #00d4ff; }
+        .dot-player { background: #00ff88; box-shadow: 0 0 8px #00ff88; }
+
+        .speed-value {
+            min-width: 20px;
+            text-align: center;
+            font-weight: 600;
+            color: #7b2ff7;
+        }
+
+        .manual-hint {
+            font-size: clamp(0.6rem, 1.8vw, 0.78rem);
+            color: #ff9500;
+            text-align: center;
+            margin-bottom: 2px;
+            min-height: 1em;
+            padding: 0 8px;
+        }
+
+        .timer-display {
+            font-size: clamp(0.65rem, 2vw, 0.85rem);
+            color: #00d4ff;
+            font-weight: 600;
+            font-variant-numeric: tabular-nums;
+        }
+
+        .zoom-hint {
+            font-size: clamp(0.55rem, 1.5vw, 0.7rem);
+            color: rgba(160,160,204,0.5);
+            text-align: center;
+            margin-bottom: 2px;
+        }
+
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.7);
+            backdrop-filter: blur(8px);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+        .modal-overlay.show { display: flex; }
+
+        .modal {
+            background: linear-gradient(145deg, #1a1a3e, #0c0c2d);
+            border: 2px solid rgba(255,255,255,0.15);
+            border-radius: 20px;
+            padding: clamp(20px, 5vw, 40px) clamp(16px, 5vw, 50px);
+            text-align: center;
+            max-width: 400px;
+            width: 92%;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.6), 0 0 80px rgba(123, 47, 247, 0.2);
+            animation: modalPop 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        @keyframes modalPop {
+            from { opacity: 0; transform: scale(0.7) translateY(30px); }
+            to { opacity: 1; transform: scale(1) translateY(0); }
+        }
+
+        .modal-emoji {
+            font-size: clamp(2.5rem, 8vw, 4rem);
+            margin-bottom: 8px;
+            animation: bounce 1s ease infinite;
+        }
+
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-8px); }
+        }
+
+        .modal h2 {
+            font-size: clamp(1.2rem, 4vw, 1.8rem);
+            background: linear-gradient(90deg, #ffd700, #ff9500, #ff2d95);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 16px;
+        }
+
+        .modal-stats {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            margin-bottom: 20px;
+        }
+
+        .modal-stat {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: rgba(255,255,255,0.05);
+            padding: 10px 14px;
+            border-radius: 10px;
+            border: 1px solid rgba(255,255,255,0.08);
+        }
+
+        .modal-stat-label {
+            font-size: clamp(0.75rem, 2.5vw, 0.9rem);
+            color: #a0a0cc;
+        }
+
+        .modal-stat-value {
+            font-size: clamp(0.85rem, 3vw, 1.1rem);
+            font-weight: 700;
+            color: #ffd700;
+            font-variant-numeric: tabular-nums;
+        }
+
+        .modal-stat-value.time-val { color: #00d4ff; }
+        .modal-stat-value.steps-val { color: #00ff88; }
+        .modal-stat-value.size-val { color: #7b2ff7; }
+
+        .btn-modal-close {
+            padding: 10px 32px;
+            border: none;
+            border-radius: 12px;
+            font-size: clamp(0.85rem, 3vw, 1rem);
+            font-weight: 700;
+            cursor: pointer;
+            background: linear-gradient(135deg, #ffd700, #ff9500);
+            color: #0a0a1a;
+            box-shadow: 0 4px 20px rgba(255, 215, 0, 0.4);
+            transition: all 0.3s ease;
+        }
+
+        .btn-modal-close:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 25px rgba(255, 215, 0, 0.6);
+        }
+
+        #confettiCanvas {
+            position: fixed;
+            top: 0; left: 0;
+            pointer-events: none;
+            z-index: 1001;
+        }
+
+        @media (max-height: 600px) {
+            h1 { margin-top: 4px; }
+            .controls { margin: 4px 0; gap: 4px; }
+            .control-group { padding: 3px 6px; }
+            button { padding: 4px 8px; }
+            .canvas-wrapper {
+                max-height: calc(100vh - 180px);
+                max-height: calc(100dvh - 180px);
+            }
+            .status-bar { margin: 2px 0 4px; gap: 6px; }
+        }
+
+        @media (max-width: 380px) {
+            .controls { gap: 3px; }
+            .control-group { padding: 3px 5px; gap: 3px; }
+            button { padding: 4px 7px; font-size: 0.65rem; }
+        }
+    </style>
+</head>
+<body>
+    <h1>🏰 The Maze Generator</h1>
+
+    <div class="controls">
+        <div class="control-group">
+            <label for="sizeSelect">Size:</label>
+            <select id="sizeSelect">
+                <option value="10">10×10</option>
+                <option value="15">15×15</option>
+                <option value="20" selected>20×20</option>
+                <option value="30">30×30</option>
+                <option value="40">40×40</option>
+                <option value="50">50×50</option>
+            </select>
+        </div>
+
+        <div class="control-group">
+            <label for="algoSelect">AI:</label>
+            <select id="algoSelect">
+                <option value="dfs">DFS</option>
+                <option value="bfs">BFS</option>
+                <option value="astar">A*</option>
+            </select>
+        </div>
+
+        <div class="control-group">
+            <label for="speedRange">Spd:</label>
+            <input type="range" id="speedRange" min="1" max="100" value="50">
+            <span class="speed-value" id="speedValue">50</span>
+        </div>
+
+        <button class="btn-generate" id="btnGenerate">🔄 New</button>
+        <button class="btn-solve" id="btnSolve">🤖 AI</button>
+        <button class="btn-manual" id="btnManual">🎮 Play</button>
+        <button class="btn-demo" id="btnDemo">🎬 Demo</button>
+        <button class="btn-reset" id="btnReset">🗑️</button>
+    </div>
+
+    <div class="manual-hint" id="manualHint"></div>
+
+    <div class="canvas-wrapper" id="canvasWrapper">
+        <canvas id="mazeCanvas"></canvas>
+    </div>
+
+    <div class="zoom-hint" id="zoomHint">Pinch to zoom • Drag to pan</div>
+
+    <div class="status-bar">
+        <div class="status-item"><div class="status-dot dot-start"></div> Start</div>
+        <div class="status-item"><div class="status-dot dot-end"></div> End</div>
+        <div class="status-item"><div class="status-dot dot-player"></div> You</div>
+        <div class="status-item"><div class="status-dot dot-path"></div> Path</div>
+        <div class="status-item timer-display" id="timerDisplay"></div>
+        <div class="status-item" id="statusText">Ready</div>
+    </div>
+
+    <div class="modal-overlay" id="modalOverlay">
+        <div class="modal">
+            <div class="modal-emoji">🎉🏆🎉</div>
+            <h2>Congratulations!</h2>
+            <div class="modal-stats">
+                <div class="modal-stat">
+                    <span class="modal-stat-label">⏱️ Time</span>
+                    <span class="modal-stat-value time-val" id="modalTime">--</span>
+                </div>
+                <div class="modal-stat">
+                    <span class="modal-stat-label">👣 Steps</span>
+                    <span class="modal-stat-value steps-val" id="modalSteps">--</span>
+                </div>
+                <div class="modal-stat">
+                    <span class="modal-stat-label">📐 Path</span>
+                    <span class="modal-stat-value" id="modalPathLen">--</span>
+                </div>
+                <div class="modal-stat">
+                    <span class="modal-stat-label">📏 Size</span>
+                    <span class="modal-stat-value size-val" id="modalSize">--</span>
+                </div>
+            </div>
+            <button class="btn-modal-close" id="btnModalClose">🎮 Play Again</button>
+        </div>
+    </div>
+
+    <canvas id="confettiCanvas"></canvas>
+
+    <script>
+    (() => {
+        "use strict";
+
+        const $ = id => document.getElementById(id);
+        const canvas = $('mazeCanvas');
+        const ctx = canvas.getContext('2d');
+        const wrapper = $('canvasWrapper');
+        const sizeSelect = $('sizeSelect');
+        const algoSelect = $('algoSelect');
+        const speedRange = $('speedRange');
+        const speedValueEl = $('speedValue');
+        const btnGenerate = $('btnGenerate');
+        const btnSolve = $('btnSolve');
+        const btnManual = $('btnManual');
+        const btnDemo = $('btnDemo');
+        const btnReset = $('btnReset');
+        const statusText = $('statusText');
+        const manualHint = $('manualHint');
+        const timerDisplay = $('timerDisplay');
+        const zoomHint = $('zoomHint');
+        const modalOverlay = $('modalOverlay');
+        const modalTime = $('modalTime');
+        const modalSteps = $('modalSteps');
+        const modalPathLen = $('modalPathLen');
+        const modalSize = $('modalSize');
+        const btnModalClose = $('btnModalClose');
+        const confettiCanvas = $('confettiCanvas');
+        const confettiCtx = confettiCanvas.getContext('2d');
+
+        // State
+        let maze = null;
+        let rows = 20, cols = 20;
+        let cellSize = 20, wallWidth = 2;
+        let animating = false;
+        let solveTimeoutId = null;
+
+        // Manual
+        let manualMode = false;
+        let playerRow = 0, playerCol = 0;
+        let playerPath = [];
+        let playerSteps = 0;
+        let manualStartTime = null;
+        let timerIntervalId = null;
+        let manualFinished = false;
+
+        // Demo
+        let demoMode = false;
+        let demoTimeoutId = null;
+        const DEMO_SIZES = [10, 15, 20, 25, 30, 35, 40, 45, 50];
+        let demoSizeIdx = 0;
+
+        // Zoom & Pan
+        let scale = 1, minScale = 1, maxScale = 8;
+        let panX = 0, panY = 0;
+        let isPanning = false;
+        let panStartX = 0, panStartY = 0;
+        let panStartPanX = 0, panStartPanY = 0;
+
+        // Pinch
+        let initialPinchDist = 0;
+        let initialPinchScale = 1;
+        let pinchCenterX = 0, pinchCenterY = 0;
+        let isPinching = false;
+
+        // Touch move (single)
+        let touchStartX = 0, touchStartY = 0, touchStartTimeMs = 0;
+        let touchMoved = false;
+
+        // Confetti
+        let confettiPieces = [];
+        let confettiAnimId = null;
+
+        // ---- CELL ----
+        const createCell = () => ({
+            top: true, right: true, bottom: true, left: true,
+            visited: false, solveVisited: false, onPath: false,
+            current: false, playerVisited: false, playerPath: false
+        });
+
+        const createGrid = (r, c) => {
+            const grid = [];
+            for (let i = 0; i < r; i++) {
+                grid[i] = [];
+                for (let j = 0; j < c; j++) grid[i][j] = createCell();
+            }
+            return grid;
+        };
+
+        // ---- GENERATE ----
+        const generateMazeGrid = (r, c) => {
+            const grid = createGrid(r, c);
+            const stack = [[0, 0]];
+            grid[0][0].visited = true;
+            while (stack.length > 0) {
+                const [cr, cc] = stack[stack.length - 1];
+                const nb = [];
+                if (cr > 0 && !grid[cr-1][cc].visited) nb.push([cr-1, cc, 'top']);
+                if (cc < c-1 && !grid[cr][cc+1].visited) nb.push([cr, cc+1, 'right']);
+                if (cr < r-1 && !grid[cr+1][cc].visited) nb.push([cr+1, cc, 'bottom']);
+                if (cc > 0 && !grid[cr][cc-1].visited) nb.push([cr, cc-1, 'left']);
+                if (nb.length > 0) {
+                    const [nr, nc, dir] = nb[Math.floor(Math.random() * nb.length)];
+                    if (dir === 'top')    { grid[cr][cc].top = false;    grid[nr][nc].bottom = false; }
+                    if (dir === 'right')  { grid[cr][cc].right = false;  grid[nr][nc].left = false; }
+                    if (dir === 'bottom') { grid[cr][cc].bottom = false; grid[nr][nc].top = false; }
+                    if (dir === 'left')   { grid[cr][cc].left = false;   grid[nr][nc].right = false; }
+                    grid[nr][nc].visited = true;
+                    stack.push([nr, nc]);
+                } else stack.pop();
+            }
+            for (let i = 0; i < r; i++)
+                for (let j = 0; j < c; j++) grid[i][j].visited = false;
+            return grid;
+        };
+
+        // ---- DIMENSIONS ----
+        const getWrapperSize = () => {
+            const rect = wrapper.getBoundingClientRect();
+            return { w: rect.width, h: rect.height };
+        };
+
+        const calculateDimensions = () => {
+            const { w, h } = getWrapperSize();
+            cellSize = Math.floor(Math.min(w / cols, h / rows));
+            cellSize = Math.max(4, Math.min(45, cellSize));
+            wallWidth = cellSize > 12 ? 2 : 1;
+            canvas.width = cols * cellSize + wallWidth;
+            canvas.height = rows * cellSize + wallWidth;
+            resetZoom();
+        };
+
+        // ---- ZOOM & PAN ----
+        const resetZoom = () => {
+            const { w, h } = getWrapperSize();
+            const fitScale = Math.min(w / canvas.width, h / canvas.height, 1);
+            scale = fitScale;
+            minScale = fitScale * 0.5;
+            maxScale = Math.max(8, fitScale * 15);
+            panX = (w - canvas.width * scale) / 2;
+            panY = (h - canvas.height * scale) / 2;
+            applyTransform();
+        };
+
+        const applyTransform = () => {
+            canvas.style.transform = `translate(${panX}px, ${panY}px) scale(${scale})`;
+        };
+
+        const clampPan = () => {
+            const { w, h } = getWrapperSize();
+            const cw = canvas.width * scale;
+            const ch = canvas.height * scale;
+            if (cw <= w) {
+                panX = (w - cw) / 2;
+            } else {
+                panX = Math.min(0, Math.max(w - cw, panX));
+            }
+            if (ch <= h) {
+                panY = (h - ch) / 2;
+            } else {
+                panY = Math.min(0, Math.max(h - ch, panY));
+            }
+        };
+
+        const zoomAtPoint = (newScale, cx, cy) => {
+            newScale = Math.max(minScale, Math.min(maxScale, newScale));
+            const ratio = newScale / scale;
+            panX = cx - (cx - panX) * ratio;
+            panY = cy - (cy - panY) * ratio;
+            scale = newScale;
+            clampPan();
+            applyTransform();
+        };
+
+        // ---- PINCH ZOOM (touch) ----
+        const getTouchDist = (t1, t2) => {
+            const dx = t1.clientX - t2.clientX;
+            const dy = t1.clientY - t2.clientY;
+            return Math.sqrt(dx * dx + dy * dy);
+        };
+
+        const getTouchCenter = (t1, t2) => {
+            const rect = wrapper.getBoundingClientRect();
+            return {
+                x: (t1.clientX + t2.clientX) / 2 - rect.left,
+                y: (t1.clientY + t2.clientY) / 2 - rect.top
+            };
+        };
+
+        wrapper.addEventListener('touchstart', (e) => {
+            if (e.touches.length === 2) {
+                e.preventDefault();
+                isPinching = true;
+                isPanning = false;
+                initialPinchDist = getTouchDist(e.touches[0], e.touches[1]);
+                initialPinchScale = scale;
+                const center = getTouchCenter(e.touches[0], e.touches[1]);
+                pinchCenterX = center.x;
+                pinchCenterY = center.y;
+                return;
+            }
+            if (e.touches.length === 1) {
+                const touch = e.touches[0];
+                touchStartX = touch.clientX;
+                touchStartY = touch.clientY;
+                touchStartTimeMs = Date.now();
+                touchMoved = false;
+
+                if (!manualMode || manualFinished) {
+                    isPanning = true;
+                    panStartX = touch.clientX;
+                    panStartY = touch.clientY;
+                    panStartPanX = panX;
+                    panStartPanY = panY;
+                }
+            }
+        }, { passive: false });
+
+        wrapper.addEventListener('touchmove', (e) => {
+            if (isPinching && e.touches.length === 2) {
+                e.preventDefault();
+                const dist = getTouchDist(e.touches[0], e.touches[1]);
+                const newScale = initialPinchScale * (dist / initialPinchDist);
+                const center = getTouchCenter(e.touches[0], e.touches[1]);
+                zoomAtPoint(newScale, center.x, center.y);
+                return;
+            }
+            if (e.touches.length === 1) {
+                const touch = e.touches[0];
+                const dx = touch.clientX - touchStartX;
+                const dy = touch.clientY - touchStartY;
+                if (Math.abs(dx) > 8 || Math.abs(dy) > 8) touchMoved = true;
+
+                if (isPanning) {
+                    e.preventDefault();
+                    panX = panStartPanX + (touch.clientX - panStartX);
+                    panY = panStartPanY + (touch.clientY - panStartY);
+                    clampPan();
+                    applyTransform();
+                }
+            }
+        }, { passive: false });
+
+        wrapper.addEventListener('touchend', (e) => {
+            if (isPinching) {
+                if (e.touches.length < 2) isPinching = false;
+                return;
+            }
+            isPanning = false;
+
+            if (!manualMode || manualFinished) return;
+            if (touchMoved) return;
+
+            const touch = e.changedTouches[0];
+            let dx = touch.clientX - touchStartX;
+            let dy = touch.clientY - touchStartY;
+            let dist = Math.sqrt(dx * dx + dy * dy);
+            const elapsed = Date.now() - touchStartTimeMs;
+
+            // Tap on adjacent cell
+            if (dist < 15 && elapsed < 400) {
+                const rect = wrapper.getBoundingClientRect();
+                const wx = touch.clientX - rect.left;
+                const wy = touch.clientY - rect.top;
+                const cx = (wx - panX) / scale;
+                const cy = (wy - panY) / scale;
+                const tapRow = Math.floor(cy / cellSize);
+                const tapCol = Math.floor(cx / cellSize);
+                const tdr = tapRow - playerRow;
+                const tdc = tapCol - playerCol;
+                if (Math.abs(tdr) + Math.abs(tdc) === 1) {
+                    movePlayer(tdr, tdc);
+                    e.preventDefault();
+                    return;
+                }
+                // Directional swipe from player
+                const pcx = playerCol * cellSize + cellSize / 2;
+                const pcy = playerRow * cellSize + cellSize / 2;
+                dx = cx - pcx;
+                dy = cy - pcy;
+                dist = Math.sqrt(dx * dx + dy * dy);
+            }
+
+            if (dist < 5) return;
+            if (Math.abs(dx) > Math.abs(dy)) movePlayer(0, dx > 0 ? 1 : -1);
+            else movePlayer(dy > 0 ? 1 : -1, 0);
+            e.preventDefault();
+        }, { passive: false });
+
+        // ---- MOUSE PAN (desktop) ----
+        wrapper.addEventListener('mousedown', (e) => {
+            if (manualMode && !manualFinished) return;
+            isPanning = true;
+            panStartX = e.clientX;
+            panStartY = e.clientY;
+            panStartPanX = panX;
+            panStartPanY = panY;
+            e.preventDefault();
+        });
+
+        window.addEventListener('mousemove', (e) => {
+            if (!isPanning) return;
+            panX = panStartPanX + (e.clientX - panStartX);
+            panY = panStartPanY + (e.clientY - panStartY);
+            clampPan();
+            applyTransform();
+        });
+
+        window.addEventListener('mouseup', () => { isPanning = false; });
+
+        // ---- MOUSE WHEEL ZOOM ----
+        wrapper.addEventListener('wheel', (e) => {
+            e.preventDefault();
+            const rect = wrapper.getBoundingClientRect();
+            const cx = e.clientX - rect.left;
+            const cy = e.clientY - rect.top;
+            const factor = e.deltaY < 0 ? 1.15 : 1 / 1.15;
+            zoomAtPoint(scale * factor, cx, cy);
+        }, { passive: false });
+
+        // ---- MOUSE CLICK (manual mode) ----
+        canvas.addEventListener('click', (e) => {
+            if (!manualMode || manualFinished) return;
+            const rect = canvas.getBoundingClientRect();
+            const clickX = (e.clientX - rect.left) * (canvas.width / rect.width);
+            const clickY = (e.clientY - rect.top) * (canvas.height / rect.height);
+            const cr = Math.floor(clickY / cellSize);
+            const cc = Math.floor(clickX / cellSize);
+            const dr = cr - playerRow;
+            const dc = cc - playerCol;
+            if (Math.abs(dr) + Math.abs(dc) === 1) movePlayer(dr, dc);
+        });
+
+        // ---- DRAW ----
+        const drawMaze = () => {
+            if (!maze || maze.length !== rows || !maze[0] || maze[0].length !== cols) return;
+
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.fillStyle = '#0a0a1a';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            const endR = rows - 1, endC = cols - 1;
+
+            for (let i = 0; i < rows; i++) {
+                for (let j = 0; j < cols; j++) {
+                    const x = j * cellSize, y = i * cellSize;
+                    const cell = maze[i][j];
+                    const isStart = (i === 0 && j === 0);
+                    const isEnd = (i === endR && j === endC);
+                    const isPlayer = (manualMode && !manualFinished && i === playerRow && j === playerCol);
+
+                    // Backgrounds
+                    if (isPlayer && !isEnd) {
+                        const g = ctx.createRadialGradient(x+cellSize/2, y+cellSize/2, 0, x+cellSize/2, y+cellSize/2, cellSize*0.7);
+                        g.addColorStop(0, 'rgba(0,255,136,0.6)');
+                        g.addColorStop(1, 'rgba(0,255,136,0)');
+                        ctx.fillStyle = g;
+                        ctx.fillRect(x, y, cellSize, cellSize);
+                    } else if (isStart && !isPlayer) {
+                        ctx.fillStyle = 'rgba(0,255,136,0.2)';
+                        ctx.fillRect(x+wallWidth, y+wallWidth, cellSize-wallWidth, cellSize-wallWidth);
+                        const g = ctx.createRadialGradient(x+cellSize/2, y+cellSize/2, 0, x+cellSize/2, y+cellSize/2, cellSize/2);
+                        g.addColorStop(0, 'rgba(0,255,136,0.4)');
+                        g.addColorStop(1, 'rgba(0,255,136,0)');
+                        ctx.fillStyle = g;
+                        ctx.fillRect(x, y, cellSize, cellSize);
+                    }
+
+                    if (isEnd) {
+                        ctx.fillStyle = 'rgba(255,45,149,0.25)';
+                        ctx.fillRect(x+wallWidth, y+wallWidth, cellSize-wallWidth, cellSize-wallWidth);
+                        const g = ctx.createRadialGradient(x+cellSize/2, y+cellSize/2, 0, x+cellSize/2, y+cellSize/2, cellSize/2);
+                        g.addColorStop(0, 'rgba(255,45,149,0.45)');
+                        g.addColorStop(1, 'rgba(255,45,149,0)');
+                        ctx.fillStyle = g;
+                        ctx.fillRect(x, y, cellSize, cellSize);
+                    }
+
+                    if (!isPlayer && !isStart && !isEnd) {
+                        if (cell.playerPath) {
+                            ctx.fillStyle = 'rgba(0,255,136,0.12)';
+                            ctx.fillRect(x+wallWidth, y+wallWidth, cellSize-wallWidth, cellSize-wallWidth);
+                        } else if (cell.onPath) {
+                            ctx.fillStyle = 'rgba(255,215,0,0.3)';
+                            ctx.fillRect(x+wallWidth, y+wallWidth, cellSize-wallWidth, cellSize-wallWidth);
+                        } else if (cell.current) {
+                            ctx.fillStyle = 'rgba(0,212,255,0.35)';
+                            ctx.fillRect(x+wallWidth, y+wallWidth, cellSize-wallWidth, cellSize-wallWidth);
+                        } else if (cell.solveVisited) {
+                            ctx.fillStyle = 'rgba(123,47,247,0.12)';
+                            ctx.fillRect(x+wallWidth, y+wallWidth, cellSize-wallWidth, cellSize-wallWidth);
+                        }
+                    }
+
+                    if (cell.playerPath && cellSize > 4 && !isPlayer) {
+                        ctx.fillStyle = 'rgba(0,255,136,0.5)';
+                        ctx.beginPath();
+                        ctx.arc(x+cellSize/2, y+cellSize/2, Math.max(cellSize*0.1, 1), 0, Math.PI*2);
+                        ctx.fill();
+                    }
+                    if (cell.onPath && !cell.playerPath && cellSize > 6) {
+                        ctx.fillStyle = 'rgba(255,215,0,0.8)';
+                        ctx.beginPath();
+                        ctx.arc(x+cellSize/2, y+cellSize/2, Math.max(cellSize*0.18, 1.5), 0, Math.PI*2);
+                        ctx.fill();
+                    }
+                    if (cell.current && cellSize > 6) {
+                        ctx.fillStyle = 'rgba(0,212,255,0.9)';
+                        ctx.beginPath();
+                        ctx.arc(x+cellSize/2, y+cellSize/2, Math.max(cellSize*0.22, 1.5), 0, Math.PI*2);
+                        ctx.fill();
+                    }
+
+                    // Walls
+                    ctx.strokeStyle = '#2a2a5a';
+                    ctx.lineWidth = wallWidth;
+                    ctx.lineCap = 'round';
+                    if (cell.top)    { ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x+cellSize, y); ctx.stroke(); }
+                    if (cell.right)  { ctx.beginPath(); ctx.moveTo(x+cellSize, y); ctx.lineTo(x+cellSize, y+cellSize); ctx.stroke(); }
+                    if (cell.bottom) { ctx.beginPath(); ctx.moveTo(x, y+cellSize); ctx.lineTo(x+cellSize, y+cellSize); ctx.stroke(); }
+                    if (cell.left)   { ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x, y+cellSize); ctx.stroke(); }
+                }
+            }
+
+            // Player path line
+            if (manualMode && playerPath.length > 1 && cellSize > 4) {
+                ctx.strokeStyle = 'rgba(0,255,136,0.35)';
+                ctx.lineWidth = Math.max(cellSize * 0.12, 1);
+                ctx.lineCap = 'round';
+                ctx.lineJoin = 'round';
+                ctx.beginPath();
+                ctx.moveTo(playerPath[0].c*cellSize+cellSize/2, playerPath[0].r*cellSize+cellSize/2);
+                for (let k = 1; k < playerPath.length; k++)
+                    ctx.lineTo(playerPath[k].c*cellSize+cellSize/2, playerPath[k].r*cellSize+cellSize/2);
+                ctx.stroke();
+            }
+
+            // Start icon
+            if (cellSize >= 8 && !(manualMode && !manualFinished && playerRow === 0 && playerCol === 0)) {
+                ctx.fillStyle = '#00ff88';
+                ctx.beginPath();
+                const sx = cellSize*0.3, sy = cellSize*0.25;
+                ctx.moveTo(sx, sy);
+                ctx.lineTo(sx+cellSize*0.45, sy+cellSize*0.25);
+                ctx.lineTo(sx, sy+cellSize*0.5);
+                ctx.closePath();
+                ctx.fill();
+            }
+
+            // End star
+            if (cellSize >= 8) {
+                const ex = (cols-1)*cellSize+cellSize*0.5, ey = (rows-1)*cellSize+cellSize*0.5;
+                const outerR = cellSize*0.3, innerR = cellSize*0.12;
+                ctx.fillStyle = '#ff2d95';
+                ctx.beginPath();
+                for (let s = 0; s < 10; s++) {
+                    const rad = (s % 2 === 0) ? outerR : innerR;
+                    const angle = (s * Math.PI / 5) - Math.PI / 2;
+                    if (s === 0) ctx.moveTo(ex+rad*Math.cos(angle), ey+rad*Math.sin(angle));
+                    else ctx.lineTo(ex+rad*Math.cos(angle), ey+rad*Math.sin(angle));
+                }
+                ctx.closePath();
+                ctx.fill();
+            }
+
+            // Player
+            if (manualMode && !manualFinished) {
+                const pcx = playerCol*cellSize+cellSize/2, pcy = playerRow*cellSize+cellSize/2;
+                const pr = cellSize * 0.3;
+                const g = ctx.createRadialGradient(pcx, pcy, pr*0.3, pcx, pcy, pr*2);
+                g.addColorStop(0, 'rgba(0,255,136,0.4)');
+                g.addColorStop(1, 'rgba(0,255,136,0)');
+                ctx.fillStyle = g;
+                ctx.beginPath(); ctx.arc(pcx, pcy, pr*2, 0, Math.PI*2); ctx.fill();
+
+                ctx.fillStyle = '#00ff88';
+                ctx.shadowColor = '#00ff88';
+                ctx.shadowBlur = 10;
+                ctx.beginPath(); ctx.arc(pcx, pcy, pr, 0, Math.PI*2); ctx.fill();
+                ctx.shadowBlur = 0;
+
+                if (cellSize > 10) {
+                    ctx.fillStyle = 'rgba(255,255,255,0.4)';
+                    ctx.beginPath();
+                    ctx.arc(pcx-pr*0.2, pcy-pr*0.2, pr*0.3, 0, Math.PI*2);
+                    ctx.fill();
+                }
+            }
+        };
+
+        // ---- HELPERS ----
+        const getNeighbors = (r, c) => {
+            const nb = [], cell = maze[r][c];
+            if (!cell.top && r > 0) nb.push([r-1, c]);
+            if (!cell.right && c < cols-1) nb.push([r, c+1]);
+            if (!cell.bottom && r < rows-1) nb.push([r+1, c]);
+            if (!cell.left && c > 0) nb.push([r, c-1]);
+            return nb;
+        };
+
+        const getSpeed = () => Math.max(1, Math.floor(201 - parseInt(speedRange.value, 10) * 2));
+
+        const formatTime = (ms) => {
+            const s = Math.floor(ms / 1000), m = Math.floor(s / 60);
+            const sec = s % 60, t = Math.floor((ms % 1000) / 100);
+            return m > 0 ? `${m}:${sec.toString().padStart(2,'0')}.${t}` : `${sec}.${t}s`;
+        };
+
+        const clearSolveState = () => {
+            if (!maze) return;
+            for (let i = 0; i < rows; i++)
+                for (let j = 0; j < cols; j++) {
+                    maze[i][j].solveVisited = false;
+                    maze[i][j].onPath = false;
+                    maze[i][j].current = false;
+                }
+        };
+
+        const clearPlayerState = () => {
+            if (maze)
+                for (let i = 0; i < rows; i++)
+                    for (let j = 0; j < cols; j++) {
+                        maze[i][j].playerVisited = false;
+                        maze[i][j].playerPath = false;
+                    }
+            playerPath = []; playerSteps = 0;
+            playerRow = 0; playerCol = 0;
+            manualStartTime = null; manualFinished = false;
+            if (timerIntervalId !== null) { clearInterval(timerIntervalId); timerIntervalId = null; }
+            timerDisplay.textContent = '';
+        };
+
+        const clearAllCurrentFlags = () => {
+            if (!maze) return;
+            for (let i = 0; i < rows; i++)
+                for (let j = 0; j < cols; j++) maze[i][j].current = false;
+        };
+
+        const updateButtons = () => {
+            btnGenerate.disabled = animating || demoMode;
+            btnSolve.disabled = animating || !maze || manualMode || demoMode;
+            btnManual.disabled = animating || !maze || demoMode;
+            btnReset.disabled = demoMode;
+            sizeSelect.disabled = demoMode;
+            algoSelect.disabled = demoMode;
+        };
+
+        // ---- MANUAL ----
+        const startTimer = () => {
+            if (timerIntervalId !== null) clearInterval(timerIntervalId);
+            timerIntervalId = setInterval(() => {
+                if (manualStartTime && manualMode && !manualFinished)
+                    timerDisplay.textContent = '⏱️ ' + formatTime(Date.now() - manualStartTime);
+            }, 100);
+        };
+
+        const startManualMode = () => {
+            if (!maze || animating) return;
+            clearSolveState(); clearPlayerState();
+            manualMode = true; manualFinished = false;
+            playerRow = 0; playerCol = 0;
+            playerPath = [{r:0,c:0}]; playerSteps = 0;
+            maze[0][0].playerVisited = true;
+            maze[0][0].playerPath = true;
+            manualStartTime = Date.now();
+            btnManual.classList.add('active');
+            btnManual.textContent = '🎮 Playing...';
+            manualHint.textContent = '⌨️ Arrows/WASD/Swipe • Pinch to zoom';
+            statusText.textContent = '🎮 Go!';
+            startTimer(); drawMaze(); saveState(); updateButtons();
+        };
+
+        const stopManualMode = () => {
+            manualMode = false; manualFinished = false;
+            if (timerIntervalId !== null) { clearInterval(timerIntervalId); timerIntervalId = null; }
+            btnManual.classList.remove('active');
+            btnManual.textContent = '🎮 Play';
+            manualHint.textContent = '';
+            timerDisplay.textContent = '';
+            updateButtons();
+        };
+
+        const movePlayer = (dr, dc) => {
+            if (!manualMode || manualFinished || !maze) return;
+            const nr = playerRow + dr, nc = playerCol + dc;
+            if (nr < 0 || nr >= rows || nc < 0 || nc >= cols) return;
+            const cell = maze[playerRow][playerCol];
+            if (dr === -1 && cell.top) return;
+            if (dr === 1 && cell.bottom) return;
+            if (dc === -1 && cell.left) return;
+            if (dc === 1 && cell.right) return;
+
+            playerRow = nr; playerCol = nc; playerSteps++;
+
+            if (playerPath.length >= 2) {
+                const prev = playerPath[playerPath.length - 2];
+                if (prev.r === nr && prev.c === nc) {
+                    const removed = playerPath.pop();
+                    maze[removed.r][removed.c].playerPath = false;
+                } else {
+                    playerPath.push({r:nr,c:nc});
+                    maze[nr][nc].playerPath = true;
+                }
+            } else {
+                playerPath.push({r:nr,c:nc});
+                maze[nr][nc].playerPath = true;
+            }
+            maze[nr][nc].playerVisited = true;
+            drawMaze(); saveState();
+
+            if (nr === rows-1 && nc === cols-1) {
+                manualFinished = true;
+                if (timerIntervalId !== null) { clearInterval(timerIntervalId); timerIntervalId = null; }
+                const elapsed = Date.now() - manualStartTime;
+                timerDisplay.textContent = '⏱️ ' + formatTime(elapsed);
+                statusText.textContent = '🏆 Solved!';
+                setTimeout(() => showCongratulations(elapsed, playerSteps, playerPath.length), 350);
+            }
+        };
+
+        // ---- CONGRATULATIONS ----
+        const showCongratulations = (timeMs, steps, pathLen) => {
+            modalTime.textContent = formatTime(timeMs);
+            modalSteps.textContent = String(steps);
+            modalPathLen.textContent = pathLen + ' cells';
+            modalSize.textContent = `${rows}×${cols}`;
+            modalOverlay.classList.add('show');
+            launchConfetti();
+        };
+
+        btnModalClose.addEventListener('click', () => {
+            modalOverlay.classList.remove('show');
+            stopConfetti(); stopManualMode(); clearPlayerState(); clearSolveState();
+            rows = parseInt(sizeSelect.value, 10); cols = rows;
+            calculateDimensions();
+            maze = generateMazeGrid(rows, cols);
+            drawMaze(); saveState();
+            statusText.textContent = `✅ New ${rows}×${cols} maze`;
+            updateButtons();
+        });
+
+        modalOverlay.addEventListener('click', (e) => {
+            if (e.target === modalOverlay) { modalOverlay.classList.remove('show'); stopConfetti(); }
+        });
+
+        // ---- CONFETTI ----
+        const resizeConfetti = () => {
+            confettiCanvas.width = window.innerWidth;
+            confettiCanvas.height = window.innerHeight;
+        };
+
+        const launchConfetti = () => {
+            resizeConfetti(); confettiPieces = [];
+            const colors = ['#ffd700','#ff2d95','#00d4ff','#7b2ff7','#00ff88','#ff9500','#ff4444','#44ff44'];
+            for (let i = 0; i < 120; i++) confettiPieces.push({
+                x: Math.random()*confettiCanvas.width,
+                y: Math.random()*confettiCanvas.height - confettiCanvas.height,
+                w: Math.random()*8+4, h: Math.random()*5+2,
+                color: colors[Math.floor(Math.random()*colors.length)],
+                vx: (Math.random()-0.5)*4, vy: Math.random()*3+2,
+                rot: Math.random()*360, rotSpeed: (Math.random()-0.5)*10, opacity: 1
+            });
+            animateConfetti();
+        };
+
+        const animateConfetti = () => {
+            confettiCtx.clearRect(0, 0, confettiCanvas.width, confettiCanvas.height);
+            let alive = false;
+            for (const p of confettiPieces) {
+                p.x += p.vx; p.y += p.vy; p.vy += 0.05; p.rot += p.rotSpeed;
+                if (p.y > confettiCanvas.height + 50) p.opacity -= 0.02;
+                if (p.opacity <= 0) continue;
+                alive = true;
+                confettiCtx.save();
+                confettiCtx.translate(p.x, p.y);
+                confettiCtx.rotate(p.rot * Math.PI / 180);
+                confettiCtx.globalAlpha = Math.max(0, p.opacity);
+                confettiCtx.fillStyle = p.color;
+                confettiCtx.fillRect(-p.w/2, -p.h/2, p.w, p.h);
+                confettiCtx.restore();
+            }
+            if (alive) confettiAnimId = requestAnimationFrame(animateConfetti);
+        };
+
+        const stopConfetti = () => {
+            if (confettiAnimId !== null) { cancelAnimationFrame(confettiAnimId); confettiAnimId = null; }
+            confettiCtx.clearRect(0, 0, confettiCanvas.width, confettiCanvas.height);
+            confettiPieces = [];
+        };
+
+        // ---- KEYBOARD ----
+        document.addEventListener('keydown', (e) => {
+            if (!manualMode || manualFinished) return;
+            let dr = 0, dc = 0;
+            const k = e.key.toLowerCase();
+            if (k === 'arrowup' || k === 'w') dr = -1;
+            else if (k === 'arrowdown' || k === 's') dr = 1;
+            else if (k === 'arrowleft' || k === 'a') dc = -1;
+            else if (k === 'arrowright' || k === 'd') dc = 1;
+            else return;
+            e.preventDefault();
+            movePlayer(dr, dc);
+        });
+
+        // ---- SOLVE ----
+        const tracePath = (parentMap, endR, endC) => new Promise((resolve) => {
+            const path = [];
+            let key = `${endR},${endC}`;
+            while (key != null) {
+                const [r, c] = key.split(',').map(Number);
+                path.unshift([r, c]);
+                key = parentMap[key];
+            }
+            let idx = 0;
+            const step = () => {
+                if (idx >= path.length || !animating) { resolve(); return; }
+                maze[path[idx][0]][path[idx][1]].onPath = true;
+                drawMaze(); idx++;
+                solveTimeoutId = setTimeout(step, Math.max(getSpeed()/2, 3));
+            };
+            step();
+        });
+
+        const finishSolve = (found) => {
+            if (found) statusText.textContent = '✅ Path found!';
+            else if (animating) statusText.textContent = '❌ No path';
+            clearAllCurrentFlags(); drawMaze();
+            animating = false; updateButtons(); saveState();
+        };
+
+        const solveDFS = () => {
+            animating = true; updateButtons();
+            statusText.textContent = '🔍 DFS...';
+            const stack = [[0,0]], parentMap = {'0,0': null};
+            const endR = rows-1, endC = cols-1;
+            maze[0][0].solveVisited = true;
+            const step = () => {
+                if (!animating || stack.length === 0) { finishSolve(false); return; }
+                const [cr, cc] = stack.pop();
+                clearAllCurrentFlags();
+                maze[cr][cc].current = true; maze[cr][cc].solveVisited = true;
+                drawMaze();
+                if (cr === endR && cc === endC) { tracePath(parentMap, endR, endC).then(() => finishSolve(true)); return; }
+                const nb = getNeighbors(cr, cc);
+                for (let i = nb.length-1; i > 0; i--) { const j = Math.floor(Math.random()*(i+1)); [nb[i],nb[j]] = [nb[j],nb[i]]; }
+                for (const [nr, nc] of nb) {
+                    if (!maze[nr][nc].solveVisited) {
+                        maze[nr][nc].solveVisited = true;
+                        parentMap[`${nr},${nc}`] = `${cr},${cc}`;
+                        stack.push([nr, nc]);
+                    }
+                }
+                solveTimeoutId = setTimeout(step, getSpeed());
+            };
+            step();
+        };
+
+        const solveBFS = () => {
+            animating = true; updateButtons();
+            statusText.textContent = '🔍 BFS...';
+            const queue = [[0,0]]; let qi = 0;
+            const parentMap = {'0,0': null};
+            const endR = rows-1, endC = cols-1;
+            maze[0][0].solveVisited = true;
+            const step = () => {
+                if (!animating || qi >= queue.length) { finishSolve(false); return; }
+                const [cr, cc] = queue[qi++];
+                clearAllCurrentFlags();
+                maze[cr][cc].current = true; drawMaze();
+                if (cr === endR && cc === endC) { tracePath(parentMap, endR, endC).then(() => finishSolve(true)); return; }
+                for (const [nr, nc] of getNeighbors(cr, cc)) {
+                    if (!maze[nr][nc].solveVisited) {
+                        maze[nr][nc].solveVisited = true;
+                        parentMap[`${nr},${nc}`] = `${cr},${cc}`;
+                        queue.push([nr, nc]);
+                    }
+                }
+                solveTimeoutId = setTimeout(step, getSpeed());
+            };
+            step();
+        };
+
+        const solveAStar = () => {
+            animating = true; updateButtons();
+            statusText.textContent = '🔍 A*...';
+            const endR = rows-1, endC = cols-1;
+            const h = (r,c) => Math.abs(r-endR)+Math.abs(c-endC);
+            const openSet = [{r:0,c:0,g:0,f:h(0,0)}];
+            const gScore = {'0,0':0}, parentMap = {'0,0':null}, closed = {};
+            maze[0][0].solveVisited = true;
+            const step = () => {
+                if (!animating || openSet.length === 0) { finishSolve(false); return; }
+                let bi = 0;
+                for (let i = 1; i < openSet.length; i++) if (openSet[i].f < openSet[bi].f) bi = i;
+                const cur = openSet.splice(bi, 1)[0];
+                const key = `${cur.r},${cur.c}`;
+                if (closed[key]) { step(); return; }
+                closed[key] = true;
+                clearAllCurrentFlags();
+                maze[cur.r][cur.c].current = true; maze[cur.r][cur.c].solveVisited = true;
+                drawMaze();
+                if (cur.r === endR && cur.c === endC) { tracePath(parentMap, endR, endC).then(() => finishSolve(true)); return; }
+                for (const [nr, nc] of getNeighbors(cur.r, cur.c)) {
+                    const nk = `${nr},${nc}`;
+                    if (closed[nk]) continue;
+                    const tg = (gScore[key] ?? Infinity) + 1;
+                    if (tg < (gScore[nk] ?? Infinity)) {
+                        gScore[nk] = tg; parentMap[nk] = key;
+                        openSet.push({r:nr,c:nc,g:tg,f:tg+h(nr,nc)});
+                        maze[nr][nc].solveVisited = true;
+                    }
+                }
+                solveTimeoutId = setTimeout(step, getSpeed());
+            };
+            step();
+        };
+
+        const runSolve = (algo) => {
+            if (algo === 'dfs') solveDFS();
+            else if (algo === 'bfs') solveBFS();
+            else solveAStar();
+        };
+
+        // ---- DEMO MODE ----
+        const startDemo = () => {
+            if (demoMode) { stopDemo(); return; }
+            if (animating) { animating = false; if (solveTimeoutId) { clearTimeout(solveTimeoutId); solveTimeoutId = null; } }
+            stopManualMode(); clearPlayerState();
+            demoMode = true;
+            demoSizeIdx = 0;
+            btnDemo.classList.add('active');
+            btnDemo.textContent = '⏹️ Stop';
+            updateButtons();
+            runDemoStep();
+        };
+
+        const stopDemo = () => {
+            demoMode = false;
+            animating = false;
+            if (solveTimeoutId) { clearTimeout(solveTimeoutId); solveTimeoutId = null; }
+            if (demoTimeoutId) { clearTimeout(demoTimeoutId); demoTimeoutId = null; }
+            btnDemo.classList.remove('active');
+            btnDemo.textContent = '🎬 Demo';
+            clearAllCurrentFlags();
+            if (maze) drawMaze();
+            updateButtons();
+            statusText.textContent = 'Ready';
+        };
+
+        const runDemoStep = () => {
+            if (!demoMode) return;
+
+            const size = DEMO_SIZES[demoSizeIdx];
+            rows = size; cols = size;
+            sizeSelect.value = String(size);
+            calculateDimensions();
+            maze = generateMazeGrid(rows, cols);
+            clearSolveState();
+            drawMaze();
+            saveState();
+
+            const algos = ['dfs', 'bfs', 'astar'];
+            const algo = algos[demoSizeIdx % algos.length];
+            algoSelect.value = algo;
+            statusText.textContent = `🎬 Demo: ${size}×${size} — ${algo.toUpperCase()}`;
+
+            // Start solve, then wait and go next
+            const origFinish = finishSolve;
+            const patchedFinish = (found) => {
+                origFinish(found);
+                if (!demoMode) return;
+                demoSizeIdx++;
+                if (demoSizeIdx >= DEMO_SIZES.length) demoSizeIdx = 0;
+                demoTimeoutId = setTimeout(() => {
+                    if (demoMode) runDemoStep();
+                }, 2000);
+            };
+
+            // Temporarily patch finishSolve
+            animating = true; updateButtons();
+
+            const endR = rows-1, endC = cols-1;
+            maze[0][0].solveVisited = true;
+
+            if (algo === 'dfs') {
+                const stack = [[0,0]], pm = {'0,0':null};
+                const step = () => {
+                    if (!animating || !demoMode || stack.length === 0) { patchedFinish(false); return; }
+                    const [cr,cc] = stack.pop();
+                    clearAllCurrentFlags();
+                    maze[cr][cc].current = true; maze[cr][cc].solveVisited = true; drawMaze();
+                    if (cr === endR && cc === endC) { tracePath(pm, endR, endC).then(() => patchedFinish(true)); return; }
+                    const nb = getNeighbors(cr, cc);
+                    for (let i = nb.length-1; i > 0; i--) { const j = Math.floor(Math.random()*(i+1)); [nb[i],nb[j]]=[nb[j],nb[i]]; }
+                    for (const [nr,nc] of nb) {
+                        if (!maze[nr][nc].solveVisited) { maze[nr][nc].solveVisited=true; pm[`${nr},${nc}`]=`${cr},${cc}`; stack.push([nr,nc]); }
+                    }
+                    solveTimeoutId = setTimeout(step, getSpeed());
+                };
+                step();
+            } else if (algo === 'bfs') {
+                const queue = [[0,0]]; let qi = 0;
+                const pm = {'0,0':null};
+                const step = () => {
+                    if (!animating || !demoMode || qi >= queue.length) { patchedFinish(false); return; }
+                    const [cr,cc] = queue[qi++];
+                    clearAllCurrentFlags(); maze[cr][cc].current=true; drawMaze();
+                    if (cr===endR && cc===endC) { tracePath(pm,endR,endC).then(()=>patchedFinish(true)); return; }
+                    for (const [nr,nc] of getNeighbors(cr,cc)) {
+                        if (!maze[nr][nc].solveVisited) { maze[nr][nc].solveVisited=true; pm[`${nr},${nc}`]=`${cr},${cc}`; queue.push([nr,nc]); }
+                    }
+                    solveTimeoutId = setTimeout(step, getSpeed());
+                };
+                step();
+            } else {
+                const hf = (r,c) => Math.abs(r-endR)+Math.abs(c-endC);
+                const os = [{r:0,c:0,g:0,f:hf(0,0)}];
+                const gs = {'0,0':0}, pm = {'0,0':null}, cl = {};
+                const step = () => {
+                    if (!animating || !demoMode || os.length===0) { patchedFinish(false); return; }
+                    let bi=0; for (let i=1;i<os.length;i++) if(os[i].f<os[bi].f) bi=i;
+                    const cur = os.splice(bi,1)[0];
+                    const key=`${cur.r},${cur.c}`;
+                    if (cl[key]) { step(); return; }
+                    cl[key]=true;
+                    clearAllCurrentFlags(); maze[cur.r][cur.c].current=true; maze[cur.r][cur.c].solveVisited=true; drawMaze();
+                    if (cur.r===endR && cur.c===endC) { tracePath(pm,endR,endC).then(()=>patchedFinish(true)); return; }
+                    for (const [nr,nc] of getNeighbors(cur.r,cur.c)) {
+                        const nk=`${nr},${nc}`; if(cl[nk]) continue;
+                        const tg=(gs[key]??Infinity)+1;
+                        if (tg<(gs[nk]??Infinity)) { gs[nk]=tg; pm[nk]=key; os.push({r:nr,c:nc,g:tg,f:tg+hf(nr,nc)}); maze[nr][nc].solveVisited=true; }
+                    }
+                    solveTimeoutId = setTimeout(step, getSpeed());
+                };
+                step();
+            }
+        };
+
+        // ---- SAVE / LOAD ----
+        const STORAGE_KEY = 'theMazeGenState_v3';
+
+        const saveState = () => {
+            if (!maze) return;
+            try {
+                const md = [];
+                for (let i = 0; i < rows; i++) {
+                    md[i] = [];
+                    for (let j = 0; j < cols; j++) {
+                        const c = maze[i][j];
+                        md[i][j] = [c.top?1:0, c.right?1:0, c.bottom?1:0, c.left?1:0,
+                            c.solveVisited?1:0, c.onPath?1:0, c.current?1:0,
+                            c.playerVisited?1:0, c.playerPath?1:0];
+                    }
+                }
+                localStorage.setItem(STORAGE_KEY, JSON.stringify({
+                    v:3, rows, cols, algo:algoSelect.value, speed:speedRange.value, size:sizeSelect.value,
+                    mm:manualMode, mf:manualFinished, pr:playerRow, pc:playerCol,
+                    pp:playerPath, ps:playerSteps, mst:manualStartTime, m:md
+                }));
+            } catch(e) {}
+        };
+
+        const loadState = () => {
+            try {
+                const raw = localStorage.getItem(STORAGE_KEY);
+                if (!raw) return false;
+                const s = JSON.parse(raw);
+                if (!s || s.v !== 3 || !Array.isArray(s.m) || s.m.length !== s.rows) return false;
+                if (!s.m[0] || s.m[0].length !== s.cols) return false;
+
+                rows = s.rows; cols = s.cols;
+                sizeSelect.value = s.size || String(rows);
+                algoSelect.value = s.algo || 'dfs';
+                speedRange.value = s.speed || '50';
+                speedValueEl.textContent = speedRange.value;
+
+                maze = [];
+                for (let i = 0; i < rows; i++) {
+                    maze[i] = [];
+                    for (let j = 0; j < cols; j++) {
+                        const cell = createCell(), d = s.m[i][j];
+                        cell.top=d[0]===1; cell.right=d[1]===1; cell.bottom=d[2]===1; cell.left=d[3]===1;
+                        cell.solveVisited=d[4]===1; cell.onPath=d[5]===1; cell.current=d[6]===1;
+                        cell.playerVisited=d[7]===1; cell.playerPath=d[8]===1;
+                        maze[i][j] = cell;
+                    }
+                }
+
+                if (s.mm && !s.mf) {
+                    manualMode = true; manualFinished = false;
+                    playerRow = s.pr||0; playerCol = s.pc||0;
+                    playerSteps = s.ps||0; manualStartTime = s.mst||Date.now();
+                    playerPath = Array.isArray(s.pp) && s.pp.length > 0 ? s.pp.map(p=>({r:p.r,c:p.c})) : [{r:0,c:0}];
+                    btnManual.classList.add('active');
+                    btnManual.textContent = '🎮 Playing...';
+                    manualHint.textContent = '⌨️ Arrows/WASD/Swipe • Pinch to zoom';
+                    statusText.textContent = '🎮 Continue!';
+                    startTimer();
+                } else {
+                    manualMode = false; manualFinished = false; playerPath = [];
+                }
+
+                calculateDimensions(); drawMaze(); updateButtons();
+                if (!manualMode) statusText.textContent = '🔄 Restored';
+                return true;
+            } catch(e) { return false; }
+        };
+
+        // ---- EVENTS ----
+        btnGenerate.addEventListener('click', () => {
+            if (animating || demoMode) return;
+            if (solveTimeoutId) { clearTimeout(solveTimeoutId); solveTimeoutId = null; }
+            stopManualMode(); clearPlayerState();
+            rows = parseInt(sizeSelect.value, 10); cols = rows;
+            calculateDimensions();
+            maze = generateMazeGrid(rows, cols);
+            drawMaze(); saveState();
+            statusText.textContent = `✅ ${rows}×${cols} maze`;
+            updateButtons();
+        });
+
+        btnSolve.addEventListener('click', () => {
+            if (animating || !maze || manualMode || demoMode) return;
+            clearSolveState(); clearPlayerState(); drawMaze();
+            runSolve(algoSelect.value);
+        });
+
+        btnManual.addEventListener('click', () => {
+            if (animating || !maze || demoMode) return;
+            if (manualMode) {
+                stopManualMode(); clearPlayerState(); clearSolveState();
+                drawMaze(); saveState(); statusText.textContent = 'Ready';
+            } else {
+                clearSolveState(); startManualMode();
+            }
+        });
+
+        btnDemo.addEventListener('click', startDemo);
+
+        btnReset.addEventListener('click', () => {
+            if (demoMode) return;
+            if (animating) { animating = false; if (solveTimeoutId) { clearTimeout(solveTimeoutId); solveTimeoutId = null; } }
+            stopManualMode();
+            if (maze) { clearSolveState(); clearPlayerState(); drawMaze(); saveState(); }
+            statusText.textContent = 'Ready'; updateButtons();
+        });
+
+        speedRange.addEventListener('input', () => { speedValueEl.textContent = speedRange.value; saveState(); });
+        sizeSelect.addEventListener('change', () => saveState());
+        algoSelect.addEventListener('change', () => saveState());
+
+        const handleResize = () => {
+            resizeConfetti();
+            if (maze) { calculateDimensions(); drawMaze(); }
+        };
+
+        window.addEventListener('resize', handleResize);
+        window.addEventListener('orientationchange', () => setTimeout(handleResize, 200));
+
+        // ---- INIT ----
+        const init = () => {
+            resizeConfetti();
+            if (!loadState()) {
+                rows = parseInt(sizeSelect.value, 10); cols = rows;
+                calculateDimensions();
+                maze = generateMazeGrid(rows, cols);
+                drawMaze(); saveState();
+                statusText.textContent = `✅ ${rows}×${cols} maze`;
+            }
+            updateButtons();
+        };
+
+        if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
+        else requestAnimationFrame(() => requestAnimationFrame(init));
+    })();
+    </script>
+</body>
+</html>
