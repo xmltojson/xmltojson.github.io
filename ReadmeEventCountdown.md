@@ -4,7 +4,6 @@ Beautiful animated flip clock countdown timer for your special events. Create cu
 
 ![Event Countdown](https://img.shields.io/badge/Event-Countdown-7c4dff?style=for-the-badge&logo=clockify&logoColor=white)
 ![License](https://img.shields.io/badge/License-MIT-ff6ec7?style=for-the-badge)
-![HTML](https://img.shields.io/badge/HTML-CSS-JS-00e5ff?style=for-the-badge)
 
 ## 🌐 Live Demo
 
