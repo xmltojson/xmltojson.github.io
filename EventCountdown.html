@@ -1,0 +1,1316 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Beautiful animated flip clock countdown timer for your special events. Create customizable countdowns with stunning visuals, multiple color themes, and real-time flip number animations. Track birthdays, holidays, deadlines, and more.">
+    <meta name="keywords" content="countdown, timer, event countdown, flip clock, animated countdown, date tracker">
+    <meta name="author" content="Event Countdown App">
+    <meta name="theme-color" content="#1a0033">
+    <meta property="og:title" content="Event Countdown - Animated Flip Clock Timer">
+    <meta property="og:description" content="Create beautiful animated countdowns to your special events with flip clock animations and customizable color themes.">
+    <meta property="og:type" content="website">
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><defs><linearGradient id='g' x1='0%25' y1='0%25' x2='100%25' y2='100%25'><stop offset='0%25' style='stop-color:%237c4dff'/><stop offset='100%25' style='stop-color:%23ff6ec7'/></linearGradient></defs><circle cx='50' cy='50' r='45' fill='url(%23g)'/><text x='50' y='68' font-size='55' text-anchor='middle' font-family='Arial,sans-serif' font-weight='bold' fill='white'>⏱</text></svg>">
+    <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><defs><linearGradient id='g' x1='0%25' y1='0%25' x2='100%25' y2='100%25'><stop offset='0%25' style='stop-color:%237c4dff'/><stop offset='100%25' style='stop-color:%23ff6ec7'/></linearGradient></defs><circle cx='50' cy='50' r='45' fill='url(%23g)'/><text x='50' y='68' font-size='55' text-anchor='middle' font-family='Arial,sans-serif' font-weight='bold' fill='white'>⏱</text></svg>">
+    <title>Event Countdown - Animated Flip Clock Timer</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&family=Orbitron:wght@400;700;900&display=swap');
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            min-height: 100vh;
+            background: linear-gradient(135deg, #0c0015 0%, #1a0033 30%, #0d001a 60%, #000000 100%);
+            font-family: 'Poppins', sans-serif;
+            color: #fff;
+            overflow-x: hidden;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        /* Animated background particles */
+        .particles {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 0;
+            overflow: hidden;
+        }
+
+        .particle {
+            position: absolute;
+            border-radius: 50%;
+            animation: floatUp linear infinite;
+            opacity: 0;
+        }
+
+        @keyframes floatUp {
+            0% {
+                transform: translateY(100vh) scale(0);
+                opacity: 0;
+            }
+            10% {
+                opacity: 1;
+            }
+            90% {
+                opacity: 1;
+            }
+            100% {
+                transform: translateY(-10vh) scale(1);
+                opacity: 0;
+            }
+        }
+
+        .app-container {
+            position: relative;
+            z-index: 1;
+            width: 100%;
+            max-width: 1200px;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        /* Header */
+        .header {
+            text-align: center;
+            margin: 20px 0 30px;
+            width: 100%;
+        }
+
+        .header h1 {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 2.5rem;
+            font-weight: 900;
+            background: linear-gradient(90deg, #ff6ec7, #7c4dff, #00e5ff, #ff6ec7);
+            background-size: 300% 100%;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            animation: gradientShift 4s ease infinite;
+            text-shadow: none;
+            letter-spacing: 3px;
+        }
+
+        @keyframes gradientShift {
+            0%, 100% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+        }
+
+        .header p {
+            color: rgba(255,255,255,0.5);
+            font-size: 0.9rem;
+            margin-top: 5px;
+            letter-spacing: 2px;
+        }
+
+        /* Add Event Button */
+        .add-event-btn {
+            background: linear-gradient(135deg, #7c4dff, #ff6ec7);
+            border: none;
+            color: white;
+            padding: 14px 36px;
+            border-radius: 50px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-family: 'Poppins', sans-serif;
+            letter-spacing: 1px;
+            box-shadow: 0 4px 25px rgba(124, 77, 255, 0.4);
+            margin-bottom: 30px;
+        }
+
+        .add-event-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 35px rgba(124, 77, 255, 0.6);
+        }
+
+        .add-event-btn:active {
+            transform: translateY(-1px);
+        }
+
+        /* Modal */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(10px);
+            z-index: 1000;
+            display: none;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .modal-overlay.active {
+            display: flex;
+        }
+
+        .modal {
+            background: linear-gradient(145deg, #1a1a2e, #16213e);
+            border-radius: 24px;
+            padding: 40px;
+            width: 100%;
+            max-width: 500px;
+            border: 1px solid rgba(124, 77, 255, 0.3);
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+            animation: modalIn 0.3s ease;
+        }
+
+        @keyframes modalIn {
+            from {
+                transform: scale(0.9) translateY(20px);
+                opacity: 0;
+            }
+            to {
+                transform: scale(1) translateY(0);
+                opacity: 1;
+            }
+        }
+
+        .modal h2 {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1.5rem;
+            margin-bottom: 25px;
+            text-align: center;
+            background: linear-gradient(90deg, #7c4dff, #ff6ec7);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-size: 0.85rem;
+            color: rgba(255,255,255,0.7);
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+
+        .form-group input,
+        .form-group select {
+            width: 100%;
+            padding: 12px 16px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 12px;
+            color: white;
+            font-size: 1rem;
+            font-family: 'Poppins', sans-serif;
+            transition: border-color 0.3s ease;
+            outline: none;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus {
+            border-color: #7c4dff;
+            box-shadow: 0 0 15px rgba(124, 77, 255, 0.2);
+        }
+
+        .form-group input[type="datetime-local"]::-webkit-calendar-picker-indicator {
+            filter: invert(1);
+            cursor: pointer;
+        }
+
+        .color-options {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .color-option {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            cursor: pointer;
+            border: 3px solid transparent;
+            transition: all 0.3s ease;
+        }
+
+        .color-option:hover {
+            transform: scale(1.15);
+        }
+
+        .color-option.selected {
+            border-color: white;
+            box-shadow: 0 0 15px currentColor;
+        }
+
+        .modal-buttons {
+            display: flex;
+            gap: 12px;
+            margin-top: 30px;
+        }
+
+        .modal-buttons button {
+            flex: 1;
+            padding: 12px;
+            border-radius: 12px;
+            border: none;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            font-family: 'Poppins', sans-serif;
+            transition: all 0.3s ease;
+        }
+
+        .btn-save {
+            background: linear-gradient(135deg, #7c4dff, #ff6ec7);
+            color: white;
+        }
+
+        .btn-save:hover {
+            box-shadow: 0 4px 20px rgba(124, 77, 255, 0.5);
+            transform: translateY(-2px);
+        }
+
+        .btn-cancel {
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.2) !important;
+        }
+
+        .btn-cancel:hover {
+            background: rgba(255, 255, 255, 0.15);
+        }
+
+        /* Events Grid */
+        .events-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+            gap: 24px;
+            width: 100%;
+            padding-bottom: 40px;
+        }
+
+        /* Event Card */
+        .event-card {
+            background: linear-gradient(145deg, rgba(26, 26, 46, 0.9), rgba(22, 33, 62, 0.9));
+            border-radius: 24px;
+            padding: 28px;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            transition: all 0.4s ease;
+            animation: cardIn 0.5s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .event-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: var(--card-color, linear-gradient(90deg, #7c4dff, #ff6ec7));
+            border-radius: 3px 3px 0 0;
+        }
+
+        .event-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4);
+            border-color: rgba(255, 255, 255, 0.15);
+        }
+
+        @keyframes cardIn {
+            from {
+                transform: translateY(30px);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        .event-card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 20px;
+        }
+
+        .event-name {
+            font-size: 1.25rem;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+            max-width: 80%;
+            word-wrap: break-word;
+        }
+
+        .event-date-label {
+            font-size: 0.75rem;
+            color: rgba(255,255,255,0.4);
+            margin-top: 4px;
+            letter-spacing: 1px;
+        }
+
+        .delete-btn {
+            background: none;
+            border: none;
+            color: rgba(255, 255, 255, 0.3);
+            cursor: pointer;
+            font-size: 1.3rem;
+            padding: 4px 8px;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+            line-height: 1;
+        }
+
+        .delete-btn:hover {
+            color: #ff4757;
+            background: rgba(255, 71, 87, 0.1);
+        }
+
+        /* Flip Clock */
+        .flip-clock {
+            display: flex;
+            justify-content: center;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .flip-unit-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .flip-unit {
+            position: relative;
+            width: 68px;
+            height: 80px;
+            perspective: 300px;
+        }
+
+        .flip-card {
+            position: relative;
+            width: 100%;
+            height: 100%;
+        }
+
+        .flip-card-top,
+        .flip-card-bottom {
+            position: absolute;
+            width: 100%;
+            height: 50%;
+            overflow: hidden;
+            display: flex;
+            justify-content: center;
+            border-radius: 8px;
+        }
+
+        .flip-card-top {
+            top: 0;
+            background: linear-gradient(180deg, rgba(40, 40, 70, 0.95), rgba(30, 30, 55, 0.95));
+            border-bottom: 1px solid rgba(0, 0, 0, 0.4);
+            border-radius: 8px 8px 0 0;
+            align-items: flex-end;
+        }
+
+        .flip-card-bottom {
+            bottom: 0;
+            background: linear-gradient(180deg, rgba(25, 25, 50, 0.95), rgba(20, 20, 40, 0.95));
+            border-radius: 0 0 8px 8px;
+            align-items: flex-start;
+        }
+
+        .flip-card-top span,
+        .flip-card-bottom span {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 2.2rem;
+            font-weight: 900;
+            color: var(--digit-color, #fff);
+            line-height: 80px;
+        }
+
+        .flip-card-top span {
+            transform: translateY(50%);
+        }
+
+        .flip-card-bottom span {
+            transform: translateY(-50%);
+        }
+
+        /* Flip animation overlays */
+        .flip-card-top-flip,
+        .flip-card-bottom-flip {
+            position: absolute;
+            width: 100%;
+            height: 50%;
+            overflow: hidden;
+            display: flex;
+            justify-content: center;
+            backface-visibility: hidden;
+        }
+
+        .flip-card-top-flip {
+            top: 0;
+            background: linear-gradient(180deg, rgba(40, 40, 70, 0.95), rgba(30, 30, 55, 0.95));
+            border-bottom: 1px solid rgba(0, 0, 0, 0.4);
+            border-radius: 8px 8px 0 0;
+            align-items: flex-end;
+            transform-origin: bottom;
+            z-index: 2;
+        }
+
+        .flip-card-bottom-flip {
+            bottom: 0;
+            background: linear-gradient(180deg, rgba(25, 25, 50, 0.95), rgba(20, 20, 40, 0.95));
+            border-radius: 0 0 8px 8px;
+            align-items: flex-start;
+            transform-origin: top;
+            transform: rotateX(90deg);
+            z-index: 2;
+        }
+
+        .flip-card-top-flip span,
+        .flip-card-bottom-flip span {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 2.2rem;
+            font-weight: 900;
+            color: var(--digit-color, #fff);
+            line-height: 80px;
+        }
+
+        .flip-card-top-flip span {
+            transform: translateY(50%);
+        }
+
+        .flip-card-bottom-flip span {
+            transform: translateY(-50%);
+        }
+
+        .flip-card-top-flip.animate {
+            animation: flipTop 0.3s ease-in forwards;
+        }
+
+        .flip-card-bottom-flip.animate {
+            animation: flipBottom 0.3s 0.3s ease-out forwards;
+        }
+
+        @keyframes flipTop {
+            from { transform: rotateX(0deg); }
+            to { transform: rotateX(-90deg); }
+        }
+
+        @keyframes flipBottom {
+            from { transform: rotateX(90deg); }
+            to { transform: rotateX(0deg); }
+        }
+
+        .flip-unit-label {
+            font-size: 0.65rem;
+            color: rgba(255,255,255,0.4);
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin-top: 8px;
+            font-weight: 600;
+        }
+
+        /* Separator */
+        .flip-separator {
+            display: flex;
+            align-items: center;
+            padding-bottom: 22px;
+        }
+
+        .flip-separator .dots {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .flip-separator .dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: var(--digit-color, rgba(255,255,255,0.4));
+            animation: dotPulse 1s ease infinite;
+        }
+
+        .flip-separator .dot:nth-child(2) {
+            animation-delay: 0.5s;
+        }
+
+        @keyframes dotPulse {
+            0%, 100% { opacity: 0.4; }
+            50% { opacity: 1; }
+        }
+
+        /* Expired state */
+        .event-card.expired {
+            opacity: 0.7;
+        }
+
+        .event-card.expired .event-name {
+            text-decoration: line-through;
+            text-decoration-color: rgba(255,255,255,0.3);
+        }
+
+        .expired-badge {
+            display: inline-block;
+            background: linear-gradient(135deg, #ff6b6b, #ee5a24);
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.7rem;
+            font-weight: 700;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            margin-top: 12px;
+            text-align: center;
+        }
+
+        .happening-badge {
+            display: inline-block;
+            background: linear-gradient(135deg, #00b894, #00cec9);
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.7rem;
+            font-weight: 700;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            margin-top: 12px;
+            text-align: center;
+            animation: pulse 1.5s ease infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(0, 184, 148, 0.4); }
+            50% { box-shadow: 0 0 0 10px rgba(0, 184, 148, 0); }
+        }
+
+        /* Empty state */
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: rgba(255,255,255,0.3);
+        }
+
+        .empty-state .icon {
+            font-size: 4rem;
+            margin-bottom: 20px;
+        }
+
+        .empty-state h3 {
+            font-size: 1.3rem;
+            margin-bottom: 10px;
+            color: rgba(255,255,255,0.5);
+        }
+
+        .empty-state p {
+            font-size: 0.9rem;
+        }
+
+        /* Glow effect on card hover */
+        .event-card .glow {
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, var(--glow-color, rgba(124, 77, 255, 0.05)) 0%, transparent 70%);
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.4s ease;
+        }
+
+        .event-card:hover .glow {
+            opacity: 1;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .header h1 {
+                font-size: 1.6rem;
+            }
+
+            .events-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .flip-unit {
+                width: 56px;
+                height: 66px;
+            }
+
+            .flip-card-top span,
+            .flip-card-bottom span,
+            .flip-card-top-flip span,
+            .flip-card-bottom-flip span {
+                font-size: 1.7rem;
+                line-height: 66px;
+            }
+
+            .flip-clock {
+                gap: 5px;
+            }
+
+            .event-card {
+                padding: 20px;
+            }
+
+            .modal {
+                padding: 28px;
+            }
+        }
+
+        @media (max-width: 400px) {
+            .flip-unit {
+                width: 48px;
+                height: 58px;
+            }
+
+            .flip-card-top span,
+            .flip-card-bottom span,
+            .flip-card-top-flip span,
+            .flip-card-bottom-flip span {
+                font-size: 1.4rem;
+                line-height: 58px;
+            }
+
+            .flip-unit-label {
+                font-size: 0.55rem;
+                letter-spacing: 1px;
+            }
+        }
+
+        /* Landscape orientation adjustments */
+        @media (orientation: landscape) and (max-height: 500px) {
+            .header {
+                margin: 10px 0 15px;
+            }
+
+            .header h1 {
+                font-size: 1.4rem;
+            }
+
+            .header p {
+                display: none;
+            }
+
+            .add-event-btn {
+                padding: 10px 28px;
+                margin-bottom: 15px;
+                font-size: 0.9rem;
+            }
+
+            .events-grid {
+                grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+                gap: 16px;
+            }
+
+            .event-card {
+                padding: 16px;
+            }
+
+            .event-card-header {
+                margin-bottom: 12px;
+            }
+
+            .flip-unit {
+                width: 50px;
+                height: 58px;
+            }
+
+            .flip-card-top span,
+            .flip-card-bottom span,
+            .flip-card-top-flip span,
+            .flip-card-bottom-flip span {
+                font-size: 1.5rem;
+                line-height: 58px;
+            }
+
+            .flip-unit-label {
+                margin-top: 4px;
+            }
+        }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: rgba(0,0,0,0.2);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: rgba(124, 77, 255, 0.4);
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(124, 77, 255, 0.6);
+        }
+
+        /* Progress bar */
+        .progress-container {
+            width: 100%;
+            margin-top: 16px;
+        }
+
+        .progress-bar-bg {
+            width: 100%;
+            height: 4px;
+            background: rgba(255,255,255,0.08);
+            border-radius: 2px;
+            overflow: hidden;
+        }
+
+        .progress-bar-fill {
+            height: 100%;
+            border-radius: 2px;
+            transition: width 1s ease;
+            background: var(--card-color, linear-gradient(90deg, #7c4dff, #ff6ec7));
+        }
+
+        .progress-label {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 6px;
+            font-size: 0.65rem;
+            color: rgba(255,255,255,0.35);
+        }
+
+        /* Edit button */
+        .edit-btn {
+            background: none;
+            border: none;
+            color: rgba(255, 255, 255, 0.3);
+            cursor: pointer;
+            font-size: 1rem;
+            padding: 4px 8px;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+            line-height: 1;
+            margin-right: 4px;
+        }
+
+        .edit-btn:hover {
+            color: #7c4dff;
+            background: rgba(124, 77, 255, 0.1);
+        }
+
+        .card-actions {
+            display: flex;
+            gap: 2px;
+        }
+    </style>
+</head>
+<body>
+    <div class="particles" id="particles"></div>
+
+    <div class="app-container">
+        <div class="header">
+            <h1>⏱ EVENT COUNTDOWN</h1>
+            <p>Every second counts</p>
+        </div>
+
+        <button class="add-event-btn" onclick="openModal()">+ New Countdown</button>
+
+        <div class="events-grid" id="eventsGrid">
+            <!-- Events will be rendered here -->
+        </div>
+    </div>
+
+    <!-- Modal -->
+    <div class="modal-overlay" id="modalOverlay">
+        <div class="modal">
+            <h2 id="modalTitle">New Countdown</h2>
+            <div class="form-group">
+                <label>Event Name</label>
+                <input type="text" id="eventName" placeholder="e.g. New Year 2026" maxlength="50">
+            </div>
+            <div class="form-group">
+                <label>Date & Time</label>
+                <input type="datetime-local" id="eventDate">
+            </div>
+            <div class="form-group">
+                <label>Theme Color</label>
+                <div class="color-options" id="colorOptions">
+                    <!-- Colors will be generated by JS -->
+                </div>
+            </div>
+            <input type="hidden" id="editingId" value="">
+            <div class="modal-buttons">
+                <button class="btn-cancel" onclick="closeModal()">Cancel</button>
+                <button class="btn-save" onclick="saveEvent()">Save</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Color themes
+        const COLORS = [
+            { name: 'Purple Pink', gradient: 'linear-gradient(135deg, #7c4dff, #ff6ec7)', primary: '#7c4dff', glow: 'rgba(124, 77, 255, 0.08)' },
+            { name: 'Cyan Blue', gradient: 'linear-gradient(135deg, #00e5ff, #2979ff)', primary: '#00e5ff', glow: 'rgba(0, 229, 255, 0.08)' },
+            { name: 'Orange Red', gradient: 'linear-gradient(135deg, #ff6b35, #ff1744)', primary: '#ff6b35', glow: 'rgba(255, 107, 53, 0.08)' },
+            { name: 'Green Teal', gradient: 'linear-gradient(135deg, #00e676, #00bfa5)', primary: '#00e676', glow: 'rgba(0, 230, 118, 0.08)' },
+            { name: 'Gold', gradient: 'linear-gradient(135deg, #ffd740, #ff9100)', primary: '#ffd740', glow: 'rgba(255, 215, 64, 0.08)' },
+            { name: 'Rose', gradient: 'linear-gradient(135deg, #ff4081, #f50057)', primary: '#ff4081', glow: 'rgba(255, 64, 129, 0.08)' },
+            { name: 'Ice', gradient: 'linear-gradient(135deg, #e0e0e0, #90a4ae)', primary: '#e0e0e0', glow: 'rgba(224, 224, 224, 0.08)' },
+            { name: 'Lime', gradient: 'linear-gradient(135deg, #c6ff00, #76ff03)', primary: '#c6ff00', glow: 'rgba(198, 255, 0, 0.08)' },
+        ];
+
+        let events = [];
+        let selectedColorIndex = 0;
+        let flipStates = {}; // Track previous values for flip animation
+
+        // Initialize
+        function init() {
+            loadEvents();
+            createParticles();
+            renderColorOptions();
+            renderEvents();
+            startCountdowns();
+        }
+
+        // Local Storage
+        function loadEvents() {
+            const stored = localStorage.getItem('countdownEvents');
+            if (stored) {
+                events = JSON.parse(stored);
+            }
+        }
+
+        function saveToStorage() {
+            localStorage.setItem('countdownEvents', JSON.stringify(events));
+        }
+
+        // Particles
+        function createParticles() {
+            const container = document.getElementById('particles');
+            const count = 30;
+            for (let i = 0; i < count; i++) {
+                const particle = document.createElement('div');
+                particle.className = 'particle';
+                const size = Math.random() * 4 + 2;
+                const colors = ['#7c4dff', '#ff6ec7', '#00e5ff', '#ffd740', '#00e676'];
+                particle.style.cssText = `
+                    width: ${size}px;
+                    height: ${size}px;
+                    left: ${Math.random() * 100}%;
+                    background: ${colors[Math.floor(Math.random() * colors.length)]};
+                    animation-duration: ${Math.random() * 15 + 10}s;
+                    animation-delay: ${Math.random() * 10}s;
+                `;
+                container.appendChild(particle);
+            }
+        }
+
+        // Color options in modal
+        function renderColorOptions() {
+            const container = document.getElementById('colorOptions');
+            container.innerHTML = '';
+            COLORS.forEach((color, index) => {
+                const div = document.createElement('div');
+                div.className = `color-option ${index === selectedColorIndex ? 'selected' : ''}`;
+                div.style.background = color.gradient;
+                div.style.color = color.primary;
+                div.onclick = () => selectColor(index);
+                container.appendChild(div);
+            });
+        }
+
+        function selectColor(index) {
+            selectedColorIndex = index;
+            document.querySelectorAll('.color-option').forEach((el, i) => {
+                el.classList.toggle('selected', i === index);
+            });
+        }
+
+        // Modal
+        function openModal(editId = null) {
+            const overlay = document.getElementById('modalOverlay');
+            const title = document.getElementById('modalTitle');
+            const nameInput = document.getElementById('eventName');
+            const dateInput = document.getElementById('eventDate');
+            const editingInput = document.getElementById('editingId');
+
+            if (editId) {
+                const event = events.find(e => e.id === editId);
+                if (event) {
+                    title.textContent = 'Edit Countdown';
+                    nameInput.value = event.name;
+                    dateInput.value = event.date;
+                    selectedColorIndex = event.colorIndex;
+                    editingInput.value = editId;
+                    renderColorOptions();
+                }
+            } else {
+                title.textContent = 'New Countdown';
+                nameInput.value = '';
+                // Default to tomorrow
+                const tomorrow = new Date();
+                tomorrow.setDate(tomorrow.getDate() + 1);
+                tomorrow.setHours(0, 0, 0, 0);
+                dateInput.value = formatDateForInput(tomorrow);
+                selectedColorIndex = 0;
+                editingInput.value = '';
+                renderColorOptions();
+            }
+
+            overlay.classList.add('active');
+            setTimeout(() => nameInput.focus(), 100);
+        }
+
+        function closeModal() {
+            document.getElementById('modalOverlay').classList.remove('active');
+        }
+
+        function formatDateForInput(date) {
+            const y = date.getFullYear();
+            const m = String(date.getMonth() + 1).padStart(2, '0');
+            const d = String(date.getDate()).padStart(2, '0');
+            const h = String(date.getHours()).padStart(2, '0');
+            const min = String(date.getMinutes()).padStart(2, '0');
+            return `${y}-${m}-${d}T${h}:${min}`;
+        }
+
+        function saveEvent() {
+            const name = document.getElementById('eventName').value.trim();
+            const date = document.getElementById('eventDate').value;
+            const editingId = document.getElementById('editingId').value;
+
+            if (!name) {
+                document.getElementById('eventName').style.borderColor = '#ff4757';
+                setTimeout(() => document.getElementById('eventName').style.borderColor = '', 2000);
+                return;
+            }
+
+            if (!date) {
+                document.getElementById('eventDate').style.borderColor = '#ff4757';
+                setTimeout(() => document.getElementById('eventDate').style.borderColor = '', 2000);
+                return;
+            }
+
+            if (editingId) {
+                const index = events.findIndex(e => e.id === editingId);
+                if (index !== -1) {
+                    events[index].name = name;
+                    events[index].date = date;
+                    events[index].colorIndex = selectedColorIndex;
+                }
+            } else {
+                const event = {
+                    id: Date.now().toString(36) + Math.random().toString(36).substr(2),
+                    name: name,
+                    date: date,
+                    colorIndex: selectedColorIndex,
+                    createdAt: new Date().toISOString()
+                };
+                events.push(event);
+            }
+
+            saveToStorage();
+            renderEvents();
+            closeModal();
+        }
+
+        function deleteEvent(id) {
+            events = events.filter(e => e.id !== id);
+            delete flipStates[id];
+            saveToStorage();
+            renderEvents();
+        }
+
+        // Calculate time remaining
+        function getTimeRemaining(targetDate) {
+            const now = new Date().getTime();
+            const target = new Date(targetDate).getTime();
+            const diff = target - now;
+
+            if (diff <= 0) {
+                return { days: 0, hours: 0, minutes: 0, seconds: 0, total: 0 };
+            }
+
+            return {
+                days: Math.floor(diff / (1000 * 60 * 60 * 24)),
+                hours: Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60)),
+                minutes: Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60)),
+                seconds: Math.floor((diff % (1000 * 60)) / 1000),
+                total: diff
+            };
+        }
+
+        // Calculate progress percentage
+        function getProgress(createdAt, targetDate) {
+            const created = new Date(createdAt).getTime();
+            const target = new Date(targetDate).getTime();
+            const now = new Date().getTime();
+            const totalDuration = target - created;
+            const elapsed = now - created;
+
+            if (totalDuration <= 0) return 100;
+            const progress = Math.min(100, Math.max(0, (elapsed / totalDuration) * 100));
+            return progress;
+        }
+
+        // Render events
+        function renderEvents() {
+            const grid = document.getElementById('eventsGrid');
+
+            if (events.length === 0) {
+                grid.innerHTML = `
+                    <div class="empty-state" style="grid-column: 1 / -1;">
+                        <div class="icon">🎯</div>
+                        <h3>No countdowns yet</h3>
+                        <p>Create your first countdown to start tracking!</p>
+                    </div>
+                `;
+                return;
+            }
+
+            // Sort: active events first (by date ascending), then expired
+            const sorted = [...events].sort((a, b) => {
+                const aTime = new Date(a.date).getTime() - Date.now();
+                const bTime = new Date(b.date).getTime() - Date.now();
+                const aExpired = aTime <= 0;
+                const bExpired = bTime <= 0;
+                if (aExpired && !bExpired) return 1;
+                if (!aExpired && bExpired) return -1;
+                return new Date(a.date).getTime() - new Date(b.date).getTime();
+            });
+
+            grid.innerHTML = sorted.map(event => {
+                const color = COLORS[event.colorIndex] || COLORS[0];
+                const time = getTimeRemaining(event.date);
+                const isExpired = time.total <= 0;
+                const progress = getProgress(event.createdAt, event.date);
+                const targetDate = new Date(event.date);
+                const dateStr = targetDate.toLocaleDateString('en-US', {
+                    weekday: 'short', year: 'numeric', month: 'short', day: 'numeric',
+                    hour: '2-digit', minute: '2-digit'
+                });
+
+                return `
+                    <div class="event-card ${isExpired ? 'expired' : ''}" 
+                         data-id="${event.id}"
+                         style="--card-color: ${color.gradient}; --glow-color: ${color.glow}; --digit-color: ${color.primary}">
+                        <div class="glow"></div>
+                        <div class="event-card-header">
+                            <div>
+                                <div class="event-name">${escapeHtml(event.name)}</div>
+                                <div class="event-date-label">${dateStr}</div>
+                            </div>
+                            <div class="card-actions">
+                                <button class="edit-btn" onclick="openModal('${event.id}')" title="Edit">✏️</button>
+                                <button class="delete-btn" onclick="deleteEvent('${event.id}')" title="Delete">✕</button>
+                            </div>
+                        </div>
+                        ${isExpired ? `
+                            <div class="flip-clock" id="clock-${event.id}">
+                                ${createFlipUnitHTML('00', 'days', color.primary)}
+                                <div class="flip-separator"><div class="dots"><div class="dot" style="background:${color.primary}"></div><div class="dot" style="background:${color.primary}"></div></div></div>
+                                ${createFlipUnitHTML('00', 'hours', color.primary)}
+                                <div class="flip-separator"><div class="dots"><div class="dot" style="background:${color.primary}"></div><div class="dot" style="background:${color.primary}"></div></div></div>
+                                ${createFlipUnitHTML('00', 'min', color.primary)}
+                                <div class="flip-separator"><div class="dots"><div class="dot" style="background:${color.primary}"></div><div class="dot" style="background:${color.primary}"></div></div></div>
+                                ${createFlipUnitHTML('00', 'sec', color.primary)}
+                            </div>
+                            <div style="text-align:center"><span class="expired-badge">🎉 Event Reached!</span></div>
+                        ` : `
+                            <div class="flip-clock" id="clock-${event.id}">
+                                ${createFlipUnitHTML(pad(time.days), 'days', color.primary)}
+                                <div class="flip-separator"><div class="dots"><div class="dot" style="background:${color.primary}"></div><div class="dot" style="background:${color.primary}"></div></div></div>
+                                ${createFlipUnitHTML(pad(time.hours), 'hours', color.primary)}
+                                <div class="flip-separator"><div class="dots"><div class="dot" style="background:${color.primary}"></div><div class="dot" style="background:${color.primary}"></div></div></div>
+                                ${createFlipUnitHTML(pad(time.minutes), 'min', color.primary)}
+                                <div class="flip-separator"><div class="dots"><div class="dot" style="background:${color.primary}"></div><div class="dot" style="background:${color.primary}"></div></div></div>
+                                ${createFlipUnitHTML(pad(time.seconds), 'sec', color.primary)}
+                            </div>
+                            <div class="progress-container">
+                                <div class="progress-bar-bg">
+                                    <div class="progress-bar-fill" style="width: ${progress}%; background: ${color.gradient}"></div>
+                                </div>
+                                <div class="progress-label">
+                                    <span>Created</span>
+                                    <span>${Math.round(progress)}%</span>
+                                    <span>Event</span>
+                                </div>
+                            </div>
+                        `}
+                    </div>
+                `;
+            }).join('');
+
+            // Initialize flip states
+            sorted.forEach(event => {
+                const time = getTimeRemaining(event.date);
+                flipStates[event.id] = {
+                    days: pad(time.days),
+                    hours: pad(time.hours),
+                    minutes: pad(time.minutes),
+                    seconds: pad(time.seconds)
+                };
+            });
+        }
+
+        function createFlipUnitHTML(value, label, color) {
+            return `
+                <div class="flip-unit-container">
+                    <div class="flip-unit" data-label="${label}" style="--digit-color: ${color}">
+                        <div class="flip-card">
+                            <div class="flip-card-top">
+                                <span>${value}</span>
+                            </div>
+                            <div class="flip-card-bottom">
+                                <span>${value}</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="flip-unit-label">${label}</div>
+                </div>
+            `;
+        }
+
+        function pad(num) {
+            return String(num).padStart(2, '0');
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // Flip animation
+        function flipTo(unitElement, newValue) {
+            const card = unitElement.querySelector('.flip-card');
+            const topHalf = card.querySelector('.flip-card-top span');
+            const bottomHalf = card.querySelector('.flip-card-bottom span');
+            const currentValue = topHalf.textContent;
+
+            if (currentValue === newValue) return;
+
+            // Remove old flip overlays
+            const oldTopFlip = card.querySelector('.flip-card-top-flip');
+            const oldBottomFlip = card.querySelector('.flip-card-bottom-flip');
+            if (oldTopFlip) oldTopFlip.remove();
+            if (oldBottomFlip) oldBottomFlip.remove();
+
+            // Create flip overlays
+            const topFlip = document.createElement('div');
+            topFlip.className = 'flip-card-top-flip';
+            topFlip.innerHTML = `<span>${currentValue}</span>`;
+
+            const bottomFlip = document.createElement('div');
+            bottomFlip.className = 'flip-card-bottom-flip';
+            bottomFlip.innerHTML = `<span>${newValue}</span>`;
+
+            card.appendChild(topFlip);
+            card.appendChild(bottomFlip);
+
+            // Update the base values
+            topHalf.textContent = newValue;
+
+            // Trigger animations
+            requestAnimationFrame(() => {
+                topFlip.classList.add('animate');
+                bottomFlip.classList.add('animate');
+            });
+
+            // After animation, update bottom and clean up
+            setTimeout(() => {
+                bottomHalf.textContent = newValue;
+                topFlip.remove();
+                bottomFlip.remove();
+            }, 650);
+        }
+
+        // Update countdowns
+        function updateCountdowns() {
+            events.forEach(event => {
+                const time = getTimeRemaining(event.date);
+                const clockEl = document.getElementById(`clock-${event.id}`);
+                if (!clockEl) return;
+
+                const units = clockEl.querySelectorAll('.flip-unit');
+                if (units.length < 4) return;
+
+                const newValues = {
+                    days: pad(time.days),
+                    hours: pad(time.hours),
+                    minutes: pad(time.minutes),
+                    seconds: pad(time.seconds)
+                };
+
+                const prev = flipStates[event.id];
+                if (!prev) {
+                    flipStates[event.id] = newValues;
+                    return;
+                }
+
+                // Flip each unit if changed
+                const labels = ['days', 'hours', 'minutes', 'seconds'];
+                units.forEach((unit, i) => {
+                    const label = labels[i];
+                    if (prev[label] !== newValues[label]) {
+                        flipTo(unit, newValues[label]);
+                    }
+                });
+
+                flipStates[event.id] = newValues;
+
+                // Update progress bar
+                const card = clockEl.closest('.event-card');
+                if (card) {
+                    const progressFill = card.querySelector('.progress-bar-fill');
+                    const progressPercent = card.querySelector('.progress-label span:nth-child(2)');
+                    if (progressFill && progressPercent) {
+                        const progress = getProgress(event.createdAt, event.date);
+                        progressFill.style.width = `${progress}%`;
+                        progressPercent.textContent = `${Math.round(progress)}%`;
+                    }
+                }
+
+                // Check if just expired
+                if (time.total <= 0 && !card.classList.contains('expired')) {
+                    renderEvents(); // Re-render to show expired state
+                }
+            });
+        }
+
+        function startCountdowns() {
+            setInterval(updateCountdowns, 1000);
+        }
+
+        // Close modal on overlay click
+        document.getElementById('modalOverlay').addEventListener('click', function(e) {
+            if (e.target === this) closeModal();
+        });
+
+        // Close modal on Escape
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') closeModal();
+            if (e.key === 'Enter' && document.getElementById('modalOverlay').classList.contains('active')) {
+                saveEvent();
+            }
+        });
+
+        // Init
+        init();
+    </script>
+</body>
+</html>
