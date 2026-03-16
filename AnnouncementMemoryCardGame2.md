@@ -35,7 +35,7 @@ We're excited to share our **Interactive Memory Card Game** — a beautifully cr
 • Frontend development inspiration & learning
 • Demonstrating modern CSS animation techniques
 
-🔗 **Play it here:** https://memorycardgame-kohl.vercel.app/
+🔗 **Play it here:** https://memorycardgame.github.io
 
 Challenge yourself to beat your high score — or better yet, challenge a colleague! 🏆
 
