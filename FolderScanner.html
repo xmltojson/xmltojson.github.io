@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+  <meta charset="UTF-8">
+  <title>Сканування папки</title>
+</head>
+<body>
+  <button id="selectFolder">Вибрати папку</button>
+  <pre id="fileList"></pre>
+
+  <script>
+    // Рекурсивная функция для получения файлов из папки
+    async function getFilesRecursively(dirHandle, path = '') {
+      const files = [];
+      for await (const entry of dirHandle.values()) {
+        const entryPath = path + entry.name;
+        if (entry.kind === 'file') {
+          files.push(entryPath);
+        } else if (entry.kind === 'directory') {
+          const nestedFiles = await getFilesRecursively(entry, entryPath + '/');
+          files.push(...nestedFiles);
+        }
+      }
+      return files;
+    }
+
+    document.getElementById('selectFolder').addEventListener('click', async () => {
+      try {
+        // Открытие диалога выбора папки
+        const dirHandle = await window.showDirectoryPicker();
+        const allFiles = await getFilesRecursively(dirHandle);
+
+        // Вывод всех файлов
+        document.getElementById('fileList').textContent = allFiles.join('\n');
+        console.log(allFiles);
+      } catch (err) {
+        console.error('Помилка або відміна користувачем:', err);
+      }
+    });
+  </script>
+</body>
+</html>
