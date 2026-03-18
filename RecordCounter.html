@@ -1,0 +1,2157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Excel Record Counter Pro</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <style>
+        :root {
+            --primary: #6366f1;
+            --primary-dark: #4f46e5;
+            --primary-light: #a5b4fc;
+            --secondary: #10b981;
+            --secondary-dark: #059669;
+            --accent: #f59e0b;
+            --danger: #ef4444;
+            --danger-dark: #dc2626;
+            --bg: #0f172a;
+            --bg-card: #1e293b;
+            --bg-input: #334155;
+            --text: #f1f5f9;
+            --text-muted: #94a3b8;
+            --border: #475569;
+            --shadow: 0 20px 60px rgba(0,0,0,0.3);
+            --radius: 12px;
+            --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        /* Animated background */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: 
+                radial-gradient(ellipse at 20% 50%, rgba(99, 102, 241, 0.08) 0%, transparent 50%),
+                radial-gradient(ellipse at 80% 20%, rgba(16, 185, 129, 0.06) 0%, transparent 50%),
+                radial-gradient(ellipse at 50% 80%, rgba(245, 158, 11, 0.05) 0%, transparent 50%);
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .app-container {
+            position: relative;
+            z-index: 1;
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        /* Header */
+        .header {
+            text-align: center;
+            padding: 30px 20px;
+            margin-bottom: 30px;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, var(--primary-light), var(--secondary), var(--accent));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 8px;
+            letter-spacing: -0.5px;
+        }
+
+        .header p {
+            color: var(--text-muted);
+            font-size: 1.05rem;
+        }
+
+        /* Cards */
+        .card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 24px;
+            margin-bottom: 20px;
+            box-shadow: var(--shadow);
+            transition: var(--transition);
+        }
+
+        .card:hover {
+            border-color: var(--primary);
+        }
+
+        .card-title {
+            font-size: 1.15rem;
+            font-weight: 700;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .card-title .icon {
+            width: 32px;
+            height: 32px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.1rem;
+        }
+
+        .icon-purple { background: rgba(99,102,241,0.2); color: var(--primary-light); }
+        .icon-green { background: rgba(16,185,129,0.2); color: var(--secondary); }
+        .icon-amber { background: rgba(245,158,11,0.2); color: var(--accent); }
+        .icon-red { background: rgba(239,68,68,0.2); color: var(--danger); }
+
+        /* Upload Area */
+        .upload-area {
+            border: 2px dashed var(--border);
+            border-radius: var(--radius);
+            padding: 50px 30px;
+            text-align: center;
+            cursor: pointer;
+            transition: var(--transition);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .upload-area:hover, .upload-area.drag-over {
+            border-color: var(--primary);
+            background: rgba(99, 102, 241, 0.05);
+        }
+
+        .upload-area.drag-over {
+            transform: scale(1.01);
+        }
+
+        .upload-icon {
+            font-size: 3rem;
+            margin-bottom: 16px;
+            display: block;
+            animation: float 3s ease-in-out infinite;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-8px); }
+        }
+
+        .upload-area h3 {
+            font-size: 1.2rem;
+            margin-bottom: 8px;
+        }
+
+        .upload-area p {
+            color: var(--text-muted);
+            font-size: 0.9rem;
+        }
+
+        .file-input {
+            display: none;
+        }
+
+        /* Password Section */
+        .password-section {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+            margin-top: 16px;
+            flex-wrap: wrap;
+        }
+
+        .password-section label {
+            font-size: 0.9rem;
+            color: var(--text-muted);
+            white-space: nowrap;
+        }
+
+        /* Inputs */
+        input[type="text"],
+        input[type="password"],
+        input[type="number"],
+        select,
+        textarea {
+            background: var(--bg-input);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 10px 14px;
+            color: var(--text);
+            font-size: 0.95rem;
+            transition: var(--transition);
+            width: 100%;
+            font-family: inherit;
+        }
+
+        input:focus, select:focus, textarea:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(99,102,241,0.2);
+        }
+
+        textarea {
+            resize: vertical;
+            min-height: 80px;
+        }
+
+        /* Buttons */
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            font-size: 0.95rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--transition);
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            font-family: inherit;
+        }
+
+        .btn:active {
+            transform: scale(0.97);
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            color: white;
+        }
+
+        .btn-primary:hover {
+            box-shadow: 0 4px 20px rgba(99,102,241,0.4);
+            transform: translateY(-1px);
+        }
+
+        .btn-secondary {
+            background: var(--bg-input);
+            color: var(--text);
+            border: 1px solid var(--border);
+        }
+
+        .btn-secondary:hover {
+            border-color: var(--primary);
+            background: rgba(99,102,241,0.1);
+        }
+
+        .btn-success {
+            background: linear-gradient(135deg, var(--secondary), var(--secondary-dark));
+            color: white;
+        }
+
+        .btn-success:hover {
+            box-shadow: 0 4px 20px rgba(16,185,129,0.4);
+        }
+
+        .btn-danger {
+            background: linear-gradient(135deg, var(--danger), var(--danger-dark));
+            color: white;
+        }
+
+        .btn-danger:hover {
+            box-shadow: 0 4px 20px rgba(239,68,68,0.4);
+        }
+
+        .btn-sm {
+            padding: 6px 14px;
+            font-size: 0.85rem;
+        }
+
+        /* File Info */
+        .file-info {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            padding: 16px;
+            background: rgba(99,102,241,0.08);
+            border-radius: 10px;
+            margin-top: 16px;
+            flex-wrap: wrap;
+        }
+
+        .file-info .file-icon {
+            font-size: 2rem;
+        }
+
+        .file-info .file-details {
+            flex: 1;
+            min-width: 200px;
+        }
+
+        .file-info .file-name {
+            font-weight: 600;
+            font-size: 1rem;
+        }
+
+        .file-info .file-meta {
+            color: var(--text-muted);
+            font-size: 0.85rem;
+            margin-top: 2px;
+        }
+
+        /* Sheet Selection */
+        .sheet-tabs {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin-bottom: 16px;
+        }
+
+        .sheet-tab {
+            padding: 8px 18px;
+            border-radius: 8px;
+            background: var(--bg-input);
+            border: 1px solid var(--border);
+            cursor: pointer;
+            transition: var(--transition);
+            font-size: 0.9rem;
+            font-weight: 500;
+        }
+
+        .sheet-tab:hover {
+            border-color: var(--primary);
+        }
+
+        .sheet-tab.active {
+            background: var(--primary);
+            border-color: var(--primary);
+            color: white;
+        }
+
+        /* Column Selection */
+        .columns-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+            gap: 8px;
+            max-height: 300px;
+            overflow-y: auto;
+            padding: 4px;
+        }
+
+        .column-chip {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 12px;
+            background: var(--bg-input);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            cursor: pointer;
+            transition: var(--transition);
+            font-size: 0.88rem;
+            user-select: none;
+        }
+
+        .column-chip:hover {
+            border-color: var(--primary);
+        }
+
+        .column-chip.selected {
+            background: rgba(99,102,241,0.15);
+            border-color: var(--primary);
+        }
+
+        .column-chip input[type="checkbox"] {
+            accent-color: var(--primary);
+            width: 16px;
+            height: 16px;
+        }
+
+        /* Groups */
+        .group-container {
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 18px;
+            margin-bottom: 14px;
+            background: rgba(0,0,0,0.15);
+            transition: var(--transition);
+            position: relative;
+        }
+
+        .group-container:hover {
+            border-color: var(--primary-light);
+        }
+
+        .group-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 14px;
+            flex-wrap: wrap;
+        }
+
+        .group-color {
+            width: 16px;
+            height: 16px;
+            border-radius: 4px;
+            border: none;
+            cursor: pointer;
+            padding: 0;
+        }
+
+        .group-name-input {
+            flex: 1;
+            min-width: 150px;
+            font-weight: 600;
+        }
+
+        .group-definitions {
+            margin-bottom: 12px;
+        }
+
+        .definition-row {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 8px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .definition-row select {
+            width: auto;
+            min-width: 140px;
+        }
+
+        .definition-row input {
+            flex: 1;
+            min-width: 120px;
+        }
+
+        .logic-badge {
+            padding: 4px 10px;
+            border-radius: 6px;
+            font-size: 0.75rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            cursor: pointer;
+            user-select: none;
+            transition: var(--transition);
+        }
+
+        .logic-and {
+            background: rgba(99,102,241,0.2);
+            color: var(--primary-light);
+        }
+
+        .logic-or {
+            background: rgba(245,158,11,0.2);
+            color: var(--accent);
+        }
+
+        /* Counter Display */
+        .counters-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 16px;
+        }
+
+        .counter-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 24px;
+            position: relative;
+            overflow: hidden;
+            transition: var(--transition);
+        }
+
+        .counter-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 12px 40px rgba(0,0,0,0.3);
+        }
+
+        .counter-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: var(--counter-color, var(--primary));
+        }
+
+        .counter-label {
+            font-size: 0.9rem;
+            color: var(--text-muted);
+            margin-bottom: 8px;
+            font-weight: 500;
+        }
+
+        .counter-value {
+            font-size: 2.8rem;
+            font-weight: 800;
+            line-height: 1;
+            margin-bottom: 8px;
+            font-variant-numeric: tabular-nums;
+        }
+
+        .counter-value.animating {
+            animation: countPulse 0.6s ease;
+        }
+
+        @keyframes countPulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.08); }
+            100% { transform: scale(1); }
+        }
+
+        .counter-bar {
+            height: 6px;
+            background: var(--bg-input);
+            border-radius: 3px;
+            overflow: hidden;
+            margin-top: 12px;
+        }
+
+        .counter-bar-fill {
+            height: 100%;
+            border-radius: 3px;
+            transition: width 1s cubic-bezier(0.4, 0, 0.2, 1);
+            background: var(--counter-color, var(--primary));
+        }
+
+        .counter-percentage {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            margin-top: 6px;
+            text-align: right;
+        }
+
+        /* Total Counter */
+        .total-counter {
+            text-align: center;
+            padding: 30px;
+            background: linear-gradient(135deg, rgba(99,102,241,0.1), rgba(16,185,129,0.1));
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            margin-bottom: 20px;
+        }
+
+        .total-counter .total-label {
+            font-size: 1rem;
+            color: var(--text-muted);
+            margin-bottom: 4px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            font-weight: 600;
+        }
+
+        .total-counter .total-value {
+            font-size: 4rem;
+            font-weight: 900;
+            background: linear-gradient(135deg, var(--primary-light), var(--secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            line-height: 1.1;
+        }
+
+        .total-counter .total-sub {
+            font-size: 0.9rem;
+            color: var(--text-muted);
+            margin-top: 4px;
+        }
+
+        /* Ring Chart */
+        .ring-chart-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        .ring-chart {
+            position: relative;
+            width: 220px;
+            height: 220px;
+        }
+
+        .ring-chart svg {
+            transform: rotate(-90deg);
+        }
+
+        .ring-chart .center-text {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+        }
+
+        .ring-chart .center-text .number {
+            font-size: 2rem;
+            font-weight: 800;
+        }
+
+        .ring-chart .center-text .label {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+        }
+
+        /* Data Preview */
+        .data-preview {
+            overflow-x: auto;
+            max-height: 400px;
+            overflow-y: auto;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+        }
+
+        .data-preview table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.85rem;
+        }
+
+        .data-preview th {
+            background: var(--bg-input);
+            padding: 10px 14px;
+            text-align: left;
+            font-weight: 600;
+            position: sticky;
+            top: 0;
+            z-index: 1;
+            white-space: nowrap;
+        }
+
+        .data-preview td {
+            padding: 8px 14px;
+            border-top: 1px solid rgba(71,85,105,0.3);
+            white-space: nowrap;
+            max-width: 250px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .data-preview tr:hover td {
+            background: rgba(99,102,241,0.05);
+        }
+
+        /* Progress Bar */
+        .progress-container {
+            display: none;
+            margin-top: 16px;
+        }
+
+        .progress-container.active {
+            display: block;
+        }
+
+        .progress-bar {
+            height: 6px;
+            background: var(--bg-input);
+            border-radius: 3px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--primary), var(--secondary));
+            border-radius: 3px;
+            transition: width 0.3s;
+            animation: progressShimmer 1.5s infinite;
+        }
+
+        @keyframes progressShimmer {
+            0% { opacity: 1; }
+            50% { opacity: 0.7; }
+            100% { opacity: 1; }
+        }
+
+        .progress-text {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            margin-top: 6px;
+            text-align: center;
+        }
+
+        /* Actions Bar */
+        .actions-bar {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-top: 16px;
+        }
+
+        /* Toast Notifications */
+        .toast-container {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 10000;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .toast {
+            padding: 12px 20px;
+            border-radius: 10px;
+            color: white;
+            font-weight: 500;
+            font-size: 0.9rem;
+            animation: toastIn 0.3s ease, toastOut 0.3s ease 2.7s forwards;
+            box-shadow: 0 8px 30px rgba(0,0,0,0.3);
+            max-width: 350px;
+        }
+
+        .toast-success { background: linear-gradient(135deg, #10b981, #059669); }
+        .toast-error { background: linear-gradient(135deg, #ef4444, #dc2626); }
+        .toast-info { background: linear-gradient(135deg, #6366f1, #4f46e5); }
+
+        @keyframes toastIn {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+
+        @keyframes toastOut {
+            from { transform: translateX(0); opacity: 1; }
+            to { transform: translateX(100%); opacity: 0; }
+        }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: var(--bg);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--border);
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--text-muted);
+        }
+
+        /* Layout Grid */
+        .layout-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        .layout-full {
+            grid-column: 1 / -1;
+        }
+
+        /* Orientation Badge */
+        .orientation-badge {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 6px 12px;
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            z-index: 100;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        /* Legend */
+        .legend {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            margin-top: 12px;
+            justify-content: center;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 0.85rem;
+            color: var(--text-muted);
+        }
+
+        .legend-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 3px;
+        }
+
+        /* Empty State */
+        .empty-state {
+            text-align: center;
+            padding: 40px 20px;
+            color: var(--text-muted);
+        }
+
+        .empty-state .empty-icon {
+            font-size: 3rem;
+            margin-bottom: 12px;
+            opacity: 0.5;
+        }
+
+        /* Responsive */
+        @media (max-width: 900px) {
+            .layout-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .header h1 {
+                font-size: 1.8rem;
+            }
+
+            .counters-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .total-counter .total-value {
+                font-size: 3rem;
+            }
+        }
+
+        @media (max-width: 600px) {
+            .app-container {
+                padding: 10px;
+            }
+
+            .card {
+                padding: 16px;
+            }
+
+            .upload-area {
+                padding: 30px 20px;
+            }
+
+            .definition-row {
+                flex-direction: column;
+            }
+
+            .definition-row select,
+            .definition-row input {
+                width: 100%;
+            }
+        }
+
+        /* Landscape specific */
+        @media (orientation: landscape) and (max-height: 500px) {
+            .header {
+                padding: 10px 20px;
+                margin-bottom: 10px;
+            }
+
+            .header h1 {
+                font-size: 1.5rem;
+            }
+
+            .upload-area {
+                padding: 20px;
+            }
+
+            .counters-grid {
+                grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            }
+        }
+
+        /* Print styles */
+        @media print {
+            body {
+                background: white;
+                color: black;
+            }
+
+            .card {
+                box-shadow: none;
+                border: 1px solid #ccc;
+            }
+
+            .btn, .upload-area, .password-section {
+                display: none;
+            }
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        /* Fade in animation */
+        .fade-in {
+            animation: fadeIn 0.4s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Operator select styling */
+        .operator-select {
+            min-width: 120px !important;
+        }
+
+        /* Checkbox toggle */
+        .toggle-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+
+        .toggle-switch {
+            position: relative;
+            width: 44px;
+            height: 24px;
+            background: var(--bg-input);
+            border-radius: 12px;
+            cursor: pointer;
+            transition: var(--transition);
+            border: 1px solid var(--border);
+        }
+
+        .toggle-switch.active {
+            background: var(--primary);
+            border-color: var(--primary);
+        }
+
+        .toggle-switch::after {
+            content: '';
+            position: absolute;
+            top: 2px;
+            left: 2px;
+            width: 18px;
+            height: 18px;
+            background: white;
+            border-radius: 50%;
+            transition: var(--transition);
+        }
+
+        .toggle-switch.active::after {
+            left: 22px;
+        }
+
+        .toggle-label {
+            font-size: 0.9rem;
+            color: var(--text-muted);
+        }
+
+        /* Clear state button */
+        .clear-state-btn {
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            z-index: 100;
+        }
+
+        /* Collapsible */
+        .collapsible-header {
+            cursor: pointer;
+            user-select: none;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .collapsible-header .arrow {
+            transition: var(--transition);
+            font-size: 0.8rem;
+        }
+
+        .collapsible-header .arrow.open {
+            transform: rotate(180deg);
+        }
+
+        .collapsible-content {
+            overflow: hidden;
+            transition: max-height 0.3s ease;
+        }
+
+        .collapsible-content.collapsed {
+            max-height: 0 !important;
+        }
+    </style>
+</head>
+<body>
+    <div class="toast-container" id="toastContainer"></div>
+
+    <div class="app-container">
+        <header class="header">
+            <h1>📊 Excel Record Counter Pro</h1>
+            <p>Parse, analyze, and count records with custom grouping definitions</p>
+        </header>
+
+        <!-- Upload Section -->
+        <div class="card fade-in" id="uploadCard">
+            <div class="card-title">
+                <div class="icon icon-purple">📁</div>
+                File Upload
+            </div>
+            <div class="upload-area" id="uploadArea">
+                <span class="upload-icon">📄</span>
+                <h3>Drop your Excel file here</h3>
+                <p>or click to browse • Supports .xlsx, .xls, .csv • Password protected files supported • No size limit</p>
+                <input type="file" class="file-input" id="fileInput" accept=".xlsx,.xls,.csv,.xlsb,.xlsm">
+            </div>
+            <div class="password-section">
+                <label>🔒 Password (if protected):</label>
+                <input type="password" id="filePassword" placeholder="Enter file password..." style="max-width: 300px;">
+            </div>
+            <div class="progress-container" id="progressContainer">
+                <div class="progress-bar">
+                    <div class="progress-fill" id="progressFill" style="width: 0%"></div>
+                </div>
+                <div class="progress-text" id="progressText">Processing...</div>
+            </div>
+            <div id="fileInfoContainer" class="hidden"></div>
+        </div>
+
+        <!-- Sheet & Column Selection -->
+        <div class="card fade-in hidden" id="sheetCard">
+            <div class="collapsible-header" onclick="toggleCollapsible('sheetContent')">
+                <div class="card-title" style="margin-bottom:0">
+                    <div class="icon icon-green">📋</div>
+                    Sheet & Column Selection
+                </div>
+                <span class="arrow open" id="sheetContentArrow">▼</span>
+            </div>
+            <div class="collapsible-content" id="sheetContent" style="max-height: 1000px;">
+                <div style="margin-top: 16px;">
+                    <label style="font-size: 0.9rem; color: var(--text-muted); margin-bottom: 8px; display: block;">Select Sheet:</label>
+                    <div class="sheet-tabs" id="sheetTabs"></div>
+                </div>
+                <div style="margin-top: 12px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; flex-wrap: wrap; gap: 8px;">
+                        <label style="font-size: 0.9rem; color: var(--text-muted);">Select Columns to Analyze:</label>
+                        <div style="display: flex; gap: 8px;">
+                            <button class="btn btn-sm btn-secondary" onclick="selectAllColumns()">Select All</button>
+                            <button class="btn btn-sm btn-secondary" onclick="deselectAllColumns()">Deselect All</button>
+                        </div>
+                    </div>
+                    <div class="columns-grid" id="columnsGrid"></div>
+                </div>
+                <div class="toggle-row" style="margin-top: 14px;">
+                    <div class="toggle-switch" id="headerToggle" onclick="toggleHeader()"></div>
+                    <span class="toggle-label">First row is header</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Groups Definition -->
+        <div class="card fade-in hidden" id="groupsCard">
+            <div class="collapsible-header" onclick="toggleCollapsible('groupsContent')">
+                <div class="card-title" style="margin-bottom:0">
+                    <div class="icon icon-amber">🏷️</div>
+                    Group Definitions
+                </div>
+                <span class="arrow open" id="groupsContentArrow">▼</span>
+            </div>
+            <div class="collapsible-content" id="groupsContent" style="max-height: 5000px;">
+                <div id="groupsList" style="margin-top: 16px;"></div>
+                <div class="actions-bar">
+                    <button class="btn btn-primary" onclick="addGroup()">➕ Add Group</button>
+                    <button class="btn btn-success" onclick="runCounting()">▶️ Count Records</button>
+                    <button class="btn btn-secondary" onclick="exportResults()">📥 Export Results</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Results -->
+        <div class="hidden" id="resultsSection">
+            <!-- Total Counter -->
+            <div class="total-counter fade-in" id="totalCounter">
+                <div class="total-label">Total Records</div>
+                <div class="total-value" id="totalValue">0</div>
+                <div class="total-sub" id="totalSub">across all data</div>
+            </div>
+
+            <!-- Ring Chart -->
+            <div class="card fade-in">
+                <div class="card-title">
+                    <div class="icon icon-purple">📈</div>
+                    Distribution Overview
+                </div>
+                <div class="ring-chart-container">
+                    <div class="ring-chart" id="ringChart">
+                        <svg width="220" height="220" viewBox="0 0 220 220">
+                            <circle cx="110" cy="110" r="90" fill="none" stroke="var(--bg-input)" stroke-width="20"/>
+                            <g id="ringSegments"></g>
+                        </svg>
+                        <div class="center-text">
+                            <div class="number" id="ringCenterNumber">0</div>
+                            <div class="label">Groups</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="legend" id="chartLegend"></div>
+            </div>
+
+            <!-- Counter Cards -->
+            <div class="counters-grid" id="countersGrid"></div>
+        </div>
+
+        <!-- Data Preview -->
+        <div class="card fade-in hidden" id="previewCard">
+            <div class="collapsible-header" onclick="toggleCollapsible('previewContent')">
+                <div class="card-title" style="margin-bottom:0">
+                    <div class="icon icon-red">👁️</div>
+                    Data Preview
+                    <span style="font-size: 0.8rem; color: var(--text-muted); font-weight: 400;" id="previewCount"></span>
+                </div>
+                <span class="arrow" id="previewContentArrow">▼</span>
+            </div>
+            <div class="collapsible-content collapsed" id="previewContent">
+                <div class="data-preview" id="dataPreview" style="margin-top: 16px;"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Orientation Badge -->
+    <div class="orientation-badge" id="orientationBadge">
+        <span id="orientationIcon">📱</span>
+        <span id="orientationText">Portrait</span>
+    </div>
+
+    <!-- Clear State -->
+    <button class="btn btn-sm btn-danger clear-state-btn" onclick="clearAllState()" title="Clear saved state">🗑️ Reset</button>
+
+    <script>
+    // ============================================
+    // STATE MANAGEMENT
+    // ============================================
+    const STATE_KEY = 'excelCounterPro_state';
+
+    let appState = {
+        fileName: null,
+        fileSize: null,
+        filePassword: '',
+        sheetNames: [],
+        activeSheet: null,
+        columns: [],
+        selectedColumns: [],
+        headerRow: true,
+        groups: [],
+        results: null,
+        totalRecords: 0,
+        parsedData: null, // We won't store full data in localStorage due to size
+        fileDataBase64: null // Store file data for re-parsing
+    };
+
+    let workbookCache = null;
+    let sheetDataCache = {};
+    let currentSheetData = [];
+
+    function saveState() {
+        try {
+            const stateToSave = { ...appState };
+            // Don't save huge data arrays directly, save file as base64 if small enough
+            delete stateToSave.parsedData;
+            
+            // Try to save file data, but handle quota
+            const serialized = JSON.stringify(stateToSave);
+            localStorage.setItem(STATE_KEY, serialized);
+        } catch (e) {
+            // If quota exceeded, save without file data
+            try {
+                const stateToSave = { ...appState };
+                delete stateToSave.parsedData;
+                delete stateToSave.fileDataBase64;
+                localStorage.setItem(STATE_KEY, JSON.stringify(stateToSave));
+            } catch (e2) {
+                console.warn('Could not save state:', e2);
+            }
+        }
+    }
+
+    function loadState() {
+        try {
+            const saved = localStorage.getItem(STATE_KEY);
+            if (saved) {
+                const parsed = JSON.parse(saved);
+                appState = { ...appState, ...parsed };
+                return true;
+            }
+        } catch (e) {
+            console.warn('Could not load state:', e);
+        }
+        return false;
+    }
+
+    function clearAllState() {
+        if (confirm('Clear all saved state and reload?')) {
+            localStorage.removeItem(STATE_KEY);
+            location.reload();
+        }
+    }
+
+    // ============================================
+    // TOAST NOTIFICATIONS
+    // ============================================
+    function showToast(message, type = 'info') {
+        const container = document.getElementById('toastContainer');
+        const toast = document.createElement('div');
+        toast.className = `toast toast-${type}`;
+        toast.textContent = message;
+        container.appendChild(toast);
+        setTimeout(() => toast.remove(), 3000);
+    }
+
+    // ============================================
+    // ORIENTATION DETECTION
+    // ============================================
+    function updateOrientation() {
+        const badge = document.getElementById('orientationBadge');
+        const icon = document.getElementById('orientationIcon');
+        const text = document.getElementById('orientationText');
+
+        const isLandscape = window.innerWidth > window.innerHeight;
+        icon.textContent = isLandscape ? '🖥️' : '📱';
+        text.textContent = isLandscape ? 'Landscape' : 'Portrait';
+    }
+
+    window.addEventListener('resize', updateOrientation);
+    window.addEventListener('orientationchange', updateOrientation);
+    updateOrientation();
+
+    // ============================================
+    // COLLAPSIBLE SECTIONS
+    // ============================================
+    function toggleCollapsible(contentId) {
+        const content = document.getElementById(contentId);
+        const arrow = document.getElementById(contentId + 'Arrow');
+        content.classList.toggle('collapsed');
+        arrow.classList.toggle('open');
+    }
+
+    // ============================================
+    // FILE UPLOAD & PARSING
+    // ============================================
+    const uploadArea = document.getElementById('uploadArea');
+    const fileInput = document.getElementById('fileInput');
+
+    uploadArea.addEventListener('click', () => fileInput.click());
+
+    uploadArea.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        uploadArea.classList.add('drag-over');
+    });
+
+    uploadArea.addEventListener('dragleave', () => {
+        uploadArea.classList.remove('drag-over');
+    });
+
+    uploadArea.addEventListener('drop', (e) => {
+        e.preventDefault();
+        uploadArea.classList.remove('drag-over');
+        if (e.dataTransfer.files.length) {
+            handleFile(e.dataTransfer.files[0]);
+        }
+    });
+
+    fileInput.addEventListener('change', (e) => {
+        if (e.target.files.length) {
+            handleFile(e.target.files[0]);
+        }
+    });
+
+    function handleFile(file) {
+        const validTypes = [
+            'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            'application/vnd.ms-excel',
+            'text/csv',
+            'application/vnd.ms-excel.sheet.binary.macroEnabled.12',
+            'application/vnd.ms-excel.sheet.macroEnabled.12'
+        ];
+        const validExtensions = ['.xlsx', '.xls', '.csv', '.xlsb', '.xlsm'];
+        const ext = '.' + file.name.split('.').pop().toLowerCase();
+
+        if (!validExtensions.includes(ext)) {
+            showToast('Please upload a valid Excel or CSV file', 'error');
+            return;
+        }
+
+        appState.fileName = file.name;
+        appState.fileSize = file.size;
+        appState.filePassword = document.getElementById('filePassword').value;
+
+        showProgress(true, 'Reading file...');
+
+        const reader = new FileReader();
+        reader.onprogress = (e) => {
+            if (e.lengthComputable) {
+                const pct = Math.round((e.loaded / e.total) * 50);
+                updateProgress(pct, `Reading file... ${formatBytes(e.loaded)} / ${formatBytes(e.total)}`);
+            }
+        };
+
+        reader.onload = (e) => {
+            updateProgress(50, 'Parsing workbook...');
+            
+            // Store base64 for state restoration
+            try {
+                const uint8 = new Uint8Array(e.target.result);
+                // Only store if under 5MB to avoid localStorage limits
+                if (uint8.length < 5 * 1024 * 1024) {
+                    appState.fileDataBase64 = arrayBufferToBase64(e.target.result);
+                } else {
+                    appState.fileDataBase64 = null;
+                }
+            } catch(err) {
+                appState.fileDataBase64 = null;
+            }
+
+            // Use setTimeout to allow UI to update
+            setTimeout(() => {
+                try {
+                    parseWorkbook(e.target.result);
+                } catch (err) {
+                    showProgress(false);
+                    showToast('Error parsing file: ' + err.message, 'error');
+                    console.error(err);
+                }
+            }, 50);
+        };
+
+        reader.onerror = () => {
+            showProgress(false);
+            showToast('Error reading file', 'error');
+        };
+
+        reader.readAsArrayBuffer(file);
+    }
+
+    function arrayBufferToBase64(buffer) {
+        let binary = '';
+        const bytes = new Uint8Array(buffer);
+        const chunkSize = 8192;
+        for (let i = 0; i < bytes.length; i += chunkSize) {
+            const chunk = bytes.subarray(i, i + chunkSize);
+            binary += String.fromCharCode.apply(null, chunk);
+        }
+        return btoa(binary);
+    }
+
+    function base64ToArrayBuffer(base64) {
+        const binary = atob(base64);
+        const bytes = new Uint8Array(binary.length);
+        for (let i = 0; i < binary.length; i++) {
+            bytes[i] = binary.charCodeAt(i);
+        }
+        return bytes.buffer;
+    }
+
+    function parseWorkbook(arrayBuffer) {
+        try {
+            const options = {
+                type: 'array',
+                cellDates: true,
+                cellNF: true,
+                cellStyles: false,
+                dense: false
+            };
+
+            if (appState.filePassword) {
+                options.password = appState.filePassword;
+            }
+
+            updateProgress(60, 'Decoding workbook structure...');
+
+            workbookCache = XLSX.read(arrayBuffer, options);
+            sheetDataCache = {};
+
+            appState.sheetNames = workbookCache.SheetNames;
+            if (!appState.activeSheet || !appState.sheetNames.includes(appState.activeSheet)) {
+                appState.activeSheet = appState.sheetNames[0];
+            }
+
+            updateProgress(80, 'Extracting sheet data...');
+
+            loadSheetData(appState.activeSheet);
+
+            updateProgress(100, 'Complete!');
+            setTimeout(() => showProgress(false), 500);
+
+            showFileInfo();
+            showSheetSelection();
+            showGroupsSection();
+
+            if (appState.groups.length > 0) {
+                renderGroups();
+                runCounting();
+            }
+
+            saveState();
+            showToast('File loaded successfully!', 'success');
+        } catch (err) {
+            showProgress(false);
+            if (err.message && err.message.includes('password')) {
+                showToast('File is password protected. Please enter the correct password.', 'error');
+            } else {
+                showToast('Error parsing file: ' + err.message, 'error');
+            }
+            console.error(err);
+        }
+    }
+
+    function loadSheetData(sheetName) {
+        if (!workbookCache) return;
+
+        if (sheetDataCache[sheetName]) {
+            currentSheetData = sheetDataCache[sheetName];
+        } else {
+            const sheet = workbookCache.Sheets[sheetName];
+            const jsonData = XLSX.utils.sheet_to_json(sheet, { 
+                header: 1, 
+                defval: '',
+                raw: false 
+            });
+            sheetDataCache[sheetName] = jsonData;
+            currentSheetData = jsonData;
+        }
+
+        // Determine columns
+        if (currentSheetData.length > 0) {
+            const headerRow = currentSheetData[0];
+            if (appState.headerRow) {
+                appState.columns = headerRow.map((h, i) => ({
+                    index: i,
+                    name: String(h || `Column ${i + 1}`).trim()
+                }));
+            } else {
+                appState.columns = headerRow.map((_, i) => ({
+                    index: i,
+                    name: `Column ${i + 1}`
+                }));
+            }
+
+            // Preserve selected columns if they still exist
+            const validCols = appState.columns.map(c => c.name);
+            appState.selectedColumns = appState.selectedColumns.filter(c => validCols.includes(c));
+            if (appState.selectedColumns.length === 0) {
+                appState.selectedColumns = appState.columns.map(c => c.name);
+            }
+        }
+
+        appState.totalRecords = appState.headerRow ? 
+            Math.max(0, currentSheetData.length - 1) : 
+            currentSheetData.length;
+
+        renderColumns();
+        renderDataPreview();
+        saveState();
+    }
+
+    // ============================================
+    // UI RENDERING
+    // ============================================
+    function showProgress(show, text) {
+        const container = document.getElementById('progressContainer');
+        container.classList.toggle('active', show);
+        if (text) document.getElementById('progressText').textContent = text;
+    }
+
+    function updateProgress(pct, text) {
+        document.getElementById('progressFill').style.width = pct + '%';
+        if (text) document.getElementById('progressText').textContent = text;
+    }
+
+    function formatBytes(bytes) {
+        if (bytes === 0) return '0 B';
+        const k = 1024;
+        const sizes = ['B', 'KB', 'MB', 'GB'];
+        const i = Math.floor(Math.log(bytes) / Math.log(k));
+        return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
+    }
+
+    function showFileInfo() {
+        const container = document.getElementById('fileInfoContainer');
+        container.classList.remove('hidden');
+        container.innerHTML = `
+            <div class="file-info">
+                <span class="file-icon">📊</span>
+                <div class="file-details">
+                    <div class="file-name">${appState.fileName}</div>
+                    <div class="file-meta">${formatBytes(appState.fileSize)} • ${appState.sheetNames.length} sheet(s) • ${appState.totalRecords.toLocaleString()} records</div>
+                </div>
+                <button class="btn btn-sm btn-danger" onclick="removeFile()">✕ Remove</button>
+            </div>
+        `;
+    }
+
+    function removeFile() {
+        workbookCache = null;
+        sheetDataCache = {};
+        currentSheetData = [];
+        appState.fileName = null;
+        appState.fileSize = null;
+        appState.fileDataBase64 = null;
+        appState.sheetNames = [];
+        appState.activeSheet = null;
+        appState.columns = [];
+        appState.selectedColumns = [];
+        appState.results = null;
+
+        document.getElementById('fileInfoContainer').classList.add('hidden');
+        document.getElementById('fileInfoContainer').innerHTML = '';
+        document.getElementById('sheetCard').classList.add('hidden');
+        document.getElementById('groupsCard').classList.add('hidden');
+        document.getElementById('resultsSection').classList.add('hidden');
+        document.getElementById('previewCard').classList.add('hidden');
+        fileInput.value = '';
+
+        saveState();
+        showToast('File removed', 'info');
+    }
+
+    function showSheetSelection() {
+        document.getElementById('sheetCard').classList.remove('hidden');
+        renderSheetTabs();
+        renderColumns();
+        renderDataPreview();
+    }
+
+    function renderSheetTabs() {
+        const container = document.getElementById('sheetTabs');
+        container.innerHTML = appState.sheetNames.map(name => `
+            <div class="sheet-tab ${name === appState.activeSheet ? 'active' : ''}" 
+                 onclick="switchSheet('${name.replace(/'/g, "\\'")}')">${name}</div>
+        `).join('');
+    }
+
+    function switchSheet(name) {
+        appState.activeSheet = name;
+        loadSheetData(name);
+        renderSheetTabs();
+        showGroupsSection();
+        if (appState.results) {
+            runCounting();
+        }
+        saveState();
+    }
+
+    function renderColumns() {
+        const grid = document.getElementById('columnsGrid');
+        grid.innerHTML = appState.columns.map(col => `
+            <label class="column-chip ${appState.selectedColumns.includes(col.name) ? 'selected' : ''}">
+                <input type="checkbox" 
+                       ${appState.selectedColumns.includes(col.name) ? 'checked' : ''}
+                       onchange="toggleColumn('${col.name.replace(/'/g, "\\'")}')"
+                >
+                ${escapeHtml(col.name)}
+            </label>
+        `).join('');
+
+        // Update header toggle
+        const toggle = document.getElementById('headerToggle');
+        toggle.classList.toggle('active', appState.headerRow);
+    }
+
+    function toggleColumn(colName) {
+        const idx = appState.selectedColumns.indexOf(colName);
+        if (idx > -1) {
+            appState.selectedColumns.splice(idx, 1);
+        } else {
+            appState.selectedColumns.push(colName);
+        }
+        renderColumns();
+        saveState();
+    }
+
+    function selectAllColumns() {
+        appState.selectedColumns = appState.columns.map(c => c.name);
+        renderColumns();
+        saveState();
+    }
+
+    function deselectAllColumns() {
+        appState.selectedColumns = [];
+        renderColumns();
+        saveState();
+    }
+
+    function toggleHeader() {
+        appState.headerRow = !appState.headerRow;
+        if (workbookCache) {
+            loadSheetData(appState.activeSheet);
+        }
+        document.getElementById('headerToggle').classList.toggle('active', appState.headerRow);
+        saveState();
+    }
+
+    function renderDataPreview() {
+        const card = document.getElementById('previewCard');
+        const preview = document.getElementById('dataPreview');
+        const countEl = document.getElementById('previewCount');
+
+        if (currentSheetData.length === 0) {
+            card.classList.add('hidden');
+            return;
+        }
+
+        card.classList.remove('hidden');
+        const maxRows = 100;
+        const startRow = appState.headerRow ? 1 : 0;
+        const displayData = currentSheetData.slice(startRow, startRow + maxRows);
+        const headers = appState.headerRow ? currentSheetData[0] : currentSheetData[0].map((_, i) => `Col ${i + 1}`);
+
+        countEl.textContent = `(showing ${Math.min(maxRows, displayData.length)} of ${appState.totalRecords} records)`;
+
+        let html = '<table><thead><tr>';
+        html += '<th>#</th>';
+        headers.forEach((h, i) => {
+            if (appState.selectedColumns.includes(appState.columns[i]?.name)) {
+                html += `<th>${escapeHtml(String(h))}</th>`;
+            }
+        });
+        html += '</tr></thead><tbody>';
+
+        displayData.forEach((row, ri) => {
+            html += '<tr>';
+            html += `<td style="color: var(--text-muted)">${ri + 1}</td>`;
+            headers.forEach((_, ci) => {
+                if (appState.selectedColumns.includes(appState.columns[ci]?.name)) {
+                    const val = row[ci] !== undefined ? String(row[ci]) : '';
+                    html += `<td title="${escapeHtml(val)}">${escapeHtml(val)}</td>`;
+                }
+            });
+            html += '</tr>';
+        });
+
+        html += '</tbody></table>';
+        preview.innerHTML = html;
+    }
+
+    // ============================================
+    // GROUPS MANAGEMENT
+    // ============================================
+    const GROUP_COLORS = [
+        '#6366f1', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6',
+        '#06b6d4', '#ec4899', '#14b8a6', '#f97316', '#84cc16',
+        '#a855f7', '#0ea5e9', '#e11d48', '#22c55e', '#eab308'
+    ];
+
+    function showGroupsSection() {
+        document.getElementById('groupsCard').classList.remove('hidden');
+        if (appState.groups.length === 0) {
+            addGroup();
+        } else {
+            renderGroups();
+        }
+    }
+
+    function addGroup() {
+        const group = {
+            id: Date.now() + Math.random(),
+            name: `Group ${appState.groups.length + 1}`,
+            color: GROUP_COLORS[appState.groups.length % GROUP_COLORS.length],
+            logic: 'AND',
+            definitions: [
+                { column: appState.columns[0]?.name || '', operator: 'contains', value: '' }
+            ]
+        };
+        appState.groups.push(group);
+        renderGroups();
+        saveState();
+    }
+
+    function removeGroup(groupId) {
+        appState.groups = appState.groups.filter(g => g.id !== groupId);
+        renderGroups();
+        saveState();
+        if (appState.results) runCounting();
+    }
+
+    function duplicateGroup(groupId) {
+        const original = appState.groups.find(g => g.id === groupId);
+        if (original) {
+            const clone = JSON.parse(JSON.stringify(original));
+            clone.id = Date.now() + Math.random();
+            clone.name = clone.name + ' (copy)';
+            appState.groups.push(clone);
+            renderGroups();
+            saveState();
+        }
+    }
+
+    function addDefinition(groupId) {
+        const group = appState.groups.find(g => g.id === groupId);
+        if (group) {
+            group.definitions.push({
+                column: appState.columns[0]?.name || '',
+                operator: 'contains',
+                value: ''
+            });
+            renderGroups();
+            saveState();
+        }
+    }
+
+    function removeDefinition(groupId, defIndex) {
+        const group = appState.groups.find(g => g.id === groupId);
+        if (group && group.definitions.length > 1) {
+            group.definitions.splice(defIndex, 1);
+            renderGroups();
+            saveState();
+        }
+    }
+
+    function toggleGroupLogic(groupId) {
+        const group = appState.groups.find(g => g.id === groupId);
+        if (group) {
+            group.logic = group.logic === 'AND' ? 'OR' : 'AND';
+            renderGroups();
+            saveState();
+        }
+    }
+
+    function updateGroupField(groupId, field, value) {
+        const group = appState.groups.find(g => g.id === groupId);
+        if (group) {
+            group[field] = value;
+            saveState();
+        }
+    }
+
+    function updateDefinitionField(groupId, defIndex, field, value) {
+        const group = appState.groups.find(g => g.id === groupId);
+        if (group && group.definitions[defIndex]) {
+            group.definitions[defIndex][field] = value;
+            saveState();
+        }
+    }
+
+    function renderGroups() {
+        const container = document.getElementById('groupsList');
+
+        if (appState.groups.length === 0) {
+            container.innerHTML = `
+                <div class="empty-state">
+                    <div class="empty-icon">🏷️</div>
+                    <p>No groups defined yet. Add a group to start counting!</p>
+                </div>
+            `;
+            return;
+        }
+
+        container.innerHTML = appState.groups.map((group, gi) => `
+            <div class="group-container fade-in" style="border-left: 3px solid ${group.color}">
+                <div class="group-header">
+                    <input type="color" class="group-color" value="${group.color}" 
+                           onchange="updateGroupField(${group.id}, 'color', this.value)">
+                    <input type="text" class="group-name-input" value="${escapeHtml(group.name)}" 
+                           placeholder="Group name..."
+                           onchange="updateGroupField(${group.id}, 'name', this.value)">
+                    <span class="logic-badge ${group.logic === 'AND' ? 'logic-and' : 'logic-or'}" 
+                          onclick="toggleGroupLogic(${group.id})"
+                          title="Click to toggle AND/OR logic">
+                        ${group.logic}
+                    </span>
+                    <button class="btn btn-sm btn-secondary" onclick="duplicateGroup(${group.id})" title="Duplicate">📋</button>
+                    <button class="btn btn-sm btn-danger" onclick="removeGroup(${group.id})" title="Remove">✕</button>
+                </div>
+                <div class="group-definitions">
+                    ${group.definitions.map((def, di) => `
+                        <div class="definition-row">
+                            ${di > 0 ? `<span class="logic-badge ${group.logic === 'AND' ? 'logic-and' : 'logic-or'}" style="cursor:default; min-width: 40px; text-align:center;">${group.logic}</span>` : '<span style="min-width: 40px;"></span>'}
+                            <select onchange="updateDefinitionField(${group.id}, ${di}, 'column', this.value)">
+                                ${appState.columns.map(col => `
+                                    <option value="${escapeHtml(col.name)}" ${def.column === col.name ? 'selected' : ''}>
+                                        ${escapeHtml(col.name)}
+                                    </option>
+                                `).join('')}
+                            </select>
+                            <select class="operator-select" onchange="updateDefinitionField(${group.id}, ${di}, 'operator', this.value)">
+                                <option value="contains" ${def.operator === 'contains' ? 'selected' : ''}>Contains</option>
+                                <option value="not_contains" ${def.operator === 'not_contains' ? 'selected' : ''}>Not Contains</option>
+                                <option value="equals" ${def.operator === 'equals' ? 'selected' : ''}>Equals</option>
+                                <option value="not_equals" ${def.operator === 'not_equals' ? 'selected' : ''}>Not Equals</option>
+                                <option value="starts_with" ${def.operator === 'starts_with' ? 'selected' : ''}>Starts With</option>
+                                <option value="ends_with" ${def.operator === 'ends_with' ? 'selected' : ''}>Ends With</option>
+                                <option value="greater_than" ${def.operator === 'greater_than' ? 'selected' : ''}>Greater Than</option>
+                                <option value="less_than" ${def.operator === 'less_than' ? 'selected' : ''}>Less Than</option>
+                                <option value="greater_equal" ${def.operator === 'greater_equal' ? 'selected' : ''}>≥ (Greater or Equal)</option>
+                                <option value="less_equal" ${def.operator === 'less_equal' ? 'selected' : ''}>≤ (Less or Equal)</option>
+                                <option value="is_empty" ${def.operator === 'is_empty' ? 'selected' : ''}>Is Empty</option>
+                                <option value="is_not_empty" ${def.operator === 'is_not_empty' ? 'selected' : ''}>Is Not Empty</option>
+                                <option value="regex" ${def.operator === 'regex' ? 'selected' : ''}>Regex Match</option>
+                            </select>
+                            <input type="text" value="${escapeHtml(def.value)}" placeholder="Value..."
+                                   onchange="updateDefinitionField(${group.id}, ${di}, 'value', this.value)"
+                                   ${['is_empty', 'is_not_empty'].includes(def.operator) ? 'disabled style="opacity:0.5"' : ''}>
+                            <button class="btn btn-sm btn-danger" onclick="removeDefinition(${group.id}, ${di})" 
+                                    ${group.definitions.length <= 1 ? 'disabled style="opacity:0.3"' : ''}>✕</button>
+                        </div>
+                    `).join('')}
+                </div>
+                <button class="btn btn-sm btn-secondary" onclick="addDefinition(${group.id})">+ Add Condition</button>
+            </div>
+        `).join('');
+    }
+
+    // ============================================
+    // COUNTING ENGINE
+    // ============================================
+    function runCounting() {
+        if (!currentSheetData || currentSheetData.length === 0) {
+            showToast('No data loaded. Please upload a file first.', 'error');
+            return;
+        }
+
+        if (appState.groups.length === 0) {
+            showToast('No groups defined. Add at least one group.', 'error');
+            return;
+        }
+
+        const startRow = appState.headerRow ? 1 : 0;
+        const dataRows = currentSheetData.slice(startRow);
+        const colIndexMap = {};
+        appState.columns.forEach(col => {
+            colIndexMap[col.name] = col.index;
+        });
+
+        const results = appState.groups.map(group => {
+            let count = 0;
+            const matchedRows = [];
+
+            dataRows.forEach((row, rowIdx) => {
+                const matches = group.definitions.map(def => {
+                    const colIdx = colIndexMap[def.column];
+                    if (colIdx === undefined) return false;
+
+                    const cellValue = String(row[colIdx] || '').trim();
+                    const searchValue = def.value.trim();
+
+                    return evaluateCondition(cellValue, def.operator, searchValue);
+                });
+
+                let rowMatches;
+                if (group.logic === 'AND') {
+                    rowMatches = matches.every(m => m);
+                } else {
+                    rowMatches = matches.some(m => m);
+                }
+
+                if (rowMatches) {
+                    count++;
+                    matchedRows.push(rowIdx);
+                }
+            });
+
+            return {
+                groupId: group.id,
+                name: group.name,
+                color: group.color,
+                count: count,
+                matchedRows: matchedRows
+            };
+        });
+
+        appState.results = results;
+        renderResults(results, dataRows.length);
+        saveState();
+        showToast('Counting complete!', 'success');
+    }
+
+    function evaluateCondition(cellValue, operator, searchValue) {
+        const cellLower = cellValue.toLowerCase();
+        const searchLower = searchValue.toLowerCase();
+
+        switch (operator) {
+            case 'contains':
+                return cellLower.includes(searchLower);
+            case 'not_contains':
+                return !cellLower.includes(searchLower);
+            case 'equals':
+                return cellLower === searchLower;
+            case 'not_equals':
+                return cellLower !== searchLower;
+            case 'starts_with':
+                return cellLower.startsWith(searchLower);
+            case 'ends_with':
+                return cellLower.endsWith(searchLower);
+            case 'greater_than':
+                return parseFloat(cellValue) > parseFloat(searchValue);
+            case 'less_than':
+                return parseFloat(cellValue) < parseFloat(searchValue);
+            case 'greater_equal':
+                return parseFloat(cellValue) >= parseFloat(searchValue);
+            case 'less_equal':
+                return parseFloat(cellValue) <= parseFloat(searchValue);
+            case 'is_empty':
+                return cellValue === '';
+            case 'is_not_empty':
+                return cellValue !== '';
+            case 'regex':
+                try {
+                    const regex = new RegExp(searchValue, 'i');
+                    return regex.test(cellValue);
+                } catch {
+                    return false;
+                }
+            default:
+                return false;
+        }
+    }
+
+    // ============================================
+    // RESULTS RENDERING
+    // ============================================
+    function renderResults(results, totalRows) {
+        const section = document.getElementById('resultsSection');
+        section.classList.remove('hidden');
+
+        // Total counter
+        animateCounter('totalValue', totalRows);
+        document.getElementById('totalSub').textContent = 
+            `from sheet "${appState.activeSheet}" • ${results.length} group(s) defined`;
+
+        // Ring chart
+        renderRingChart(results, totalRows);
+
+        // Counter cards
+        const grid = document.getElementById('countersGrid');
+        grid.innerHTML = results.map(r => {
+            const pct = totalRows > 0 ? ((r.count / totalRows) * 100).toFixed(1) : 0;
+            return `
+                <div class="counter-card fade-in" style="--counter-color: ${r.color}">
+                    <div class="counter-label">${escapeHtml(r.name)}</div>
+                    <div class="counter-value" style="color: ${r.color}" id="counter_${r.groupId}">${r.count.toLocaleString()}</div>
+                    <div class="counter-bar">
+                        <div class="counter-bar-fill" style="width: ${pct}%; background: ${r.color}"></div>
+                    </div>
+                    <div class="counter-percentage">${pct}% of total</div>
+                </div>
+            `;
+        }).join('');
+
+        // Animate counters
+        results.forEach(r => {
+            animateCounter(`counter_${r.groupId}`, r.count);
+        });
+
+        // Scroll to results
+        section.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+
+    function animateCounter(elementId, targetValue) {
+        const el = document.getElementById(elementId);
+        if (!el) return;
+
+        el.classList.add('animating');
+        setTimeout(() => el.classList.remove('animating'), 600);
+
+        const duration = 800;
+        const startTime = performance.now();
+        const startValue = 0;
+
+        function update(currentTime) {
+            const elapsed = currentTime - startTime;
+            const progress = Math.min(elapsed / duration, 1);
+            const eased = 1 - Math.pow(1 - progress, 3); // ease-out cubic
+            const current = Math.round(startValue + (targetValue - startValue) * eased);
+            el.textContent = current.toLocaleString();
+
+            if (progress < 1) {
+                requestAnimationFrame(update);
+            }
+        }
+
+        requestAnimationFrame(update);
+    }
+
+    function renderRingChart(results, totalRows) {
+        const segments = document.getElementById('ringSegments');
+        const legend = document.getElementById('chartLegend');
+        const centerNum = document.getElementById('ringCenterNumber');
+
+        centerNum.textContent = results.length;
+
+        const circumference = 2 * Math.PI * 90;
+        let currentOffset = 0;
+        let segmentsHtml = '';
+        let legendHtml = '';
+
+        // Calculate "unmatched" count
+        const totalMatched = results.reduce((sum, r) => sum + r.count, 0);
+
+        results.forEach((r, i) => {
+            const pct = totalRows > 0 ? r.count / totalRows : 0;
+            const segmentLength = pct * circumference;
+            const gap = results.length > 1 ? 4 : 0;
+
+            segmentsHtml += `
+                <circle cx="110" cy="110" r="90" fill="none" 
+                        stroke="${r.color}" stroke-width="20"
+                        stroke-dasharray="${Math.max(0, segmentLength - gap)} ${circumference - segmentLength + gap}"
+                        stroke-dashoffset="${-currentOffset}"
+                        style="transition: all 1s ease ${i * 0.1}s">
+                    <title>${r.name}: ${r.count} (${(pct * 100).toFixed(1)}%)</title>
+                </circle>
+            `;
+
+            legendHtml += `
+                <div class="legend-item">
+                    <div class="legend-dot" style="background: ${r.color}"></div>
+                    ${escapeHtml(r.name)} (${r.count.toLocaleString()})
+                </div>
+            `;
+
+            currentOffset += segmentLength;
+        });
+
+        // Unmatched segment
+        if (totalRows > totalMatched) {
+            const unmatchedPct = (totalRows - totalMatched) / totalRows;
+            const segmentLength = unmatchedPct * circumference;
+            segmentsHtml += `
+                <circle cx="110" cy="110" r="90" fill="none" 
+                        stroke="var(--border)" stroke-width="20" stroke-opacity="0.5"
+                        stroke-dasharray="${segmentLength} ${circumference - segmentLength}"
+                        stroke-dashoffset="${-currentOffset}"
+                        style="transition: all 1s ease">
+                    <title>Unmatched: ${totalRows - totalMatched}</title>
+                </circle>
+            `;
+            legendHtml += `
+                <div class="legend-item">
+                    <div class="legend-dot" style="background: var(--border)"></div>
+                    Unmatched (${(totalRows - totalMatched).toLocaleString()})
+                </div>
+            `;
+        }
+
+        segments.innerHTML = segmentsHtml;
+        legend.innerHTML = legendHtml;
+    }
+
+    // ============================================
+    // EXPORT
+    // ============================================
+    function exportResults() {
+        if (!appState.results || appState.results.length === 0) {
+            showToast('No results to export. Run counting first.', 'error');
+            return;
+        }
+
+        const wb = XLSX.utils.book_new();
+
+        // Summary sheet
+        const summaryData = [
+            ['Excel Record Counter Pro - Results'],
+            ['File', appState.fileName],
+            ['Sheet', appState.activeSheet],
+            ['Total Records', appState.totalRecords],
+            ['Generated', new Date().toLocaleString()],
+            [],
+            ['Group Name', 'Count', 'Percentage', 'Logic', 'Conditions']
+        ];
+
+        appState.results.forEach(r => {
+            const group = appState.groups.find(g => g.id === r.groupId);
+            const conditions = group ? group.definitions.map(d => 
+                `${d.column} ${d.operator} "${d.value}"`
+            ).join(` ${group.logic} `) : '';
+            const pct = appState.totalRecords > 0 ? 
+                ((r.count / appState.totalRecords) * 100).toFixed(1) + '%' : '0%';
+
+            summaryData.push([r.name, r.count, pct, group?.logic || '', conditions]);
+        });
+
+        const ws = XLSX.utils.aoa_to_sheet(summaryData);
+        XLSX.utils.book_append_sheet(wb, ws, 'Summary');
+
+        XLSX.writeFile(wb, `record_counts_${Date.now()}.xlsx`);
+        showToast('Results exported!', 'success');
+    }
+
+    // ============================================
+    // UTILITIES
+    // ============================================
+    function escapeHtml(str) {
+        const div = document.createElement('div');
+        div.textContent = str;
+        return div.innerHTML;
+    }
+
+    // ============================================
+    // INITIALIZATION
+    // ============================================
+    function init() {
+        const hasState = loadState();
+
+        if (hasState && appState.filePassword) {
+            document.getElementById('filePassword').value = appState.filePassword;
+        }
+
+        if (hasState && appState.fileDataBase64) {
+            // Restore from saved file data
+            showToast('Restoring previous session...', 'info');
+            try {
+                const arrayBuffer = base64ToArrayBuffer(appState.fileDataBase64);
+                setTimeout(() => {
+                    showProgress(true, 'Restoring workbook...');
+                    setTimeout(() => {
+                        try {
+                            parseWorkbook(arrayBuffer);
+                        } catch (err) {
+                            showProgress(false);
+                            showToast('Could not restore file. Please re-upload.', 'error');
+                            console.error(err);
+                            // Still show groups if they exist
+                            if (appState.groups.length > 0) {
+                                document.getElementById('groupsCard').classList.remove('hidden');
+                                renderGroups();
+                            }
+                        }
+                    }, 100);
+                }, 300);
+            } catch (err) {
+                showToast('Could not restore file data. Please re-upload.', 'error');
+                if (appState.groups.length > 0) {
+                    document.getElementById('groupsCard').classList.remove('hidden');
+                    renderGroups();
+                }
+            }
+        } else if (hasState && appState.groups.length > 0) {
+            // We have groups but no file data - show groups section
+            document.getElementById('groupsCard').classList.remove('hidden');
+            renderGroups();
+
+            if (appState.fileName) {
+                showToast('File data not cached. Please re-upload to count.', 'info');
+            }
+
+            // Show results if we have them
+            if (appState.results && appState.results.length > 0) {
+                renderResults(appState.results, appState.totalRecords);
+            }
+        }
+    }
+
+    // Start the app
+    init();
+    </script>
+</body>
+</html>
