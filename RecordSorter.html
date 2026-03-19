@@ -1,0 +1,2056 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Record Sorter</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <style>
+        :root {
+            --primary: #6c5ce7;
+            --primary-light: #a29bfe;
+            --primary-dark: #5541d7;
+            --accent: #00cec9;
+            --accent-light: #81ecec;
+            --bg: #0a0a1a;
+            --bg-card: #12122a;
+            --bg-card-hover: #1a1a3e;
+            --text: #e0e0ff;
+            --text-dim: #8888aa;
+            --border: #2a2a4a;
+            --success: #00b894;
+            --warning: #fdcb6e;
+            --danger: #e17055;
+            --gradient-1: linear-gradient(135deg, #6c5ce7, #00cec9);
+            --gradient-2: linear-gradient(135deg, #fd79a8, #6c5ce7);
+            --shadow: 0 8px 32px rgba(0,0,0,0.4);
+            --shadow-glow: 0 0 20px rgba(108,92,231,0.3);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        /* Animated background */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: 
+                radial-gradient(ellipse at 20% 50%, rgba(108,92,231,0.08) 0%, transparent 50%),
+                radial-gradient(ellipse at 80% 20%, rgba(0,206,201,0.06) 0%, transparent 50%),
+                radial-gradient(ellipse at 50% 80%, rgba(253,121,168,0.05) 0%, transparent 50%);
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .app-container {
+            position: relative;
+            z-index: 1;
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        /* Header */
+        .header {
+            text-align: center;
+            padding: 30px 20px;
+            margin-bottom: 30px;
+        }
+
+        .header h1 {
+            font-size: 2.8em;
+            font-weight: 800;
+            background: var(--gradient-1);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 8px;
+            letter-spacing: -1px;
+        }
+
+        .header p {
+            color: var(--text-dim);
+            font-size: 1.1em;
+        }
+
+        /* Stats Bar */
+        .stats-bar {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 25px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .stat-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 18px 28px;
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            min-width: 180px;
+            transition: all 0.3s ease;
+        }
+
+        .stat-card:hover {
+            border-color: var(--primary-light);
+            box-shadow: var(--shadow-glow);
+            transform: translateY(-2px);
+        }
+
+        .stat-icon {
+            width: 44px;
+            height: 44px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.3em;
+        }
+
+        .stat-icon.purple { background: rgba(108,92,231,0.2); }
+        .stat-icon.teal { background: rgba(0,206,201,0.2); }
+        .stat-icon.pink { background: rgba(253,121,168,0.2); }
+        .stat-icon.green { background: rgba(0,184,148,0.2); }
+
+        .stat-info .stat-value {
+            font-size: 1.5em;
+            font-weight: 700;
+            line-height: 1.2;
+        }
+
+        .stat-info .stat-label {
+            font-size: 0.8em;
+            color: var(--text-dim);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        /* Controls Panel */
+        .controls-panel {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            padding: 25px;
+            margin-bottom: 25px;
+            box-shadow: var(--shadow);
+        }
+
+        .controls-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .controls-header h2 {
+            font-size: 1.3em;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .controls-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 20px;
+        }
+
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .control-group label {
+            font-size: 0.85em;
+            color: var(--text-dim);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-weight: 600;
+        }
+
+        input[type="text"],
+        input[type="number"],
+        select {
+            background: rgba(255,255,255,0.05);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 12px 16px;
+            color: var(--text);
+            font-size: 0.95em;
+            transition: all 0.3s ease;
+            outline: none;
+        }
+
+        input[type="text"]:focus,
+        input[type="number"]:focus,
+        select:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(108,92,231,0.2);
+        }
+
+        select {
+            cursor: pointer;
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%238888aa' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 14px center;
+            padding-right: 36px;
+        }
+
+        select option {
+            background: var(--bg-card);
+            color: var(--text);
+        }
+
+        /* Buttons */
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 12px;
+            font-size: 0.95em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .btn-primary {
+            background: var(--gradient-1);
+            color: white;
+            box-shadow: 0 4px 15px rgba(108,92,231,0.4);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(108,92,231,0.5);
+        }
+
+        .btn-secondary {
+            background: rgba(255,255,255,0.08);
+            color: var(--text);
+            border: 1px solid var(--border);
+        }
+
+        .btn-secondary:hover {
+            background: rgba(255,255,255,0.12);
+            border-color: var(--primary-light);
+        }
+
+        .btn-danger {
+            background: rgba(225,112,85,0.15);
+            color: var(--danger);
+            border: 1px solid rgba(225,112,85,0.3);
+        }
+
+        .btn-danger:hover {
+            background: rgba(225,112,85,0.25);
+        }
+
+        .btn-success {
+            background: rgba(0,184,148,0.15);
+            color: var(--success);
+            border: 1px solid rgba(0,184,148,0.3);
+        }
+
+        .btn-success:hover {
+            background: rgba(0,184,148,0.25);
+        }
+
+        .btn:active {
+            transform: scale(0.97);
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-top: 10px;
+        }
+
+        /* Upload Zone */
+        .upload-zone {
+            border: 2px dashed var(--border);
+            border-radius: 20px;
+            padding: 50px 30px;
+            text-align: center;
+            margin-bottom: 25px;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .upload-zone::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: var(--gradient-1);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .upload-zone:hover,
+        .upload-zone.drag-over {
+            border-color: var(--primary);
+        }
+
+        .upload-zone:hover::before,
+        .upload-zone.drag-over::before {
+            opacity: 0.05;
+        }
+
+        .upload-zone .upload-content {
+            position: relative;
+            z-index: 1;
+        }
+
+        .upload-icon {
+            font-size: 3em;
+            margin-bottom: 15px;
+            display: block;
+        }
+
+        .upload-zone h3 {
+            font-size: 1.3em;
+            margin-bottom: 8px;
+        }
+
+        .upload-zone p {
+            color: var(--text-dim);
+        }
+
+        .upload-zone input[type="file"] {
+            display: none;
+        }
+
+        /* Records Table */
+        .records-section {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            overflow: hidden;
+            box-shadow: var(--shadow);
+            margin-bottom: 25px;
+        }
+
+        .records-header {
+            padding: 20px 25px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-bottom: 1px solid var(--border);
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .records-header h2 {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .search-box {
+            position: relative;
+        }
+
+        .search-box input {
+            padding-left: 40px;
+            width: 250px;
+        }
+
+        .search-box::before {
+            content: '🔍';
+            position: absolute;
+            left: 14px;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 0.9em;
+        }
+
+        /* View Toggle */
+        .view-toggle {
+            display: flex;
+            background: rgba(255,255,255,0.05);
+            border-radius: 10px;
+            padding: 3px;
+            gap: 3px;
+        }
+
+        .view-toggle button {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 8px;
+            background: transparent;
+            color: var(--text-dim);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 0.85em;
+        }
+
+        .view-toggle button.active {
+            background: var(--primary);
+            color: white;
+        }
+
+        /* Table View */
+        .table-container {
+            overflow-x: auto;
+        }
+
+        .records-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .records-table th {
+            padding: 14px 20px;
+            text-align: left;
+            font-size: 0.8em;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--text-dim);
+            background: rgba(255,255,255,0.02);
+            border-bottom: 1px solid var(--border);
+            cursor: pointer;
+            user-select: none;
+            white-space: nowrap;
+        }
+
+        .records-table th:hover {
+            color: var(--primary-light);
+        }
+
+        .records-table th .sort-arrow {
+            margin-left: 5px;
+            opacity: 0.5;
+        }
+
+        .records-table th.sorted .sort-arrow {
+            opacity: 1;
+            color: var(--accent);
+        }
+
+        .records-table td {
+            padding: 14px 20px;
+            border-bottom: 1px solid rgba(255,255,255,0.03);
+            font-size: 0.95em;
+        }
+
+        .records-table tr {
+            transition: all 0.2s ease;
+        }
+
+        .records-table tbody tr:hover {
+            background: var(--bg-card-hover);
+        }
+
+        .records-table .row-number {
+            color: var(--text-dim);
+            font-size: 0.85em;
+            font-weight: 600;
+            width: 50px;
+        }
+
+        .date-cell {
+            font-family: 'Courier New', monospace;
+            font-weight: 600;
+            color: var(--accent);
+            white-space: nowrap;
+        }
+
+        .data-cell {
+            max-width: 300px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        /* Card View */
+        .cards-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+            gap: 15px;
+            padding: 20px;
+        }
+
+        .record-card {
+            background: rgba(255,255,255,0.03);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 20px;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .record-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 4px;
+            height: 100%;
+            background: var(--gradient-1);
+        }
+
+        .record-card:hover {
+            border-color: var(--primary-light);
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-glow);
+        }
+
+        .record-card .card-number {
+            font-size: 0.75em;
+            color: var(--text-dim);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 8px;
+        }
+
+        .record-card .card-date {
+            font-size: 1.2em;
+            font-weight: 700;
+            color: var(--accent);
+            font-family: 'Courier New', monospace;
+            margin-bottom: 12px;
+        }
+
+        .record-card .card-fields {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .record-card .card-field {
+            display: flex;
+            gap: 8px;
+            font-size: 0.9em;
+        }
+
+        .record-card .card-field .field-label {
+            color: var(--text-dim);
+            min-width: 60px;
+            font-weight: 600;
+        }
+
+        .record-card .card-field .field-value {
+            color: var(--text);
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        /* Sort Direction Indicator */
+        .sort-indicator {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 6px 14px;
+            background: rgba(108,92,231,0.15);
+            border-radius: 20px;
+            font-size: 0.85em;
+            color: var(--primary-light);
+        }
+
+        /* Empty State */
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+        }
+
+        .empty-state .empty-icon {
+            font-size: 4em;
+            margin-bottom: 15px;
+            opacity: 0.5;
+        }
+
+        .empty-state h3 {
+            font-size: 1.3em;
+            margin-bottom: 8px;
+            color: var(--text-dim);
+        }
+
+        .empty-state p {
+            color: var(--text-dim);
+            opacity: 0.7;
+        }
+
+        /* Toast Notifications */
+        .toast-container {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 1000;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .toast {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            padding: 14px 20px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            box-shadow: var(--shadow);
+            animation: slideIn 0.3s ease, fadeOut 0.3s ease 2.7s forwards;
+            min-width: 280px;
+            max-width: 400px;
+        }
+
+        .toast.success { border-left: 4px solid var(--success); }
+        .toast.error { border-left: 4px solid var(--danger); }
+        .toast.info { border-left: 4px solid var(--primary); }
+
+        @keyframes slideIn {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+
+        @keyframes fadeOut {
+            to { opacity: 0; transform: translateX(50%); }
+        }
+
+        /* Loading Spinner */
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 3px solid var(--border);
+            border-top-color: var(--primary);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin: 20px auto;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Progress Bar */
+        .progress-bar {
+            height: 4px;
+            background: var(--border);
+            border-radius: 2px;
+            overflow: hidden;
+            margin: 15px 0;
+            display: none;
+        }
+
+        .progress-bar.active {
+            display: block;
+        }
+
+        .progress-bar .progress-fill {
+            height: 100%;
+            background: var(--gradient-1);
+            border-radius: 2px;
+            transition: width 0.3s ease;
+            width: 0%;
+        }
+
+        /* Collapsible sections */
+        .collapsible-toggle {
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .collapsible-toggle::after {
+            content: '▼';
+            font-size: 0.7em;
+            margin-left: 8px;
+            transition: transform 0.3s ease;
+            display: inline-block;
+        }
+
+        .collapsible-toggle.collapsed::after {
+            transform: rotate(-90deg);
+        }
+
+        /* Pagination */
+        .pagination {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 5px;
+            padding: 20px;
+            flex-wrap: wrap;
+        }
+
+        .pagination button {
+            padding: 8px 14px;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            background: transparent;
+            color: var(--text);
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-size: 0.9em;
+        }
+
+        .pagination button:hover {
+            border-color: var(--primary);
+            background: rgba(108,92,231,0.1);
+        }
+
+        .pagination button.active {
+            background: var(--primary);
+            border-color: var(--primary);
+            color: white;
+        }
+
+        .pagination button:disabled {
+            opacity: 0.3;
+            cursor: not-allowed;
+        }
+
+        .page-info {
+            color: var(--text-dim);
+            font-size: 0.85em;
+            padding: 0 10px;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .app-container {
+                padding: 10px;
+            }
+
+            .header h1 {
+                font-size: 2em;
+            }
+
+            .stats-bar {
+                flex-direction: column;
+            }
+
+            .stat-card {
+                min-width: unset;
+            }
+
+            .controls-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .records-header {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .search-box input {
+                width: 100%;
+            }
+
+            .cards-container {
+                grid-template-columns: 1fr;
+            }
+
+            .upload-zone {
+                padding: 30px 20px;
+            }
+
+            .btn-group {
+                flex-direction: column;
+            }
+
+            .btn-group .btn {
+                justify-content: center;
+            }
+        }
+
+        @media (orientation: landscape) and (max-height: 500px) {
+            .header {
+                padding: 15px 20px;
+                margin-bottom: 15px;
+            }
+
+            .header h1 {
+                font-size: 1.8em;
+            }
+
+            .upload-zone {
+                padding: 25px 20px;
+            }
+
+            .stats-bar {
+                flex-direction: row;
+            }
+
+            .controls-panel {
+                padding: 15px;
+            }
+        }
+
+        /* Horizontal layout for landscape */
+        @media (min-width: 1200px) {
+            .main-layout {
+                display: grid;
+                grid-template-columns: 350px 1fr;
+                gap: 25px;
+                align-items: start;
+            }
+
+            .sidebar {
+                position: sticky;
+                top: 20px;
+            }
+        }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: var(--bg);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--border);
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--primary);
+        }
+
+        /* Column mapping tags */
+        .column-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            margin-top: 8px;
+        }
+
+        .column-tag {
+            padding: 4px 10px;
+            border-radius: 8px;
+            font-size: 0.8em;
+            background: rgba(108,92,231,0.15);
+            color: var(--primary-light);
+            border: 1px solid rgba(108,92,231,0.3);
+        }
+
+        .column-tag.date-tag {
+            background: rgba(0,206,201,0.15);
+            color: var(--accent-light);
+            border-color: rgba(0,206,201,0.3);
+        }
+
+        /* Modal */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.7);
+            z-index: 999;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .modal-overlay.active {
+            display: flex;
+        }
+
+        .modal {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            padding: 30px;
+            max-width: 600px;
+            width: 100%;
+            max-height: 80vh;
+            overflow-y: auto;
+            box-shadow: var(--shadow);
+        }
+
+        .modal h3 {
+            margin-bottom: 20px;
+            font-size: 1.3em;
+        }
+
+        .modal .form-row {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 12px;
+            align-items: center;
+        }
+
+        .modal .form-row label {
+            min-width: 120px;
+            font-size: 0.9em;
+            color: var(--text-dim);
+        }
+
+        .modal .form-row input,
+        .modal .form-row select {
+            flex: 1;
+        }
+
+        /* Checkbox toggle */
+        .toggle-switch {
+            position: relative;
+            width: 48px;
+            height: 26px;
+            display: inline-block;
+        }
+
+        .toggle-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .toggle-slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: var(--border);
+            border-radius: 26px;
+            transition: 0.3s;
+        }
+
+        .toggle-slider::before {
+            content: '';
+            position: absolute;
+            height: 20px;
+            width: 20px;
+            left: 3px;
+            bottom: 3px;
+            background: white;
+            border-radius: 50%;
+            transition: 0.3s;
+        }
+
+        .toggle-switch input:checked + .toggle-slider {
+            background: var(--primary);
+        }
+
+        .toggle-switch input:checked + .toggle-slider::before {
+            transform: translateX(22px);
+        }
+
+        /* Animations for records */
+        .record-enter {
+            animation: recordEnter 0.4s ease forwards;
+        }
+
+        @keyframes recordEnter {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .highlight-row {
+            animation: highlightPulse 1s ease;
+        }
+
+        @keyframes highlightPulse {
+            0%, 100% { background: transparent; }
+            50% { background: rgba(108,92,231,0.1); }
+        }
+
+        /* File info badge */
+        .file-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 14px;
+            background: rgba(0,184,148,0.1);
+            border: 1px solid rgba(0,184,148,0.3);
+            border-radius: 20px;
+            font-size: 0.85em;
+            color: var(--success);
+        }
+
+        .file-badge .remove-file {
+            cursor: pointer;
+            opacity: 0.7;
+            transition: opacity 0.2s;
+        }
+
+        .file-badge .remove-file:hover {
+            opacity: 1;
+        }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <!-- Header -->
+        <div class="header">
+            <h1>📊 Record Sorter</h1>
+            <p>Parse DOCX files, extract date records, and sort them beautifully</p>
+        </div>
+
+        <!-- Stats Bar -->
+        <div class="stats-bar">
+            <div class="stat-card">
+                <div class="stat-icon purple">📄</div>
+                <div class="stat-info">
+                    <div class="stat-value" id="statFiles">0</div>
+                    <div class="stat-label">Files Loaded</div>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon teal">📋</div>
+                <div class="stat-info">
+                    <div class="stat-value" id="statRecords">0</div>
+                    <div class="stat-label">Records Found</div>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon pink">📅</div>
+                <div class="stat-info">
+                    <div class="stat-value" id="statDates">0</div>
+                    <div class="stat-label">Date Entries</div>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon green">✅</div>
+                <div class="stat-info">
+                    <div class="stat-value" id="statSorted">—</div>
+                    <div class="stat-label">Sort Order</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="main-layout">
+            <!-- Sidebar -->
+            <div class="sidebar">
+                <!-- Upload Zone -->
+                <div class="upload-zone" id="uploadZone">
+                    <div class="upload-content">
+                        <span class="upload-icon">📁</span>
+                        <h3>Drop DOCX File Here</h3>
+                        <p>or click to browse files</p>
+                        <input type="file" id="fileInput" accept=".docx">
+                    </div>
+                </div>
+
+                <div id="fileInfo" style="margin-bottom: 15px; display: none;">
+                    <span class="file-badge">
+                        <span>📄</span>
+                        <span id="fileName">document.docx</span>
+                        <span class="remove-file" onclick="clearFile()">✕</span>
+                    </span>
+                </div>
+
+                <div class="progress-bar" id="progressBar">
+                    <div class="progress-fill" id="progressFill"></div>
+                </div>
+
+                <!-- Parser Settings -->
+                <div class="controls-panel">
+                    <div class="controls-header">
+                        <h2 class="collapsible-toggle" onclick="toggleSection('parserSettings')">
+                            ⚙️ Parser Settings
+                        </h2>
+                    </div>
+                    <div id="parserSettings">
+                        <div class="controls-grid">
+                            <div class="control-group">
+                                <label>Date Format Pattern</label>
+                                <input type="text" id="datePattern" value="HH:mm DD.MM.YYYY" placeholder="e.g. HH:mm DD.MM.YYYY">
+                            </div>
+                            <div class="control-group">
+                                <label>Date Regex (auto-generated)</label>
+                                <input type="text" id="dateRegex" value="" placeholder="Auto-generated from pattern" readonly style="opacity: 0.7;">
+                            </div>
+                            <div class="control-group">
+                                <label>Date Column Index (0-based, -1=auto)</label>
+                                <input type="number" id="dateColumnIndex" value="-1" min="-1">
+                            </div>
+                            <div class="control-group">
+                                <label>Table Index (-1=all tables)</label>
+                                <input type="number" id="tableIndex" value="-1" min="-1">
+                            </div>
+                            <div class="control-group">
+                                <label>Skip Header Rows</label>
+                                <input type="number" id="skipRows" value="1" min="0">
+                            </div>
+                            <div class="control-group">
+                                <label>Min Columns in Row</label>
+                                <input type="number" id="minColumns" value="2" min="1">
+                            </div>
+                            <div class="control-group" style="flex-direction: row; align-items: center; gap: 12px;">
+                                <label style="min-width: auto;">Merge All Tables</label>
+                                <label class="toggle-switch">
+                                    <input type="checkbox" id="mergeTables" checked>
+                                    <span class="toggle-slider"></span>
+                                </label>
+                            </div>
+                            <div class="control-group" style="flex-direction: row; align-items: center; gap: 12px;">
+                                <label style="min-width: auto;">Parse Non-Table Lines</label>
+                                <label class="toggle-switch">
+                                    <input type="checkbox" id="parseLines">
+                                    <span class="toggle-slider"></span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <div class="btn-group" style="margin-top: 20px;">
+                            <button class="btn btn-primary" onclick="parseFile()">🔄 Parse & Sort</button>
+                            <button class="btn btn-secondary" onclick="saveSettings()">💾 Save Settings</button>
+                            <button class="btn btn-danger" onclick="clearAll()">🗑️ Clear All</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Main Content -->
+            <div class="content">
+                <!-- Sort Controls -->
+                <div class="controls-panel" style="padding: 15px 25px;">
+                    <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px;">
+                        <div style="display: flex; align-items: center; gap: 15px; flex-wrap: wrap;">
+                            <span class="sort-indicator" id="sortIndicator">
+                                <span id="sortIcon">⬆️</span>
+                                <span id="sortText">Ascending</span>
+                            </span>
+                            <button class="btn btn-secondary" onclick="toggleSortOrder()" style="padding: 8px 16px;">
+                                🔃 Toggle Sort
+                            </button>
+                            <button class="btn btn-success" onclick="exportData()" style="padding: 8px 16px;">
+                                📥 Export CSV
+                            </button>
+                        </div>
+                        <div style="display: flex; align-items: center; gap: 10px;">
+                            <div class="search-box">
+                                <input type="text" id="searchInput" placeholder="Search records..." oninput="filterRecords()">
+                            </div>
+                            <div class="view-toggle">
+                                <button class="active" onclick="setView('table')" id="viewTable">📋 Table</button>
+                                <button onclick="setView('cards')" id="viewCards">🃏 Cards</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Records Display -->
+                <div class="records-section" id="recordsSection">
+                    <div class="records-header">
+                        <h2>📊 Sorted Records</h2>
+                        <div class="column-tags" id="columnTags"></div>
+                    </div>
+
+                    <div id="recordsContent">
+                        <div class="empty-state">
+                            <div class="empty-icon">📂</div>
+                            <h3>No Records Yet</h3>
+                            <p>Upload a DOCX file and parse it to see sorted records</p>
+                        </div>
+                    </div>
+
+                    <div class="pagination" id="pagination" style="display: none;"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Container -->
+    <div class="toast-container" id="toastContainer"></div>
+
+    <!-- Detail Modal -->
+    <div class="modal-overlay" id="detailModal">
+        <div class="modal">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <h3>📋 Record Details</h3>
+                <button class="btn btn-secondary" onclick="closeModal()" style="padding: 6px 12px;">✕</button>
+            </div>
+            <div id="modalContent"></div>
+        </div>
+    </div>
+
+    <script>
+        // ===== STATE MANAGEMENT =====
+        const STATE_KEY = 'recordSorter_state';
+        const SETTINGS_KEY = 'recordSorter_settings';
+
+        let state = {
+            records: [],
+            filteredRecords: [],
+            sortOrder: 'asc',
+            currentView: 'table',
+            currentPage: 1,
+            pageSize: 50,
+            searchQuery: '',
+            fileName: '',
+            fileData: null,
+            columnHeaders: [],
+            dateColumnIdx: -1,
+            filesLoaded: 0
+        };
+
+        let settings = {
+            datePattern: 'HH:mm DD.MM.YYYY',
+            dateColumnIndex: -1,
+            tableIndex: -1,
+            skipRows: 1,
+            minColumns: 2,
+            mergeTables: true,
+            parseLines: false
+        };
+
+        // ===== INITIALIZATION =====
+        document.addEventListener('DOMContentLoaded', () => {
+            loadState();
+            loadSettings();
+            applySettingsToUI();
+            setupEventListeners();
+            renderAll();
+        });
+
+        function loadState() {
+            try {
+                const saved = localStorage.getItem(STATE_KEY);
+                if (saved) {
+                    const parsed = JSON.parse(saved);
+                    state = { ...state, ...parsed };
+                }
+            } catch (e) {
+                console.warn('Failed to load state:', e);
+            }
+        }
+
+        function saveState() {
+            try {
+                const toSave = { ...state };
+                delete toSave.filteredRecords; // Don't save derived data
+                localStorage.setItem(STATE_KEY, JSON.stringify(toSave));
+            } catch (e) {
+                console.warn('Failed to save state:', e);
+            }
+        }
+
+        function loadSettings() {
+            try {
+                const saved = localStorage.getItem(SETTINGS_KEY);
+                if (saved) {
+                    settings = { ...settings, ...JSON.parse(saved) };
+                }
+            } catch (e) {
+                console.warn('Failed to load settings:', e);
+            }
+        }
+
+        function saveSettings() {
+            readSettingsFromUI();
+            localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
+            showToast('Settings saved!', 'success');
+        }
+
+        function readSettingsFromUI() {
+            settings.datePattern = document.getElementById('datePattern').value;
+            settings.dateColumnIndex = parseInt(document.getElementById('dateColumnIndex').value);
+            settings.tableIndex = parseInt(document.getElementById('tableIndex').value);
+            settings.skipRows = parseInt(document.getElementById('skipRows').value);
+            settings.minColumns = parseInt(document.getElementById('minColumns').value);
+            settings.mergeTables = document.getElementById('mergeTables').checked;
+            settings.parseLines = document.getElementById('parseLines').checked;
+        }
+
+        function applySettingsToUI() {
+            document.getElementById('datePattern').value = settings.datePattern;
+            document.getElementById('dateColumnIndex').value = settings.dateColumnIndex;
+            document.getElementById('tableIndex').value = settings.tableIndex;
+            document.getElementById('skipRows').value = settings.skipRows;
+            document.getElementById('minColumns').value = settings.minColumns;
+            document.getElementById('mergeTables').checked = settings.mergeTables;
+            document.getElementById('parseLines').checked = settings.parseLines;
+            updateRegexDisplay();
+
+            if (state.fileName) {
+                document.getElementById('fileInfo').style.display = 'block';
+                document.getElementById('fileName').textContent = state.fileName;
+            }
+        }
+
+        // ===== EVENT LISTENERS =====
+        function setupEventListeners() {
+            const uploadZone = document.getElementById('uploadZone');
+            const fileInput = document.getElementById('fileInput');
+
+            uploadZone.addEventListener('click', () => fileInput.click());
+
+            uploadZone.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                uploadZone.classList.add('drag-over');
+            });
+
+            uploadZone.addEventListener('dragleave', () => {
+                uploadZone.classList.remove('drag-over');
+            });
+
+            uploadZone.addEventListener('drop', (e) => {
+                e.preventDefault();
+                uploadZone.classList.remove('drag-over');
+                const files = e.dataTransfer.files;
+                if (files.length > 0) handleFile(files[0]);
+            });
+
+            fileInput.addEventListener('change', (e) => {
+                if (e.target.files.length > 0) handleFile(e.target.files[0]);
+            });
+
+            document.getElementById('datePattern').addEventListener('input', updateRegexDisplay);
+
+            // Close modal on overlay click
+            document.getElementById('detailModal').addEventListener('click', (e) => {
+                if (e.target === document.getElementById('detailModal')) closeModal();
+            });
+
+            // Keyboard shortcuts
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape') closeModal();
+            });
+
+            // Orientation change
+            window.addEventListener('orientationchange', () => {
+                setTimeout(renderAll, 100);
+            });
+
+            window.addEventListener('resize', debounce(renderAll, 250));
+        }
+
+        function debounce(fn, delay) {
+            let timer;
+            return (...args) => {
+                clearTimeout(timer);
+                timer = setTimeout(() => fn(...args), delay);
+            };
+        }
+
+        // ===== FILE HANDLING =====
+        async function handleFile(file) {
+            if (!file.name.endsWith('.docx')) {
+                showToast('Please upload a .docx file', 'error');
+                return;
+            }
+
+            state.fileName = file.name;
+            document.getElementById('fileInfo').style.display = 'block';
+            document.getElementById('fileName').textContent = file.name;
+
+            showProgress(true);
+            setProgress(10);
+
+            try {
+                const arrayBuffer = await file.arrayBuffer();
+                // Store as base64 for localStorage
+                const uint8Array = new Uint8Array(arrayBuffer);
+                let binary = '';
+                const chunkSize = 8192;
+                for (let i = 0; i < uint8Array.length; i += chunkSize) {
+                    binary += String.fromCharCode.apply(null, uint8Array.subarray(i, i + chunkSize));
+                }
+                state.fileData = btoa(binary);
+                setProgress(30);
+                saveState();
+                showToast(`File "${file.name}" loaded successfully!`, 'success');
+                setProgress(50);
+                await parseFileData(arrayBuffer);
+            } catch (e) {
+                console.error('File read error:', e);
+                showToast('Error reading file: ' + e.message, 'error');
+                showProgress(false);
+            }
+        }
+
+        async function parseFile() {
+            if (!state.fileData) {
+                showToast('No file loaded. Please upload a DOCX file first.', 'error');
+                return;
+            }
+
+            readSettingsFromUI();
+            showProgress(true);
+            setProgress(10);
+
+            try {
+                const binary = atob(state.fileData);
+                const bytes = new Uint8Array(binary.length);
+                for (let i = 0; i < binary.length; i++) {
+                    bytes[i] = binary.charCodeAt(i);
+                }
+                await parseFileData(bytes.buffer);
+            } catch (e) {
+                console.error('Parse error:', e);
+                showToast('Error parsing file: ' + e.message, 'error');
+                showProgress(false);
+            }
+        }
+
+        async function parseFileData(arrayBuffer) {
+            try {
+                setProgress(40);
+                readSettingsFromUI();
+
+                const zip = await JSZip.loadAsync(arrayBuffer);
+                const docXml = await zip.file('word/document.xml').async('string');
+                setProgress(60);
+
+                const parser = new DOMParser();
+                const xmlDoc = parser.parseFromString(docXml, 'text/xml');
+
+                let allRows = [];
+                let headers = [];
+
+                // Parse tables
+                const tables = xmlDoc.getElementsByTagName('w:tbl');
+                const tableCount = tables.length;
+
+                for (let t = 0; t < tableCount; t++) {
+                    if (settings.tableIndex >= 0 && t !== settings.tableIndex) continue;
+
+                    const rows = tables[t].getElementsByTagName('w:tr');
+                    for (let r = 0; r < rows.length; r++) {
+                        if (r < settings.skipRows) {
+                            // Collect headers from first table
+                            if (t === 0 || (settings.tableIndex >= 0 && t === settings.tableIndex)) {
+                                const cells = rows[r].getElementsByTagName('w:tc');
+                                if (r === 0) {
+                                    headers = [];
+                                    for (let c = 0; c < cells.length; c++) {
+                                        headers.push(getCellText(cells[c]));
+                                    }
+                                }
+                            }
+                            continue;
+                        }
+
+                        const cells = rows[r].getElementsByTagName('w:tc');
+                        const rowData = [];
+                        for (let c = 0; c < cells.length; c++) {
+                            rowData.push(getCellText(cells[c]));
+                        }
+
+                        if (rowData.length >= settings.minColumns && rowData.some(cell => cell.trim())) {
+                            allRows.push(rowData);
+                        }
+                    }
+                }
+
+                // Parse non-table lines if enabled
+                if (settings.parseLines) {
+                    const body = xmlDoc.getElementsByTagName('w:body')[0];
+                    if (body) {
+                        const paragraphs = body.getElementsByTagName('w:p');
+                        for (let p = 0; p < paragraphs.length; p++) {
+                            // Skip paragraphs inside tables
+                            if (isInsideTable(paragraphs[p])) continue;
+
+                            const text = getParagraphText(paragraphs[p]).trim();
+                            if (text) {
+                                allRows.push([text]);
+                            }
+                        }
+                    }
+                }
+
+                setProgress(75);
+
+                // Find date column
+                const dateRegex = buildDateRegex();
+                let dateColIdx = settings.dateColumnIndex;
+
+                if (dateColIdx < 0 && allRows.length > 0) {
+                    dateColIdx = autoDetectDateColumn(allRows, dateRegex);
+                }
+
+                state.dateColumnIdx = dateColIdx;
+                state.columnHeaders = headers;
+
+                // Parse dates and create records
+                const records = [];
+                for (let i = 0; i < allRows.length; i++) {
+                    const row = allRows[i];
+                    let dateStr = '';
+                    let parsedDate = null;
+
+                    if (dateColIdx >= 0 && dateColIdx < row.length) {
+                        dateStr = row[dateColIdx].trim();
+                        parsedDate = parseDateString(dateStr);
+                    } else {
+                        // Try to find date in any column
+                        for (let c = 0; c < row.length; c++) {
+                            const match = row[c].trim().match(dateRegex);
+                            if (match) {
+                                dateStr = match[0];
+                                parsedDate = parseDateString(dateStr);
+                                if (parsedDate) {
+                                    dateColIdx = c;
+                                    break;
+                                }
+                            }
+                        }
+                    }
+
+                    if (parsedDate) {
+                        records.push({
+                            id: i,
+                            cells: row,
+                            dateStr: dateStr,
+                            dateTimestamp: parsedDate.getTime(),
+                            dateObj: parsedDate.toISOString()
+                        });
+                    }
+                }
+
+                setProgress(90);
+
+                // Sort records
+                state.records = sortRecords(records, state.sortOrder);
+                state.dateColumnIdx = dateColIdx;
+                state.currentPage = 1;
+                state.filesLoaded = (state.filesLoaded || 0) + 1;
+
+                saveState();
+                filterRecords();
+                renderAll();
+
+                setProgress(100);
+                setTimeout(() => showProgress(false), 500);
+
+                showToast(`Found ${records.length} records with dates!`, 'success');
+
+            } catch (e) {
+                console.error('Parse error:', e);
+                showToast('Error parsing document: ' + e.message, 'error');
+                showProgress(false);
+            }
+        }
+
+        function getCellText(cell) {
+            const runs = cell.getElementsByTagName('w:t');
+            let text = '';
+            for (let i = 0; i < runs.length; i++) {
+                text += runs[i].textContent;
+            }
+            return text.trim();
+        }
+
+        function getParagraphText(para) {
+            const runs = para.getElementsByTagName('w:t');
+            let text = '';
+            for (let i = 0; i < runs.length; i++) {
+                text += runs[i].textContent;
+            }
+            return text;
+        }
+
+        function isInsideTable(node) {
+            let parent = node.parentNode;
+            while (parent) {
+                if (parent.nodeName === 'w:tbl') return true;
+                parent = parent.parentNode;
+            }
+            return false;
+        }
+
+        // ===== DATE PARSING =====
+        function buildDateRegex() {
+            const pattern = settings.datePattern;
+            let regex = escapeRegex(pattern);
+
+            // Replace tokens with regex groups
+            regex = regex.replace('YYYY', '(\\d{4})');
+            regex = regex.replace('YY', '(\\d{2})');
+            regex = regex.replace('MM', '(\\d{1,2})');
+            regex = regex.replace('DD', '(\\d{1,2})');
+            regex = regex.replace('HH', '(\\d{1,2})');
+            regex = regex.replace('mm', '(\\d{1,2})');
+            regex = regex.replace('ss', '(\\d{1,2})');
+
+            document.getElementById('dateRegex').value = regex;
+
+            try {
+                return new RegExp(regex);
+            } catch (e) {
+                // Fallback regex for common date patterns
+                return /(\d{1,2}):(\d{2})\s+(\d{1,2})\.(\d{1,2})\.(\d{4})/;
+            }
+        }
+
+        function updateRegexDisplay() {
+            buildDateRegex();
+        }
+
+        function escapeRegex(str) {
+            return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+                      .replace('\\?', '?'); // keep ? if used intentionally
+        }
+
+        function parseDateString(str) {
+            if (!str) return null;
+
+            const pattern = settings.datePattern;
+            const regex = buildDateRegex();
+            const match = str.match(regex);
+
+            if (!match) return null;
+
+            try {
+                // Determine token positions
+                const tokens = [];
+                const tokenRegex = /(YYYY|YY|MM|DD|HH|mm|ss)/g;
+                let m;
+                while ((m = tokenRegex.exec(pattern)) !== null) {
+                    tokens.push(m[1]);
+                }
+
+                let year = 2000, month = 1, day = 1, hour = 0, minute = 0, second = 0;
+
+                for (let i = 0; i < tokens.length; i++) {
+                    const val = parseInt(match[i + 1]);
+                    switch (tokens[i]) {
+                        case 'YYYY': year = val; break;
+                        case 'YY': year = 2000 + val; break;
+                        case 'MM': month = val; break;
+                        case 'DD': day = val; break;
+                        case 'HH': hour = val; break;
+                        case 'mm': minute = val; break;
+                        case 'ss': second = val; break;
+                    }
+                }
+
+                const date = new Date(year, month - 1, day, hour, minute, second);
+                if (isNaN(date.getTime())) return null;
+                return date;
+
+            } catch (e) {
+                return null;
+            }
+        }
+
+        function autoDetectDateColumn(rows, regex) {
+            const colScores = {};
+            const sampleSize = Math.min(rows.length, 20);
+
+            for (let i = 0; i < sampleSize; i++) {
+                for (let c = 0; c < rows[i].length; c++) {
+                    if (regex.test(rows[i][c].trim())) {
+                        colScores[c] = (colScores[c] || 0) + 1;
+                    }
+                }
+            }
+
+            let bestCol = -1;
+            let bestScore = 0;
+            for (const [col, score] of Object.entries(colScores)) {
+                if (score > bestScore) {
+                    bestScore = score;
+                    bestCol = parseInt(col);
+                }
+            }
+
+            return bestCol;
+        }
+
+        // ===== SORTING =====
+        function sortRecords(records, order) {
+            return [...records].sort((a, b) => {
+                const diff = a.dateTimestamp - b.dateTimestamp;
+                return order === 'asc' ? diff : -diff;
+            });
+        }
+
+        function toggleSortOrder() {
+            state.sortOrder = state.sortOrder === 'asc' ? 'desc' : 'asc';
+            state.records = sortRecords(state.records, state.sortOrder);
+            state.currentPage = 1;
+            saveState();
+            filterRecords();
+            renderAll();
+            showToast(`Sorted ${state.sortOrder === 'asc' ? 'ascending' : 'descending'}`, 'info');
+        }
+
+        // ===== FILTERING =====
+        function filterRecords() {
+            const query = document.getElementById('searchInput').value.toLowerCase().trim();
+            state.searchQuery = query;
+
+            if (!query) {
+                state.filteredRecords = [...state.records];
+            } else {
+                state.filteredRecords = state.records.filter(record => {
+                    return record.cells.some(cell => cell.toLowerCase().includes(query)) ||
+                           record.dateStr.toLowerCase().includes(query);
+                });
+            }
+
+            state.currentPage = 1;
+            renderRecords();
+            updateStats();
+        }
+
+        // ===== RENDERING =====
+        function renderAll() {
+            state.filteredRecords = state.searchQuery
+                ? state.records.filter(r => r.cells.some(c => c.toLowerCase().includes(state.searchQuery)) || r.dateStr.toLowerCase().includes(state.searchQuery))
+                : [...state.records];
+
+            document.getElementById('searchInput').value = state.searchQuery || '';
+            updateStats();
+            updateSortIndicator();
+            renderColumnTags();
+            renderRecords();
+            updateViewToggle();
+        }
+
+        function updateStats() {
+            document.getElementById('statFiles').textContent = state.filesLoaded || 0;
+            document.getElementById('statRecords').textContent = state.records.length;
+            document.getElementById('statDates').textContent = state.filteredRecords.length;
+            document.getElementById('statSorted').textContent = state.sortOrder === 'asc' ? 'ASC ↑' : 'DESC ↓';
+        }
+
+        function updateSortIndicator() {
+            document.getElementById('sortIcon').textContent = state.sortOrder === 'asc' ? '⬆️' : '⬇️';
+            document.getElementById('sortText').textContent = state.sortOrder === 'asc' ? 'Ascending' : 'Descending';
+        }
+
+        function renderColumnTags() {
+            const container = document.getElementById('columnTags');
+            if (!state.columnHeaders.length) {
+                container.innerHTML = '';
+                return;
+            }
+
+            container.innerHTML = state.columnHeaders.map((h, i) => {
+                const isDate = i === state.dateColumnIdx;
+                return `<span class="column-tag ${isDate ? 'date-tag' : ''}">${isDate ? '📅 ' : ''}Col ${i}: ${h || '(empty)'}</span>`;
+            }).join('');
+        }
+
+        function updateViewToggle() {
+            document.getElementById('viewTable').classList.toggle('active', state.currentView === 'table');
+            document.getElementById('viewCards').classList.toggle('active', state.currentView === 'cards');
+        }
+
+        function setView(view) {
+            state.currentView = view;
+            saveState();
+            updateViewToggle();
+            renderRecords();
+        }
+
+        function renderRecords() {
+            const container = document.getElementById('recordsContent');
+            const records = state.filteredRecords;
+
+            if (!records.length) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-icon">${state.records.length ? '🔍' : '📂'}</div>
+                        <h3>${state.records.length ? 'No Matching Records' : 'No Records Yet'}</h3>
+                        <p>${state.records.length ? 'Try adjusting your search query' : 'Upload a DOCX file and parse it to see sorted records'}</p>
+                    </div>`;
+                document.getElementById('pagination').style.display = 'none';
+                return;
+            }
+
+            // Pagination
+            const totalPages = Math.ceil(records.length / state.pageSize);
+            state.currentPage = Math.min(state.currentPage, totalPages);
+            const start = (state.currentPage - 1) * state.pageSize;
+            const end = Math.min(start + state.pageSize, records.length);
+            const pageRecords = records.slice(start, end);
+
+            if (state.currentView === 'table') {
+                renderTableView(container, pageRecords, start);
+            } else {
+                renderCardView(container, pageRecords, start);
+            }
+
+            renderPagination(totalPages);
+        }
+
+        function renderTableView(container, records, startIdx) {
+            const maxCols = records.reduce((max, r) => Math.max(max, r.cells.length), 0);
+
+            let headerRow = '<th class="row-number">#</th>';
+            for (let c = 0; c < maxCols; c++) {
+                const headerText = state.columnHeaders[c] || `Column ${c + 1}`;
+                const isDate = c === state.dateColumnIdx;
+                headerRow += `<th ${isDate ? 'class="sorted"' : ''}>
+                    ${isDate ? '📅 ' : ''}${headerText}
+                    ${isDate ? '<span class="sort-arrow">' + (state.sortOrder === 'asc' ? '▲' : '▼') + '</span>' : ''}
+                </th>`;
+            }
+
+            let bodyRows = '';
+            records.forEach((record, idx) => {
+                const globalIdx = startIdx + idx + 1;
+                bodyRows += `<tr class="record-enter" style="animation-delay: ${idx * 20}ms" onclick="showDetail(${record.id})">`;
+                bodyRows += `<td class="row-number">${globalIdx}</td>`;
+
+                for (let c = 0; c < Math.max(record.cells.length, state.columnHeaders.length); c++) {
+                    const cellValue = record.cells[c] || '';
+                    const isDate = c === state.dateColumnIdx;
+                    bodyRows += `<td class="${isDate ? 'date-cell' : 'data-cell'}" title="${escapeHtml(cellValue)}">${escapeHtml(cellValue)}</td>`;
+                }
+
+                bodyRows += '</tr>';
+            });
+
+            container.innerHTML = `
+                <div class="table-container">
+                    <table class="records-table">
+                        <thead><tr>${headerRow}</tr></thead>
+                        <tbody>${bodyRows}</tbody>
+                    </table>
+                </div>`;
+        }
+
+        function renderCardView(container, records, startIdx) {
+            let cards = '';
+            records.forEach((record, idx) => {
+                const globalIdx = startIdx + idx + 1;
+                let fields = '';
+
+                record.cells.forEach((cell, c) => {
+                    if (c === state.dateColumnIdx) return;
+                    const label = state.columnHeaders[c] || `Col ${c + 1}`;
+                    fields += `
+                        <div class="card-field">
+                            <span class="field-label">${escapeHtml(label)}:</span>
+                            <span class="field-value" title="${escapeHtml(cell)}">${escapeHtml(cell)}</span>
+                        </div>`;
+                });
+
+                cards += `
+                    <div class="record-card record-enter" style="animation-delay: ${idx * 30}ms" onclick="showDetail(${record.id})">
+                        <div class="card-number">Record #${globalIdx}</div>
+                        <div class="card-date">📅 ${escapeHtml(record.dateStr)}</div>
+                        <div class="card-fields">${fields}</div>
+                    </div>`;
+            });
+
+            container.innerHTML = `<div class="cards-container">${cards}</div>`;
+        }
+
+        function renderPagination(totalPages) {
+            const pagination = document.getElementById('pagination');
+
+            if (totalPages <= 1) {
+                pagination.style.display = 'none';
+                return;
+            }
+
+            pagination.style.display = 'flex';
+            let html = '';
+
+            html += `<button ${state.currentPage <= 1 ? 'disabled' : ''} onclick="goToPage(1)">⏮</button>`;
+            html += `<button ${state.currentPage <= 1 ? 'disabled' : ''} onclick="goToPage(${state.currentPage - 1})">◀</button>`;
+
+            const range = 2;
+            let startPage = Math.max(1, state.currentPage - range);
+            let endPage = Math.min(totalPages, state.currentPage + range);
+
+            if (startPage > 1) {
+                html += `<button onclick="goToPage(1)">1</button>`;
+                if (startPage > 2) html += `<span class="page-info">...</span>`;
+            }
+
+            for (let p = startPage; p <= endPage; p++) {
+                html += `<button class="${p === state.currentPage ? 'active' : ''}" onclick="goToPage(${p})">${p}</button>`;
+            }
+
+            if (endPage < totalPages) {
+                if (endPage < totalPages - 1) html += `<span class="page-info">...</span>`;
+                html += `<button onclick="goToPage(${totalPages})">${totalPages}</button>`;
+            }
+
+            html += `<button ${state.currentPage >= totalPages ? 'disabled' : ''} onclick="goToPage(${state.currentPage + 1})">▶</button>`;
+            html += `<button ${state.currentPage >= totalPages ? 'disabled' : ''} onclick="goToPage(${totalPages})">⏭</button>`;
+
+            html += `<span class="page-info">${state.filteredRecords.length} records</span>`;
+
+            pagination.innerHTML = html;
+        }
+
+        function goToPage(page) {
+            state.currentPage = page;
+            renderRecords();
+            document.getElementById('recordsSection').scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+
+        // ===== DETAIL MODAL =====
+        function showDetail(recordId) {
+            const record = state.records.find(r => r.id === recordId);
+            if (!record) return;
+
+            const modal = document.getElementById('detailModal');
+            const content = document.getElementById('modalContent');
+
+            let html = `
+                <div style="margin-bottom: 20px; padding: 15px; background: rgba(0,206,201,0.1); border-radius: 12px; border: 1px solid rgba(0,206,201,0.2);">
+                    <div style="font-size: 0.8em; color: var(--text-dim); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 5px;">Date & Time</div>
+                    <div style="font-size: 1.4em; font-weight: 700; color: var(--accent); font-family: 'Courier New', monospace;">${escapeHtml(record.dateStr)}</div>
+                </div>`;
+
+            record.cells.forEach((cell, idx) => {
+                const label = state.columnHeaders[idx] || `Column ${idx + 1}`;
+                const isDate = idx === state.dateColumnIdx;
+                html += `
+                    <div class="form-row">
+                        <label>${escapeHtml(label)} ${isDate ? '📅' : ''}</label>
+                        <div style="flex: 1; padding: 10px; background: rgba(255,255,255,0.03); border-radius: 8px; word-break: break-word;">
+                            ${escapeHtml(cell) || '<em style="color: var(--text-dim);">empty</em>'}
+                        </div>
+                    </div>`;
+            });
+
+            content.innerHTML = html;
+            modal.classList.add('active');
+        }
+
+        function closeModal() {
+            document.getElementById('detailModal').classList.remove('active');
+        }
+
+        // ===== EXPORT =====
+        function exportData() {
+            if (!state.filteredRecords.length) {
+                showToast('No records to export', 'error');
+                return;
+            }
+
+            const headers = state.columnHeaders.length
+                ? state.columnHeaders
+                : state.filteredRecords[0].cells.map((_, i) => `Column ${i + 1}`);
+
+            let csv = headers.map(h => `"${h.replace(/"/g, '""')}"`).join(',') + '\n';
+
+            state.filteredRecords.forEach(record => {
+                csv += record.cells.map(cell => `"${cell.replace(/"/g, '""')}"`).join(',') + '\n';
+            });
+
+            const blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `sorted_records_${new Date().toISOString().slice(0, 10)}.csv`;
+            a.click();
+            URL.revokeObjectURL(url);
+
+            showToast(`Exported ${state.filteredRecords.length} records!`, 'success');
+        }
+
+        // ===== UTILITY =====
+        function clearFile() {
+            state.fileData = null;
+            state.fileName = '';
+            document.getElementById('fileInfo').style.display = 'none';
+            document.getElementById('fileInput').value = '';
+            saveState();
+        }
+
+        function clearAll() {
+            if (!confirm('Clear all records and file data?')) return;
+
+            state.records = [];
+            state.filteredRecords = [];
+            state.fileData = null;
+            state.fileName = '';
+            state.columnHeaders = [];
+            state.dateColumnIdx = -1;
+            state.currentPage = 1;
+            state.searchQuery = '';
+            state.filesLoaded = 0;
+
+            document.getElementById('fileInfo').style.display = 'none';
+            document.getElementById('fileInput').value = '';
+            document.getElementById('searchInput').value = '';
+
+            saveState();
+            renderAll();
+            showToast('All data cleared', 'info');
+        }
+
+        function toggleSection(id) {
+            const section = document.getElementById(id);
+            const toggle = section.previousElementSibling.querySelector('.collapsible-toggle');
+
+            if (section.style.display === 'none') {
+                section.style.display = '';
+                toggle.classList.remove('collapsed');
+            } else {
+                section.style.display = 'none';
+                toggle.classList.add('collapsed');
+            }
+        }
+
+        function showProgress(show) {
+            const bar = document.getElementById('progressBar');
+            bar.classList.toggle('active', show);
+            if (!show) setProgress(0);
+        }
+
+        function setProgress(pct) {
+            document.getElementById('progressFill').style.width = pct + '%';
+        }
+
+        function showToast(message, type = 'info') {
+            const container = document.getElementById('toastContainer');
+            const icons = { success: '✅', error: '❌', info: 'ℹ️' };
+
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+            toast.innerHTML = `<span>${icons[type] || 'ℹ️'}</span><span>${message}</span>`;
+
+            container.appendChild(toast);
+            setTimeout(() => toast.remove(), 3000);
+        }
+
+        function escapeHtml(str) {
+            if (!str) return '';
+            const div = document.createElement('div');
+            div.textContent = str;
+            return div.innerHTML;
+        }
+    </script>
+</body>
+</html>
