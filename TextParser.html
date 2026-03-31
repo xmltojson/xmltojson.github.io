@@ -1,0 +1,917 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Column Generator — a customizable text lines parser. Extract, transform, and export structured data from raw text with regex-powered column rules, replacements, and multiple output formats.">
+    <meta name="keywords" content="column generator, text parser, regex, data extraction, CSV export">
+    <meta name="author" content="Column Generator">
+    <title>Column Generator - Text Parser</title>
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><defs><linearGradient id='g' x1='0%25' y1='0%25' x2='100%25' y2='100%25'><stop offset='0%25' style='stop-color:%233b82f6'/><stop offset='100%25' style='stop-color:%2306b6d4'/></linearGradient></defs><rect width='100' height='100' rx='20' fill='url(%23g)'/><rect x='15' y='20' width='20' height='60' rx='4' fill='white' opacity='0.9'/><rect x='40' y='20' width='20' height='60' rx='4' fill='white' opacity='0.7'/><rect x='65' y='20' width='20' height='60' rx='4' fill='white' opacity='0.5'/></svg>">
+    <style>
+        :root {
+            --bg-primary: #0a0e17;
+            --bg-secondary: #111827;
+            --bg-card: #1a2332;
+            --bg-input: #0d1421;
+            --border-color: #2a3a52;
+            --border-focus: #3b82f6;
+            --text-primary: #e2e8f0;
+            --text-secondary: #94a3b8;
+            --text-muted: #64748b;
+            --accent-blue: #3b82f6;
+            --accent-cyan: #06b6d4;
+            --accent-green: #10b981;
+            --accent-purple: #8b5cf6;
+            --accent-orange: #f59e0b;
+            --accent-red: #ef4444;
+            --accent-pink: #ec4899;
+            --gradient-1: linear-gradient(135deg, #3b82f6, #06b6d4);
+            --gradient-2: linear-gradient(135deg, #8b5cf6, #3b82f6);
+            --gradient-3: linear-gradient(135deg, #10b981, #06b6d4);
+            --gradient-4: linear-gradient(135deg, #ec4899, #8b5cf6);
+            --shadow-glow: 0 0 20px rgba(59, 130, 246, 0.15);
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+        .bg-pattern {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            pointer-events: none; z-index: 0;
+            background:
+                radial-gradient(ellipse at 20% 20%, rgba(59,130,246,0.08) 0%, transparent 50%),
+                radial-gradient(ellipse at 80% 80%, rgba(139,92,246,0.06) 0%, transparent 50%),
+                radial-gradient(ellipse at 50% 50%, rgba(6,182,212,0.04) 0%, transparent 70%);
+        }
+        .grid-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            pointer-events: none; z-index: 0;
+            background-image:
+                linear-gradient(rgba(59,130,246,0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(59,130,246,0.03) 1px, transparent 1px);
+            background-size: 50px 50px;
+        }
+        .container { position: relative; z-index: 1; max-width: 1400px; margin: 0 auto; padding: 20px; }
+        header { text-align: center; padding: 30px 0; margin-bottom: 30px; }
+        .logo-container { display: inline-flex; align-items: center; gap: 15px; margin-bottom: 10px; }
+        .logo-icon {
+            width: 50px; height: 50px; background: var(--gradient-1); border-radius: 12px;
+            display: flex; align-items: center; justify-content: center;
+            box-shadow: var(--shadow-glow); position: relative; overflow: hidden;
+        }
+        .logo-icon::before {
+            content: ''; position: absolute; top: -50%; left: -50%; width: 200%; height: 200%;
+            background: linear-gradient(45deg, transparent 40%, rgba(255,255,255,0.1) 50%, transparent 60%);
+            animation: shimmer 3s infinite;
+        }
+        @keyframes shimmer { 0% { transform: translateX(-100%) rotate(45deg); } 100% { transform: translateX(100%) rotate(45deg); } }
+        .logo-icon svg { width: 28px; height: 28px; fill: white; position: relative; z-index: 1; }
+        h1 {
+            font-size: 2rem; font-weight: 700;
+            background: var(--gradient-1); -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent; background-clip: text; letter-spacing: -0.5px;
+        }
+        .subtitle { color: var(--text-muted); font-size: 0.95rem; margin-top: 5px; }
+        .layout-toggle { display: flex; justify-content: center; gap: 8px; margin-bottom: 25px; }
+        .layout-btn {
+            padding: 8px 20px; border: 1px solid var(--border-color); background: var(--bg-card);
+            color: var(--text-secondary); border-radius: 8px; cursor: pointer; font-size: 0.85rem;
+            transition: all 0.3s; display: flex; align-items: center; gap: 6px;
+        }
+        .layout-btn:hover { border-color: var(--accent-blue); color: var(--text-primary); }
+        .layout-btn.active {
+            background: var(--gradient-1); border-color: transparent; color: white;
+            box-shadow: 0 4px 15px rgba(59,130,246,0.3);
+        }
+        .layout-btn svg { width: 16px; height: 16px; }
+        .main-content { display: flex; gap: 25px; transition: flex-direction 0.3s; }
+        .main-content.vertical { flex-direction: column; }
+        .main-content.horizontal { flex-direction: row; }
+        .panel {
+            flex: 1; background: var(--bg-card); border: 1px solid var(--border-color);
+            border-radius: 16px; overflow: hidden; box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+            transition: box-shadow 0.3s;
+        }
+        .panel:hover { box-shadow: 0 4px 30px rgba(0,0,0,0.3), var(--shadow-glow); }
+        .panel-header {
+            padding: 18px 22px; border-bottom: 1px solid var(--border-color);
+            display: flex; align-items: center; justify-content: space-between;
+            background: linear-gradient(180deg, rgba(59,130,246,0.05) 0%, transparent 100%);
+        }
+        .panel-title { display: flex; align-items: center; gap: 10px; font-weight: 600; font-size: 1rem; }
+        .panel-title .dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
+        .panel-title .dot.blue { background: var(--accent-blue); box-shadow: 0 0 8px var(--accent-blue); }
+        .panel-title .dot.green { background: var(--accent-green); box-shadow: 0 0 8px var(--accent-green); }
+        .panel-title .dot.purple { background: var(--accent-purple); box-shadow: 0 0 8px var(--accent-purple); }
+        .panel-title .dot.pink { background: var(--accent-pink); box-shadow: 0 0 8px var(--accent-pink); }
+        .panel-body { padding: 20px; }
+        textarea {
+            width: 100%; min-height: 280px; background: var(--bg-input);
+            border: 1px solid var(--border-color); border-radius: 10px; color: var(--text-primary);
+            font-family: 'Cascadia Code','Fira Code','Consolas', monospace; font-size: 0.85rem;
+            line-height: 1.7; padding: 16px; resize: vertical;
+            transition: border-color 0.3s, box-shadow 0.3s; outline: none;
+        }
+        textarea:focus { border-color: var(--accent-blue); box-shadow: 0 0 0 3px rgba(59,130,246,0.15); }
+        textarea::placeholder { color: var(--text-muted); }
+        .rules-section { margin-top: 15px; }
+        .rules-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+        .rules-header h3 { font-size: 0.9rem; color: var(--text-secondary); font-weight: 500; }
+        .add-rule-btn {
+            padding: 6px 14px; background: var(--gradient-2); border: none; border-radius: 6px;
+            color: white; font-size: 0.8rem; cursor: pointer; display: flex; align-items: center; gap: 5px;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .add-rule-btn:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(139,92,246,0.3); }
+        .add-rule-btn.pink-btn { background: var(--gradient-4); }
+        .add-rule-btn.pink-btn:hover { box-shadow: 0 4px 12px rgba(236,72,153,0.3); }
+        .rule-card, .replacement-card, .location-card {
+            background: var(--bg-input); border: 1px solid var(--border-color); border-radius: 10px;
+            padding: 14px; margin-bottom: 10px; transition: border-color 0.3s; animation: slideIn 0.3s ease;
+        }
+        @keyframes slideIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
+        .rule-card:hover, .replacement-card:hover, .location-card:hover { border-color: rgba(59,130,246,0.3); }
+        .rule-row, .replacement-row, .location-row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+        .rule-field { display: flex; flex-direction: column; gap: 4px; flex: 1; min-width: 120px; }
+        .rule-field label { font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; }
+        .rule-field input, .rule-field select {
+            padding: 8px 10px; background: var(--bg-secondary); border: 1px solid var(--border-color);
+            border-radius: 6px; color: var(--text-primary); font-size: 0.82rem; outline: none;
+            transition: border-color 0.3s;
+        }
+        .rule-field input:focus, .rule-field select:focus { border-color: var(--accent-blue); }
+        .rule-field select { cursor: pointer; }
+        .rule-field select option { background: var(--bg-secondary); }
+        .remove-rule-btn {
+            padding: 6px 10px; background: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.3);
+            border-radius: 6px; color: var(--accent-red); cursor: pointer; transition: all 0.2s;
+            align-self: flex-end; margin-top: 18px;
+        }
+        .remove-rule-btn:hover { background: rgba(239,68,68,0.2); border-color: var(--accent-red); }
+        .actions-bar { display: flex; gap: 10px; margin-top: 20px; flex-wrap: wrap; }
+        .btn {
+            padding: 10px 22px; border: none; border-radius: 8px; font-size: 0.9rem; font-weight: 500;
+            cursor: pointer; display: flex; align-items: center; gap: 8px; transition: all 0.3s;
+        }
+        .btn-primary { background: var(--gradient-1); color: white; box-shadow: 0 4px 15px rgba(59,130,246,0.3); }
+        .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(59,130,246,0.4); }
+        .btn-secondary { background: var(--gradient-3); color: white; box-shadow: 0 4px 15px rgba(16,185,129,0.3); }
+        .btn-secondary:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(16,185,129,0.4); }
+        .btn-outline { background: transparent; border: 1px solid var(--border-color); color: var(--text-secondary); }
+        .btn-outline:hover { border-color: var(--accent-blue); color: var(--text-primary); background: rgba(59,130,246,0.05); }
+        .btn-danger { background: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.3); color: var(--accent-red); }
+        .btn-danger:hover { background: rgba(239,68,68,0.2); }
+        .btn svg { width: 16px; height: 16px; }
+        .output-area { position: relative; }
+        .output-text {
+            width: 100%; min-height: 280px; background: var(--bg-input);
+            border: 1px solid var(--border-color); border-radius: 10px; color: var(--accent-green);
+            font-family: 'Cascadia Code','Fira Code','Consolas', monospace; font-size: 0.85rem;
+            line-height: 1.7; padding: 16px; resize: vertical; outline: none;
+            white-space: pre; overflow-x: auto;
+        }
+        .output-text:focus { border-color: var(--accent-green); box-shadow: 0 0 0 3px rgba(16,185,129,0.15); }
+        .stats-bar { display: flex; gap: 20px; margin-top: 12px; flex-wrap: wrap; }
+        .stat-item { display: flex; align-items: center; gap: 6px; font-size: 0.8rem; color: var(--text-muted); }
+        .stat-value { color: var(--accent-cyan); font-weight: 600; }
+        .column-preview { margin-top: 20px; overflow-x: auto; }
+        .column-preview table { width: 100%; border-collapse: collapse; font-size: 0.82rem; }
+        .column-preview th {
+            background: rgba(59,130,246,0.1); border: 1px solid var(--border-color);
+            padding: 10px 14px; text-align: left; color: var(--accent-blue); font-weight: 600; white-space: nowrap;
+        }
+        .column-preview td { border: 1px solid var(--border-color); padding: 8px 14px; color: var(--text-primary); white-space: nowrap; }
+        .column-preview tr:nth-child(even) td { background: rgba(255,255,255,0.02); }
+        .column-preview tr:hover td { background: rgba(59,130,246,0.05); }
+        .toast {
+            position: fixed; bottom: 30px; right: 30px; padding: 14px 22px;
+            background: var(--bg-card); border: 1px solid var(--accent-green); border-radius: 10px;
+            color: var(--accent-green); font-size: 0.9rem; box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            z-index: 1000; transform: translateY(100px); opacity: 0;
+            transition: all 0.4s cubic-bezier(0.68,-0.55,0.265,1.55);
+            display: flex; align-items: center; gap: 10px;
+        }
+        .toast.show { transform: translateY(0); opacity: 1; }
+        .preset-bar { display: flex; gap: 8px; flex-wrap: wrap; }
+        .preset-btn {
+            padding: 5px 12px; background: rgba(139,92,246,0.1); border: 1px solid rgba(139,92,246,0.3);
+            border-radius: 6px; color: var(--accent-purple); font-size: 0.78rem; cursor: pointer; transition: all 0.2s;
+        }
+        .preset-btn:hover { background: rgba(139,92,246,0.2); border-color: var(--accent-purple); }
+        .separator-select { display: flex; align-items: center; gap: 10px; margin-top: 15px; }
+        .separator-select label { font-size: 0.85rem; color: var(--text-secondary); }
+        .separator-select select {
+            padding: 6px 12px; background: var(--bg-input); border: 1px solid var(--border-color);
+            border-radius: 6px; color: var(--text-primary); font-size: 0.85rem; outline: none; cursor: pointer;
+        }
+        .separator-select select option { background: var(--bg-secondary); }
+        .copy-btn {
+            position: absolute; top: 10px; right: 10px; padding: 6px 12px;
+            background: rgba(59,130,246,0.1); border: 1px solid rgba(59,130,246,0.3);
+            border-radius: 6px; color: var(--accent-blue); font-size: 0.78rem; cursor: pointer;
+            transition: all 0.2s; z-index: 2;
+        }
+        .copy-btn:hover { background: rgba(59,130,246,0.2); }
+        .mapping-info {
+            margin-top: 10px; padding: 12px; background: rgba(245,158,11,0.05);
+            border: 1px solid rgba(245,158,11,0.2); border-radius: 8px; font-size: 0.78rem;
+            color: var(--accent-orange); line-height: 1.6;
+        }
+        .mapping-info code { background: rgba(245,158,11,0.1); padding: 1px 5px; border-radius: 3px; }
+        .tab-bar { display: flex; gap: 0; margin-bottom: 0; border-bottom: 1px solid var(--border-color); overflow-x: auto; }
+        .tab-btn {
+            padding: 10px 20px; background: transparent; border: none;
+            border-bottom: 2px solid transparent; color: var(--text-muted); font-size: 0.85rem;
+            cursor: pointer; transition: all 0.3s; white-space: nowrap;
+        }
+        .tab-btn:hover { color: var(--text-secondary); }
+        .tab-btn.active { color: var(--accent-blue); border-bottom-color: var(--accent-blue); }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+        .location-card { border-left: 3px solid var(--accent-pink); }
+        .loc-count-badge {
+            display: inline-flex; align-items: center; justify-content: center;
+            background: rgba(236,72,153,0.15); color: var(--accent-pink);
+            border-radius: 10px; padding: 2px 8px; font-size: 0.72rem; font-weight: 600; margin-left: 6px;
+        }
+        .bulk-import-area {
+            margin-top: 10px; padding: 12px; background: rgba(139,92,246,0.05);
+            border: 1px solid rgba(139,92,246,0.2); border-radius: 8px;
+        }
+        .bulk-import-area textarea {
+            min-height: 80px; font-size: 0.8rem; margin-top: 6px;
+        }
+        .bulk-import-area .btn { margin-top: 8px; padding: 6px 14px; font-size: 0.8rem; }
+        .bulk-label { font-size: 0.78rem; color: var(--accent-purple); }
+        .checkbox-field { display: flex; align-items: center; gap: 8px; margin-top: 15px; }
+        .checkbox-field input[type="checkbox"] {
+            width: 18px; height: 18px; accent-color: var(--accent-blue); cursor: pointer;
+        }
+        .checkbox-field label { font-size: 0.85rem; color: var(--text-secondary); cursor: pointer; }
+        @media (max-width: 768px) {
+            .container { padding: 10px; }
+            .main-content.horizontal { flex-direction: column; }
+            h1 { font-size: 1.5rem; }
+            .rule-row, .replacement-row, .location-row { flex-direction: column; }
+            .rule-field { min-width: 100%; }
+            .actions-bar { flex-direction: column; }
+            .btn { justify-content: center; }
+        }
+        .pulse-dot { animation: pulse 2s infinite; }
+        @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.5; } }
+    </style>
+</head>
+<body>
+    <div class="bg-pattern"></div>
+    <div class="grid-overlay"></div>
+    <div class="container">
+        <header>
+            <div class="logo-container">
+                <div class="logo-icon">
+                    <svg viewBox="0 0 24 24"><path d="M3 3h7v7H3V3zm0 11h7v7H3v-7zm11-11h7v7h-7V3zm0 11h7v7h-7v-7z"/></svg>
+                </div>
+                <div>
+                    <h1>Column Generator</h1>
+                    <p class="subtitle">Customizable Text Lines Parser</p>
+                </div>
+            </div>
+        </header>
+        <div class="layout-toggle">
+            <button class="layout-btn active" data-layout="vertical" onclick="setLayout('vertical')">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="8" rx="1"/><rect x="3" y="13" width="18" height="8" rx="1"/></svg>
+                Vertical
+            </button>
+            <button class="layout-btn" data-layout="horizontal" onclick="setLayout('horizontal')">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="8" height="18" rx="1"/><rect x="13" y="3" width="8" height="18" rx="1"/></svg>
+                Horizontal
+            </button>
+        </div>
+        <div class="main-content vertical" id="mainContent">
+            <!-- Input Panel -->
+            <div class="panel">
+                <div class="panel-header">
+                    <div class="panel-title"><span class="dot blue pulse-dot"></span>Input Text</div>
+                    <div class="preset-bar">
+                        <button class="preset-btn" onclick="loadExample()">Load Example</button>
+                        <button class="preset-btn" onclick="clearInput()">Clear</button>
+                    </div>
+                </div>
+                <div class="panel-body">
+                    <textarea id="inputText" placeholder="Paste your text here..."></textarea>
+                    <div class="tab-bar" style="margin-top: 20px;">
+                        <button class="tab-btn active" onclick="switchTab('columns', this)">Column Rules</button>
+                        <button class="tab-btn" onclick="switchTab('locations', this)">📍 Locations <span class="loc-count-badge" id="locCountBadge">0</span></button>
+                        <button class="tab-btn" onclick="switchTab('replacements', this)">Replacements</button>
+                        <button class="tab-btn" onclick="switchTab('settings', this)">Settings</button>
+                    </div>
+                    <!-- Column Rules Tab -->
+                    <div class="tab-content active" id="tab-columns">
+                        <div class="rules-section">
+                            <div class="rules-header" style="margin-top: 12px;">
+                                <h3>Column Extraction Rules</h3>
+                                <button class="add-rule-btn" onclick="addRule()">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                                    Add Column
+                                </button>
+                            </div>
+                            <div id="rulesContainer"></div>
+                        </div>
+                        <div class="mapping-info">
+                            <strong>Extraction types:</strong><br>
+                            <code>regex</code> — Extract using regex group capture<br>
+                            <code>fixed</code> — Fixed/static value for every row<br>
+                            <code>between</code> — Extract text between two delimiters<br><br>
+                            <strong>Post-process:</strong><br>
+                            <code>lastMatch</code> — Use last regex match instead of first<br>
+                            <code>actionMap</code> — Map ПОДАВЛЕННЯ→ПРИДУШЕНО etc.<br>
+                            <code>freqExtract</code> — Extract frequency from parentheses<br>
+                            <code>locationMap</code> — Apply location name mappings from Locations tab<br>
+                            <code>timeRange</code> — Keep full time range (01:35-01:42) for ПРИКРИТТЯ lines<br><br>
+                            <strong>Combine With:</strong> <code>_date_</code> — appends date with space
+                        </div>
+                    </div>
+                    <!-- Locations Tab -->
+                    <div class="tab-content" id="tab-locations">
+                        <div class="rules-section">
+                            <div class="rules-header" style="margin-top: 12px;">
+                                <h3>📍 Location Name Mapper</h3>
+                                <button class="add-rule-btn pink-btn" onclick="addLocation()">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                                    Add Mapping
+                                </button>
+                            </div>
+                            <div id="locationsContainer"></div>
+                            <div class="bulk-import-area">
+                                <span class="bulk-label">Bulk import (one per line: <code>FROM → TO</code> or <code>FROM = TO</code>):</span>
+                                <textarea id="bulkLocations" placeholder="ЗИБИНО → ЗИБИНЕ&#10;ВОВЧАНСЬКІ ХУТОРИ → ВОВЧ. ХУТОРИ&#10;ПОКАЛЯНЕ = ПОКАЛЯНЕ"></textarea>
+                                <button class="btn btn-outline" onclick="importBulkLocations()">Import</button>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Replacements Tab -->
+                    <div class="tab-content" id="tab-replacements">
+                        <div class="rules-section">
+                            <div class="rules-header" style="margin-top: 12px;">
+                                <h3>Post-processing Replacements</h3>
+                                <button class="add-rule-btn" onclick="addReplacement()">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                                    Add Replacement
+                                </button>
+                            </div>
+                            <div id="replacementsContainer"></div>
+                        </div>
+                    </div>
+                    <!-- Settings Tab -->
+                    <div class="tab-content" id="tab-settings">
+                        <div class="separator-select" style="margin-top: 12px;">
+                            <label>Output Separator:</label>
+                            <select id="separatorSelect" onchange="saveState()">
+                                <option value="\t">Tab (\\t)</option>
+                                <option value=",">Comma (,)</option>
+                                <option value=";">Semicolon (;)</option>
+                                <option value="|">Pipe (|)</option>
+                                <option value="  ">Double Space</option>
+                            </select>
+                        </div>
+                        <div class="separator-select">
+                            <label>Skip empty results:</label>
+                            <select id="skipEmpty" onchange="saveState()">
+                                <option value="no">No</option>
+                                <option value="yes">Yes</option>
+                            </select>
+                        </div>
+                        <div class="checkbox-field">
+                            <input type="checkbox" id="keepTimeRange" onchange="saveState()">
+                            <label for="keepTimeRange">Keep full time range for ПРИКРИТТЯ lines (e.g. 02:40-03:40)</label>
+                        </div>
+                    </div>
+                    <div class="actions-bar">
+                        <button class="btn btn-primary" onclick="parseText()">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                            Parse &amp; Generate
+                        </button>
+                        <button class="btn btn-outline" onclick="resetRules()">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>
+                            Reset All
+                        </button>
+                    </div>
+                </div>
+            </div>
+            <!-- Output Panel -->
+            <div class="panel">
+                <div class="panel-header">
+                    <div class="panel-title"><span class="dot green pulse-dot"></span>Output Result</div>
+                    <div class="stats-bar" id="statsBar">
+                        <div class="stat-item">Lines: <span class="stat-value" id="lineCount">0</span></div>
+                        <div class="stat-item">Columns: <span class="stat-value" id="colCount">0</span></div>
+                    </div>
+                </div>
+                <div class="panel-body">
+                    <div class="output-area">
+                        <button class="copy-btn" onclick="copyOutput()">📋 Copy</button>
+                        <textarea class="output-text" id="outputText" readonly placeholder="Parsed output will appear here..."></textarea>
+                    </div>
+                    <div class="actions-bar">
+                        <button class="btn btn-secondary" onclick="downloadFile()">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                            Download .txt
+                        </button>
+                        <button class="btn btn-secondary" onclick="downloadCSV()" style="background: var(--gradient-2);">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                            Download .csv
+                        </button>
+                        <button class="btn btn-danger" onclick="clearOutput()">Clear Output</button>
+                    </div>
+                    <div class="column-preview" id="previewTable"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="toast" id="toast">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+        <span id="toastMsg">Done!</span>
+    </div>
+
+    <script>
+        let state = {
+            input: '', output: '', layout: 'vertical',
+            separator: '\\t', skipEmpty: 'no', keepTimeRange: true,
+            rules: [], replacements: [], locations: []
+        };
+
+        const defaultRules = [
+            { name: 'Time Date', type: 'regex', pattern: '(\\d{2}:\\d{2})\\.\\s', endDelim: '', postProcess: 'lastMatch', combineWith: '_date_' },
+            { name: 'Type', type: 'regex', pattern: '(ФПВ|БПЛА|РЕБ)', endDelim: '', postProcess: '', combineWith: '' },
+            { name: 'Location', type: 'regex', pattern: 'Р-НІ\\s+(.+?)\\s+(?:ВИЯВЛЕНО|ПОДАВЛЕННЯ|ПРИКРИТТЯ)', endDelim: '', postProcess: 'locationMap', combineWith: '' },
+            { name: 'Action', type: 'regex', pattern: '(ВИЯВЛЕНО|ПОДАВЛЕННЯ|ПРИКРИТТЯ)', endDelim: '', postProcess: 'actionMap', combineWith: '' },
+            { name: 'Freq', type: 'regex', pattern: '[\\(（].*?(\\d+[\\-–]?\\d*(?:\\.\\d+)?(?:-\\d+)?)[\\)）]\\s*$', endDelim: '', postProcess: 'freqExtract', combineWith: '' }
+        ];
+
+        const defaultReplacements = [
+            { find: 'ПОДАВЛЕННЯ', replace: 'ПРИДУШЕНО', isRegex: false }
+        ];
+
+        const defaultLocations = [
+            { from: 'ЗИБИНО', to: 'ЗИБИНЕ' },
+            { from: 'ВОВЧАНСЬКІ ХУТОРИ', to: 'ВОВЧ. ХУТОРИ' },
+            { from: 'ПЕТРОПАВЛІВКА', to: 'ПЕТРОПАВЛІВКА' },
+            { from: 'ПОКАЛЯНЕ', to: 'ПОКАЛЯНЕ' },
+            { from: 'ВОВЧАНСЬК', to: 'ВОВЧАНСЬК' }
+        ];
+
+        function init() {
+            loadState();
+            renderRules();
+            renderReplacements();
+            renderLocations();
+            document.getElementById('inputText').value = state.input;
+            document.getElementById('outputText').value = state.output;
+            document.getElementById('separatorSelect').value = state.separator;
+            document.getElementById('skipEmpty').value = state.skipEmpty;
+            document.getElementById('keepTimeRange').checked = state.keepTimeRange !== false;
+            setLayout(state.layout, false);
+            updateLocBadge();
+            if (state.output) {
+                const sep = state.separator === '\\t' ? '\t' : state.separator;
+                const lines = state.output.split('\n').filter(l => l.trim());
+                document.getElementById('lineCount').textContent = lines.length;
+                document.getElementById('colCount').textContent = state.rules.length;
+                renderPreviewTable(lines, sep);
+            }
+        }
+
+        function loadState() {
+            try {
+                const saved = localStorage.getItem('columnGeneratorState_v2');
+                if (saved) {
+                    state = JSON.parse(saved);
+                    if (!state.replacements) state.replacements = [];
+                    if (!state.locations) state.locations = [];
+                    if (state.keepTimeRange === undefined) state.keepTimeRange = true;
+                } else {
+                    state.rules = JSON.parse(JSON.stringify(defaultRules));
+                    state.replacements = JSON.parse(JSON.stringify(defaultReplacements));
+                    state.locations = JSON.parse(JSON.stringify(defaultLocations));
+                    state.keepTimeRange = true;
+                }
+            } catch (e) {
+                state.rules = JSON.parse(JSON.stringify(defaultRules));
+                state.replacements = JSON.parse(JSON.stringify(defaultReplacements));
+                state.locations = JSON.parse(JSON.stringify(defaultLocations));
+                state.keepTimeRange = true;
+            }
+        }
+
+        function saveState() {
+            state.input = document.getElementById('inputText').value;
+            state.output = document.getElementById('outputText').value;
+            state.separator = document.getElementById('separatorSelect').value;
+            state.skipEmpty = document.getElementById('skipEmpty').value;
+            state.keepTimeRange = document.getElementById('keepTimeRange').checked;
+            collectRules(); collectReplacements(); collectLocations();
+            localStorage.setItem('columnGeneratorState_v2', JSON.stringify(state));
+        }
+
+        function collectRules() {
+            const cards = document.querySelectorAll('#rulesContainer .rule-card');
+            state.rules = [];
+            cards.forEach(card => {
+                state.rules.push({
+                    name: card.querySelector('.rule-name').value,
+                    type: card.querySelector('.rule-type').value,
+                    pattern: card.querySelector('.rule-pattern').value,
+                    endDelim: card.querySelector('.rule-end-delim').value || '',
+                    postProcess: card.querySelector('.rule-post').value,
+                    combineWith: card.querySelector('.rule-combine').value || ''
+                });
+            });
+        }
+
+        function collectReplacements() {
+            const cards = document.querySelectorAll('#replacementsContainer .replacement-card');
+            state.replacements = [];
+            cards.forEach(card => {
+                state.replacements.push({
+                    find: card.querySelector('.repl-find').value,
+                    replace: card.querySelector('.repl-replace').value,
+                    isRegex: card.querySelector('.repl-is-regex').value === 'yes'
+                });
+            });
+        }
+
+        function collectLocations() {
+            const cards = document.querySelectorAll('#locationsContainer .location-card');
+            state.locations = [];
+            cards.forEach(card => {
+                state.locations.push({
+                    from: card.querySelector('.loc-from').value,
+                    to: card.querySelector('.loc-to').value
+                });
+            });
+        }
+
+        // ---- RULES ----
+        function renderRules() {
+            const c = document.getElementById('rulesContainer'); c.innerHTML = '';
+            state.rules.forEach((r, i) => c.appendChild(createRuleCard(r, i)));
+        }
+        function createRuleCard(rule, index) {
+            const card = document.createElement('div'); card.className = 'rule-card';
+            card.innerHTML = `<div class="rule-row">
+                <div class="rule-field" style="max-width:130px"><label>Column Name</label><input type="text" class="rule-name" value="${escHtml(rule.name)}" onchange="saveState()"></div>
+                <div class="rule-field" style="max-width:110px"><label>Type</label><select class="rule-type" onchange="saveState()">
+                    <option value="regex" ${rule.type==='regex'?'selected':''}>Regex</option>
+                    <option value="fixed" ${rule.type==='fixed'?'selected':''}>Fixed</option>
+                    <option value="between" ${rule.type==='between'?'selected':''}>Between</option>
+                </select></div>
+                <div class="rule-field"><label>Pattern / Value</label><input type="text" class="rule-pattern" value="${escHtml(rule.pattern)}" onchange="saveState()"></div>
+                <div class="rule-field" style="max-width:110px"><label>End Delim</label><input type="text" class="rule-end-delim" value="${escHtml(rule.endDelim||'')}" onchange="saveState()"></div>
+                <div class="rule-field" style="max-width:130px"><label>Post-process</label><select class="rule-post" onchange="saveState()">
+                    <option value="" ${!rule.postProcess?'selected':''}>None</option>
+                    <option value="lastMatch" ${rule.postProcess==='lastMatch'?'selected':''}>Last Match</option>
+                    <option value="actionMap" ${rule.postProcess==='actionMap'?'selected':''}>Action Map</option>
+                    <option value="freqExtract" ${rule.postProcess==='freqExtract'?'selected':''}>Freq Extract</option>
+                    <option value="locationMap" ${rule.postProcess==='locationMap'?'selected':''}>Location Map</option>
+                    <option value="timeRange" ${rule.postProcess==='timeRange'?'selected':''}>Time Range</option>
+                    <option value="uppercase" ${rule.postProcess==='uppercase'?'selected':''}>Uppercase</option>
+                    <option value="lowercase" ${rule.postProcess==='lowercase'?'selected':''}>Lowercase</option>
+                    <option value="trim" ${rule.postProcess==='trim'?'selected':''}>Trim</option>
+                </select></div>
+                <div class="rule-field" style="max-width:120px"><label>Combine With</label><input type="text" class="rule-combine" value="${escHtml(rule.combineWith||'')}" placeholder="_date_" onchange="saveState()"></div>
+                <button class="remove-rule-btn" onclick="removeRule(${index})">✕</button>
+            </div>`;
+            return card;
+        }
+        function addRule() { collectRules(); state.rules.push({name:'Column',type:'regex',pattern:'',endDelim:'',postProcess:'',combineWith:''}); renderRules(); saveState(); }
+        function removeRule(i) { collectRules(); state.rules.splice(i,1); renderRules(); saveState(); }
+
+        // ---- REPLACEMENTS ----
+        function renderReplacements() {
+            const c = document.getElementById('replacementsContainer'); c.innerHTML = '';
+            (state.replacements||[]).forEach((r,i) => c.appendChild(createReplacementCard(r,i)));
+        }
+        function createReplacementCard(repl, index) {
+            const card = document.createElement('div'); card.className = 'replacement-card';
+            card.innerHTML = `<div class="replacement-row">
+                <div class="rule-field"><label>Find</label><input type="text" class="repl-find" value="${escHtml(repl.find)}" onchange="saveState()"></div>
+                <div class="rule-field"><label>Replace With</label><input type="text" class="repl-replace" value="${escHtml(repl.replace)}" onchange="saveState()"></div>
+                <div class="rule-field" style="max-width:100px"><label>Regex?</label><select class="repl-is-regex" onchange="saveState()">
+                    <option value="no" ${!repl.isRegex?'selected':''}>No</option><option value="yes" ${repl.isRegex?'selected':''}>Yes</option>
+                </select></div>
+                <button class="remove-rule-btn" onclick="removeReplacement(${index})">✕</button>
+            </div>`;
+            return card;
+        }
+        function addReplacement() { collectReplacements(); state.replacements.push({find:'',replace:'',isRegex:false}); renderReplacements(); saveState(); }
+        function removeReplacement(i) { collectReplacements(); state.replacements.splice(i,1); renderReplacements(); saveState(); }
+
+        // ---- LOCATIONS ----
+        function renderLocations() {
+            const c = document.getElementById('locationsContainer'); c.innerHTML = '';
+            (state.locations||[]).forEach((l,i) => c.appendChild(createLocationCard(l,i)));
+            updateLocBadge();
+        }
+        function createLocationCard(loc, index) {
+            const card = document.createElement('div'); card.className = 'location-card';
+            card.innerHTML = `<div class="location-row">
+                <div class="rule-field"><label>Original Name</label><input type="text" class="loc-from" value="${escHtml(loc.from)}" onchange="saveState(); updateLocBadge();"></div>
+                <div style="color:var(--accent-pink);font-size:1.2rem;align-self:flex-end;padding-bottom:8px">→</div>
+                <div class="rule-field"><label>Mapped Name</label><input type="text" class="loc-to" value="${escHtml(loc.to)}" onchange="saveState(); updateLocBadge();"></div>
+                <button class="remove-rule-btn" onclick="removeLocation(${index})">✕</button>
+            </div>`;
+            return card;
+        }
+        function addLocation() { collectLocations(); state.locations.push({from:'',to:''}); renderLocations(); saveState(); }
+        function removeLocation(i) { collectLocations(); state.locations.splice(i,1); renderLocations(); saveState(); }
+        function updateLocBadge() { document.getElementById('locCountBadge').textContent = (state.locations||[]).length; }
+
+        function importBulkLocations() {
+            collectLocations();
+            const text = document.getElementById('bulkLocations').value;
+            const lines = text.split('\n').filter(l => l.trim());
+            let count = 0;
+            lines.forEach(line => {
+                let parts = null;
+                if (line.includes('→')) parts = line.split('→');
+                else if (line.includes('->')) parts = line.split('->');
+                else if (line.includes('=')) parts = line.split('=');
+                if (parts && parts.length >= 2) {
+                    const from = parts[0].trim();
+                    const to = parts.slice(1).join('=').trim();
+                    if (from) {
+                        const existing = state.locations.findIndex(l => l.from.toUpperCase() === from.toUpperCase());
+                        if (existing >= 0) { state.locations[existing].to = to; }
+                        else { state.locations.push({ from, to }); }
+                        count++;
+                    }
+                }
+            });
+            renderLocations(); saveState();
+            document.getElementById('bulkLocations').value = '';
+            showToast(`Imported ${count} location mapping(s)!`);
+        }
+
+        function buildLocationMap() {
+            const map = {};
+            (state.locations || []).forEach(l => {
+                if (l.from) map[l.from.toUpperCase()] = l.to;
+            });
+            return map;
+        }
+
+        function escHtml(str) {
+            return String(str).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+        }
+
+        function extractDate(line) {
+            const m = line.match(/(\d{2}\.\d{2}\.\d{4})/);
+            return m ? m[1] : '';
+        }
+
+        function isTimeRangeLine(line) {
+            return /ПРИКРИТТЯ/i.test(line);
+        }
+
+        function extractFullTimeRange(line) {
+            // Match patterns like 01:35-01:42 or 02:40-03:40
+            const m = line.match(/(\d{2}:\d{2})\s*[-–]\s*(\d{2}:\d{2})/);
+            if (m) return m[1] + '-' + m[2];
+            return null;
+        }
+
+        function parseText() {
+            collectRules(); collectReplacements(); collectLocations();
+            const input = document.getElementById('inputText').value;
+            const lines = input.split('\n').filter(l => l.trim());
+            const sepVal = document.getElementById('separatorSelect').value;
+            const separator = sepVal === '\\t' ? '\t' : sepVal;
+            const skipEmpty = document.getElementById('skipEmpty').value === 'yes';
+            const keepTimeRange = document.getElementById('keepTimeRange').checked;
+            const locMap = buildLocationMap();
+            const results = [];
+
+            lines.forEach(line => {
+                const cols = [];
+                let hasContent = false;
+                const dateFromLine = extractDate(line);
+                const isPrykryttia = isTimeRangeLine(line);
+                const fullTimeRange = extractFullTimeRange(line);
+
+                state.rules.forEach(rule => {
+                    let value = '';
+                    try {
+                        if (rule.type === 'regex' && rule.pattern) {
+                            const regex = new RegExp(rule.pattern, 'g');
+                            let match, allMatches = [];
+                            while ((match = regex.exec(line)) !== null) allMatches.push(match);
+                            if (allMatches.length > 0) {
+                                if (rule.postProcess === 'lastMatch') {
+                                    const last = allMatches[allMatches.length - 1];
+                                    value = last[1] || last[0];
+                                } else {
+                                    const first = allMatches[0];
+                                    value = first[1] || first[0];
+                                }
+                            }
+                        } else if (rule.type === 'fixed') {
+                            value = rule.pattern;
+                        } else if (rule.type === 'between' && rule.pattern && rule.endDelim) {
+                            const si = line.indexOf(rule.pattern);
+                            if (si !== -1) {
+                                const after = si + rule.pattern.length;
+                                const ei = line.indexOf(rule.endDelim, after);
+                                if (ei !== -1) value = line.substring(after, ei).trim();
+                            }
+                        }
+                    } catch (e) { value = `[ERR: ${e.message}]`; }
+
+                    // Post-processing
+                    if (rule.postProcess === 'actionMap') {
+                        const map = { 'ПОДАВЛЕННЯ':'ПРИДУШЕНО', 'ВИЯВЛЕНО':'ВИЯВЛЕНО', 'ПРИКРИТТЯ':'ПРИКРИТТЯ' };
+                        value = map[value] || value;
+                    } else if (rule.postProcess === 'freqExtract') {
+                        const pm = line.match(/[\(（]([^)）]+)[\)）]\s*$/);
+                        if (pm) {
+                            const content = pm[1];
+                            const parts = content.split('.');
+                            if (parts.length >= 2) {
+                                let last = parts[parts.length-1].replace(/-?\d+ДБМ/i,'').trim();
+                                if (last) value = last;
+                                else if (parts.length >= 3) value = parts[parts.length-2].replace(/-?\d+ДБМ/i,'').trim();
+                            } else {
+                                value = content.replace(/[А-Яа-яA-Za-z]/g,'').trim();
+                            }
+                        }
+                    } else if (rule.postProcess === 'locationMap') {
+                        if (value) {
+                            const upper = value.toUpperCase();
+                            if (locMap[upper] !== undefined) value = locMap[upper];
+                        }
+                    } else if (rule.postProcess === 'timeRange') {
+                        // For ПРИКРИТТЯ lines, replace with full time range
+                        if (isPrykryttia && keepTimeRange && fullTimeRange) {
+                            value = fullTimeRange;
+                        }
+                    } else if (rule.postProcess === 'uppercase') {
+                        value = value.toUpperCase();
+                    } else if (rule.postProcess === 'lowercase') {
+                        value = value.toLowerCase();
+                    } else if (rule.postProcess === 'trim') {
+                        value = value.trim();
+                    }
+
+                    // For time column with lastMatch + combineWith _date_:
+                    // If keepTimeRange and this is ПРИКРИТТЯ, use full range
+                    if (rule.postProcess === 'lastMatch' && rule.combineWith === '_date_') {
+                        if (isPrykryttia && keepTimeRange && fullTimeRange) {
+                            value = fullTimeRange;
+                        }
+                    }
+
+                    // Combine with date
+                    if (rule.combineWith === '_date_' && dateFromLine) {
+                        value = value ? (value + ' ' + dateFromLine) : dateFromLine;
+                    }
+
+                    if (value) hasContent = true;
+                    cols.push(value);
+                });
+
+                if (!skipEmpty || hasContent) {
+                    let resultLine = cols.join(separator);
+                    (state.replacements || []).forEach(repl => {
+                        if (repl.find) {
+                            if (repl.isRegex) {
+                                try { resultLine = resultLine.replace(new RegExp(repl.find,'g'), repl.replace); } catch(e){}
+                            } else {
+                                resultLine = resultLine.split(repl.find).join(repl.replace);
+                            }
+                        }
+                    });
+                    results.push(resultLine);
+                }
+            });
+
+            const output = results.join('\n');
+            document.getElementById('outputText').value = output;
+            document.getElementById('lineCount').textContent = results.length;
+            document.getElementById('colCount').textContent = state.rules.length;
+            renderPreviewTable(results, separator);
+            saveState();
+            showToast('Parsing complete! ' + results.length + ' lines generated.');
+        }
+
+        function renderPreviewTable(results, separator) {
+            const c = document.getElementById('previewTable');
+            if (!results.length) { c.innerHTML = ''; return; }
+            let html = '<table><thead><tr>';
+            state.rules.forEach(r => { html += `<th>${escHtml(r.name)}</th>`; });
+            html += '</tr></thead><tbody>';
+            results.slice(0,50).forEach(line => {
+                const cols = line.split(separator);
+                html += '<tr>';
+                state.rules.forEach((_,i) => { html += `<td>${escHtml(cols[i]||'')}</td>`; });
+                html += '</tr>';
+            });
+            if (results.length > 50) html += `<tr><td colspan="${state.rules.length}" style="text-align:center;color:var(--text-muted)">... and ${results.length-50} more rows</td></tr>`;
+            html += '</tbody></table>';
+            c.innerHTML = html;
+        }
+
+        function setLayout(layout, save=true) {
+            state.layout = layout;
+            document.getElementById('mainContent').className = 'main-content ' + layout;
+            document.querySelectorAll('.layout-btn').forEach(b => b.classList.toggle('active', b.dataset.layout===layout));
+            if (save) saveState();
+        }
+
+        function switchTab(tabName, btn) {
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+            btn.classList.add('active');
+            document.getElementById('tab-'+tabName).classList.add('active');
+        }
+
+        function loadExample() {
+            document.getElementById('inputText').value = `30.03.2026. 18:15. В Р-НІ ПЕТРОПАВЛІВКА ВИЯВЛЕНО ФПВ(АЗ131.3700.-96ДБМ)
+30.03.2026. 18:29. В Р-НІ ПОКАЛЯНЕ ВИЯВЛЕНО ФПВ(АЗ345.3440.-102ДБМ)
+30.03.2026. 19:58. В Р-НІ ВОВЧАНСЬК ВИЯВЛЕНО ФПВ (АЗ290.3310.-105ДБМ)
+31.03.2026. 01:35-01:42. В Р-НІ ПОКАЛЯНЕ ПОДАВЛЕННЯ ФПВ(АЗ340.550-850)
+31.03.2026. 01:53-02:00. В Р-НІ ПОКАЛЯНЕ ПОДАВЛЕННЯ ФПВ(АЗ333.550-850)
+31.03.2026. 02:40-03:40. В Р-НІ ВОВЧАНСЬКІ ХУТОРИ ПРИКРИТТЯ(АЗ333.550-1050)
+31.03.2026. 04:10. В Р-НІ ЗИБИНО ВИЯВЛЕНО ФПВ(АЗ120.5800.-98ДБМ)`;
+            state.rules = JSON.parse(JSON.stringify(defaultRules));
+            state.replacements = JSON.parse(JSON.stringify(defaultReplacements));
+            state.locations = JSON.parse(JSON.stringify(defaultLocations));
+            state.keepTimeRange = true;
+            document.getElementById('keepTimeRange').checked = true;
+            renderRules(); renderReplacements(); renderLocations(); saveState();
+            showToast('Example loaded with location mappings!');
+        }
+
+        function clearInput() { document.getElementById('inputText').value = ''; saveState(); }
+        function clearOutput() { document.getElementById('outputText').value = ''; document.getElementById('previewTable').innerHTML = ''; document.getElementById('lineCount').textContent = '0'; saveState(); }
+
+        function resetRules() {
+            state.rules = JSON.parse(JSON.stringify(defaultRules));
+            state.replacements = JSON.parse(JSON.stringify(defaultReplacements));
+            state.locations = JSON.parse(JSON.stringify(defaultLocations));
+            state.keepTimeRange = true;
+            document.getElementById('keepTimeRange').checked = true;
+            renderRules(); renderReplacements(); renderLocations(); saveState();
+            showToast('All rules, locations & replacements reset to defaults.');
+        }
+
+        function copyOutput() {
+            const o = document.getElementById('outputText');
+            if (!o.value) { showToast('Nothing to copy!'); return; }
+            navigator.clipboard.writeText(o.value).then(() => showToast('Copied to clipboard!')).catch(() => { o.select(); document.execCommand('copy'); showToast('Copied!'); });
+        }
+
+        function downloadFile() {
+            const text = document.getElementById('outputText').value;
+            if (!text) { showToast('Nothing to download!'); return; }
+            const blob = new Blob([text], {type:'text/plain;charset=utf-8'});
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = 'parsed_output_' + new Date().toISOString().slice(0,10) + '.txt';
+            a.click(); URL.revokeObjectURL(a.href);
+            showToast('File downloaded!');
+        }
+
+        function downloadCSV() {
+            const text = document.getElementById('outputText').value;
+            if (!text) { showToast('Nothing to download!'); return; }
+            const sep = state.separator === '\\t' ? '\t' : state.separator;
+            collectRules();
+            let csv = state.rules.map(r => '"'+r.name.replace(/"/g,'""')+'"').join(',') + '\n';
+            text.split('\n').forEach(line => {
+                if (!line.trim()) return;
+                csv += line.split(sep).map(c => '"'+c.replace(/"/g,'""')+'"').join(',') + '\n';
+            });
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(new Blob(['\ufeff'+csv], {type:'text/csv;charset=utf-8'}));
+            a.download = 'parsed_output_' + new Date().toISOString().slice(0,10) + '.csv';
+            a.click(); URL.revokeObjectURL(a.href);
+            showToast('CSV downloaded!');
+        }
+
+        function showToast(msg) {
+            const t = document.getElementById('toast');
+            document.getElementById('toastMsg').textContent = msg;
+            t.classList.add('show');
+            clearTimeout(t._to);
+            t._to = setTimeout(() => t.classList.remove('show'), 2500);
+        }
+
+        document.addEventListener('input', e => { if (e.target.id === 'inputText') saveState(); });
+
+        init();
+    </script>
+</body>
+</html>
