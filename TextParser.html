@@ -4,8 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="description" content="Column Generator — a customizable text lines parser. Extract, transform, and export structured data from raw text with regex-powered column rules, replacements, and multiple output formats.">
-    <meta name="keywords" content="column generator, text parser, regex, data extraction, CSV export">
-    <meta name="author" content="Column Generator">
     <title>Column Generator - Text Parser</title>
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><defs><linearGradient id='g' x1='0%25' y1='0%25' x2='100%25' y2='100%25'><stop offset='0%25' style='stop-color:%233b82f6'/><stop offset='100%25' style='stop-color:%2306b6d4'/></linearGradient></defs><rect width='100' height='100' rx='20' fill='url(%23g)'/><rect x='15' y='20' width='20' height='60' rx='4' fill='white' opacity='0.9'/><rect x='40' y='20' width='20' height='60' rx='4' fill='white' opacity='0.7'/><rect x='65' y='20' width='20' height='60' rx='4' fill='white' opacity='0.5'/></svg>">
     <style>
@@ -25,10 +23,12 @@
             --accent-orange: #f59e0b;
             --accent-red: #ef4444;
             --accent-pink: #ec4899;
+            --accent-yellow: #eab308;
             --gradient-1: linear-gradient(135deg, #3b82f6, #06b6d4);
             --gradient-2: linear-gradient(135deg, #8b5cf6, #3b82f6);
             --gradient-3: linear-gradient(135deg, #10b981, #06b6d4);
             --gradient-4: linear-gradient(135deg, #ec4899, #8b5cf6);
+            --gradient-5: linear-gradient(135deg, #f59e0b, #ef4444);
             --shadow-glow: 0 0 20px rgba(59, 130, 246, 0.15);
         }
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -105,6 +105,7 @@
         .panel-title .dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
         .panel-title .dot.blue { background: var(--accent-blue); box-shadow: 0 0 8px var(--accent-blue); }
         .panel-title .dot.green { background: var(--accent-green); box-shadow: 0 0 8px var(--accent-green); }
+        .panel-title .dot.orange { background: var(--accent-orange); box-shadow: 0 0 8px var(--accent-orange); }
         .panel-body { padding: 20px; }
         textarea {
             width: 100%; min-height: 280px; background: var(--bg-input);
@@ -172,6 +173,8 @@
             white-space: pre; overflow-x: auto;
         }
         .output-text:focus { border-color: var(--accent-green); box-shadow: 0 0 0 3px rgba(16,185,129,0.15); }
+        .output-text.alt-output { color: var(--accent-orange); min-height: 200px; }
+        .output-text.alt-output:focus { border-color: var(--accent-orange); box-shadow: 0 0 0 3px rgba(245,158,11,0.15); }
         .stats-bar { display: flex; gap: 20px; flex-wrap: wrap; align-items: center; }
         .stat-item { display: flex; align-items: center; gap: 6px; font-size: 0.8rem; color: var(--text-muted); }
         .stat-value { color: var(--accent-cyan); font-weight: 600; }
@@ -179,8 +182,7 @@
         .column-preview table { width: 100%; border-collapse: collapse; font-size: 0.82rem; }
         .column-preview th {
             background: rgba(59,130,246,0.1); border: 1px solid var(--border-color);
-            padding: 10px 14px; text-align: left; color: var(--accent-blue); font-weight: 600;
-            white-space: nowrap;
+            padding: 10px 14px; text-align: left; color: var(--accent-blue); font-weight: 600; white-space: nowrap;
         }
         .column-preview td { border: 1px solid var(--border-color); padding: 8px 14px; color: var(--text-primary); white-space: nowrap; }
         .column-preview tr:nth-child(even) td { background: rgba(255,255,255,0.02); }
@@ -230,6 +232,17 @@
         .tab-btn.active { color: var(--accent-blue); border-bottom-color: var(--accent-blue); }
         .tab-content { display: none; }
         .tab-content.active { display: block; }
+        .out-tab-bar { display: flex; gap: 0; border-bottom: 1px solid var(--border-color); overflow-x: auto; margin-bottom: 15px; }
+        .out-tab-btn {
+            padding: 10px 20px; background: transparent; border: none;
+            border-bottom: 2px solid transparent; color: var(--text-muted); font-size: 0.85rem;
+            cursor: pointer; transition: all 0.3s; white-space: nowrap;
+        }
+        .out-tab-btn:hover { color: var(--text-secondary); }
+        .out-tab-btn.active { color: var(--accent-green); border-bottom-color: var(--accent-green); }
+        .out-tab-btn.alt-active { color: var(--accent-orange); border-bottom-color: var(--accent-orange); }
+        .out-tab-content { display: none; }
+        .out-tab-content.active { display: block; }
         .location-card { border-left: 3px solid var(--accent-pink); }
         .loc-count-badge {
             display: inline-flex; align-items: center; justify-content: center;
@@ -251,6 +264,22 @@
             background: rgba(245,158,11,0.08); border: 1px solid rgba(245,158,11,0.2);
             border-radius: 20px; font-size: 0.75rem; color: var(--accent-orange);
         }
+        .alt-format-info {
+            margin-top: 10px; padding: 12px; background: rgba(245,158,11,0.05);
+            border: 1px solid rgba(245,158,11,0.2); border-radius: 8px; font-size: 0.8rem;
+            color: var(--accent-orange); line-height: 1.6;
+        }
+        .alt-format-info code { background: rgba(245,158,11,0.1); padding: 1px 5px; border-radius: 3px; font-family: 'Cascadia Code','Fira Code','Consolas', monospace; }
+        .template-field {
+            margin-top: 12px;
+        }
+        .template-field label { font-size: 0.78rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; display: block; margin-bottom: 6px; }
+        .template-field input {
+            width: 100%; padding: 10px 12px; background: var(--bg-secondary); border: 1px solid var(--border-color);
+            border-radius: 6px; color: var(--text-primary); font-family: 'Cascadia Code','Fira Code','Consolas', monospace;
+            font-size: 0.85rem; outline: none; transition: border-color 0.3s;
+        }
+        .template-field input:focus { border-color: var(--accent-orange); }
         @media (max-width: 768px) {
             .container { padding: 10px; }
             .main-content.horizontal { flex-direction: column; }
@@ -305,6 +334,7 @@
                         <button class="tab-btn active" onclick="switchTab('columns', this)">Column Rules</button>
                         <button class="tab-btn" onclick="switchTab('locations', this)">📍 Locations <span class="loc-count-badge" id="locCountBadge">0</span></button>
                         <button class="tab-btn" onclick="switchTab('replacements', this)">Replacements</button>
+                        <button class="tab-btn" onclick="switchTab('altformat', this)">📝 Alt Format</button>
                         <button class="tab-btn" onclick="switchTab('settings', this)">Settings</button>
                     </div>
                     <!-- Column Rules Tab -->
@@ -321,13 +351,13 @@
                         </div>
                         <div class="mapping-info">
                             <strong>Extraction types:</strong><br>
-                            <code>regex</code> — Extract using regex group capture &nbsp;
+                            <code>regex</code> — Regex group capture &nbsp;
                             <code>fixed</code> — Fixed/static value &nbsp;
                             <code>between</code> — Text between two delimiters<br><br>
                             <strong>Post-process:</strong><br>
                             <code>lastMatch</code> — Use last regex match &nbsp;
                             <code>actionMap</code> — ПОДАВЛЕННЯ→ПРИДУШЕНО &nbsp;
-                            <code>freqExtract</code> — Frequency from parentheses (ignores trailing numbers like <code>7985</code>)<br>
+                            <code>freqExtract</code> — Frequency from parentheses (ignores trailing numbers)<br>
                             <code>locationMap</code> — Apply location mappings &nbsp;
                             <code>timeRange</code> — Full time range for ПРИКРИТТЯ<br>
                             <code>uppercase</code> / <code>lowercase</code> / <code>trim</code><br><br>
@@ -363,6 +393,33 @@
                                 </button>
                             </div>
                             <div id="replacementsContainer"></div>
+                        </div>
+                    </div>
+                    <!-- Alt Format Tab -->
+                    <div class="tab-content" id="tab-altformat">
+                        <div class="rules-section" style="margin-top: 12px;">
+                            <h3 style="font-size:0.9rem;color:var(--text-secondary);font-weight:500;margin-bottom:12px;">📝 Alternative Output Format (Text Line)</h3>
+                            <div class="alt-format-info">
+                                <strong>Template variables</strong> (use column names from your rules):<br>
+                                <code>{Time Date}</code> <code>{Type}</code> <code>{Location}</code> <code>{Action}</code> <code>{Freq}</code><br><br>
+                                Use any column name wrapped in <code>{}</code>. Text outside braces is literal.<br>
+                                The alt output generates one human-readable line per record.<br><br>
+                                <strong>Example template:</strong><br>
+                                <code>{Time Date} {Action} {Type} в р-ні {Location}</code><br>
+                                <strong>→</strong> <code>04:31 01.04.2026 виявлено ФПВ в р-ні ВОВЧАНСЬКІ ХУТОРИ</code>
+                            </div>
+                            <div class="template-field">
+                                <label>Line Template</label>
+                                <input type="text" id="altTemplate" placeholder="{Time Date} {Action} {Type} в р-ні {Location}" onchange="saveState()">
+                            </div>
+                            <div class="checkbox-field">
+                                <input type="checkbox" id="altLowercase" onchange="saveState()">
+                                <label for="altLowercase">Lowercase action/type in alt output (виявлено, придушено, прикриття)</label>
+                            </div>
+                            <div class="checkbox-field">
+                                <input type="checkbox" id="altEnabled" onchange="saveState()">
+                                <label for="altEnabled">Enable alternative output generation</label>
+                            </div>
                         </div>
                     </div>
                     <!-- Settings Tab -->
@@ -422,22 +479,45 @@
                     </div>
                 </div>
                 <div class="panel-body">
-                    <div class="output-area">
-                        <button class="copy-btn" onclick="copyOutput()">📋 Copy</button>
-                        <textarea class="output-text" id="outputText" readonly placeholder="Parsed output will appear here..."></textarea>
+                    <!-- Output Tabs -->
+                    <div class="out-tab-bar">
+                        <button class="out-tab-btn active" onclick="switchOutTab('table', this)">📊 Table Output</button>
+                        <button class="out-tab-btn" id="altOutTabBtn" onclick="switchOutTab('alt', this)" style="display:none;">📝 Text Output</button>
                     </div>
-                    <div class="actions-bar">
-                        <button class="btn btn-secondary" onclick="downloadFile()">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-                            Download .txt
-                        </button>
-                        <button class="btn btn-secondary" onclick="downloadCSV()" style="background: var(--gradient-2);">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-                            Download .csv
-                        </button>
-                        <button class="btn btn-danger" onclick="clearOutput()">Clear Output</button>
+                    <!-- Table Output -->
+                    <div class="out-tab-content active" id="out-tab-table">
+                        <div class="output-area">
+                            <button class="copy-btn" onclick="copyOutput()">📋 Copy</button>
+                            <textarea class="output-text" id="outputText" readonly placeholder="Parsed output will appear here..."></textarea>
+                        </div>
+                        <div class="actions-bar">
+                            <button class="btn btn-secondary" onclick="downloadFile('table')">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                                Download .txt
+                            </button>
+                            <button class="btn btn-secondary" onclick="downloadCSV()" style="background: var(--gradient-2);">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                                Download .csv
+                            </button>
+                            <button class="btn btn-danger" onclick="clearOutput()">Clear Output</button>
+                        </div>
+                        <div class="column-preview" id="previewTable"></div>
                     </div>
-                    <div class="column-preview" id="previewTable"></div>
+                    <!-- Alt Text Output -->
+                    <div class="out-tab-content" id="out-tab-alt">
+                        <div class="output-area">
+                            <button class="copy-btn" onclick="copyAltOutput()">📋 Copy</button>
+                            <textarea class="output-text alt-output" id="altOutputText" readonly placeholder="Alternative text output will appear here..."></textarea>
+                        </div>
+                        <div class="actions-bar">
+                            <button class="btn btn-secondary" onclick="downloadFile('alt')" style="background: var(--gradient-5);">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                                Download .txt
+                            </button>
+                            <button class="btn btn-danger" onclick="clearAltOutput()">Clear</button>
+                        </div>
+                        <div class="stat-item" style="margin-top:12px;">Alt Lines: <span class="stat-value" id="altLineCount">0</span></div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -449,17 +529,20 @@
 
     <script>
         let state = {
-            input: '', output: '', layout: 'vertical',
+            input: '', output: '', altOutput: '', layout: 'vertical',
             separator: '\\t', skipEmpty: 'no', keepTimeRange: true,
-            sortMode: 'none',
+            sortMode: 'datetime_asc',
+            altTemplate: '{Time Date} {Action} {Type} в р-ні {Location}',
+            altLowercase: true, altEnabled: true,
             rules: [], replacements: [], locations: []
         };
 
         let parsedRows = [];
+        let parsedRowMaps = []; // array of {colName: value} for alt output
 
         const defaultRules = [
             { name: 'Time Date', type: 'regex', pattern: '(\\d{2}:\\d{2})\\.\\s', endDelim: '', postProcess: 'lastMatch', combineWith: '_date_' },
-            { name: 'Type', type: 'regex', pattern: '(ФПВ|БПЛА МОЛНІЯ|БПЛА ЗАЛА|БПЛА СУПЕРКАМ|БПЛА ШАХЕД|БПЛА ОРЛАН|БПЛА ЛАНЦЕТ)', endDelim: '', postProcess: '', combineWith: '' },
+            { name: 'Type', type: 'regex', pattern: '(ФПВ|БПЛА МОЛНІЯ|БПЛА ЗАЛА|БПЛА СУПЕРКАМ|БПЛА ШАХЕД|БПЛА ОРЛАН|БПЛА ЛАНЦЕТ|КАБ)', endDelim: '', postProcess: '', combineWith: '' },
             { name: 'Location', type: 'regex', pattern: 'Р-НІ\\s+(.+?)\\s+(?:ВИЯВЛЕНО|ПОДАВЛЕННЯ|ПОДАВЛЕНО|ПРИКРИТТЯ)', endDelim: '', postProcess: 'locationMap', combineWith: '' },
             { name: 'Action', type: 'regex', pattern: '(ВИЯВЛЕНО|ПОДАВЛЕННЯ|ПОДАВЛЕНО|ПРИКРИТТЯ)', endDelim: '', postProcess: 'actionMap', combineWith: '' },
             { name: 'Freq', type: 'regex', pattern: '[\\(（]([^)）]+)[\\)）]', endDelim: '', postProcess: 'freqExtract', combineWith: '' }
@@ -469,18 +552,24 @@
             { from: 'ЗИБИНО', to: 'ЗИБИНЕ' },
             { from: 'ЗИБІНО', to: 'ЗИБИНЕ' }
         ];
+        const defaultAltTemplate = '{Time Date} {Action} {Type} в р-ні {Location}';
 
         function init() {
             loadState();
             renderRules(); renderReplacements(); renderLocations();
             document.getElementById('inputText').value = state.input;
             document.getElementById('outputText').value = state.output;
+            document.getElementById('altOutputText').value = state.altOutput || '';
             document.getElementById('separatorSelect').value = state.separator;
             document.getElementById('skipEmpty').value = state.skipEmpty;
             document.getElementById('keepTimeRange').checked = state.keepTimeRange !== false;
-            document.getElementById('sortMode').value = state.sortMode || 'none';
+            document.getElementById('sortMode').value = state.sortMode || 'datetime_asc';
+            document.getElementById('altTemplate').value = state.altTemplate || defaultAltTemplate;
+            document.getElementById('altLowercase').checked = state.altLowercase !== false;
+            document.getElementById('altEnabled').checked = state.altEnabled !== false;
             setLayout(state.layout, false);
             updateLocBadge();
+            updateAltTabVisibility();
             if (state.output) {
                 const sep = state.separator === '\\t' ? '\t' : state.separator;
                 const lines = state.output.split('\n').filter(l => l.trim());
@@ -490,17 +579,25 @@
                 renderPreviewTable(lines, sep);
                 updateSortIndicator();
             }
+            if (state.altOutput) {
+                const altLines = state.altOutput.split('\n').filter(l => l.trim());
+                document.getElementById('altLineCount').textContent = altLines.length;
+            }
         }
 
         function loadState() {
             try {
-                const saved = localStorage.getItem('columnGeneratorState_v4');
+                const saved = localStorage.getItem('columnGeneratorState_v5');
                 if (saved) {
                     state = JSON.parse(saved);
                     if (!state.replacements) state.replacements = [];
                     if (!state.locations) state.locations = [];
                     if (state.keepTimeRange === undefined) state.keepTimeRange = true;
-                    if (!state.sortMode) state.sortMode = 'none';
+                    if (!state.sortMode) state.sortMode = 'datetime_asc';
+                    if (!state.altTemplate) state.altTemplate = defaultAltTemplate;
+                    if (state.altLowercase === undefined) state.altLowercase = true;
+                    if (state.altEnabled === undefined) state.altEnabled = true;
+                    if (!state.altOutput) state.altOutput = '';
                 } else { setDefaults(); }
             } catch (e) { setDefaults(); }
         }
@@ -509,19 +606,31 @@
             state.rules = JSON.parse(JSON.stringify(defaultRules));
             state.replacements = JSON.parse(JSON.stringify(defaultReplacements));
             state.locations = JSON.parse(JSON.stringify(defaultLocations));
-            state.keepTimeRange = true;
-            state.sortMode = 'none';
+            state.keepTimeRange = true; state.sortMode = 'datetime_asc';
+            state.altTemplate = defaultAltTemplate;
+            state.altLowercase = true; state.altEnabled = true;
+            state.altOutput = '';
         }
 
         function saveState() {
             state.input = document.getElementById('inputText').value;
             state.output = document.getElementById('outputText').value;
+            state.altOutput = document.getElementById('altOutputText').value;
             state.separator = document.getElementById('separatorSelect').value;
             state.skipEmpty = document.getElementById('skipEmpty').value;
             state.keepTimeRange = document.getElementById('keepTimeRange').checked;
             state.sortMode = document.getElementById('sortMode').value;
+            state.altTemplate = document.getElementById('altTemplate').value;
+            state.altLowercase = document.getElementById('altLowercase').checked;
+            state.altEnabled = document.getElementById('altEnabled').checked;
             collectRules(); collectReplacements(); collectLocations();
-            localStorage.setItem('columnGeneratorState_v4', JSON.stringify(state));
+            updateAltTabVisibility();
+            localStorage.setItem('columnGeneratorState_v5', JSON.stringify(state));
+        }
+
+        function updateAltTabVisibility() {
+            const btn = document.getElementById('altOutTabBtn');
+            btn.style.display = state.altEnabled ? '' : 'none';
         }
 
         function collectRules() {
@@ -557,7 +666,6 @@
             });
         }
 
-        // ---- RULES ----
         function renderRules() {
             const c = document.getElementById('rulesContainer'); c.innerHTML = '';
             state.rules.forEach((r, i) => c.appendChild(createRuleCard(r, i)));
@@ -592,7 +700,6 @@
         function addRule() { collectRules(); state.rules.push({name:'Column',type:'regex',pattern:'',endDelim:'',postProcess:'',combineWith:''}); renderRules(); saveState(); }
         function removeRule(i) { collectRules(); state.rules.splice(i,1); renderRules(); saveState(); }
 
-        // ---- REPLACEMENTS ----
         function renderReplacements() {
             const c = document.getElementById('replacementsContainer'); c.innerHTML = '';
             (state.replacements||[]).forEach((r,i) => c.appendChild(createReplacementCard(r,i)));
@@ -612,7 +719,6 @@
         function addReplacement() { collectReplacements(); state.replacements.push({find:'',replace:'',isRegex:false}); renderReplacements(); saveState(); }
         function removeReplacement(i) { collectReplacements(); state.replacements.splice(i,1); renderReplacements(); saveState(); }
 
-        // ---- LOCATIONS ----
         function renderLocations() {
             const c = document.getElementById('locationsContainer'); c.innerHTML = '';
             (state.locations||[]).forEach((l,i) => c.appendChild(createLocationCard(l,i)));
@@ -667,72 +773,34 @@
         function isTimeRangeLine(line) { return /ПРИКРИТТЯ/i.test(line); }
         function extractFullTimeRange(line) { const m = line.match(/(\d{2}:\d{2})\s*[-–]\s*(\d{2}:\d{2})/); return m ? m[1]+'-'+m[2] : null; }
 
-        // ---- FREQ EXTRACT ----
         function extractFreqFromParens(line) {
-            // Match content inside last parentheses, ignoring any trailing number after closing paren
-            // Examples:
-            //   (АЗ131.3700.-96ДБМ)         -> 3700
-            //   (АЗ270.1385.-108ДБМ) 7985    -> 1385
-            //   (АЗ333.550-1050)              -> 550-1050
-            //   (АЗ340.550-850)               -> 550-850
             const parenMatch = line.match(/[\(（]([^)）]+)[\)）]/g);
             if (!parenMatch || parenMatch.length === 0) return '';
-
-            // Use the last parenthesized group
             const lastParen = parenMatch[parenMatch.length - 1];
             const content = lastParen.replace(/^[\(（]/, '').replace(/[\)）]$/, '');
-
-            // Split by dots
             const parts = content.split('.');
             if (parts.length >= 2) {
-                // Get the frequency part (second segment typically)
-                // Could be "3700" or "550-850" or "550-1050"
-                // Last part might be dBm like "-96ДБМ" or "-108ДБМ"
-                // Strategy: take the part after AZ/first segment, before any dBm segment
-
-                // Find segments that look like frequency (digits, possibly with dash range)
                 let freqParts = [];
                 for (let i = 1; i < parts.length; i++) {
                     const cleaned = parts[i].replace(/-?\d*ДБМ/i, '').trim();
-                    if (cleaned && /\d/.test(cleaned)) {
-                        freqParts.push(cleaned);
-                    }
+                    if (cleaned && /\d/.test(cleaned)) freqParts.push(cleaned);
                 }
-
-                if (freqParts.length > 0) {
-                    // Return the first frequency-like part found
-                    return freqParts[0];
-                }
+                if (freqParts.length > 0) return freqParts[0];
             }
-
-            // Fallback: extract any number sequence
             const numMatch = content.match(/(\d+[-–]?\d*)/);
             return numMatch ? numMatch[0] : '';
         }
 
-        // ---- SORT ----
         function parseDateTimeFromCell(cellValue) {
             if (!cellValue) return 0;
             const str = cellValue.trim();
             let ts = 0;
-
             const dateMatch = str.match(/(\d{2})\.(\d{2})\.(\d{4})/);
-            if (dateMatch) {
-                ts += parseInt(dateMatch[3]) * 100000000
-                    + parseInt(dateMatch[2]) * 1000000
-                    + parseInt(dateMatch[1]) * 10000;
-            }
-
-            // For time ranges like "02:40-03:40", use the START time for sorting
+            if (dateMatch) ts += parseInt(dateMatch[3]) * 100000000 + parseInt(dateMatch[2]) * 1000000 + parseInt(dateMatch[1]) * 10000;
             const timeRangeMatch = str.match(/(\d{2}):(\d{2})\s*[-–]\s*(\d{2}):(\d{2})/);
             const singleTimeMatch = str.match(/(\d{2}):(\d{2})/);
-
-            if (timeRangeMatch) {
-                ts += parseInt(timeRangeMatch[1]) * 100 + parseInt(timeRangeMatch[2]);
-            } else if (singleTimeMatch) {
-                ts += parseInt(singleTimeMatch[1]) * 100 + parseInt(singleTimeMatch[2]);
-            }
-
+            if (timeRangeMatch) ts += parseInt(timeRangeMatch[1]) * 100 + parseInt(timeRangeMatch[2]);
+            else if (singleTimeMatch) ts += parseInt(singleTimeMatch[1]) * 100 + parseInt(singleTimeMatch[2]);
             return ts;
         }
 
@@ -746,13 +814,15 @@
             return 0;
         }
 
-        function sortRowsByDateTime(rows, direction) {
+        function sortRowsByDateTime(rows, maps, direction) {
             const colIdx = findDateTimeColIndex();
-            return [...rows].sort((a, b) => {
-                const tsA = parseDateTimeFromCell(a[colIdx] || '');
-                const tsB = parseDateTimeFromCell(b[colIdx] || '');
+            const indices = rows.map((_, i) => i);
+            indices.sort((a, b) => {
+                const tsA = parseDateTimeFromCell(rows[a][colIdx] || '');
+                const tsB = parseDateTimeFromCell(rows[b][colIdx] || '');
                 return direction === 'asc' ? tsA - tsB : tsB - tsA;
             });
+            return { rows: indices.map(i => rows[i]), maps: indices.map(i => maps[i]) };
         }
 
         function rebuildParsedRows(lines, separator) {
@@ -766,9 +836,55 @@
             if (mode !== 'none' && parsedRows.length > 0) {
                 txt.textContent = mode === 'datetime_asc' ? '🕐 Date&Time ↑' : '🕐 Date&Time ↓';
                 ind.style.display = 'inline-flex';
-            } else {
-                ind.style.display = 'none';
-            }
+            } else { ind.style.display = 'none'; }
+        }
+
+        // ---- ALT OUTPUT ----
+        function generateAltOutput(rowMaps) {
+            const template = (document.getElementById('altTemplate').value || '').trim();
+            if (!template) return '';
+            const doLower = document.getElementById('altLowercase').checked;
+            const lowerFields = ['action'];
+
+            const lines = rowMaps.map(map => {
+                let line = template;
+                // Replace all {ColumnName} with values
+                line = line.replace(/\{([^}]+)\}/g, (match, colName) => {
+                    let val = '';
+                    // Find by exact name
+                    if (map.hasOwnProperty(colName)) val = map[colName];
+                    // Try case-insensitive
+                    else {
+                        const key = Object.keys(map).find(k => k.toLowerCase() === colName.toLowerCase());
+                        if (key) val = map[key];
+                    }
+                    // Apply lowercase for action/type if enabled
+                    if (doLower && lowerFields.includes(colName.toLowerCase()) && val) {
+                        val = val.toLowerCase();
+                    }
+                    return val;
+                });
+                // Clean up multiple spaces
+                line = line.replace(/\s{2,}/g, ' ').trim();
+                return line;
+            });
+
+            // For ПРИКРИТТЯ lines, reorder: datetime в р-ні location прикриття
+            // We detect by checking if the line contains "прикриття" or "ПРИКРИТТЯ"
+            const reordered = lines.map((line, idx) => {
+                const map = rowMaps[idx];
+                const actionVal = (map['Action'] || '').toUpperCase();
+                if (actionVal === 'ПРИКРИТТЯ') {
+                    // Build special format: datetime в р-ні location прикриття
+                    const dt = map['Time Date'] || '';
+                    const loc = map['Location'] || '';
+                    const actionText = doLower ? 'прикриття' : 'ПРИКРИТТЯ';
+                    return `${dt}  в р-ні ${loc} ${actionText}`.replace(/\s{2,}/g, ' ').trim();
+                }
+                return line;
+            });
+
+            return reordered.join('\n');
         }
 
         // ---- PARSE ----
@@ -781,12 +897,15 @@
             const skipEmpty = document.getElementById('skipEmpty').value === 'yes';
             const keepTimeRange = document.getElementById('keepTimeRange').checked;
             const sortMode = document.getElementById('sortMode').value;
+            const altEnabled = document.getElementById('altEnabled').checked;
             const locMap = buildLocationMap();
 
             parsedRows = [];
+            parsedRowMaps = [];
 
             lines.forEach(line => {
                 const cols = [];
+                const colMap = {};
                 let hasContent = false;
                 const dateFromLine = extractDate(line);
                 const isPrykryttia = isTimeRangeLine(line);
@@ -820,9 +939,8 @@
                         }
                     } catch (e) { value = `[ERR: ${e.message}]`; }
 
-                    // Post-processing
                     if (rule.postProcess === 'actionMap') {
-                        const map = { 'ПОДАВЛЕННЯ':'ПРИДУШЕНО', 'ВИЯВЛЕНО':'ВИЯВЛЕНО', 'ПРИКРИТТЯ':'ПРИКРИТТЯ' };
+                        const map = { 'ПОДАВЛЕННЯ':'ПРИДУШЕНО', 'ВИЯВЛЕНО':'ВИЯВЛЕНО', 'ПРИКРИТТЯ':'ПРИКРИТТЯ', 'ПОДАВЛЕНО':'ПОДАВЛЕНО' };
                         value = map[value] || value;
                     } else if (rule.postProcess === 'freqExtract') {
                         value = extractFreqFromParens(line);
@@ -834,22 +952,20 @@
                     else if (rule.postProcess === 'lowercase') { value = value.toLowerCase(); }
                     else if (rule.postProcess === 'trim') { value = value.trim(); }
 
-                    // Time+date combined: use full range for ПРИКРИТТЯ
                     if (rule.postProcess === 'lastMatch' && rule.combineWith === '_date_') {
                         if (isPrykryttia && keepTimeRange && fullTimeRange) value = fullTimeRange;
                     }
 
-                    // Combine with date
                     if (rule.combineWith === '_date_' && dateFromLine) {
                         value = value ? (value + ' ' + dateFromLine) : dateFromLine;
                     }
 
                     if (value) hasContent = true;
                     cols.push(value);
+                    colMap[rule.name] = value;
                 });
 
                 if (!skipEmpty || hasContent) {
-                    // Apply replacements to each cell
                     for (let ci = 0; ci < cols.length; ci++) {
                         let cellVal = cols[ci];
                         (state.replacements || []).forEach(repl => {
@@ -860,16 +976,20 @@
                             }
                         });
                         cols[ci] = cellVal;
+                        // Update map too
+                        if (state.rules[ci]) colMap[state.rules[ci].name] = cellVal;
                     }
                     parsedRows.push(cols);
+                    parsedRowMaps.push(colMap);
                 }
             });
 
-            // Sort if enabled
-            if (sortMode === 'datetime_asc') {
-                parsedRows = sortRowsByDateTime(parsedRows, 'asc');
-            } else if (sortMode === 'datetime_desc') {
-                parsedRows = sortRowsByDateTime(parsedRows, 'desc');
+            // Sort
+            if (sortMode === 'datetime_asc' || sortMode === 'datetime_desc') {
+                const dir = sortMode === 'datetime_asc' ? 'asc' : 'desc';
+                const sorted = sortRowsByDateTime(parsedRows, parsedRowMaps, dir);
+                parsedRows = sorted.rows;
+                parsedRowMaps = sorted.maps;
             }
 
             const resultLines = parsedRows.map(row => row.join(separator));
@@ -879,6 +999,20 @@
             document.getElementById('colCount').textContent = state.rules.length;
             renderPreviewTable(resultLines, separator);
             updateSortIndicator();
+
+            // Alt output
+            if (altEnabled && parsedRowMaps.length > 0) {
+                const altText = generateAltOutput(parsedRowMaps);
+                document.getElementById('altOutputText').value = altText;
+                const altLines = altText.split('\n').filter(l => l.trim());
+                document.getElementById('altLineCount').textContent = altLines.length;
+                document.getElementById('altOutTabBtn').style.display = '';
+            } else {
+                document.getElementById('altOutputText').value = '';
+                document.getElementById('altLineCount').textContent = '0';
+            }
+
+            updateAltTabVisibility();
             saveState();
 
             const sortLabel = sortMode === 'none' ? '' : sortMode === 'datetime_asc' ? ' (sorted ↑)' : ' (sorted ↓)';
@@ -914,6 +1048,12 @@
             btn.classList.add('active');
             document.getElementById('tab-'+tabName).classList.add('active');
         }
+        function switchOutTab(tabName, btn) {
+            document.querySelectorAll('.out-tab-btn').forEach(b => { b.classList.remove('active'); b.classList.remove('alt-active'); });
+            document.querySelectorAll('.out-tab-content').forEach(c => c.classList.remove('active'));
+            btn.classList.add(tabName === 'alt' ? 'alt-active' : 'active');
+            document.getElementById('out-tab-'+tabName).classList.add('active');
+        }
 
         function loadExample() {
             document.getElementById('inputText').value = `30.03.2026. 18:15. В Р-НІ ПЕТРОПАВЛІВКА ВИЯВЛЕНО ФПВ(АЗ131.3700.-96ДБМ)
@@ -924,13 +1064,19 @@
 31.03.2026. 02:40-03:40. В Р-НІ ВОВЧАНСЬКІ ХУТОРИ ПРИКРИТТЯ(АЗ333.550-1050)
 31.03.2026. 04:10. В Р-НІ ЗИБИНО ВИЯВЛЕНО ФПВ(АЗ120.5800.-98ДБМ)
 30.03.2026. 23:45. В Р-НІ ПОКАЛЯНЕ ВИЯВЛЕНО ФПВ(АЗ200.2900.-100ДБМ)
-31.03.2026. 05:22. В Р-НІ ВОВЧАНСЬК ВИЯВЛЕНО БПЛА МОЛНІЯ(АЗ270.1385.-108ДБМ) 7985`;
+31.03.2026. 05:22. В Р-НІ ВОВЧАНСЬК ВИЯВЛЕНО БПЛА(АЗ270.1385.-108ДБМ) 7985
+01.04.2026. 10:37-10:42. В Р-НІ ВОВЧАНСЬКІ ХУТОРИ ПОДАВЛЕННЯ КАБ(АЗ180.900-1200)`;
             state.rules = JSON.parse(JSON.stringify(defaultRules));
             state.replacements = JSON.parse(JSON.stringify(defaultReplacements));
             state.locations = JSON.parse(JSON.stringify(defaultLocations));
-            state.keepTimeRange = true; state.sortMode = 'none';
+            state.keepTimeRange = true; state.sortMode = 'datetime_asc';
+            state.altTemplate = defaultAltTemplate;
+            state.altLowercase = true; state.altEnabled = true;
             document.getElementById('keepTimeRange').checked = true;
-            document.getElementById('sortMode').value = 'none';
+            document.getElementById('sortMode').value = 'datetime_asc';
+            document.getElementById('altTemplate').value = defaultAltTemplate;
+            document.getElementById('altLowercase').checked = true;
+            document.getElementById('altEnabled').checked = true;
             renderRules(); renderReplacements(); renderLocations(); saveState();
             showToast('Example loaded!');
         }
@@ -940,15 +1086,25 @@
             document.getElementById('outputText').value = '';
             document.getElementById('previewTable').innerHTML = '';
             document.getElementById('lineCount').textContent = '0';
-            parsedRows = []; updateSortIndicator(); saveState();
+            parsedRows = []; parsedRowMaps = []; updateSortIndicator(); saveState();
+        }
+        function clearAltOutput() {
+            document.getElementById('altOutputText').value = '';
+            document.getElementById('altLineCount').textContent = '0';
+            saveState();
         }
         function resetRules() {
             state.rules = JSON.parse(JSON.stringify(defaultRules));
             state.replacements = JSON.parse(JSON.stringify(defaultReplacements));
             state.locations = JSON.parse(JSON.stringify(defaultLocations));
-            state.keepTimeRange = true; state.sortMode = 'none';
+            state.keepTimeRange = true; state.sortMode = 'datetime_asc';
+            state.altTemplate = defaultAltTemplate;
+            state.altLowercase = true; state.altEnabled = true;
             document.getElementById('keepTimeRange').checked = true;
-            document.getElementById('sortMode').value = 'none';
+            document.getElementById('sortMode').value = 'datetime_asc';
+            document.getElementById('altTemplate').value = defaultAltTemplate;
+            document.getElementById('altLowercase').checked = true;
+            document.getElementById('altEnabled').checked = true;
             renderRules(); renderReplacements(); renderLocations(); saveState();
             showToast('All reset to defaults.');
         }
@@ -958,12 +1114,18 @@
             if (!o.value) { showToast('Nothing to copy!'); return; }
             navigator.clipboard.writeText(o.value).then(() => showToast('Copied!')).catch(() => { o.select(); document.execCommand('copy'); showToast('Copied!'); });
         }
-        function downloadFile() {
-            const text = document.getElementById('outputText').value;
+        function copyAltOutput() {
+            const o = document.getElementById('altOutputText');
+            if (!o.value) { showToast('Nothing to copy!'); return; }
+            navigator.clipboard.writeText(o.value).then(() => showToast('Alt output copied!')).catch(() => { o.select(); document.execCommand('copy'); showToast('Copied!'); });
+        }
+        function downloadFile(type) {
+            const text = type === 'alt' ? document.getElementById('altOutputText').value : document.getElementById('outputText').value;
             if (!text) { showToast('Nothing to download!'); return; }
+            const suffix = type === 'alt' ? '_text' : '_table';
             const a = document.createElement('a');
             a.href = URL.createObjectURL(new Blob([text], {type:'text/plain;charset=utf-8'}));
-            a.download = 'parsed_output_' + new Date().toISOString().slice(0,10) + '.txt';
+            a.download = 'parsed_output' + suffix + '_' + new Date().toISOString().slice(0,10) + '.txt';
             a.click(); URL.revokeObjectURL(a.href); showToast('File downloaded!');
         }
         function downloadCSV() {
