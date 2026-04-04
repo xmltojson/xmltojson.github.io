@@ -194,6 +194,11 @@
         .column-preview tr:nth-child(even) td { background: rgba(255,255,255,0.02); }
         .column-preview tr:hover td { background: rgba(59,130,246,0.05); }
         .column-preview td.source-cell { color: var(--accent-teal); font-weight: 500; }
+        .column-preview .group-separator-row td {
+            background: rgba(245,158,11,0.08); border-left: 3px solid var(--accent-orange);
+            color: var(--accent-orange); font-weight: 600; font-size: 0.78rem; text-align: center;
+            padding: 6px 14px; letter-spacing: 0.5px;
+        }
         .toast {
             position: fixed; bottom: 30px; right: 30px; padding: 14px 22px;
             background: var(--bg-card); border: 1px solid var(--accent-green); border-radius: 10px;
@@ -277,6 +282,11 @@
             display: inline-flex; align-items: center; gap: 4px; padding: 3px 10px;
             background: rgba(245,158,11,0.08); border: 1px solid rgba(245,158,11,0.2);
             border-radius: 20px; font-size: 0.75rem; color: var(--accent-orange);
+        }
+        .group-indicator {
+            display: inline-flex; align-items: center; gap: 4px; padding: 3px 10px;
+            background: rgba(236,72,153,0.08); border: 1px solid rgba(236,72,153,0.2);
+            border-radius: 20px; font-size: 0.75rem; color: var(--accent-pink);
         }
         .alt-format-info {
             margin-top: 10px; padding: 12px; background: rgba(245,158,11,0.05);
@@ -490,6 +500,10 @@
                                 <option value="datetime_desc">Sort by Date &amp; Time ↓ (newest first)</option>
                             </select>
                         </div>
+                        <div class="checkbox-field">
+                            <input type="checkbox" id="actionGrouping" onchange="saveState()">
+                            <label for="actionGrouping">Action Grouping — ВИЯВЛЕНО first, then others (each group sorted separately)</label>
+                        </div>
                         <div class="separator-select">
                             <label>Default Source label:</label>
                             <input type="text" id="defaultSource" placeholder="РЕБ" value="РЕБ" onchange="saveState()">
@@ -497,7 +511,11 @@
                         <div class="extra-info" style="margin-top:15px;">
                             <strong>Source column:</strong> Automatically appended as the last column in output.<br>
                             Main parsed lines get the <strong>Default Source</strong> label above.<br>
-                            Extra data lines keep their own Source value from the last column.
+                            Extra data lines keep their own Source value from the last column.<br><br>
+                            <strong>Action Grouping:</strong> When enabled, output is split into two groups:<br>
+                            1️⃣ <strong>ВИЯВЛЕНО</strong> rows (detected) — listed first<br>
+                            2️⃣ <strong>All other actions</strong> (ПРИДУШЕНО, ПРИКРИТТЯ, etc.) — listed second<br>
+                            Each group is sorted independently based on the Sort option above.
                         </div>
                     </div>
                     <div class="actions-bar">
@@ -522,6 +540,9 @@
                         <div class="stat-item">Extra: <span class="stat-value teal" id="extraMergedCount">0</span></div>
                         <span class="sort-indicator" id="sortIndicator" style="display:none">
                             <span id="sortIndicatorText">Sorted</span>
+                        </span>
+                        <span class="group-indicator" id="groupIndicator" style="display:none">
+                            <span id="groupIndicatorText">Grouped</span>
                         </span>
                     </div>
                 </div>
@@ -577,7 +598,7 @@
         let state = {
             input: '', extraInput: '', output: '', altOutput: '', layout: 'vertical',
             separator: '\\t', skipEmpty: 'no', keepTimeRange: true,
-            sortMode: 'none', defaultSource: '',
+            sortMode: 'none', actionGrouping: false, defaultSource: '',
             altTemplate: '{Time Date} в р-ні {Location} {Action} {Type}',
             altLowercase: true, altEnabled: true,
             rules: [], replacements: [], locations: []
@@ -611,6 +632,7 @@
             document.getElementById('skipEmpty').value = state.skipEmpty;
             document.getElementById('keepTimeRange').checked = state.keepTimeRange !== false;
             document.getElementById('sortMode').value = state.sortMode || 'none';
+            document.getElementById('actionGrouping').checked = state.actionGrouping === true;
             document.getElementById('defaultSource').value = state.defaultSource || '';
             document.getElementById('altTemplate').value = state.altTemplate || defaultAltTemplate;
             document.getElementById('altLowercase').checked = state.altLowercase !== false;
@@ -625,6 +647,7 @@
                 rebuildParsedRows(lines, sep);
                 renderPreviewTable(lines, sep);
                 updateSortIndicator();
+                updateGroupIndicator();
             }
             if (state.altOutput) {
                 const altLines = state.altOutput.split('\n').filter(l => l.trim());
@@ -641,6 +664,7 @@
                     if (!state.locations) state.locations = [];
                     if (state.keepTimeRange === undefined) state.keepTimeRange = true;
                     if (!state.sortMode) state.sortMode = 'none';
+                    if (state.actionGrouping === undefined) state.actionGrouping = false;
                     if (!state.altTemplate) state.altTemplate = defaultAltTemplate;
                     if (state.altLowercase === undefined) state.altLowercase = true;
                     if (state.altEnabled === undefined) state.altEnabled = true;
@@ -656,6 +680,7 @@
             state.replacements = JSON.parse(JSON.stringify(defaultReplacements));
             state.locations = JSON.parse(JSON.stringify(defaultLocations));
             state.keepTimeRange = true; state.sortMode = 'none';
+            state.actionGrouping = false;
             state.altTemplate = defaultAltTemplate;
             state.altLowercase = true; state.altEnabled = true;
             state.altOutput = ''; state.extraInput = '';
@@ -671,6 +696,7 @@
             state.skipEmpty = document.getElementById('skipEmpty').value;
             state.keepTimeRange = document.getElementById('keepTimeRange').checked;
             state.sortMode = document.getElementById('sortMode').value;
+            state.actionGrouping = document.getElementById('actionGrouping').checked;
             state.defaultSource = document.getElementById('defaultSource').value;
             state.altTemplate = document.getElementById('altTemplate').value;
             state.altLowercase = document.getElementById('altLowercase').checked;
@@ -871,6 +897,32 @@
             return 0;
         }
 
+        function findActionColIndex() {
+            for (let i = 0; i < state.rules.length; i++) {
+                const r = state.rules[i];
+                if (r.postProcess === 'actionMap') return i;
+                const n = r.name.toLowerCase();
+                if (n.includes('action') || n.includes('дія')) return i;
+            }
+            return -1;
+        }
+
+        function getActionFromMap(map) {
+            // Try to find action value from the row map
+            const actionColIdx = findActionColIndex();
+            if (actionColIdx >= 0 && state.rules[actionColIdx]) {
+                const colName = state.rules[actionColIdx].name;
+                return (map[colName] || '').toUpperCase().trim();
+            }
+            // Fallback: look for common action column names
+            for (const key of Object.keys(map)) {
+                if (key.toLowerCase() === 'action' || key.toLowerCase() === 'дія') {
+                    return (map[key] || '').toUpperCase().trim();
+                }
+            }
+            return '';
+        }
+
         function sortRowsByDateTime(rows, maps, direction) {
             const colIdx = findDateTimeColIndex();
             const indices = rows.map((_, i) => i);
@@ -880,6 +932,41 @@
                 return direction === 'asc' ? tsA - tsB : tsB - tsA;
             });
             return { rows: indices.map(i => rows[i]), maps: indices.map(i => maps[i]) };
+        }
+
+        function applyActionGrouping(rows, maps, sortMode) {
+            // Split into ВИЯВЛЕНО and others
+            const viyavlenoRows = [], viyavlenoMaps = [];
+            const otherRows = [], otherMaps = [];
+
+            for (let i = 0; i < rows.length; i++) {
+                const action = getActionFromMap(maps[i]);
+                if (action === 'ВИЯВЛЕНО') {
+                    viyavlenoRows.push(rows[i]);
+                    viyavlenoMaps.push(maps[i]);
+                } else {
+                    otherRows.push(rows[i]);
+                    otherMaps.push(maps[i]);
+                }
+            }
+
+            // Sort each group separately if sorting is enabled
+            let sortedV = { rows: viyavlenoRows, maps: viyavlenoMaps };
+            let sortedO = { rows: otherRows, maps: otherMaps };
+
+            if (sortMode === 'datetime_asc' || sortMode === 'datetime_desc') {
+                const dir = sortMode === 'datetime_asc' ? 'asc' : 'desc';
+                if (viyavlenoRows.length > 0) sortedV = sortRowsByDateTime(viyavlenoRows, viyavlenoMaps, dir);
+                if (otherRows.length > 0) sortedO = sortRowsByDateTime(otherRows, otherMaps, dir);
+            }
+
+            // Concatenate: ВИЯВЛЕНО first, then others
+            return {
+                rows: sortedV.rows.concat(sortedO.rows),
+                maps: sortedV.maps.concat(sortedO.maps),
+                viyavlenoCount: sortedV.rows.length,
+                otherCount: sortedO.rows.length
+            };
         }
 
         function rebuildParsedRows(lines, separator) {
@@ -896,6 +983,15 @@
             } else { ind.style.display = 'none'; }
         }
 
+        function updateGroupIndicator() {
+            const ind = document.getElementById('groupIndicator');
+            const txt = document.getElementById('groupIndicatorText');
+            if (state.actionGrouping && parsedRows.length > 0) {
+                txt.textContent = '🏷️ Grouped by Action';
+                ind.style.display = 'inline-flex';
+            } else { ind.style.display = 'none'; }
+        }
+
         // ---- EXTRA DATA PARSING ----
         function parseExtraInput(separator) {
             const text = document.getElementById('extraInput').value;
@@ -906,25 +1002,21 @@
 
             lines.forEach(line => {
                 const parts = line.split(separator);
-                // Expect: numRuleCols data columns + 1 Source column = numRuleCols+1 total
-                // But be flexible: if fewer columns, pad; if more, last is source
                 const cols = [];
                 let source = '';
 
                 if (parts.length > numRuleCols) {
-                    // Last column is source
                     for (let i = 0; i < numRuleCols; i++) cols.push((parts[i] || '').trim());
                     source = parts[numRuleCols].trim();
                 } else if (parts.length === numRuleCols + 1) {
                     for (let i = 0; i < numRuleCols; i++) cols.push((parts[i] || '').trim());
                     source = parts[numRuleCols].trim();
                 } else {
-                    // Fewer columns - pad with empty, no source
                     for (let i = 0; i < numRuleCols; i++) cols.push((parts[i] || '').trim());
                     source = '';
                 }
 
-                cols.push(source); // append source as last col
+                cols.push(source);
 
                 const colMap = {};
                 state.rules.forEach((r, idx) => { colMap[r.name] = cols[idx] || ''; });
@@ -980,6 +1072,7 @@
             const skipEmpty = document.getElementById('skipEmpty').value === 'yes';
             const keepTimeRange = document.getElementById('keepTimeRange').checked;
             const sortMode = document.getElementById('sortMode').value;
+            const actionGrouping = document.getElementById('actionGrouping').checked;
             const altEnabled = document.getElementById('altEnabled').checked;
             const defaultSource = document.getElementById('defaultSource').value || '';
             const locMap = buildLocationMap();
@@ -1078,8 +1171,18 @@
             parsedRows = parsedRows.concat(extra.rows);
             parsedRowMaps = parsedRowMaps.concat(extra.maps);
 
-            // Sort
-            if (sortMode === 'datetime_asc' || sortMode === 'datetime_desc') {
+            // Track grouping info for preview table
+            let viyavlenoCount = 0;
+            let otherCount = 0;
+
+            // Apply action grouping OR simple sorting
+            if (actionGrouping) {
+                const grouped = applyActionGrouping(parsedRows, parsedRowMaps, sortMode);
+                parsedRows = grouped.rows;
+                parsedRowMaps = grouped.maps;
+                viyavlenoCount = grouped.viyavlenoCount;
+                otherCount = grouped.otherCount;
+            } else if (sortMode === 'datetime_asc' || sortMode === 'datetime_desc') {
                 const dir = sortMode === 'datetime_asc' ? 'asc' : 'desc';
                 const sorted = sortRowsByDateTime(parsedRows, parsedRowMaps, dir);
                 parsedRows = sorted.rows;
@@ -1092,8 +1195,9 @@
             document.getElementById('lineCount').textContent = resultLines.length;
             document.getElementById('colCount').textContent = state.rules.length + 1;
             document.getElementById('extraMergedCount').textContent = extraMergedCount;
-            renderPreviewTable(resultLines, separator);
+            renderPreviewTable(resultLines, separator, actionGrouping ? viyavlenoCount : -1);
             updateSortIndicator();
+            updateGroupIndicator();
 
             // Alt output
             if (altEnabled && parsedRowMaps.length > 0) {
@@ -1112,10 +1216,11 @@
 
             const sortLabel = sortMode === 'none' ? '' : sortMode === 'datetime_asc' ? ' (sorted ↑)' : ' (sorted ↓)';
             const extraLabel = extraMergedCount > 0 ? ` + ${extraMergedCount} extra` : '';
-            showToast(`Done! ${resultLines.length} lines${extraLabel}${sortLabel}`);
+            const groupLabel = actionGrouping ? ' [grouped]' : '';
+            showToast(`Done! ${resultLines.length} lines${extraLabel}${sortLabel}${groupLabel}`);
         }
 
-        function renderPreviewTable(results, separator) {
+        function renderPreviewTable(results, separator, viyavlenoBoundary) {
             const c = document.getElementById('previewTable');
             if (!results.length) { c.innerHTML = ''; return; }
             const colNames = state.rules.map(r => r.name).concat(['Source']);
@@ -1125,7 +1230,20 @@
                 html += `<th${isSource ? ' style="color:var(--accent-teal)"' : ''}>${escHtml(name)}</th>`;
             });
             html += '</tr></thead><tbody>';
-            results.slice(0,100).forEach(line => {
+
+            const showLimit = Math.min(results.length, 100);
+            let groupSeparatorInserted = false;
+
+            for (let idx = 0; idx < showLimit; idx++) {
+                // Insert group separator row between ВИЯВЛЕНО and others
+                if (viyavlenoBoundary >= 0 && idx === viyavlenoBoundary && !groupSeparatorInserted) {
+                    groupSeparatorInserted = true;
+                    if (viyavlenoBoundary > 0 && viyavlenoBoundary < results.length) {
+                        html += `<tr class="group-separator-row"><td colspan="${colNames.length}">── ІНШІ ДІЇ (ПРИДУШЕНО, ПРИКРИТТЯ, тощо) ──</td></tr>`;
+                    }
+                }
+
+                const line = results[idx];
                 const cols = line.split(separator);
                 html += '<tr>';
                 colNames.forEach((_,i) => {
@@ -1133,7 +1251,8 @@
                     html += `<td${isSource ? ' class="source-cell"' : ''}>${escHtml(cols[i]||'')}</td>`;
                 });
                 html += '</tr>';
-            });
+            }
+
             if (results.length > 100) html += `<tr><td colspan="${colNames.length}" style="text-align:center;color:var(--text-muted)">... and ${results.length-100} more rows</td></tr>`;
             html += '</tbody></table>';
             c.innerHTML = html;
@@ -1176,11 +1295,13 @@
             state.replacements = JSON.parse(JSON.stringify(defaultReplacements));
             state.locations = JSON.parse(JSON.stringify(defaultLocations));
             state.keepTimeRange = true; state.sortMode = 'none';
+            state.actionGrouping = false;
             state.altTemplate = defaultAltTemplate;
             state.altLowercase = true; state.altEnabled = true;
             state.defaultSource = '';
             document.getElementById('keepTimeRange').checked = true;
             document.getElementById('sortMode').value = 'none';
+            document.getElementById('actionGrouping').checked = false;
             document.getElementById('altTemplate').value = defaultAltTemplate;
             document.getElementById('altLowercase').checked = true;
             document.getElementById('altEnabled').checked = true;
@@ -1199,7 +1320,7 @@
             document.getElementById('previewTable').innerHTML = '';
             document.getElementById('lineCount').textContent = '0';
             document.getElementById('extraMergedCount').textContent = '0';
-            parsedRows = []; parsedRowMaps = []; updateSortIndicator(); saveState();
+            parsedRows = []; parsedRowMaps = []; updateSortIndicator(); updateGroupIndicator(); saveState();
         }
         function clearAltOutput() {
             document.getElementById('altOutputText').value = '';
@@ -1211,11 +1332,13 @@
             state.replacements = JSON.parse(JSON.stringify(defaultReplacements));
             state.locations = JSON.parse(JSON.stringify(defaultLocations));
             state.keepTimeRange = true; state.sortMode = 'none';
+            state.actionGrouping = false;
             state.altTemplate = defaultAltTemplate;
             state.altLowercase = true; state.altEnabled = true;
             state.defaultSource = '';
             document.getElementById('keepTimeRange').checked = true;
             document.getElementById('sortMode').value = 'none';
+            document.getElementById('actionGrouping').checked = false;
             document.getElementById('altTemplate').value = defaultAltTemplate;
             document.getElementById('altLowercase').checked = true;
             document.getElementById('altEnabled').checked = true;
