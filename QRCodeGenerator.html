@@ -1,0 +1,1888 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QR Code Generator</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary: #6c5ce7;
+            --primary-dark: #5a4bd1;
+            --bg: #0f0f1a;
+            --card-bg: #1a1a2e;
+            --card-bg2: #16213e;
+            --text: #e0e0e0;
+            --text-muted: #888;
+            --border: #2a2a4a;
+            --accent: #00cec9;
+            --gradient1: linear-gradient(135deg, #6c5ce7, #00cec9);
+            --gradient2: linear-gradient(135deg, #fd79a8, #6c5ce7);
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        .bg-animation {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+            overflow: hidden;
+            pointer-events: none;
+        }
+
+        .bg-animation .orb {
+            position: absolute;
+            border-radius: 50%;
+            filter: blur(80px);
+            opacity: 0.15;
+            animation: float 20s infinite ease-in-out;
+        }
+
+        .bg-animation .orb:nth-child(1) {
+            width: 400px;
+            height: 400px;
+            background: #6c5ce7;
+            top: -100px;
+            left: -100px;
+            animation-delay: 0s;
+        }
+
+        .bg-animation .orb:nth-child(2) {
+            width: 300px;
+            height: 300px;
+            background: #00cec9;
+            bottom: -50px;
+            right: -50px;
+            animation-delay: -7s;
+        }
+
+        .bg-animation .orb:nth-child(3) {
+            width: 250px;
+            height: 250px;
+            background: #fd79a8;
+            top: 50%;
+            left: 50%;
+            animation-delay: -14s;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translate(0, 0) scale(1); }
+            25% { transform: translate(100px, -50px) scale(1.1); }
+            50% { transform: translate(-50px, 100px) scale(0.9); }
+            75% { transform: translate(80px, 50px) scale(1.05); }
+        }
+
+        .app-container {
+            position: relative;
+            z-index: 1;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            min-height: 100vh;
+        }
+
+        header {
+            text-align: center;
+            padding: 30px 0 20px;
+        }
+
+        header h1 {
+            font-size: 2.5rem;
+            font-weight: 800;
+            background: var(--gradient1);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 8px;
+            letter-spacing: -1px;
+        }
+
+        header p {
+            color: var(--text-muted);
+            font-size: 1rem;
+        }
+
+        .main-layout {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 24px;
+            margin-top: 20px;
+        }
+
+        .panel {
+            background: var(--card-bg);
+            border-radius: 20px;
+            padding: 28px;
+            border: 1px solid var(--border);
+            backdrop-filter: blur(10px);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .panel:hover {
+            box-shadow: 0 8px 32px rgba(108, 92, 231, 0.1);
+        }
+
+        .panel-title {
+            font-size: 1.1rem;
+            font-weight: 700;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .panel-title .icon {
+            width: 32px;
+            height: 32px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.1rem;
+        }
+
+        .form-group {
+            margin-bottom: 18px;
+        }
+
+        .form-group label {
+            display: block;
+            font-size: 0.85rem;
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .form-group input[type="text"],
+        .form-group input[type="url"],
+        .form-group textarea,
+        .form-group select {
+            width: 100%;
+            padding: 12px 16px;
+            background: var(--bg);
+            border: 2px solid var(--border);
+            border-radius: 12px;
+            color: var(--text);
+            font-size: 0.95rem;
+            transition: border-color 0.3s ease, box-shadow 0.3s ease;
+            outline: none;
+        }
+
+        .form-group textarea {
+            resize: vertical;
+            min-height: 80px;
+            font-family: inherit;
+        }
+
+        .form-group input:focus,
+        .form-group textarea:focus,
+        .form-group select:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(108, 92, 231, 0.2);
+        }
+
+        .form-group select {
+            cursor: pointer;
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23888' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 16px center;
+        }
+
+        .color-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
+
+        .color-input-wrapper {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background: var(--bg);
+            border: 2px solid var(--border);
+            border-radius: 12px;
+            padding: 8px 12px;
+            transition: border-color 0.3s;
+        }
+
+        .color-input-wrapper:focus-within {
+            border-color: var(--primary);
+        }
+
+        .color-input-wrapper input[type="color"] {
+            width: 32px;
+            height: 32px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            background: none;
+            padding: 0;
+        }
+
+        .color-input-wrapper input[type="color"]::-webkit-color-swatch-wrapper {
+            padding: 0;
+        }
+
+        .color-input-wrapper input[type="color"]::-webkit-color-swatch {
+            border: 2px solid var(--border);
+            border-radius: 6px;
+        }
+
+        .color-input-wrapper span {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+        }
+
+        .style-options {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+        }
+
+        .style-option {
+            background: var(--bg);
+            border: 2px solid var(--border);
+            border-radius: 12px;
+            padding: 14px 10px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+
+        .style-option:hover {
+            border-color: var(--primary);
+            transform: translateY(-2px);
+        }
+
+        .style-option.active {
+            border-color: var(--primary);
+            background: rgba(108, 92, 231, 0.15);
+            box-shadow: 0 0 0 3px rgba(108, 92, 231, 0.1);
+        }
+
+        .style-option .style-icon {
+            font-size: 1.5rem;
+            margin-bottom: 6px;
+            display: block;
+        }
+
+        .emoji-picker-section {
+            margin-bottom: 18px;
+        }
+
+        .emoji-grid {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            max-height: 120px;
+            overflow-y: auto;
+            padding: 10px;
+            background: var(--bg);
+            border-radius: 12px;
+            border: 2px solid var(--border);
+        }
+
+        .emoji-grid::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .emoji-grid::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .emoji-grid::-webkit-scrollbar-thumb {
+            background: var(--border);
+            border-radius: 3px;
+        }
+
+        .emoji-btn {
+            width: 36px;
+            height: 36px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.3rem;
+            border: 2px solid transparent;
+            border-radius: 8px;
+            cursor: pointer;
+            background: transparent;
+            transition: all 0.2s;
+        }
+
+        .emoji-btn:hover {
+            background: rgba(108, 92, 231, 0.2);
+            transform: scale(1.15);
+        }
+
+        .emoji-btn.active {
+            border-color: var(--primary);
+            background: rgba(108, 92, 231, 0.2);
+        }
+
+        .image-upload-area {
+            border: 2px dashed var(--border);
+            border-radius: 12px;
+            padding: 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            background: var(--bg);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .image-upload-area:hover {
+            border-color: var(--primary);
+            background: rgba(108, 92, 231, 0.05);
+        }
+
+        .image-upload-area.has-image {
+            border-style: solid;
+            border-color: var(--accent);
+        }
+
+        .image-upload-area .upload-icon {
+            font-size: 2rem;
+            margin-bottom: 8px;
+        }
+
+        .image-upload-area .upload-text {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+        }
+
+        .image-upload-area input[type="file"] {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            opacity: 0;
+            cursor: pointer;
+        }
+
+        .image-preview {
+            width: 60px;
+            height: 60px;
+            border-radius: 10px;
+            object-fit: cover;
+            margin: 0 auto 8px;
+            display: block;
+        }
+
+        .embed-toggle {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 14px;
+        }
+
+        .embed-toggle-btn {
+            flex: 1;
+            padding: 10px;
+            border: 2px solid var(--border);
+            border-radius: 10px;
+            background: var(--bg);
+            color: var(--text);
+            cursor: pointer;
+            font-size: 0.85rem;
+            font-weight: 600;
+            transition: all 0.3s;
+            text-align: center;
+        }
+
+        .embed-toggle-btn:hover {
+            border-color: var(--primary);
+        }
+
+        .embed-toggle-btn.active {
+            border-color: var(--primary);
+            background: rgba(108, 92, 231, 0.15);
+        }
+
+        .slider-group {
+            margin-bottom: 18px;
+        }
+
+        .slider-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+
+        .slider-header label {
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .slider-value {
+            font-size: 0.85rem;
+            color: var(--primary);
+            font-weight: 700;
+        }
+
+        input[type="range"] {
+            width: 100%;
+            height: 6px;
+            -webkit-appearance: none;
+            background: var(--border);
+            border-radius: 3px;
+            outline: none;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: var(--primary);
+            cursor: pointer;
+            box-shadow: 0 2px 8px rgba(108, 92, 231, 0.4);
+            transition: transform 0.2s;
+        }
+
+        input[type="range"]::-webkit-slider-thumb:hover {
+            transform: scale(1.2);
+        }
+
+        /* QR Preview Panel */
+        .preview-panel {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .qr-preview-container {
+            background: white;
+            border-radius: 20px;
+            padding: 24px;
+            margin: 20px 0;
+            position: relative;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            transition: all 0.5s ease;
+        }
+
+        .qr-preview-container.rounded {
+            border-radius: 30px;
+        }
+
+        .qr-preview-container.circle {
+            border-radius: 50%;
+            padding: 40px;
+        }
+
+        #qr-canvas-container {
+            position: relative;
+            display: inline-block;
+        }
+
+        #qr-canvas-container canvas {
+            display: block;
+        }
+
+        .qr-overlay {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            pointer-events: none;
+        }
+
+        .qr-overlay img {
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+        }
+
+        .qr-overlay .emoji-overlay {
+            font-size: 2rem;
+            filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 10px;
+            width: 100%;
+            margin-top: 16px;
+        }
+
+        .btn {
+            flex: 1;
+            padding: 14px 20px;
+            border: none;
+            border-radius: 12px;
+            font-size: 0.9rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .btn-primary {
+            background: var(--gradient1);
+            color: white;
+            box-shadow: 0 4px 15px rgba(108, 92, 231, 0.4);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(108, 92, 231, 0.5);
+        }
+
+        .btn-secondary {
+            background: var(--card-bg2);
+            color: var(--text);
+            border: 2px solid var(--border);
+        }
+
+        .btn-secondary:hover {
+            border-color: var(--primary);
+            transform: translateY(-2px);
+        }
+
+        .btn-danger {
+            background: rgba(255, 71, 87, 0.15);
+            color: #ff4757;
+            border: 2px solid rgba(255, 71, 87, 0.3);
+        }
+
+        .btn-danger:hover {
+            background: rgba(255, 71, 87, 0.25);
+            transform: translateY(-2px);
+        }
+
+        .clear-image-btn {
+            display: inline-block;
+            margin-top: 8px;
+            padding: 6px 14px;
+            font-size: 0.75rem;
+            border-radius: 8px;
+            background: rgba(255, 71, 87, 0.15);
+            color: #ff4757;
+            border: 1px solid rgba(255, 71, 87, 0.3);
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .clear-image-btn:hover {
+            background: rgba(255, 71, 87, 0.25);
+        }
+
+        .tabs {
+            display: flex;
+            gap: 4px;
+            background: var(--bg);
+            border-radius: 12px;
+            padding: 4px;
+            margin-bottom: 18px;
+        }
+
+        .tab {
+            flex: 1;
+            padding: 10px 16px;
+            border: none;
+            border-radius: 10px;
+            background: transparent;
+            color: var(--text-muted);
+            font-size: 0.85rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .tab:hover {
+            color: var(--text);
+        }
+
+        .tab.active {
+            background: var(--primary);
+            color: white;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .corner-style-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8px;
+        }
+
+        .corner-option {
+            background: var(--bg);
+            border: 2px solid var(--border);
+            border-radius: 10px;
+            padding: 12px 8px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+
+        .corner-option:hover {
+            border-color: var(--primary);
+        }
+
+        .corner-option.active {
+            border-color: var(--primary);
+            background: rgba(108, 92, 231, 0.15);
+        }
+
+        .corner-option .preview-shape {
+            width: 24px;
+            height: 24px;
+            margin: 0 auto 6px;
+            border: 3px solid var(--text);
+        }
+
+        .corner-option .preview-shape.square { border-radius: 0; }
+        .corner-option .preview-shape.rounded { border-radius: 6px; }
+        .corner-option .preview-shape.circle { border-radius: 50%; }
+
+        .gradient-presets {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 8px;
+            margin-bottom: 14px;
+        }
+
+        .gradient-preset {
+            height: 36px;
+            border-radius: 10px;
+            cursor: pointer;
+            border: 2px solid transparent;
+            transition: all 0.3s;
+        }
+
+        .gradient-preset:hover {
+            transform: scale(1.05);
+        }
+
+        .gradient-preset.active {
+            border-color: white;
+            box-shadow: 0 0 0 2px var(--primary);
+        }
+
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 14px;
+            background: var(--bg);
+            border-radius: 10px;
+            cursor: pointer;
+            transition: background 0.3s;
+            margin-bottom: 10px;
+        }
+
+        .checkbox-group:hover {
+            background: rgba(108, 92, 231, 0.1);
+        }
+
+        .checkbox-group input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            accent-color: var(--primary);
+            cursor: pointer;
+        }
+
+        .checkbox-group span {
+            font-size: 0.85rem;
+            font-weight: 600;
+        }
+
+        .toast {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%) translateY(100px);
+            background: var(--card-bg);
+            color: var(--text);
+            padding: 14px 28px;
+            border-radius: 14px;
+            border: 1px solid var(--border);
+            font-weight: 600;
+            font-size: 0.9rem;
+            z-index: 1000;
+            transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        }
+
+        .toast.show {
+            transform: translateX(-50%) translateY(0);
+        }
+
+        /* Scrollbar */
+        .settings-scroll {
+            max-height: calc(100vh - 200px);
+            overflow-y: auto;
+            padding-right: 8px;
+        }
+
+        .settings-scroll::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .settings-scroll::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .settings-scroll::-webkit-scrollbar-thumb {
+            background: var(--border);
+            border-radius: 3px;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .main-layout {
+                grid-template-columns: 1fr;
+            }
+
+            header h1 {
+                font-size: 1.8rem;
+            }
+
+            .app-container {
+                padding: 12px;
+            }
+
+            .panel {
+                padding: 20px;
+            }
+
+            .style-options {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .gradient-presets {
+                grid-template-columns: repeat(3, 1fr);
+            }
+
+            .settings-scroll {
+                max-height: none;
+            }
+        }
+
+        @media (max-width: 480px) {
+            header h1 {
+                font-size: 1.5rem;
+            }
+
+            .color-row {
+                grid-template-columns: 1fr;
+            }
+
+            .btn-group {
+                flex-direction: column;
+            }
+        }
+
+        /* Landscape phone */
+        @media (max-height: 500px) and (orientation: landscape) {
+            .main-layout {
+                grid-template-columns: 1fr 1fr;
+            }
+
+            header {
+                padding: 10px 0;
+            }
+
+            header h1 {
+                font-size: 1.5rem;
+            }
+
+            .panel {
+                padding: 16px;
+            }
+
+            .settings-scroll {
+                max-height: calc(100vh - 120px);
+            }
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        .bg-pattern-option {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .size-display {
+            text-align: center;
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            margin-top: 8px;
+        }
+
+        .section-divider {
+            height: 1px;
+            background: var(--border);
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="bg-animation">
+        <div class="orb"></div>
+        <div class="orb"></div>
+        <div class="orb"></div>
+    </div>
+
+    <div class="app-container">
+        <header>
+            <h1>✨ QR Code Generator</h1>
+            <p>Create beautiful, customizable QR codes with embedded images & emojis</p>
+        </header>
+
+        <div class="main-layout">
+            <!-- Settings Panel -->
+            <div class="panel">
+                <div class="settings-scroll">
+                    <div class="panel-title">
+                        <div class="icon" style="background: var(--gradient1);">⚙️</div>
+                        Settings
+                    </div>
+
+                    <!-- Content Input -->
+                    <div class="form-group">
+                        <label>Content</label>
+                        <textarea id="qr-text" placeholder="Enter URL, text, or any data...">https://example.com</textarea>
+                    </div>
+
+                    <!-- Tabs -->
+                    <div class="tabs">
+                        <button class="tab active" data-tab="colors">🎨 Colors</button>
+                        <button class="tab" data-tab="style">✏️ Style</button>
+                        <button class="tab" data-tab="embed">🖼️ Embed</button>
+                    </div>
+
+                    <!-- Colors Tab -->
+                    <div class="tab-content active" id="tab-colors">
+                        <div class="form-group">
+                            <label>Gradient Presets</label>
+                            <div class="gradient-presets">
+                                <div class="gradient-preset" style="background: linear-gradient(135deg, #000000, #000000);" data-fg="#000000" data-bg="#ffffff"></div>
+                                <div class="gradient-preset" style="background: linear-gradient(135deg, #6c5ce7, #a29bfe);" data-fg="#6c5ce7" data-bg="#ffffff"></div>
+                                <div class="gradient-preset" style="background: linear-gradient(135deg, #00b894, #00cec9);" data-fg="#00b894" data-bg="#ffffff"></div>
+                                <div class="gradient-preset" style="background: linear-gradient(135deg, #e17055, #fdcb6e);" data-fg="#e17055" data-bg="#ffffff"></div>
+                                <div class="gradient-preset" style="background: linear-gradient(135deg, #0984e3, #74b9ff);" data-fg="#0984e3" data-bg="#ffffff"></div>
+                                <div class="gradient-preset" style="background: linear-gradient(135deg, #d63031, #ff7675);" data-fg="#d63031" data-bg="#ffffff"></div>
+                                <div class="gradient-preset" style="background: linear-gradient(135deg, #fdcb6e, #ffeaa7);" data-fg="#fdcb6e" data-bg="#2d3436"></div>
+                                <div class="gradient-preset" style="background: linear-gradient(135deg, #ffffff, #dfe6e9);" data-fg="#ffffff" data-bg="#2d3436"></div>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Custom Colors</label>
+                            <div class="color-row">
+                                <div class="color-input-wrapper">
+                                    <input type="color" id="fg-color" value="#000000">
+                                    <span>Foreground</span>
+                                </div>
+                                <div class="color-input-wrapper">
+                                    <input type="color" id="bg-color" value="#ffffff">
+                                    <span>Background</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <label class="checkbox-group">
+                            <input type="checkbox" id="use-gradient">
+                            <span>Use gradient foreground</span>
+                        </label>
+
+                        <div id="gradient-colors" class="hidden">
+                            <div class="color-row" style="margin-top: 10px;">
+                                <div class="color-input-wrapper">
+                                    <input type="color" id="gradient-color1" value="#6c5ce7">
+                                    <span>Start</span>
+                                </div>
+                                <div class="color-input-wrapper">
+                                    <input type="color" id="gradient-color2" value="#00cec9">
+                                    <span>End</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Style Tab -->
+                    <div class="tab-content" id="tab-style">
+                        <div class="form-group">
+                            <label>QR Size</label>
+                            <div class="slider-group">
+                                <div class="slider-header">
+                                    <label style="margin: 0;">Size</label>
+                                    <span class="slider-value" id="size-value">256px</span>
+                                </div>
+                                <input type="range" id="qr-size" min="128" max="512" value="256" step="16">
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Error Correction</label>
+                            <select id="error-correction">
+                                <option value="L">Low (7%)</option>
+                                <option value="M" selected>Medium (15%)</option>
+                                <option value="Q">Quartile (25%)</option>
+                                <option value="H">High (30%)</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Dot Style</label>
+                            <div class="style-options">
+                                <div class="style-option active" data-dot-style="square">
+                                    <span class="style-icon">⬛</span>
+                                    Square
+                                </div>
+                                <div class="style-option" data-dot-style="rounded">
+                                    <span class="style-icon">🔲</span>
+                                    Rounded
+                                </div>
+                                <div class="style-option" data-dot-style="dots">
+                                    <span class="style-icon">⚫</span>
+                                    Dots
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Container Shape</label>
+                            <div class="corner-style-grid">
+                                <div class="corner-option active" data-container="square">
+                                    <div class="preview-shape square"></div>
+                                    Square
+                                </div>
+                                <div class="corner-option" data-container="rounded">
+                                    <div class="preview-shape rounded"></div>
+                                    Rounded
+                                </div>
+                                <div class="corner-option" data-container="circle">
+                                    <div class="preview-shape circle"></div>
+                                    Circle
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="slider-group">
+                            <div class="slider-header">
+                                <label style="margin: 0;">Margin</label>
+                                <span class="slider-value" id="margin-value">4</span>
+                            </div>
+                            <input type="range" id="qr-margin" min="0" max="10" value="4" step="1">
+                        </div>
+                    </div>
+
+                    <!-- Embed Tab -->
+                    <div class="tab-content" id="tab-embed">
+                        <div class="embed-toggle">
+                            <button class="embed-toggle-btn active" data-embed="none">None</button>
+                            <button class="embed-toggle-btn" data-embed="emoji">Emoji</button>
+                            <button class="embed-toggle-btn" data-embed="image">Image</button>
+                        </div>
+
+                        <div id="embed-none" class="embed-content">
+                            <p style="color: var(--text-muted); font-size: 0.85rem; text-align: center; padding: 20px;">
+                                No embedded content. Select emoji or image above.
+                            </p>
+                        </div>
+
+                        <div id="embed-emoji" class="embed-content hidden">
+                            <div class="form-group">
+                                <label>Choose an Emoji</label>
+                                <div class="emoji-grid" id="emoji-grid"></div>
+                            </div>
+                            <div class="slider-group">
+                                <div class="slider-header">
+                                    <label style="margin: 0;">Emoji Size</label>
+                                    <span class="slider-value" id="emoji-size-value">40px</span>
+                                </div>
+                                <input type="range" id="emoji-size" min="20" max="80" value="40" step="2">
+                            </div>
+                        </div>
+
+                        <div id="embed-image" class="embed-content hidden">
+                            <div class="form-group">
+                                <label>Upload Image</label>
+                                <div class="image-upload-area" id="image-upload-area">
+                                    <div id="upload-placeholder">
+                                        <div class="upload-icon">📁</div>
+                                        <div class="upload-text">Click or drag to upload an image</div>
+                                    </div>
+                                    <div id="upload-preview" class="hidden">
+                                        <img class="image-preview" id="preview-img" src="" alt="Preview">
+                                        <div class="upload-text">Image loaded ✓</div>
+                                    </div>
+                                    <input type="file" id="image-input" accept="image/*">
+                                </div>
+                                <button class="clear-image-btn hidden" id="clear-image-btn">✕ Remove Image</button>
+                            </div>
+                            <div class="slider-group">
+                                <div class="slider-header">
+                                    <label style="margin: 0;">Image Size</label>
+                                    <span class="slider-value" id="image-size-value">50px</span>
+                                </div>
+                                <input type="range" id="image-size" min="20" max="120" value="50" step="2">
+                            </div>
+                            <label class="checkbox-group">
+                                <input type="checkbox" id="image-round" checked>
+                                <span>Round image corners</span>
+                            </label>
+                            <label class="checkbox-group">
+                                <input type="checkbox" id="image-bg-white" checked>
+                                <span>White background behind image</span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Preview Panel -->
+            <div class="panel preview-panel">
+                <div class="panel-title">
+                    <div class="icon" style="background: var(--gradient2);">👁️</div>
+                    Preview
+                </div>
+
+                <div class="qr-preview-container" id="qr-container">
+                    <div id="qr-canvas-container">
+                        <canvas id="qr-canvas"></canvas>
+                    </div>
+                </div>
+
+                <div class="size-display" id="size-display">256 × 256 px</div>
+
+                <div class="btn-group">
+                    <button class="btn btn-primary" id="download-png">
+                        📥 PNG
+                    </button>
+                    <button class="btn btn-secondary" id="download-svg">
+                        📄 SVG
+                    </button>
+                    <button class="btn btn-secondary" id="copy-btn">
+                        📋 Copy
+                    </button>
+                </div>
+                <div class="btn-group" style="margin-top: 8px;">
+                    <button class="btn btn-danger" id="reset-btn">
+                        🔄 Reset All
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="toast" id="toast">Copied to clipboard!</div>
+
+    <script>
+        // ============ STATE ============
+        const DEFAULT_STATE = {
+            text: 'https://example.com',
+            fgColor: '#000000',
+            bgColor: '#ffffff',
+            useGradient: false,
+            gradientColor1: '#6c5ce7',
+            gradientColor2: '#00cec9',
+            size: 256,
+            errorCorrection: 'M',
+            dotStyle: 'square',
+            containerShape: 'square',
+            margin: 4,
+            embedType: 'none',
+            selectedEmoji: '',
+            emojiSize: 40,
+            imageData: '',
+            imageSize: 50,
+            imageRound: true,
+            imageBgWhite: true,
+            activeTab: 'colors'
+        };
+
+        let state = { ...DEFAULT_STATE };
+
+        const EMOJIS = [
+            '😀', '😎', '🥰', '🤩', '😇', '🤖', '👻', '💀',
+            '❤️', '🔥', '⭐', '🌈', '🎉', '🎵', '💎', '🏆',
+            '🚀', '🌍', '☀️', '🌙', '🍕', '🎮', '📱', '💻',
+            '🔒', '✅', '⚡', '🎯', '🦄', '🐱', '🐶', '🦊',
+            '🌸', '🍀', '🎨', '📸', '🎬', '🏠', '✈️', '🎁',
+            '👑', '💰', '🔔', '📌', '🧩', '🎲', '🏅', '🌟'
+        ];
+
+        // ============ DOM ELEMENTS ============
+        const els = {
+            text: document.getElementById('qr-text'),
+            fgColor: document.getElementById('fg-color'),
+            bgColor: document.getElementById('bg-color'),
+            useGradient: document.getElementById('use-gradient'),
+            gradientColors: document.getElementById('gradient-colors'),
+            gradientColor1: document.getElementById('gradient-color1'),
+            gradientColor2: document.getElementById('gradient-color2'),
+            size: document.getElementById('qr-size'),
+            sizeValue: document.getElementById('size-value'),
+            errorCorrection: document.getElementById('error-correction'),
+            margin: document.getElementById('qr-margin'),
+            marginValue: document.getElementById('margin-value'),
+            canvas: document.getElementById('qr-canvas'),
+            container: document.getElementById('qr-container'),
+            canvasContainer: document.getElementById('qr-canvas-container'),
+            sizeDisplay: document.getElementById('size-display'),
+            emojiGrid: document.getElementById('emoji-grid'),
+            emojiSize: document.getElementById('emoji-size'),
+            emojiSizeValue: document.getElementById('emoji-size-value'),
+            imageInput: document.getElementById('image-input'),
+            imageSize: document.getElementById('image-size'),
+            imageSizeValue: document.getElementById('image-size-value'),
+            imageRound: document.getElementById('image-round'),
+            imageBgWhite: document.getElementById('image-bg-white'),
+            previewImg: document.getElementById('preview-img'),
+            uploadPlaceholder: document.getElementById('upload-placeholder'),
+            uploadPreview: document.getElementById('upload-preview'),
+            clearImageBtn: document.getElementById('clear-image-btn'),
+            imageUploadArea: document.getElementById('image-upload-area'),
+            toast: document.getElementById('toast')
+        };
+
+        // ============ INIT ============
+        function init() {
+            loadState();
+            buildEmojiGrid();
+            bindEvents();
+            applyStateToUI();
+            generateQR();
+        }
+
+        function loadState() {
+            try {
+                const saved = localStorage.getItem('qr-generator-state');
+                if (saved) {
+                    const parsed = JSON.parse(saved);
+                    state = { ...DEFAULT_STATE, ...parsed };
+                }
+            } catch (e) {
+                console.warn('Failed to load state:', e);
+            }
+        }
+
+        function saveState() {
+            try {
+                localStorage.setItem('qr-generator-state', JSON.stringify(state));
+            } catch (e) {
+                console.warn('Failed to save state:', e);
+            }
+        }
+
+        function applyStateToUI() {
+            els.text.value = state.text;
+            els.fgColor.value = state.fgColor;
+            els.bgColor.value = state.bgColor;
+            els.useGradient.checked = state.useGradient;
+            els.gradientColors.classList.toggle('hidden', !state.useGradient);
+            els.gradientColor1.value = state.gradientColor1;
+            els.gradientColor2.value = state.gradientColor2;
+            els.size.value = state.size;
+            els.sizeValue.textContent = state.size + 'px';
+            els.errorCorrection.value = state.errorCorrection;
+            els.margin.value = state.margin;
+            els.marginValue.textContent = state.margin;
+            els.emojiSize.value = state.emojiSize;
+            els.emojiSizeValue.textContent = state.emojiSize + 'px';
+            els.imageSize.value = state.imageSize;
+            els.imageSizeValue.textContent = state.imageSize + 'px';
+            els.imageRound.checked = state.imageRound;
+            els.imageBgWhite.checked = state.imageBgWhite;
+
+            // Dot style
+            document.querySelectorAll('[data-dot-style]').forEach(el => {
+                el.classList.toggle('active', el.dataset.dotStyle === state.dotStyle);
+            });
+
+            // Container shape
+            document.querySelectorAll('[data-container]').forEach(el => {
+                el.classList.toggle('active', el.dataset.container === state.containerShape);
+            });
+            updateContainerShape();
+
+            // Embed type
+            document.querySelectorAll('[data-embed]').forEach(el => {
+                el.classList.toggle('active', el.dataset.embed === state.embedType);
+            });
+            updateEmbedVisibility();
+
+            // Emoji
+            document.querySelectorAll('.emoji-btn').forEach(el => {
+                el.classList.toggle('active', el.textContent === state.selectedEmoji);
+            });
+
+            // Image
+            if (state.imageData) {
+                els.previewImg.src = state.imageData;
+                els.uploadPlaceholder.classList.add('hidden');
+                els.uploadPreview.classList.remove('hidden');
+                els.clearImageBtn.classList.remove('hidden');
+                els.imageUploadArea.classList.add('has-image');
+            }
+
+            // Tab
+            document.querySelectorAll('.tab').forEach(t => {
+                t.classList.toggle('active', t.dataset.tab === state.activeTab);
+            });
+            document.querySelectorAll('.tab-content').forEach(tc => {
+                tc.classList.toggle('active', tc.id === 'tab-' + state.activeTab);
+            });
+
+            // Gradient presets
+            updateGradientPresetActive();
+        }
+
+        // ============ EMOJI GRID ============
+        function buildEmojiGrid() {
+            els.emojiGrid.innerHTML = '';
+            EMOJIS.forEach(emoji => {
+                const btn = document.createElement('button');
+                btn.className = 'emoji-btn';
+                btn.textContent = emoji;
+                if (emoji === state.selectedEmoji) btn.classList.add('active');
+                btn.addEventListener('click', () => {
+                    document.querySelectorAll('.emoji-btn').forEach(b => b.classList.remove('active'));
+                    if (state.selectedEmoji === emoji) {
+                        state.selectedEmoji = '';
+                    } else {
+                        state.selectedEmoji = emoji;
+                        btn.classList.add('active');
+                    }
+                    saveState();
+                    generateQR();
+                });
+                els.emojiGrid.appendChild(btn);
+            });
+        }
+
+        // ============ EVENTS ============
+        function bindEvents() {
+            let debounceTimer;
+            const debounceGenerate = () => {
+                clearTimeout(debounceTimer);
+                debounceTimer = setTimeout(() => {
+                    saveState();
+                    generateQR();
+                }, 150);
+            };
+
+            els.text.addEventListener('input', () => {
+                state.text = els.text.value;
+                debounceGenerate();
+            });
+
+            els.fgColor.addEventListener('input', () => {
+                state.fgColor = els.fgColor.value;
+                updateGradientPresetActive();
+                debounceGenerate();
+            });
+
+            els.bgColor.addEventListener('input', () => {
+                state.bgColor = els.bgColor.value;
+                updateGradientPresetActive();
+                debounceGenerate();
+            });
+
+            els.useGradient.addEventListener('change', () => {
+                state.useGradient = els.useGradient.checked;
+                els.gradientColors.classList.toggle('hidden', !state.useGradient);
+                saveState();
+                generateQR();
+            });
+
+            els.gradientColor1.addEventListener('input', () => {
+                state.gradientColor1 = els.gradientColor1.value;
+                debounceGenerate();
+            });
+
+            els.gradientColor2.addEventListener('input', () => {
+                state.gradientColor2 = els.gradientColor2.value;
+                debounceGenerate();
+            });
+
+            els.size.addEventListener('input', () => {
+                state.size = parseInt(els.size.value);
+                els.sizeValue.textContent = state.size + 'px';
+                debounceGenerate();
+            });
+
+            els.errorCorrection.addEventListener('change', () => {
+                state.errorCorrection = els.errorCorrection.value;
+                saveState();
+                generateQR();
+            });
+
+            els.margin.addEventListener('input', () => {
+                state.margin = parseInt(els.margin.value);
+                els.marginValue.textContent = state.margin;
+                debounceGenerate();
+            });
+
+            // Dot style
+            document.querySelectorAll('[data-dot-style]').forEach(el => {
+                el.addEventListener('click', () => {
+                    document.querySelectorAll('[data-dot-style]').forEach(e => e.classList.remove('active'));
+                    el.classList.add('active');
+                    state.dotStyle = el.dataset.dotStyle;
+                    saveState();
+                    generateQR();
+                });
+            });
+
+            // Container shape
+            document.querySelectorAll('[data-container]').forEach(el => {
+                el.addEventListener('click', () => {
+                    document.querySelectorAll('[data-container]').forEach(e => e.classList.remove('active'));
+                    el.classList.add('active');
+                    state.containerShape = el.dataset.container;
+                    updateContainerShape();
+                    saveState();
+                });
+            });
+
+            // Embed toggle
+            document.querySelectorAll('[data-embed]').forEach(el => {
+                el.addEventListener('click', () => {
+                    document.querySelectorAll('[data-embed]').forEach(e => e.classList.remove('active'));
+                    el.classList.add('active');
+                    state.embedType = el.dataset.embed;
+                    updateEmbedVisibility();
+                    saveState();
+                    generateQR();
+                });
+            });
+
+            // Emoji size
+            els.emojiSize.addEventListener('input', () => {
+                state.emojiSize = parseInt(els.emojiSize.value);
+                els.emojiSizeValue.textContent = state.emojiSize + 'px';
+                debounceGenerate();
+            });
+
+            // Image upload
+            els.imageInput.addEventListener('change', handleImageUpload);
+            els.clearImageBtn.addEventListener('click', clearImage);
+
+            els.imageSize.addEventListener('input', () => {
+                state.imageSize = parseInt(els.imageSize.value);
+                els.imageSizeValue.textContent = state.imageSize + 'px';
+                debounceGenerate();
+            });
+
+            els.imageRound.addEventListener('change', () => {
+                state.imageRound = els.imageRound.checked;
+                saveState();
+                generateQR();
+            });
+
+            els.imageBgWhite.addEventListener('change', () => {
+                state.imageBgWhite = els.imageBgWhite.checked;
+                saveState();
+                generateQR();
+            });
+
+            // Tabs
+            document.querySelectorAll('.tab').forEach(tab => {
+                tab.addEventListener('click', () => {
+                    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+                    document.querySelectorAll('.tab-content').forEach(tc => tc.classList.remove('active'));
+                    tab.classList.add('active');
+                    document.getElementById('tab-' + tab.dataset.tab).classList.add('active');
+                    state.activeTab = tab.dataset.tab;
+                    saveState();
+                });
+            });
+
+            // Gradient presets
+            document.querySelectorAll('.gradient-preset').forEach(el => {
+                el.addEventListener('click', () => {
+                    state.fgColor = el.dataset.fg;
+                    state.bgColor = el.dataset.bg;
+                    els.fgColor.value = state.fgColor;
+                    els.bgColor.value = state.bgColor;
+                    updateGradientPresetActive();
+                    saveState();
+                    generateQR();
+                });
+            });
+
+            // Download buttons
+            document.getElementById('download-png').addEventListener('click', downloadPNG);
+            document.getElementById('download-svg').addEventListener('click', downloadSVG);
+            document.getElementById('copy-btn').addEventListener('click', copyToClipboard);
+            document.getElementById('reset-btn').addEventListener('click', resetAll);
+        }
+
+        function updateEmbedVisibility() {
+            document.querySelectorAll('.embed-content').forEach(ec => ec.classList.add('hidden'));
+            document.getElementById('embed-' + state.embedType).classList.remove('hidden');
+        }
+
+        function updateContainerShape() {
+            els.container.className = 'qr-preview-container';
+            if (state.containerShape === 'rounded') els.container.classList.add('rounded');
+            if (state.containerShape === 'circle') els.container.classList.add('circle');
+        }
+
+        function updateGradientPresetActive() {
+            document.querySelectorAll('.gradient-preset').forEach(el => {
+                el.classList.toggle('active',
+                    el.dataset.fg === state.fgColor && el.dataset.bg === state.bgColor);
+            });
+        }
+
+        function handleImageUpload(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = (ev) => {
+                state.imageData = ev.target.result;
+                els.previewImg.src = state.imageData;
+                els.uploadPlaceholder.classList.add('hidden');
+                els.uploadPreview.classList.remove('hidden');
+                els.clearImageBtn.classList.remove('hidden');
+                els.imageUploadArea.classList.add('has-image');
+                saveState();
+                generateQR();
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function clearImage() {
+            state.imageData = '';
+            els.imageInput.value = '';
+            els.previewImg.src = '';
+            els.uploadPlaceholder.classList.remove('hidden');
+            els.uploadPreview.classList.add('hidden');
+            els.clearImageBtn.classList.add('hidden');
+            els.imageUploadArea.classList.remove('has-image');
+            saveState();
+            generateQR();
+        }
+
+        // ============ QR GENERATION ============
+        function generateQR() {
+            const text = state.text || ' ';
+            const size = state.size;
+            const canvas = els.canvas;
+            const ctx = canvas.getContext('2d');
+
+            // Generate QR data using a temporary div
+            const tempDiv = document.createElement('div');
+            tempDiv.style.display = 'none';
+            document.body.appendChild(tempDiv);
+
+            // Clear previous
+            tempDiv.innerHTML = '';
+
+            const ecLevels = { L: 1, M: 0, Q: 3, H: 2 };
+
+            try {
+                const qr = new QRCode(tempDiv, {
+                    text: text,
+                    width: size,
+                    height: size,
+                    colorDark: state.fgColor,
+                    colorLight: state.bgColor,
+                    correctLevel: ecLevels[state.errorCorrection] || 0
+                });
+
+                // Wait for QR to render
+                setTimeout(() => {
+                    const qrCanvas = tempDiv.querySelector('canvas');
+                    if (!qrCanvas) {
+                        document.body.removeChild(tempDiv);
+                        return;
+                    }
+
+                    // Get QR data from the generated canvas
+                    const qrCtx = qrCanvas.getContext('2d');
+                    const qrImageData = qrCtx.getImageData(0, 0, qrCanvas.width, qrCanvas.height);
+
+                    // Set our canvas size
+                    canvas.width = size;
+                    canvas.height = size;
+
+                    // Draw background
+                    ctx.fillStyle = state.bgColor;
+                    ctx.fillRect(0, 0, size, size);
+
+                    // Parse QR modules from the image data
+                    const moduleCount = detectModuleCount(qrImageData, qrCanvas.width);
+                    const margin = state.margin;
+                    const totalModules = moduleCount + margin * 2;
+                    const moduleSize = size / totalModules;
+
+                    // Extract module data
+                    const modules = extractModules(qrImageData, qrCanvas.width, moduleCount);
+
+                    // Draw with custom style
+                    if (state.useGradient) {
+                        const gradient = ctx.createLinearGradient(0, 0, size, size);
+                        gradient.addColorStop(0, state.gradientColor1);
+                        gradient.addColorStop(1, state.gradientColor2);
+                        ctx.fillStyle = gradient;
+                    } else {
+                        ctx.fillStyle = state.fgColor;
+                    }
+
+                    // Draw modules based on style
+                    for (let row = 0; row < moduleCount; row++) {
+                        for (let col = 0; col < moduleCount; col++) {
+                            if (modules[row] && modules[row][col]) {
+                                const x = (col + margin) * moduleSize;
+                                const y = (row + margin) * moduleSize;
+                                const s = moduleSize;
+
+                                drawModule(ctx, x, y, s, state.dotStyle);
+                            }
+                        }
+                    }
+
+                    // Draw embed
+                    drawEmbed(ctx, size);
+
+                    // Update size display
+                    els.sizeDisplay.textContent = `${size} × ${size} px`;
+
+                    // Update container bg
+                    els.container.style.backgroundColor = state.bgColor;
+
+                    document.body.removeChild(tempDiv);
+                }, 50);
+            } catch (e) {
+                console.error('QR generation error:', e);
+                document.body.removeChild(tempDiv);
+
+                // Draw error state
+                canvas.width = size;
+                canvas.height = size;
+                ctx.fillStyle = state.bgColor;
+                ctx.fillRect(0, 0, size, size);
+                ctx.fillStyle = state.fgColor;
+                ctx.font = '14px sans-serif';
+                ctx.textAlign = 'center';
+                ctx.fillText('Enter text to generate QR', size / 2, size / 2);
+            }
+        }
+
+        function detectModuleCount(imageData, canvasSize) {
+            const data = imageData.data;
+            // Scan the first row to find module boundaries
+            let firstDark = -1;
+            let lastDark = -1;
+
+            // Sample middle row
+            const midY = Math.floor(canvasSize / 2);
+
+            for (let x = 0; x < canvasSize; x++) {
+                const idx = (midY * canvasSize + x) * 4;
+                const brightness = data[idx] + data[idx + 1] + data[idx + 2];
+                if (brightness < 384) { // dark pixel
+                    if (firstDark === -1) firstDark = x;
+                    lastDark = x;
+                }
+            }
+
+            if (firstDark === -1) return 21; // default
+
+            // Count transitions in the middle row
+            let transitions = 0;
+            let wasDark = false;
+
+            for (let x = 0; x < canvasSize; x++) {
+                const idx = (midY * canvasSize + x) * 4;
+                const brightness = data[idx] + data[idx + 1] + data[idx + 2];
+                const isDark = brightness < 384;
+
+                if (isDark !== wasDark) {
+                    transitions++;
+                    wasDark = isDark;
+                }
+            }
+
+            // Estimate module count from transitions
+            const moduleCount = Math.round(transitions / 2) + 1;
+
+            // QR codes have standard sizes: 21, 25, 29, 33, ...
+            const standardSizes = [];
+            for (let v = 1; v <= 40; v++) {
+                standardSizes.push(17 + v * 4);
+            }
+
+            // Find closest standard size
+            let closest = 21;
+            let minDiff = Infinity;
+            for (const s of standardSizes) {
+                const diff = Math.abs(s - moduleCount);
+                if (diff < minDiff) {
+                    minDiff = diff;
+                    closest = s;
+                }
+            }
+
+            return closest;
+        }
+
+        function extractModules(imageData, canvasSize, moduleCount) {
+            const data = imageData.data;
+            const modulePixelSize = canvasSize / moduleCount;
+            const modules = [];
+
+            for (let row = 0; row < moduleCount; row++) {
+                modules[row] = [];
+                for (let col = 0; col < moduleCount; col++) {
+                    // Sample center of module
+                    const cx = Math.floor((col + 0.5) * modulePixelSize);
+                    const cy = Math.floor((row + 0.5) * modulePixelSize);
+
+                    if (cx >= canvasSize || cy >= canvasSize) {
+                        modules[row][col] = false;
+                        continue;
+                    }
+
+                    const idx = (cy * canvasSize + cx) * 4;
+                    const r = data[idx];
+                    const g = data[idx + 1];
+                    const b = data[idx + 2];
+
+                    // Compare with background color
+                    const bgR = parseInt(state.bgColor.slice(1, 3), 16);
+                    const bgG = parseInt(state.bgColor.slice(3, 5), 16);
+                    const bgB = parseInt(state.bgColor.slice(5, 7), 16);
+
+                    const distToBg = Math.sqrt((r - bgR) ** 2 + (g - bgG) ** 2 + (b - bgB) ** 2);
+                    modules[row][col] = distToBg > 100;
+                }
+            }
+
+            return modules;
+        }
+
+        function drawModule(ctx, x, y, size, style) {
+            const padding = size * 0.1;
+
+            switch (style) {
+                case 'rounded':
+                    const radius = size * 0.3;
+                    ctx.beginPath();
+                    ctx.moveTo(x + radius, y);
+                    ctx.lineTo(x + size - radius, y);
+                    ctx.quadraticCurveTo(x + size, y, x + size, y + radius);
+                    ctx.lineTo(x + size, y + size - radius);
+                    ctx.quadraticCurveTo(x + size, y + size, x + size - radius, y + size);
+                    ctx.lineTo(x + radius, y + size);
+                    ctx.quadraticCurveTo(x, y + size, x, y + size - radius);
+                    ctx.lineTo(x, y + radius);
+                    ctx.quadraticCurveTo(x, y, x + radius, y);
+                    ctx.closePath();
+                    ctx.fill();
+                    break;
+
+                case 'dots':
+                    const centerX = x + size / 2;
+                    const centerY = y + size / 2;
+                    const dotRadius = (size - padding * 2) / 2;
+                    ctx.beginPath();
+                    ctx.arc(centerX, centerY, dotRadius, 0, Math.PI * 2);
+                    ctx.fill();
+                    break;
+
+                case 'square':
+                default:
+                    ctx.fillRect(x, y, size, size);
+                    break;
+            }
+        }
+
+        function drawEmbed(ctx, size) {
+            if (state.embedType === 'emoji' && state.selectedEmoji) {
+                const emojiSize = state.emojiSize;
+                const bgPad = emojiSize * 0.3;
+
+                // Draw white background circle
+                ctx.fillStyle = state.bgColor;
+                ctx.beginPath();
+                ctx.arc(size / 2, size / 2, (emojiSize + bgPad) / 2, 0, Math.PI * 2);
+                ctx.fill();
+
+                // Draw emoji
+                ctx.font = `${emojiSize}px serif`;
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText(state.selectedEmoji, size / 2, size / 2);
+
+                // Reset fill style
+                if (state.useGradient) {
+                    const gradient = ctx.createLinearGradient(0, 0, size, size);
+                    gradient.addColorStop(0, state.gradientColor1);
+                    gradient.addColorStop(1, state.gradientColor2);
+                    ctx.fillStyle = gradient;
+                } else {
+                    ctx.fillStyle = state.fgColor;
+                }
+            } else if (state.embedType === 'image' && state.imageData) {
+                const img = new Image();
+                img.onload = () => {
+                    const imgSize = state.imageSize;
+                    const x = (size - imgSize) / 2;
+                    const y = (size - imgSize) / 2;
+                    const bgPad = 6;
+
+                    if (state.imageBgWhite) {
+                        ctx.fillStyle = state.bgColor;
+                        if (state.imageRound) {
+                            roundRect(ctx, x - bgPad, y - bgPad, imgSize + bgPad * 2, imgSize + bgPad * 2, 12);
+                        } else {
+                            ctx.fillRect(x - bgPad, y - bgPad, imgSize + bgPad * 2, imgSize + bgPad * 2);
+                        }
+                    }
+
+                    if (state.imageRound) {
+                        ctx.save();
+                        ctx.beginPath();
+                        roundRectPath(ctx, x, y, imgSize, imgSize, 10);
+                        ctx.clip();
+                        ctx.drawImage(img, x, y, imgSize, imgSize);
+                        ctx.restore();
+                    } else {
+                        ctx.drawImage(img, x, y, imgSize, imgSize);
+                    }
+                };
+                img.src = state.imageData;
+            }
+        }
+
+        function roundRect(ctx, x, y, w, h, r) {
+            ctx.beginPath();
+            roundRectPath(ctx, x, y, w, h, r);
+            ctx.fill();
+        }
+
+        function roundRectPath(ctx, x, y, w, h, r) {
+            ctx.moveTo(x + r, y);
+            ctx.lineTo(x + w - r, y);
+            ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+            ctx.lineTo(x + w, y + h - r);
+            ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+            ctx.lineTo(x + r, y + h);
+            ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+            ctx.lineTo(x, y + r);
+            ctx.quadraticCurveTo(x, y, x + r, y);
+            ctx.closePath();
+        }
+
+        // ============ DOWNLOAD / COPY ============
+        function downloadPNG() {
+            const canvas = els.canvas;
+            const link = document.createElement('a');
+            link.download = 'qrcode.png';
+            link.href = canvas.toDataURL('image/png');
+            link.click();
+            showToast('PNG downloaded! 📥');
+        }
+
+        function downloadSVG() {
+            const canvas = els.canvas;
+            const size = canvas.width;
+
+            // Create a simple SVG from the canvas
+            const imgData = canvas.toDataURL('image/png');
+            const svg = `<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="${size}" height="${size}" viewBox="0 0 ${size} ${size}">
+    <image width="${size}" height="${size}" xlink:href="${imgData}"/>
+</svg>`;
+
+            const blob = new Blob([svg], { type: 'image/svg+xml' });
+            const link = document.createElement('a');
+            link.download = 'qrcode.svg';
+            link.href = URL.createObjectURL(blob);
+            link.click();
+            URL.revokeObjectURL(link.href);
+            showToast('SVG downloaded! 📄');
+        }
+
+        async function copyToClipboard() {
+            try {
+                const canvas = els.canvas;
+                const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
+                await navigator.clipboard.write([
+                    new ClipboardItem({ 'image/png': blob })
+                ]);
+                showToast('Copied to clipboard! 📋');
+            } catch (e) {
+                // Fallback: copy data URL
+                try {
+                    const dataUrl = els.canvas.toDataURL('image/png');
+                    await navigator.clipboard.writeText(dataUrl);
+                    showToast('Data URL copied! 📋');
+                } catch (e2) {
+                    showToast('Failed to copy ❌');
+                }
+            }
+        }
+
+        function resetAll() {
+            state = { ...DEFAULT_STATE };
+            localStorage.removeItem('qr-generator-state');
+            clearImage();
+            applyStateToUI();
+            buildEmojiGrid();
+            generateQR();
+            showToast('Reset to defaults! 🔄');
+        }
+
+        function showToast(message) {
+            els.toast.textContent = message;
+            els.toast.classList.add('show');
+            setTimeout(() => {
+                els.toast.classList.remove('show');
+            }, 2500);
+        }
+
+        // ============ START ============
+        init();
+    </script>
+</body>
+</html>
