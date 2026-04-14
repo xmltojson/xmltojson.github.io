@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>QR Code Generator</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js"></script>
     <style>
         * {
             margin: 0;
@@ -206,6 +206,21 @@
             background-position: right 16px center;
         }
 
+        .char-count {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            text-align: right;
+            margin-top: 4px;
+        }
+
+        .char-count.warning {
+            color: #fdcb6e;
+        }
+
+        .char-count.danger {
+            color: #ff4757;
+        }
+
         .color-row {
             display: grid;
             grid-template-columns: 1fr 1fr;
@@ -284,10 +299,6 @@
             font-size: 1.5rem;
             margin-bottom: 6px;
             display: block;
-        }
-
-        .emoji-picker-section {
-            margin-bottom: 18px;
         }
 
         .emoji-grid {
@@ -468,60 +479,39 @@
             transform: scale(1.2);
         }
 
-        /* QR Preview Panel */
         .preview-panel {
             display: flex;
             flex-direction: column;
             align-items: center;
         }
 
-        .qr-preview-container {
-            background: white;
-            border-radius: 20px;
-            padding: 24px;
-            margin: 20px 0;
+        .qr-preview-wrapper {
             position: relative;
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            margin: 20px 0;
             transition: all 0.5s ease;
         }
 
-        .qr-preview-container.rounded {
+        .qr-preview-container {
+            border-radius: 20px;
+            padding: 24px;
+            position: relative;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            transition: all 0.5s ease;
+            display: inline-block;
+            overflow: hidden;
+        }
+
+        .qr-preview-container.shape-rounded {
             border-radius: 30px;
         }
 
-        .qr-preview-container.circle {
+        .qr-preview-container.shape-circle {
             border-radius: 50%;
             padding: 40px;
         }
 
-        #qr-canvas-container {
-            position: relative;
-            display: inline-block;
-        }
-
-        #qr-canvas-container canvas {
+        #qr-output-canvas {
             display: block;
-        }
-
-        .qr-overlay {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            pointer-events: none;
-        }
-
-        .qr-overlay img {
-            border-radius: 8px;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
-        }
-
-        .qr-overlay .emoji-overlay {
-            font-size: 2rem;
-            filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
         }
 
         .btn-group {
@@ -746,7 +736,6 @@
             transform: translateX(-50%) translateY(0);
         }
 
-        /* Scrollbar */
         .settings-scroll {
             max-height: calc(100vh - 200px);
             overflow-y: auto;
@@ -766,7 +755,28 @@
             border-radius: 3px;
         }
 
-        /* Responsive */
+        .error-msg {
+            background: rgba(255, 71, 87, 0.1);
+            border: 1px solid rgba(255, 71, 87, 0.3);
+            color: #ff6b81;
+            padding: 10px 14px;
+            border-radius: 10px;
+            font-size: 0.85rem;
+            margin-bottom: 14px;
+            display: none;
+        }
+
+        .error-msg.visible {
+            display: block;
+        }
+
+        .size-display {
+            text-align: center;
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            margin-top: 8px;
+        }
+
         @media (max-width: 768px) {
             .main-layout {
                 grid-template-columns: 1fr;
@@ -811,7 +821,6 @@
             }
         }
 
-        /* Landscape phone */
         @media (max-height: 500px) and (orientation: landscape) {
             .main-layout {
                 grid-template-columns: 1fr 1fr;
@@ -837,25 +846,6 @@
         .hidden {
             display: none !important;
         }
-
-        .bg-pattern-option {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .size-display {
-            text-align: center;
-            font-size: 0.8rem;
-            color: var(--text-muted);
-            margin-top: 8px;
-        }
-
-        .section-divider {
-            height: 1px;
-            background: var(--border);
-            margin: 20px 0;
-        }
     </style>
 </head>
 <body>
@@ -872,7 +862,6 @@
         </header>
 
         <div class="main-layout">
-            <!-- Settings Panel -->
             <div class="panel">
                 <div class="settings-scroll">
                     <div class="panel-title">
@@ -880,32 +869,32 @@
                         Settings
                     </div>
 
-                    <!-- Content Input -->
+                    <div class="error-msg" id="error-msg"></div>
+
                     <div class="form-group">
                         <label>Content</label>
-                        <textarea id="qr-text" placeholder="Enter URL, text, or any data...">https://example.com</textarea>
+                        <textarea id="qr-text" placeholder="Enter URL, text, or any data..." maxlength="2953">https://example.com</textarea>
+                        <div class="char-count" id="char-count">18 / 2953</div>
                     </div>
 
-                    <!-- Tabs -->
                     <div class="tabs">
                         <button class="tab active" data-tab="colors">🎨 Colors</button>
                         <button class="tab" data-tab="style">✏️ Style</button>
                         <button class="tab" data-tab="embed">🖼️ Embed</button>
                     </div>
 
-                    <!-- Colors Tab -->
                     <div class="tab-content active" id="tab-colors">
                         <div class="form-group">
                             <label>Gradient Presets</label>
                             <div class="gradient-presets">
-                                <div class="gradient-preset" style="background: linear-gradient(135deg, #000000, #000000);" data-fg="#000000" data-bg="#ffffff"></div>
+                                <div class="gradient-preset" style="background: linear-gradient(135deg, #000, #333);" data-fg="#000000" data-bg="#ffffff"></div>
                                 <div class="gradient-preset" style="background: linear-gradient(135deg, #6c5ce7, #a29bfe);" data-fg="#6c5ce7" data-bg="#ffffff"></div>
                                 <div class="gradient-preset" style="background: linear-gradient(135deg, #00b894, #00cec9);" data-fg="#00b894" data-bg="#ffffff"></div>
                                 <div class="gradient-preset" style="background: linear-gradient(135deg, #e17055, #fdcb6e);" data-fg="#e17055" data-bg="#ffffff"></div>
                                 <div class="gradient-preset" style="background: linear-gradient(135deg, #0984e3, #74b9ff);" data-fg="#0984e3" data-bg="#ffffff"></div>
                                 <div class="gradient-preset" style="background: linear-gradient(135deg, #d63031, #ff7675);" data-fg="#d63031" data-bg="#ffffff"></div>
                                 <div class="gradient-preset" style="background: linear-gradient(135deg, #fdcb6e, #ffeaa7);" data-fg="#fdcb6e" data-bg="#2d3436"></div>
-                                <div class="gradient-preset" style="background: linear-gradient(135deg, #ffffff, #dfe6e9);" data-fg="#ffffff" data-bg="#2d3436"></div>
+                                <div class="gradient-preset" style="background: linear-gradient(135deg, #dfe6e9, #b2bec3);" data-fg="#ffffff" data-bg="#2d3436"></div>
                             </div>
                         </div>
 
@@ -942,26 +931,22 @@
                         </div>
                     </div>
 
-                    <!-- Style Tab -->
                     <div class="tab-content" id="tab-style">
-                        <div class="form-group">
-                            <label>QR Size</label>
-                            <div class="slider-group">
-                                <div class="slider-header">
-                                    <label style="margin: 0;">Size</label>
-                                    <span class="slider-value" id="size-value">256px</span>
-                                </div>
-                                <input type="range" id="qr-size" min="128" max="512" value="256" step="16">
+                        <div class="slider-group">
+                            <div class="slider-header">
+                                <label style="margin: 0;">QR Size</label>
+                                <span class="slider-value" id="size-value">256px</span>
                             </div>
+                            <input type="range" id="qr-size" min="128" max="512" value="256" step="16">
                         </div>
 
                         <div class="form-group">
                             <label>Error Correction</label>
                             <select id="error-correction">
-                                <option value="L">Low (7%)</option>
+                                <option value="L">Low (7%) — more data</option>
                                 <option value="M" selected>Medium (15%)</option>
                                 <option value="Q">Quartile (25%)</option>
-                                <option value="H">High (30%)</option>
+                                <option value="H">High (30%) — best for logos</option>
                             </select>
                         </div>
 
@@ -1010,7 +995,6 @@
                         </div>
                     </div>
 
-                    <!-- Embed Tab -->
                     <div class="tab-content" id="tab-embed">
                         <div class="embed-toggle">
                             <button class="embed-toggle-btn active" data-embed="none">None</button>
@@ -1020,7 +1004,8 @@
 
                         <div id="embed-none" class="embed-content">
                             <p style="color: var(--text-muted); font-size: 0.85rem; text-align: center; padding: 20px;">
-                                No embedded content. Select emoji or image above.
+                                No embedded content. Select emoji or image above.<br><br>
+                                <em>Tip: Use "High" error correction when embedding logos.</em>
                             </p>
                         </div>
 
@@ -1034,7 +1019,7 @@
                                     <label style="margin: 0;">Emoji Size</label>
                                     <span class="slider-value" id="emoji-size-value">40px</span>
                                 </div>
-                                <input type="range" id="emoji-size" min="20" max="80" value="40" step="2">
+                                <input type="range" id="emoji-size" min="16" max="80" value="40" step="2">
                             </div>
                         </div>
 
@@ -1074,36 +1059,27 @@
                 </div>
             </div>
 
-            <!-- Preview Panel -->
             <div class="panel preview-panel">
                 <div class="panel-title">
                     <div class="icon" style="background: var(--gradient2);">👁️</div>
                     Preview
                 </div>
 
-                <div class="qr-preview-container" id="qr-container">
-                    <div id="qr-canvas-container">
-                        <canvas id="qr-canvas"></canvas>
+                <div class="qr-preview-wrapper">
+                    <div class="qr-preview-container" id="qr-container">
+                        <canvas id="qr-output-canvas" width="256" height="256"></canvas>
                     </div>
                 </div>
 
                 <div class="size-display" id="size-display">256 × 256 px</div>
 
                 <div class="btn-group">
-                    <button class="btn btn-primary" id="download-png">
-                        📥 PNG
-                    </button>
-                    <button class="btn btn-secondary" id="download-svg">
-                        📄 SVG
-                    </button>
-                    <button class="btn btn-secondary" id="copy-btn">
-                        📋 Copy
-                    </button>
+                    <button class="btn btn-primary" id="download-png">📥 PNG</button>
+                    <button class="btn btn-secondary" id="download-svg">📄 SVG</button>
+                    <button class="btn btn-secondary" id="copy-btn">📋 Copy</button>
                 </div>
                 <div class="btn-group" style="margin-top: 8px;">
-                    <button class="btn btn-danger" id="reset-btn">
-                        🔄 Reset All
-                    </button>
+                    <button class="btn btn-danger" id="reset-btn">🔄 Reset All</button>
                 </div>
             </div>
         </div>
@@ -1112,7 +1088,9 @@
     <div class="toast" id="toast">Copied to clipboard!</div>
 
     <script>
-        // ============ STATE ============
+    (function() {
+        'use strict';
+
         const DEFAULT_STATE = {
             text: 'https://example.com',
             fgColor: '#000000',
@@ -1121,7 +1099,7 @@
             gradientColor1: '#6c5ce7',
             gradientColor2: '#00cec9',
             size: 256,
-            errorCorrection: 'M',
+            errorCorrection: 'H',
             dotStyle: 'square',
             containerShape: 'square',
             margin: 4,
@@ -1135,82 +1113,83 @@
             activeTab: 'colors'
         };
 
-        let state = { ...DEFAULT_STATE };
+        let state = JSON.parse(JSON.stringify(DEFAULT_STATE));
+        let loadedEmbedImage = null;
 
         const EMOJIS = [
-            '😀', '😎', '🥰', '🤩', '😇', '🤖', '👻', '💀',
-            '❤️', '🔥', '⭐', '🌈', '🎉', '🎵', '💎', '🏆',
-            '🚀', '🌍', '☀️', '🌙', '🍕', '🎮', '📱', '💻',
-            '🔒', '✅', '⚡', '🎯', '🦄', '🐱', '🐶', '🦊',
-            '🌸', '🍀', '🎨', '📸', '🎬', '🏠', '✈️', '🎁',
-            '👑', '💰', '🔔', '📌', '🧩', '🎲', '🏅', '🌟'
+            '😀','😎','🥰','🤩','😇','🤖','👻','💀',
+            '❤️','🔥','⭐','🌈','🎉','🎵','💎','🏆',
+            '🚀','🌍','☀️','🌙','🍕','🎮','📱','💻',
+            '🔒','✅','⚡','🎯','🦄','🐱','🐶','🦊',
+            '🌸','🍀','🎨','📸','🎬','🏠','✈️','🎁',
+            '👑','💰','🔔','📌','🧩','🎲','🏅','🌟'
         ];
 
-        // ============ DOM ELEMENTS ============
+        const EC_MAP = { L: 1, M: 0, Q: 3, H: 2 };
+
+        // Max bytes per EC level for version 40
+        const MAX_BINARY_CAPACITY = { L: 2953, M: 2331, Q: 1663, H: 1273 };
+
+        const $ = id => document.getElementById(id);
+        const $$ = sel => document.querySelectorAll(sel);
+
         const els = {
-            text: document.getElementById('qr-text'),
-            fgColor: document.getElementById('fg-color'),
-            bgColor: document.getElementById('bg-color'),
-            useGradient: document.getElementById('use-gradient'),
-            gradientColors: document.getElementById('gradient-colors'),
-            gradientColor1: document.getElementById('gradient-color1'),
-            gradientColor2: document.getElementById('gradient-color2'),
-            size: document.getElementById('qr-size'),
-            sizeValue: document.getElementById('size-value'),
-            errorCorrection: document.getElementById('error-correction'),
-            margin: document.getElementById('qr-margin'),
-            marginValue: document.getElementById('margin-value'),
-            canvas: document.getElementById('qr-canvas'),
-            container: document.getElementById('qr-container'),
-            canvasContainer: document.getElementById('qr-canvas-container'),
-            sizeDisplay: document.getElementById('size-display'),
-            emojiGrid: document.getElementById('emoji-grid'),
-            emojiSize: document.getElementById('emoji-size'),
-            emojiSizeValue: document.getElementById('emoji-size-value'),
-            imageInput: document.getElementById('image-input'),
-            imageSize: document.getElementById('image-size'),
-            imageSizeValue: document.getElementById('image-size-value'),
-            imageRound: document.getElementById('image-round'),
-            imageBgWhite: document.getElementById('image-bg-white'),
-            previewImg: document.getElementById('preview-img'),
-            uploadPlaceholder: document.getElementById('upload-placeholder'),
-            uploadPreview: document.getElementById('upload-preview'),
-            clearImageBtn: document.getElementById('clear-image-btn'),
-            imageUploadArea: document.getElementById('image-upload-area'),
-            toast: document.getElementById('toast')
+            text: $('qr-text'),
+            charCount: $('char-count'),
+            errorMsg: $('error-msg'),
+            fgColor: $('fg-color'),
+            bgColor: $('bg-color'),
+            useGradient: $('use-gradient'),
+            gradientColors: $('gradient-colors'),
+            gradientColor1: $('gradient-color1'),
+            gradientColor2: $('gradient-color2'),
+            size: $('qr-size'),
+            sizeValue: $('size-value'),
+            errorCorrection: $('error-correction'),
+            margin: $('qr-margin'),
+            marginValue: $('margin-value'),
+            canvas: $('qr-output-canvas'),
+            container: $('qr-container'),
+            sizeDisplay: $('size-display'),
+            emojiGrid: $('emoji-grid'),
+            emojiSize: $('emoji-size'),
+            emojiSizeValue: $('emoji-size-value'),
+            imageInput: $('image-input'),
+            imageSize: $('image-size'),
+            imageSizeValue: $('image-size-value'),
+            imageRound: $('image-round'),
+            imageBgWhite: $('image-bg-white'),
+            previewImg: $('preview-img'),
+            uploadPlaceholder: $('upload-placeholder'),
+            uploadPreview: $('upload-preview'),
+            clearImageBtn: $('clear-image-btn'),
+            imageUploadArea: $('image-upload-area'),
+            toast: $('toast')
         };
 
-        // ============ INIT ============
-        function init() {
-            loadState();
-            buildEmojiGrid();
-            bindEvents();
-            applyStateToUI();
-            generateQR();
-        }
+        // ===================== STATE PERSISTENCE =====================
 
         function loadState() {
             try {
-                const saved = localStorage.getItem('qr-generator-state');
+                const saved = localStorage.getItem('qr-gen-pro-state');
                 if (saved) {
                     const parsed = JSON.parse(saved);
                     state = { ...DEFAULT_STATE, ...parsed };
                 }
-            } catch (e) {
-                console.warn('Failed to load state:', e);
-            }
+            } catch (e) { /* ignore */ }
         }
 
         function saveState() {
             try {
-                localStorage.setItem('qr-generator-state', JSON.stringify(state));
-            } catch (e) {
-                console.warn('Failed to save state:', e);
-            }
+                localStorage.setItem('qr-gen-pro-state', JSON.stringify(state));
+            } catch (e) { /* ignore */ }
         }
+
+        // ===================== UI SYNC =====================
 
         function applyStateToUI() {
             els.text.value = state.text;
+            updateCharCount();
             els.fgColor.value = state.fgColor;
             els.bgColor.value = state.bgColor;
             els.useGradient.checked = state.useGradient;
@@ -1229,30 +1208,28 @@
             els.imageRound.checked = state.imageRound;
             els.imageBgWhite.checked = state.imageBgWhite;
 
-            // Dot style
-            document.querySelectorAll('[data-dot-style]').forEach(el => {
+            $$('[data-dot-style]').forEach(el => {
                 el.classList.toggle('active', el.dataset.dotStyle === state.dotStyle);
             });
-
-            // Container shape
-            document.querySelectorAll('[data-container]').forEach(el => {
+            $$('[data-container]').forEach(el => {
                 el.classList.toggle('active', el.dataset.container === state.containerShape);
             });
             updateContainerShape();
 
-            // Embed type
-            document.querySelectorAll('[data-embed]').forEach(el => {
+            $$('[data-embed]').forEach(el => {
                 el.classList.toggle('active', el.dataset.embed === state.embedType);
             });
             updateEmbedVisibility();
 
-            // Emoji
-            document.querySelectorAll('.emoji-btn').forEach(el => {
-                el.classList.toggle('active', el.textContent === state.selectedEmoji);
-            });
+            // Tab
+            $$('.tab').forEach(t => t.classList.toggle('active', t.dataset.tab === state.activeTab));
+            $$('.tab-content').forEach(tc => tc.classList.toggle('active', tc.id === 'tab-' + state.activeTab));
 
             // Image
             if (state.imageData) {
+                loadedEmbedImage = new Image();
+                loadedEmbedImage.onload = () => generateQR();
+                loadedEmbedImage.src = state.imageData;
                 els.previewImg.src = state.imageData;
                 els.uploadPlaceholder.classList.add('hidden');
                 els.uploadPreview.classList.remove('hidden');
@@ -1260,19 +1237,54 @@
                 els.imageUploadArea.classList.add('has-image');
             }
 
-            // Tab
-            document.querySelectorAll('.tab').forEach(t => {
-                t.classList.toggle('active', t.dataset.tab === state.activeTab);
-            });
-            document.querySelectorAll('.tab-content').forEach(tc => {
-                tc.classList.toggle('active', tc.id === 'tab-' + state.activeTab);
-            });
-
-            // Gradient presets
             updateGradientPresetActive();
         }
 
-        // ============ EMOJI GRID ============
+        function updateCharCount() {
+            const len = new TextEncoder().encode(state.text).length;
+            const max = MAX_BINARY_CAPACITY[state.errorCorrection] || 2953;
+            els.charCount.textContent = `${len} / ${max} bytes`;
+            els.charCount.className = 'char-count';
+            if (len > max) els.charCount.classList.add('danger');
+            else if (len > max * 0.8) els.charCount.classList.add('warning');
+        }
+
+        function updateContainerShape() {
+            els.container.className = 'qr-preview-container';
+            if (state.containerShape !== 'square') {
+                els.container.classList.add('shape-' + state.containerShape);
+            }
+        }
+
+        function updateEmbedVisibility() {
+            $$('.embed-content').forEach(ec => ec.classList.add('hidden'));
+            $('embed-' + state.embedType).classList.remove('hidden');
+        }
+
+        function updateGradientPresetActive() {
+            $$('.gradient-preset').forEach(el => {
+                el.classList.toggle('active',
+                    el.dataset.fg === state.fgColor && el.dataset.bg === state.bgColor);
+            });
+        }
+
+        function showError(msg) {
+            els.errorMsg.textContent = msg;
+            els.errorMsg.classList.add('visible');
+        }
+
+        function hideError() {
+            els.errorMsg.classList.remove('visible');
+        }
+
+        function showToast(msg) {
+            els.toast.textContent = msg;
+            els.toast.classList.add('show');
+            setTimeout(() => els.toast.classList.remove('show'), 2500);
+        }
+
+        // ===================== EMOJI GRID =====================
+
         function buildEmojiGrid() {
             els.emojiGrid.innerHTML = '';
             EMOJIS.forEach(emoji => {
@@ -1281,7 +1293,7 @@
                 btn.textContent = emoji;
                 if (emoji === state.selectedEmoji) btn.classList.add('active');
                 btn.addEventListener('click', () => {
-                    document.querySelectorAll('.emoji-btn').forEach(b => b.classList.remove('active'));
+                    $$('.emoji-btn').forEach(b => b.classList.remove('active'));
                     if (state.selectedEmoji === emoji) {
                         state.selectedEmoji = '';
                     } else {
@@ -1295,506 +1307,204 @@
             });
         }
 
-        // ============ EVENTS ============
-        function bindEvents() {
-            let debounceTimer;
-            const debounceGenerate = () => {
-                clearTimeout(debounceTimer);
-                debounceTimer = setTimeout(() => {
-                    saveState();
-                    generateQR();
-                }, 150);
-            };
+        // ===================== QR GENERATION (qrcode-generator lib) =====================
 
-            els.text.addEventListener('input', () => {
-                state.text = els.text.value;
-                debounceGenerate();
-            });
-
-            els.fgColor.addEventListener('input', () => {
-                state.fgColor = els.fgColor.value;
-                updateGradientPresetActive();
-                debounceGenerate();
-            });
-
-            els.bgColor.addEventListener('input', () => {
-                state.bgColor = els.bgColor.value;
-                updateGradientPresetActive();
-                debounceGenerate();
-            });
-
-            els.useGradient.addEventListener('change', () => {
-                state.useGradient = els.useGradient.checked;
-                els.gradientColors.classList.toggle('hidden', !state.useGradient);
-                saveState();
-                generateQR();
-            });
-
-            els.gradientColor1.addEventListener('input', () => {
-                state.gradientColor1 = els.gradientColor1.value;
-                debounceGenerate();
-            });
-
-            els.gradientColor2.addEventListener('input', () => {
-                state.gradientColor2 = els.gradientColor2.value;
-                debounceGenerate();
-            });
-
-            els.size.addEventListener('input', () => {
-                state.size = parseInt(els.size.value);
-                els.sizeValue.textContent = state.size + 'px';
-                debounceGenerate();
-            });
-
-            els.errorCorrection.addEventListener('change', () => {
-                state.errorCorrection = els.errorCorrection.value;
-                saveState();
-                generateQR();
-            });
-
-            els.margin.addEventListener('input', () => {
-                state.margin = parseInt(els.margin.value);
-                els.marginValue.textContent = state.margin;
-                debounceGenerate();
-            });
-
-            // Dot style
-            document.querySelectorAll('[data-dot-style]').forEach(el => {
-                el.addEventListener('click', () => {
-                    document.querySelectorAll('[data-dot-style]').forEach(e => e.classList.remove('active'));
-                    el.classList.add('active');
-                    state.dotStyle = el.dataset.dotStyle;
-                    saveState();
-                    generateQR();
-                });
-            });
-
-            // Container shape
-            document.querySelectorAll('[data-container]').forEach(el => {
-                el.addEventListener('click', () => {
-                    document.querySelectorAll('[data-container]').forEach(e => e.classList.remove('active'));
-                    el.classList.add('active');
-                    state.containerShape = el.dataset.container;
-                    updateContainerShape();
-                    saveState();
-                });
-            });
-
-            // Embed toggle
-            document.querySelectorAll('[data-embed]').forEach(el => {
-                el.addEventListener('click', () => {
-                    document.querySelectorAll('[data-embed]').forEach(e => e.classList.remove('active'));
-                    el.classList.add('active');
-                    state.embedType = el.dataset.embed;
-                    updateEmbedVisibility();
-                    saveState();
-                    generateQR();
-                });
-            });
-
-            // Emoji size
-            els.emojiSize.addEventListener('input', () => {
-                state.emojiSize = parseInt(els.emojiSize.value);
-                els.emojiSizeValue.textContent = state.emojiSize + 'px';
-                debounceGenerate();
-            });
-
-            // Image upload
-            els.imageInput.addEventListener('change', handleImageUpload);
-            els.clearImageBtn.addEventListener('click', clearImage);
-
-            els.imageSize.addEventListener('input', () => {
-                state.imageSize = parseInt(els.imageSize.value);
-                els.imageSizeValue.textContent = state.imageSize + 'px';
-                debounceGenerate();
-            });
-
-            els.imageRound.addEventListener('change', () => {
-                state.imageRound = els.imageRound.checked;
-                saveState();
-                generateQR();
-            });
-
-            els.imageBgWhite.addEventListener('change', () => {
-                state.imageBgWhite = els.imageBgWhite.checked;
-                saveState();
-                generateQR();
-            });
-
-            // Tabs
-            document.querySelectorAll('.tab').forEach(tab => {
-                tab.addEventListener('click', () => {
-                    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-                    document.querySelectorAll('.tab-content').forEach(tc => tc.classList.remove('active'));
-                    tab.classList.add('active');
-                    document.getElementById('tab-' + tab.dataset.tab).classList.add('active');
-                    state.activeTab = tab.dataset.tab;
-                    saveState();
-                });
-            });
-
-            // Gradient presets
-            document.querySelectorAll('.gradient-preset').forEach(el => {
-                el.addEventListener('click', () => {
-                    state.fgColor = el.dataset.fg;
-                    state.bgColor = el.dataset.bg;
-                    els.fgColor.value = state.fgColor;
-                    els.bgColor.value = state.bgColor;
-                    updateGradientPresetActive();
-                    saveState();
-                    generateQR();
-                });
-            });
-
-            // Download buttons
-            document.getElementById('download-png').addEventListener('click', downloadPNG);
-            document.getElementById('download-svg').addEventListener('click', downloadSVG);
-            document.getElementById('copy-btn').addEventListener('click', copyToClipboard);
-            document.getElementById('reset-btn').addEventListener('click', resetAll);
+        function getBestTypeNumber(text, ecLevel) {
+            for (let t = 1; t <= 40; t++) {
+                try {
+                    const qr = qrcode(t, ecLevel);
+                    qr.addData(text);
+                    qr.make();
+                    return t;
+                } catch (e) {
+                    continue;
+                }
+            }
+            return -1;
         }
 
-        function updateEmbedVisibility() {
-            document.querySelectorAll('.embed-content').forEach(ec => ec.classList.add('hidden'));
-            document.getElementById('embed-' + state.embedType).classList.remove('hidden');
-        }
-
-        function updateContainerShape() {
-            els.container.className = 'qr-preview-container';
-            if (state.containerShape === 'rounded') els.container.classList.add('rounded');
-            if (state.containerShape === 'circle') els.container.classList.add('circle');
-        }
-
-        function updateGradientPresetActive() {
-            document.querySelectorAll('.gradient-preset').forEach(el => {
-                el.classList.toggle('active',
-                    el.dataset.fg === state.fgColor && el.dataset.bg === state.bgColor);
-            });
-        }
-
-        function handleImageUpload(e) {
-            const file = e.target.files[0];
-            if (!file) return;
-
-            const reader = new FileReader();
-            reader.onload = (ev) => {
-                state.imageData = ev.target.result;
-                els.previewImg.src = state.imageData;
-                els.uploadPlaceholder.classList.add('hidden');
-                els.uploadPreview.classList.remove('hidden');
-                els.clearImageBtn.classList.remove('hidden');
-                els.imageUploadArea.classList.add('has-image');
-                saveState();
-                generateQR();
-            };
-            reader.readAsDataURL(file);
-        }
-
-        function clearImage() {
-            state.imageData = '';
-            els.imageInput.value = '';
-            els.previewImg.src = '';
-            els.uploadPlaceholder.classList.remove('hidden');
-            els.uploadPreview.classList.add('hidden');
-            els.clearImageBtn.classList.add('hidden');
-            els.imageUploadArea.classList.remove('has-image');
-            saveState();
-            generateQR();
-        }
-
-        // ============ QR GENERATION ============
         function generateQR() {
+            hideError();
             const text = state.text || ' ';
             const size = state.size;
+            const ecChar = state.errorCorrection;
             const canvas = els.canvas;
             const ctx = canvas.getContext('2d');
 
-            // Generate QR data using a temporary div
-            const tempDiv = document.createElement('div');
-            tempDiv.style.display = 'none';
-            document.body.appendChild(tempDiv);
-
-            // Clear previous
-            tempDiv.innerHTML = '';
-
-            const ecLevels = { L: 1, M: 0, Q: 3, H: 2 };
-
-            try {
-                const qr = new QRCode(tempDiv, {
-                    text: text,
-                    width: size,
-                    height: size,
-                    colorDark: state.fgColor,
-                    colorLight: state.bgColor,
-                    correctLevel: ecLevels[state.errorCorrection] || 0
-                });
-
-                // Wait for QR to render
-                setTimeout(() => {
-                    const qrCanvas = tempDiv.querySelector('canvas');
-                    if (!qrCanvas) {
-                        document.body.removeChild(tempDiv);
-                        return;
-                    }
-
-                    // Get QR data from the generated canvas
-                    const qrCtx = qrCanvas.getContext('2d');
-                    const qrImageData = qrCtx.getImageData(0, 0, qrCanvas.width, qrCanvas.height);
-
-                    // Set our canvas size
-                    canvas.width = size;
-                    canvas.height = size;
-
-                    // Draw background
-                    ctx.fillStyle = state.bgColor;
-                    ctx.fillRect(0, 0, size, size);
-
-                    // Parse QR modules from the image data
-                    const moduleCount = detectModuleCount(qrImageData, qrCanvas.width);
-                    const margin = state.margin;
-                    const totalModules = moduleCount + margin * 2;
-                    const moduleSize = size / totalModules;
-
-                    // Extract module data
-                    const modules = extractModules(qrImageData, qrCanvas.width, moduleCount);
-
-                    // Draw with custom style
-                    if (state.useGradient) {
-                        const gradient = ctx.createLinearGradient(0, 0, size, size);
-                        gradient.addColorStop(0, state.gradientColor1);
-                        gradient.addColorStop(1, state.gradientColor2);
-                        ctx.fillStyle = gradient;
-                    } else {
-                        ctx.fillStyle = state.fgColor;
-                    }
-
-                    // Draw modules based on style
-                    for (let row = 0; row < moduleCount; row++) {
-                        for (let col = 0; col < moduleCount; col++) {
-                            if (modules[row] && modules[row][col]) {
-                                const x = (col + margin) * moduleSize;
-                                const y = (row + margin) * moduleSize;
-                                const s = moduleSize;
-
-                                drawModule(ctx, x, y, s, state.dotStyle);
-                            }
-                        }
-                    }
-
-                    // Draw embed
-                    drawEmbed(ctx, size);
-
-                    // Update size display
-                    els.sizeDisplay.textContent = `${size} × ${size} px`;
-
-                    // Update container bg
-                    els.container.style.backgroundColor = state.bgColor;
-
-                    document.body.removeChild(tempDiv);
-                }, 50);
-            } catch (e) {
-                console.error('QR generation error:', e);
-                document.body.removeChild(tempDiv);
-
-                // Draw error state
+            // Find best type number
+            const typeNum = getBestTypeNumber(text, ecChar);
+            if (typeNum < 0) {
+                showError('Text is too long for QR encoding. Shorten your text or lower error correction.');
                 canvas.width = size;
                 canvas.height = size;
                 ctx.fillStyle = state.bgColor;
                 ctx.fillRect(0, 0, size, size);
-                ctx.fillStyle = state.fgColor;
-                ctx.font = '14px sans-serif';
+                ctx.fillStyle = '#ff4757';
+                ctx.font = 'bold 14px sans-serif';
                 ctx.textAlign = 'center';
-                ctx.fillText('Enter text to generate QR', size / 2, size / 2);
-            }
-        }
-
-        function detectModuleCount(imageData, canvasSize) {
-            const data = imageData.data;
-            // Scan the first row to find module boundaries
-            let firstDark = -1;
-            let lastDark = -1;
-
-            // Sample middle row
-            const midY = Math.floor(canvasSize / 2);
-
-            for (let x = 0; x < canvasSize; x++) {
-                const idx = (midY * canvasSize + x) * 4;
-                const brightness = data[idx] + data[idx + 1] + data[idx + 2];
-                if (brightness < 384) { // dark pixel
-                    if (firstDark === -1) firstDark = x;
-                    lastDark = x;
-                }
+                ctx.textBaseline = 'middle';
+                ctx.fillText('Text too long!', size / 2, size / 2);
+                return;
             }
 
-            if (firstDark === -1) return 21; // default
-
-            // Count transitions in the middle row
-            let transitions = 0;
-            let wasDark = false;
-
-            for (let x = 0; x < canvasSize; x++) {
-                const idx = (midY * canvasSize + x) * 4;
-                const brightness = data[idx] + data[idx + 1] + data[idx + 2];
-                const isDark = brightness < 384;
-
-                if (isDark !== wasDark) {
-                    transitions++;
-                    wasDark = isDark;
-                }
+            let qr;
+            try {
+                qr = qrcode(typeNum, ecChar);
+                qr.addData(text);
+                qr.make();
+            } catch (e) {
+                showError('QR generation failed: ' + e.message);
+                return;
             }
 
-            // Estimate module count from transitions
-            const moduleCount = Math.round(transitions / 2) + 1;
+            const moduleCount = qr.getModuleCount();
+            const marginModules = state.margin;
+            const totalModules = moduleCount + marginModules * 2;
+            const cellSize = size / totalModules;
 
-            // QR codes have standard sizes: 21, 25, 29, 33, ...
-            const standardSizes = [];
-            for (let v = 1; v <= 40; v++) {
-                standardSizes.push(17 + v * 4);
+            canvas.width = size;
+            canvas.height = size;
+
+            // Background
+            ctx.fillStyle = state.bgColor;
+            ctx.fillRect(0, 0, size, size);
+
+            // Foreground fill style
+            let fgStyle;
+            if (state.useGradient) {
+                const grad = ctx.createLinearGradient(0, 0, size, size);
+                grad.addColorStop(0, state.gradientColor1);
+                grad.addColorStop(1, state.gradientColor2);
+                fgStyle = grad;
+            } else {
+                fgStyle = state.fgColor;
             }
 
-            // Find closest standard size
-            let closest = 21;
-            let minDiff = Infinity;
-            for (const s of standardSizes) {
-                const diff = Math.abs(s - moduleCount);
-                if (diff < minDiff) {
-                    minDiff = diff;
-                    closest = s;
-                }
+            // Determine center exclusion zone for embed
+            let embedRadius = 0;
+            const hasEmbed = (state.embedType === 'emoji' && state.selectedEmoji) ||
+                             (state.embedType === 'image' && state.imageData);
+            if (hasEmbed) {
+                const embedPx = state.embedType === 'emoji' ? state.emojiSize : state.imageSize;
+                const padPx = state.imageBgWhite || state.embedType === 'emoji' ? 8 : 4;
+                embedRadius = (embedPx / 2 + padPx) / cellSize;
             }
 
-            return closest;
-        }
+            const centerModule = moduleCount / 2;
 
-        function extractModules(imageData, canvasSize, moduleCount) {
-            const data = imageData.data;
-            const modulePixelSize = canvasSize / moduleCount;
-            const modules = [];
-
+            // Draw modules
+            ctx.fillStyle = fgStyle;
             for (let row = 0; row < moduleCount; row++) {
-                modules[row] = [];
                 for (let col = 0; col < moduleCount; col++) {
-                    // Sample center of module
-                    const cx = Math.floor((col + 0.5) * modulePixelSize);
-                    const cy = Math.floor((row + 0.5) * modulePixelSize);
+                    if (!qr.isDark(row, col)) continue;
 
-                    if (cx >= canvasSize || cy >= canvasSize) {
-                        modules[row][col] = false;
-                        continue;
+                    // Skip modules under embed
+                    if (hasEmbed) {
+                        const dr = row + 0.5 - centerModule;
+                        const dc = col + 0.5 - centerModule;
+                        if (Math.sqrt(dr * dr + dc * dc) < embedRadius) continue;
                     }
 
-                    const idx = (cy * canvasSize + cx) * 4;
-                    const r = data[idx];
-                    const g = data[idx + 1];
-                    const b = data[idx + 2];
-
-                    // Compare with background color
-                    const bgR = parseInt(state.bgColor.slice(1, 3), 16);
-                    const bgG = parseInt(state.bgColor.slice(3, 5), 16);
-                    const bgB = parseInt(state.bgColor.slice(5, 7), 16);
-
-                    const distToBg = Math.sqrt((r - bgR) ** 2 + (g - bgG) ** 2 + (b - bgB) ** 2);
-                    modules[row][col] = distToBg > 100;
+                    const x = (col + marginModules) * cellSize;
+                    const y = (row + marginModules) * cellSize;
+                    drawModule(ctx, x, y, cellSize, state.dotStyle);
                 }
             }
 
-            return modules;
+            // Draw embed on top
+            drawEmbed(ctx, size);
+
+            // Update container background
+            els.container.style.backgroundColor = state.bgColor;
+            els.sizeDisplay.textContent = `${size} × ${size} px`;
         }
 
-        function drawModule(ctx, x, y, size, style) {
-            const padding = size * 0.1;
-
+        function drawModule(ctx, x, y, s, style) {
             switch (style) {
-                case 'rounded':
-                    const radius = size * 0.3;
+                case 'rounded': {
+                    const r = s * 0.35;
                     ctx.beginPath();
-                    ctx.moveTo(x + radius, y);
-                    ctx.lineTo(x + size - radius, y);
-                    ctx.quadraticCurveTo(x + size, y, x + size, y + radius);
-                    ctx.lineTo(x + size, y + size - radius);
-                    ctx.quadraticCurveTo(x + size, y + size, x + size - radius, y + size);
-                    ctx.lineTo(x + radius, y + size);
-                    ctx.quadraticCurveTo(x, y + size, x, y + size - radius);
-                    ctx.lineTo(x, y + radius);
-                    ctx.quadraticCurveTo(x, y, x + radius, y);
+                    ctx.moveTo(x + r, y);
+                    ctx.lineTo(x + s - r, y);
+                    ctx.quadraticCurveTo(x + s, y, x + s, y + r);
+                    ctx.lineTo(x + s, y + s - r);
+                    ctx.quadraticCurveTo(x + s, y + s, x + s - r, y + s);
+                    ctx.lineTo(x + r, y + s);
+                    ctx.quadraticCurveTo(x, y + s, x, y + s - r);
+                    ctx.lineTo(x, y + r);
+                    ctx.quadraticCurveTo(x, y, x + r, y);
                     ctx.closePath();
                     ctx.fill();
                     break;
-
-                case 'dots':
-                    const centerX = x + size / 2;
-                    const centerY = y + size / 2;
-                    const dotRadius = (size - padding * 2) / 2;
+                }
+                case 'dots': {
+                    const cx = x + s / 2;
+                    const cy = y + s / 2;
                     ctx.beginPath();
-                    ctx.arc(centerX, centerY, dotRadius, 0, Math.PI * 2);
+                    ctx.arc(cx, cy, s * 0.42, 0, Math.PI * 2);
                     ctx.fill();
                     break;
-
-                case 'square':
+                }
                 default:
-                    ctx.fillRect(x, y, size, size);
-                    break;
+                    ctx.fillRect(x, y, s + 0.5, s + 0.5); // +0.5 to avoid gaps
             }
         }
 
         function drawEmbed(ctx, size) {
             if (state.embedType === 'emoji' && state.selectedEmoji) {
-                const emojiSize = state.emojiSize;
-                const bgPad = emojiSize * 0.3;
-
-                // Draw white background circle
-                ctx.fillStyle = state.bgColor;
-                ctx.beginPath();
-                ctx.arc(size / 2, size / 2, (emojiSize + bgPad) / 2, 0, Math.PI * 2);
-                ctx.fill();
-
-                // Draw emoji
-                ctx.font = `${emojiSize}px serif`;
-                ctx.textAlign = 'center';
-                ctx.textBaseline = 'middle';
-                ctx.fillText(state.selectedEmoji, size / 2, size / 2);
-
-                // Reset fill style
-                if (state.useGradient) {
-                    const gradient = ctx.createLinearGradient(0, 0, size, size);
-                    gradient.addColorStop(0, state.gradientColor1);
-                    gradient.addColorStop(1, state.gradientColor2);
-                    ctx.fillStyle = gradient;
-                } else {
-                    ctx.fillStyle = state.fgColor;
-                }
-            } else if (state.embedType === 'image' && state.imageData) {
-                const img = new Image();
-                img.onload = () => {
-                    const imgSize = state.imageSize;
-                    const x = (size - imgSize) / 2;
-                    const y = (size - imgSize) / 2;
-                    const bgPad = 6;
-
-                    if (state.imageBgWhite) {
-                        ctx.fillStyle = state.bgColor;
-                        if (state.imageRound) {
-                            roundRect(ctx, x - bgPad, y - bgPad, imgSize + bgPad * 2, imgSize + bgPad * 2, 12);
-                        } else {
-                            ctx.fillRect(x - bgPad, y - bgPad, imgSize + bgPad * 2, imgSize + bgPad * 2);
-                        }
-                    }
-
-                    if (state.imageRound) {
-                        ctx.save();
-                        ctx.beginPath();
-                        roundRectPath(ctx, x, y, imgSize, imgSize, 10);
-                        ctx.clip();
-                        ctx.drawImage(img, x, y, imgSize, imgSize);
-                        ctx.restore();
-                    } else {
-                        ctx.drawImage(img, x, y, imgSize, imgSize);
-                    }
-                };
-                img.src = state.imageData;
+                drawEmojiEmbed(ctx, size);
+            } else if (state.embedType === 'image' && state.imageData && loadedEmbedImage && loadedEmbedImage.complete) {
+                drawImageEmbed(ctx, size);
             }
         }
 
-        function roundRect(ctx, x, y, w, h, r) {
+        function drawEmojiEmbed(ctx, size) {
+            const es = state.emojiSize;
+            const pad = 8;
+            const cx = size / 2;
+            const cy = size / 2;
+
+            // White bg circle
+            ctx.fillStyle = state.bgColor;
+            ctx.beginPath();
+            ctx.arc(cx, cy, es / 2 + pad, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Emoji
+            ctx.font = `${es}px "Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif`;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillStyle = '#000';
+            ctx.fillText(state.selectedEmoji, cx, cy + 2);
+        }
+
+        function drawImageEmbed(ctx, size) {
+            const imgSize = state.imageSize;
+            const pad = state.imageBgWhite ? 8 : 0;
+            const x = (size - imgSize) / 2;
+            const y = (size - imgSize) / 2;
+            const r = state.imageRound ? 10 : 0;
+
+            if (state.imageBgWhite) {
+                ctx.fillStyle = state.bgColor;
+                if (state.imageRound) {
+                    drawRoundRect(ctx, x - pad, y - pad, imgSize + pad * 2, imgSize + pad * 2, r + 4);
+                } else {
+                    ctx.fillRect(x - pad, y - pad, imgSize + pad * 2, imgSize + pad * 2);
+                }
+            }
+
+            ctx.save();
+            if (state.imageRound) {
+                ctx.beginPath();
+                roundRectPath(ctx, x, y, imgSize, imgSize, r);
+                ctx.clip();
+            }
+            ctx.drawImage(loadedEmbedImage, x, y, imgSize, imgSize);
+            ctx.restore();
+        }
+
+        function drawRoundRect(ctx, x, y, w, h, r) {
             ctx.beginPath();
             roundRectPath(ctx, x, y, w, h, r);
             ctx.fill();
@@ -1813,27 +1523,92 @@
             ctx.closePath();
         }
 
-        // ============ DOWNLOAD / COPY ============
+        // ===================== IMAGE HANDLING =====================
+
+        function handleImageUpload(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+            if (file.size > 500000) {
+                // Resize large images
+            }
+            const reader = new FileReader();
+            reader.onload = (ev) => {
+                const dataUrl = ev.target.result;
+                // Resize to max 200px to keep localStorage small
+                resizeImage(dataUrl, 200, (resized) => {
+                    state.imageData = resized;
+                    loadedEmbedImage = new Image();
+                    loadedEmbedImage.onload = () => {
+                        els.previewImg.src = resized;
+                        els.uploadPlaceholder.classList.add('hidden');
+                        els.uploadPreview.classList.remove('hidden');
+                        els.clearImageBtn.classList.remove('hidden');
+                        els.imageUploadArea.classList.add('has-image');
+                        saveState();
+                        generateQR();
+                    };
+                    loadedEmbedImage.src = resized;
+                });
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function resizeImage(dataUrl, maxSize, callback) {
+            const img = new Image();
+            img.onload = () => {
+                let w = img.width, h = img.height;
+                if (w > maxSize || h > maxSize) {
+                    const scale = maxSize / Math.max(w, h);
+                    w = Math.round(w * scale);
+                    h = Math.round(h * scale);
+                }
+                const c = document.createElement('canvas');
+                c.width = w;
+                c.height = h;
+                const cx = c.getContext('2d');
+                cx.drawImage(img, 0, 0, w, h);
+                callback(c.toDataURL('image/png'));
+            };
+            img.src = dataUrl;
+        }
+
+        function clearImage() {
+            state.imageData = '';
+            loadedEmbedImage = null;
+            els.imageInput.value = '';
+            els.previewImg.src = '';
+            els.uploadPlaceholder.classList.remove('hidden');
+            els.uploadPreview.classList.add('hidden');
+            els.clearImageBtn.classList.add('hidden');
+            els.imageUploadArea.classList.remove('has-image');
+            saveState();
+            generateQR();
+        }
+
+        // ===================== DOWNLOAD / COPY =====================
+
+        function getFullCanvas() {
+            // Returns the final canvas including container shape clipping if needed
+            return els.canvas;
+        }
+
         function downloadPNG() {
-            const canvas = els.canvas;
+            const c = getFullCanvas();
             const link = document.createElement('a');
             link.download = 'qrcode.png';
-            link.href = canvas.toDataURL('image/png');
+            link.href = c.toDataURL('image/png');
             link.click();
             showToast('PNG downloaded! 📥');
         }
 
         function downloadSVG() {
-            const canvas = els.canvas;
-            const size = canvas.width;
-
-            // Create a simple SVG from the canvas
-            const imgData = canvas.toDataURL('image/png');
+            const c = getFullCanvas();
+            const size = c.width;
+            const imgData = c.toDataURL('image/png');
             const svg = `<?xml version="1.0" encoding="UTF-8"?>
 <svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="${size}" height="${size}" viewBox="0 0 ${size} ${size}">
-    <image width="${size}" height="${size}" xlink:href="${imgData}"/>
+  <image width="${size}" height="${size}" xlink:href="${imgData}"/>
 </svg>`;
-
             const blob = new Blob([svg], { type: 'image/svg+xml' });
             const link = document.createElement('a');
             link.download = 'qrcode.svg';
@@ -1845,44 +1620,213 @@
 
         async function copyToClipboard() {
             try {
-                const canvas = els.canvas;
-                const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
-                await navigator.clipboard.write([
-                    new ClipboardItem({ 'image/png': blob })
-                ]);
+                const c = getFullCanvas();
+                const blob = await new Promise(resolve => c.toBlob(resolve, 'image/png'));
+                await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]);
                 showToast('Copied to clipboard! 📋');
             } catch (e) {
-                // Fallback: copy data URL
                 try {
-                    const dataUrl = els.canvas.toDataURL('image/png');
-                    await navigator.clipboard.writeText(dataUrl);
+                    await navigator.clipboard.writeText(els.canvas.toDataURL('image/png'));
                     showToast('Data URL copied! 📋');
                 } catch (e2) {
-                    showToast('Failed to copy ❌');
+                    showToast('Copy failed ❌');
                 }
             }
         }
 
         function resetAll() {
-            state = { ...DEFAULT_STATE };
-            localStorage.removeItem('qr-generator-state');
-            clearImage();
-            applyStateToUI();
+            state = JSON.parse(JSON.stringify(DEFAULT_STATE));
+            loadedEmbedImage = null;
+            localStorage.removeItem('qr-gen-pro-state');
+            els.imageInput.value = '';
+            els.previewImg.src = '';
+            els.uploadPlaceholder.classList.remove('hidden');
+            els.uploadPreview.classList.add('hidden');
+            els.clearImageBtn.classList.add('hidden');
+            els.imageUploadArea.classList.remove('has-image');
+            hideError();
             buildEmojiGrid();
+            applyStateToUI();
             generateQR();
             showToast('Reset to defaults! 🔄');
         }
 
-        function showToast(message) {
-            els.toast.textContent = message;
-            els.toast.classList.add('show');
-            setTimeout(() => {
-                els.toast.classList.remove('show');
-            }, 2500);
+        // ===================== EVENTS =====================
+
+        function bindEvents() {
+            let debounceTimer;
+            const debouncedGenerate = () => {
+                clearTimeout(debounceTimer);
+                debounceTimer = setTimeout(() => { saveState(); generateQR(); }, 120);
+            };
+
+            els.text.addEventListener('input', () => {
+                state.text = els.text.value;
+                updateCharCount();
+                debouncedGenerate();
+            });
+
+            els.fgColor.addEventListener('input', () => {
+                state.fgColor = els.fgColor.value;
+                updateGradientPresetActive();
+                debouncedGenerate();
+            });
+
+            els.bgColor.addEventListener('input', () => {
+                state.bgColor = els.bgColor.value;
+                updateGradientPresetActive();
+                debouncedGenerate();
+            });
+
+            els.useGradient.addEventListener('change', () => {
+                state.useGradient = els.useGradient.checked;
+                els.gradientColors.classList.toggle('hidden', !state.useGradient);
+                saveState(); generateQR();
+            });
+
+            els.gradientColor1.addEventListener('input', () => {
+                state.gradientColor1 = els.gradientColor1.value;
+                debouncedGenerate();
+            });
+
+            els.gradientColor2.addEventListener('input', () => {
+                state.gradientColor2 = els.gradientColor2.value;
+                debouncedGenerate();
+            });
+
+            els.size.addEventListener('input', () => {
+                state.size = parseInt(els.size.value);
+                els.sizeValue.textContent = state.size + 'px';
+                debouncedGenerate();
+            });
+
+            els.errorCorrection.addEventListener('change', () => {
+                state.errorCorrection = els.errorCorrection.value;
+                updateCharCount();
+                saveState(); generateQR();
+            });
+
+            els.margin.addEventListener('input', () => {
+                state.margin = parseInt(els.margin.value);
+                els.marginValue.textContent = state.margin;
+                debouncedGenerate();
+            });
+
+            $$('[data-dot-style]').forEach(el => {
+                el.addEventListener('click', () => {
+                    $$('[data-dot-style]').forEach(e => e.classList.remove('active'));
+                    el.classList.add('active');
+                    state.dotStyle = el.dataset.dotStyle;
+                    saveState(); generateQR();
+                });
+            });
+
+            $$('[data-container]').forEach(el => {
+                el.addEventListener('click', () => {
+                    $$('[data-container]').forEach(e => e.classList.remove('active'));
+                    el.classList.add('active');
+                    state.containerShape = el.dataset.container;
+                    updateContainerShape();
+                    saveState();
+                });
+            });
+
+            $$('[data-embed]').forEach(el => {
+                el.addEventListener('click', () => {
+                    $$('[data-embed]').forEach(e => e.classList.remove('active'));
+                    el.classList.add('active');
+                    state.embedType = el.dataset.embed;
+                    updateEmbedVisibility();
+                    saveState(); generateQR();
+                });
+            });
+
+            els.emojiSize.addEventListener('input', () => {
+                state.emojiSize = parseInt(els.emojiSize.value);
+                els.emojiSizeValue.textContent = state.emojiSize + 'px';
+                debouncedGenerate();
+            });
+
+            els.imageInput.addEventListener('change', handleImageUpload);
+            els.clearImageBtn.addEventListener('click', clearImage);
+
+            els.imageSize.addEventListener('input', () => {
+                state.imageSize = parseInt(els.imageSize.value);
+                els.imageSizeValue.textContent = state.imageSize + 'px';
+                debouncedGenerate();
+            });
+
+            els.imageRound.addEventListener('change', () => {
+                state.imageRound = els.imageRound.checked;
+                saveState(); generateQR();
+            });
+
+            els.imageBgWhite.addEventListener('change', () => {
+                state.imageBgWhite = els.imageBgWhite.checked;
+                saveState(); generateQR();
+            });
+
+            $$('.tab').forEach(tab => {
+                tab.addEventListener('click', () => {
+                    $$('.tab').forEach(t => t.classList.remove('active'));
+                    $$('.tab-content').forEach(tc => tc.classList.remove('active'));
+                    tab.classList.add('active');
+                    $('tab-' + tab.dataset.tab).classList.add('active');
+                    state.activeTab = tab.dataset.tab;
+                    saveState();
+                });
+            });
+
+            $$('.gradient-preset').forEach(el => {
+                el.addEventListener('click', () => {
+                    state.fgColor = el.dataset.fg;
+                    state.bgColor = el.dataset.bg;
+                    els.fgColor.value = state.fgColor;
+                    els.bgColor.value = state.bgColor;
+                    updateGradientPresetActive();
+                    saveState(); generateQR();
+                });
+            });
+
+            $('download-png').addEventListener('click', downloadPNG);
+            $('download-svg').addEventListener('click', downloadSVG);
+            $('copy-btn').addEventListener('click', copyToClipboard);
+            $('reset-btn').addEventListener('click', resetAll);
+
+            // Drag and drop for image
+            const uploadArea = els.imageUploadArea;
+            uploadArea.addEventListener('dragover', e => {
+                e.preventDefault();
+                uploadArea.style.borderColor = 'var(--primary)';
+            });
+            uploadArea.addEventListener('dragleave', () => {
+                uploadArea.style.borderColor = '';
+            });
+            uploadArea.addEventListener('drop', e => {
+                e.preventDefault();
+                uploadArea.style.borderColor = '';
+                const file = e.dataTransfer.files[0];
+                if (file && file.type.startsWith('image/')) {
+                    const dt = new DataTransfer();
+                    dt.items.add(file);
+                    els.imageInput.files = dt.files;
+                    els.imageInput.dispatchEvent(new Event('change'));
+                }
+            });
         }
 
-        // ============ START ============
+        // ===================== INIT =====================
+
+        function init() {
+            loadState();
+            buildEmojiGrid();
+            bindEvents();
+            applyStateToUI();
+            generateQR();
+        }
+
         init();
+    })();
     </script>
 </body>
 </html>
