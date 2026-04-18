@@ -1,12 +1,12 @@
 <!DOCTYPE html>
 <!-- MIT License
-Copyright (c) 2025-2026 Yuliya Kolesnikova <0009-0000-6151-7415@orcid.org>
+Copyright (c) 2025 Yuliya Kolesnikova <0009-0000-6151-7415@orcid.org>
 -->
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <link rel="icon" type="image/x-icon" href="favicon.ico"/>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎄</text></svg>">
     <title>🎄 Merry Christmas 🎄</title>
     <style>
         * {
@@ -345,7 +345,6 @@ Copyright (c) 2025-2026 Yuliya Kolesnikova <0009-0000-6151-7415@orcid.org>
             text-shadow: 0 0 10px rgba(240,147,251,0.5);
         }
 
-        /* ─── Responsive ─── */
         @media (max-height: 800px) {
             h1 { font-size: 1.3em; margin-bottom: 5px; }
             .star { font-size: 1.5em; top: 1px; }
@@ -392,7 +391,7 @@ Copyright (c) 2025-2026 Yuliya Kolesnikova <0009-0000-6151-7415@orcid.org>
             <button onclick="addOrnament()">🎁 Add Ornament</button>
         </div>
 
-        <div class="song-selector">
+        <div class="song-selector" id="songSelector">
             <button class="song-btn active" onclick="selectSong(0, this)">🔔 Jingle Bells</button>
             <button class="song-btn" onclick="selectSong(1, this)">🌲 O Christmas Tree</button>
             <button class="song-btn" onclick="selectSong(2, this)">🌙 Silent Night</button>
@@ -421,16 +420,15 @@ Copyright (c) 2025-2026 Yuliya Kolesnikova <0009-0000-6151-7415@orcid.org>
         let vizInterval = null;
         let snowTimer = null;
         let animFrameId = null;
+        let noteEmitInterval = null;
+        let autoRotate = true;
 
-        // ─── Dynamic canvas sizing ───
         const canvas = document.getElementById('treeCanvas');
         const ctx = canvas.getContext('2d');
 
-        // Compute canvas size to fit viewport
         function getCanvasSize() {
             const vh = window.innerHeight;
             const vw = window.innerWidth;
-            // Reserve space for title, controls, presents, message etc
             const reservedH = 340;
             const availH = Math.max(200, vh - reservedH);
             const availW = Math.min(vw - 40, 500);
@@ -451,7 +449,6 @@ Copyright (c) 2025-2026 Yuliya Kolesnikova <0009-0000-6151-7415@orcid.org>
             canvas.style.width = canvasW + 'px';
             canvas.style.height = canvasH + 'px';
 
-            // Recalculate tree geometry proportionally
             treeCenterX = canvasW / 2;
             treeTopY = Math.round(canvasH * 0.087);
             treeBottomY = Math.round(canvasH * 0.808);
@@ -460,7 +457,6 @@ Copyright (c) 2025-2026 Yuliya Kolesnikova <0009-0000-6151-7415@orcid.org>
             trunkWidth = Math.round(canvasW * 0.088);
             maxHalfWidth = Math.round(canvasW * 0.39);
 
-            // Reinit ornaments and lights for new size
             initOrnaments();
             initLights();
         }
@@ -471,7 +467,6 @@ Copyright (c) 2025-2026 Yuliya Kolesnikova <0009-0000-6151-7415@orcid.org>
             return 10 + (maxHalfWidth - 10) * t;
         }
 
-        // ─── Ornaments & Lights data ───
         let ornaments = [];
         let lights = [];
         let extraOrnaments = [];
@@ -517,7 +512,6 @@ Copyright (c) 2025-2026 Yuliya Kolesnikova <0009-0000-6151-7415@orcid.org>
             }
         }
 
-        // ─── Visualizer ───
         function initVisualizer() {
             const viz = document.getElementById('visualizer');
             viz.innerHTML = '';
@@ -539,14 +533,12 @@ Copyright (c) 2025-2026 Yuliya Kolesnikova <0009-0000-6151-7415@orcid.org>
             });
         }
 
-        // ─── Draw functions ───
         let time = 0;
 
         function drawTree() {
             ctx.clearRect(0, 0, canvasW, canvasH);
             time += 0.02;
 
-            // Trunk
             const trunkGrad = ctx.createLinearGradient(treeCenterX - trunkWidth/2, trunkTop, treeCenterX + trunkWidth/2, trunkTop);
             trunkGrad.addColorStop(0, '#3a1a08');
             trunkGrad.addColorStop(0.3, '#5c3310');
@@ -782,11 +774,9 @@ Copyright (c) 2025-2026 Yuliya Kolesnikova <0009-0000-6151-7415@orcid.org>
             return { r: (num >> 16) & 255, g: (num >> 8) & 255, b: num & 255 };
         }
 
-        // Initial sizing and start
         resizeCanvas();
         drawTree();
 
-        // Handle resize
         window.addEventListener('resize', () => {
             extraOrnaments = [];
             resizeCanvas();
@@ -852,7 +842,7 @@ Copyright (c) 2025-2026 Yuliya Kolesnikova <0009-0000-6151-7415@orcid.org>
             'Db4': 277.18, 'Ab4': 415.30, 'Gb4': 369.99, 'Eb3': 155.56
         };
 
-        function freq(name) { return NOTE_FREQS[name] || 261.63; }
+        function noteFreq(name) { return NOTE_FREQS[name] || 261.63; }
         function beatDur(bpm) { return 60 / bpm; }
 
         const SONGS = [
@@ -1199,7 +1189,19 @@ Copyright (c) 2025-2026 Yuliya Kolesnikova <0009-0000-6151-7415@orcid.org>
             scheduledNodes.push(osc, osc2);
         }
 
-        // ─── Play / Stop ───
+        // ─── Song duration calculator ───
+        function getSongDuration(song) {
+            const bt = beatDur(song.bpm);
+            let maxDur = 0;
+            [song.melody, song.harmony, song.bass].forEach(track => {
+                let d = 0;
+                track.forEach(note => { d += note.b * bt; });
+                if (d > maxDur) maxDur = d;
+            });
+            return maxDur;
+        }
+
+        // ─── Play / Stop / Rotate ───
 
         function stopAllMusic() {
             scheduledNodes.forEach(node => {
@@ -1208,6 +1210,7 @@ Copyright (c) 2025-2026 Yuliya Kolesnikova <0009-0000-6151-7415@orcid.org>
             scheduledNodes = [];
             if (musicTimeout) { clearTimeout(musicTimeout); musicTimeout = null; }
             if (vizInterval) { clearInterval(vizInterval); vizInterval = null; }
+            if (noteEmitInterval) { clearInterval(noteEmitInterval); noteEmitInterval = null; }
             musicPlaying = false;
             document.getElementById('musicBtn').classList.remove('active');
             document.getElementById('musicBtn').textContent = '🎵 Play Music';
@@ -1215,8 +1218,15 @@ Copyright (c) 2025-2026 Yuliya Kolesnikova <0009-0000-6151-7415@orcid.org>
             document.getElementById('nowPlaying').textContent = '';
         }
 
+        function highlightSongBtn(index) {
+            const btns = document.querySelectorAll('.song-btn');
+            btns.forEach(b => b.classList.remove('active'));
+            if (btns[index]) btns[index].classList.add('active');
+        }
+
         function selectSong(index, btn) {
             currentSong = index;
+            autoRotate = false; // user picked a song, stop auto-rotate
             document.querySelectorAll('.song-btn').forEach(b => b.classList.remove('active'));
             btn.classList.add('active');
             if (musicPlaying) {
@@ -1225,12 +1235,18 @@ Copyright (c) 2025-2026 Yuliya Kolesnikova <0009-0000-6151-7415@orcid.org>
             }
         }
 
+        function rotateToNextSong() {
+            currentSong = (currentSong + 1) % SONGS.length;
+            highlightSongBtn(currentSong);
+        }
+
         function toggleMusic() {
             if (!audioContext) {
                 audioContext = new (window.AudioContext || window.webkitAudioContext)();
             }
             if (musicPlaying) {
                 stopAllMusic();
+                autoRotate = true; // reset auto-rotate when stopped
                 return;
             }
             musicPlaying = true;
@@ -1238,6 +1254,7 @@ Copyright (c) 2025-2026 Yuliya Kolesnikova <0009-0000-6151-7415@orcid.org>
             document.getElementById('musicBtn').textContent = '⏹️ Stop Music';
             document.getElementById('visualizer').classList.add('active');
             const song = SONGS[currentSong];
+            highlightSongBtn(currentSong);
             document.getElementById('nowPlaying').textContent = `♪ Now Playing: ${song.name}`;
             playSong(song);
         }
@@ -1270,7 +1287,7 @@ Copyright (c) 2025-2026 Yuliya Kolesnikova <0009-0000-6151-7415@orcid.org>
             let t = startTime;
             song.melody.forEach(note => {
                 const dur = note.b * bt;
-                const f = freq(note.n);
+                const f = noteFreq(note.n);
                 playBellTone(ac, masterGain, f, t, dur * 1.2, 0.35);
                 if (note.b >= 2) {
                     playGlockenspiel(ac, masterGain, f, t, dur, 0.3);
@@ -1282,7 +1299,7 @@ Copyright (c) 2025-2026 Yuliya Kolesnikova <0009-0000-6151-7415@orcid.org>
             t = startTime;
             song.harmony.forEach(note => {
                 const dur = note.b * bt;
-                const f = freq(note.n);
+                const f = noteFreq(note.n);
                 playPadTone(ac, masterGain, f, t, dur, 0.5);
                 t += dur;
             });
@@ -1291,7 +1308,7 @@ Copyright (c) 2025-2026 Yuliya Kolesnikova <0009-0000-6151-7415@orcid.org>
             t = startTime;
             song.bass.forEach(note => {
                 const dur = note.b * bt;
-                const f = freq(note.n);
+                const f = noteFreq(note.n);
                 playBassTone(ac, masterGain, f, t, dur, 0.5);
                 t += dur;
             });
@@ -1299,8 +1316,8 @@ Copyright (c) 2025-2026 Yuliya Kolesnikova <0009-0000-6151-7415@orcid.org>
 
             playSleighBells(ac, masterGain, startTime, totalDuration, song.bpm);
 
-            const noteEmitInterval = setInterval(() => {
-                if (!musicPlaying) { clearInterval(noteEmitInterval); return; }
+            noteEmitInterval = setInterval(() => {
+                if (!musicPlaying) { clearInterval(noteEmitInterval); noteEmitInterval = null; return; }
                 const noteEl = document.createElement('div');
                 noteEl.classList.add('music-note');
                 noteEl.innerHTML = ['🎵','🎶','♪','♫','✨'][Math.floor(Math.random()*5)];
@@ -1313,12 +1330,20 @@ Copyright (c) 2025-2026 Yuliya Kolesnikova <0009-0000-6151-7415@orcid.org>
             vizInterval = setInterval(updateVisualizer, 100);
 
             musicTimeout = setTimeout(() => {
-                clearInterval(noteEmitInterval);
+                if (noteEmitInterval) { clearInterval(noteEmitInterval); noteEmitInterval = null; }
+                if (vizInterval) { clearInterval(vizInterval); vizInterval = null; }
+                scheduledNodes = [];
+
                 if (musicPlaying) {
-                    scheduledNodes = [];
-                    playSong(song);
+                    // Rotate to next song
+                    if (autoRotate) {
+                        rotateToNextSong();
+                    }
+                    const nextSong = SONGS[currentSong];
+                    document.getElementById('nowPlaying').textContent = `♪ Now Playing: ${nextSong.name}`;
+                    playSong(nextSong);
                 }
-            }, totalDuration * 1000 + 200);
+            }, totalDuration * 1000 + 300);
         }
 
         // Initial snowflakes
