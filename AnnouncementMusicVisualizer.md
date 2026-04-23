@@ -47,7 +47,6 @@ M → Mute toggle
 F → Fullscreen mode
 
 🔗 Experience it here: https://musicvisualizer.github.io
-📂 Source code: https://github.com/musicvisualizer/musicvisualizer.github.io
 
 Turn your music into a visual masterpiece! Upload your favorite tracks and watch the magic happen.
 
