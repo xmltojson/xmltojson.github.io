@@ -1,0 +1,724 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Coordinate Converter • Lat/Lng ↔ MGRS</title>
+<script src="https://unpkg.com/mgrs@1.0.0/dist/mgrs.js"></script>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  
+  :root {
+    --bg-1: #0f0c29;
+    --bg-2: #302b63;
+    --bg-3: #24243e;
+    --accent: #00d4ff;
+    --accent-2: #ff006e;
+    --success: #10b981;
+    --danger: #ef4444;
+    --card: rgba(255, 255, 255, 0.08);
+    --card-hover: rgba(255, 255, 255, 0.12);
+    --border: rgba(255, 255, 255, 0.15);
+    --text: #f8fafc;
+    --text-dim: #94a3b8;
+  }
+
+  body {
+    min-height: 100vh;
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    color: var(--text);
+    background: linear-gradient(135deg, var(--bg-1), var(--bg-2), var(--bg-3));
+    background-size: 400% 400%;
+    animation: gradientShift 15s ease infinite;
+    padding: 20px;
+    overflow-x: hidden;
+  }
+
+  @keyframes gradientShift {
+    0%, 100% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+  }
+
+  .app {
+    max-width: 1400px;
+    margin: 0 auto;
+  }
+
+  header {
+    text-align: center;
+    padding: 20px 0 30px;
+  }
+
+  h1 {
+    font-size: clamp(1.8rem, 4vw, 2.8rem);
+    background: linear-gradient(90deg, var(--accent), var(--accent-2));
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    font-weight: 800;
+    letter-spacing: -1px;
+  }
+
+  .subtitle {
+    color: var(--text-dim);
+    margin-top: 8px;
+    font-size: 0.95rem;
+  }
+
+  .orientation-toggle {
+    display: flex;
+    justify-content: center;
+    gap: 8px;
+    margin-bottom: 20px;
+  }
+
+  .orient-btn {
+    background: var(--card);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 8px 16px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 0.85rem;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .orient-btn:hover { background: var(--card-hover); }
+  .orient-btn.active {
+    background: linear-gradient(90deg, var(--accent), var(--accent-2));
+    border-color: transparent;
+  }
+
+  .container {
+    display: grid;
+    gap: 20px;
+    transition: all 0.3s;
+  }
+
+  .container.horizontal {
+    grid-template-columns: 1fr 1fr 1fr;
+  }
+
+  .container.vertical {
+    grid-template-columns: 1fr;
+  }
+
+  @media (max-width: 900px) {
+    .container.horizontal { grid-template-columns: 1fr; }
+  }
+
+  .card {
+    background: var(--card);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 24px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+    transition: transform 0.2s, box-shadow 0.2s;
+  }
+
+  .card:hover {
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.3);
+  }
+
+  .card-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 18px;
+    font-size: 1.15rem;
+    font-weight: 600;
+  }
+
+  .icon {
+    width: 32px;
+    height: 32px;
+    background: linear-gradient(135deg, var(--accent), var(--accent-2));
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1rem;
+  }
+
+  .form-group {
+    margin-bottom: 14px;
+  }
+
+  label {
+    display: block;
+    font-size: 0.8rem;
+    color: var(--text-dim);
+    margin-bottom: 6px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  input[type="text"], input[type="number"] {
+    width: 100%;
+    padding: 12px 14px;
+    background: rgba(0, 0, 0, 0.3);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    color: var(--text);
+    font-size: 0.95rem;
+    font-family: 'Consolas', monospace;
+    transition: border-color 0.2s, box-shadow 0.2s;
+  }
+
+  input:focus {
+    outline: none;
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(0, 212, 255, 0.15);
+  }
+
+  .row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+
+  .btn {
+    width: 100%;
+    padding: 12px;
+    border: none;
+    border-radius: 10px;
+    font-weight: 600;
+    font-size: 0.95rem;
+    cursor: pointer;
+    transition: all 0.2s;
+    background: linear-gradient(90deg, var(--accent), var(--accent-2));
+    color: white;
+    margin-top: 6px;
+  }
+
+  .btn:hover { transform: translateY(-1px); box-shadow: 0 4px 15px rgba(0, 212, 255, 0.4); }
+  .btn:active { transform: translateY(0); }
+
+  .btn-secondary {
+    background: var(--card);
+    border: 1px solid var(--border);
+  }
+
+  .btn-secondary:hover {
+    background: var(--card-hover);
+    box-shadow: none;
+  }
+
+  .result {
+    background: rgba(0, 0, 0, 0.3);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 14px;
+    font-family: 'Consolas', monospace;
+    font-size: 1rem;
+    min-height: 52px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    word-break: break-all;
+    gap: 10px;
+  }
+
+  .result.success { border-color: var(--success); }
+  .result.error { border-color: var(--danger); color: var(--danger); }
+
+  .copy-btn {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 6px 10px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.8rem;
+    transition: all 0.2s;
+    white-space: nowrap;
+  }
+
+  .copy-btn:hover { background: var(--card-hover); }
+
+  .history-list {
+    max-height: 400px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .history-list::-webkit-scrollbar { width: 6px; }
+  .history-list::-webkit-scrollbar-track { background: rgba(0,0,0,0.2); border-radius: 3px; }
+  .history-list::-webkit-scrollbar-thumb { background: var(--accent); border-radius: 3px; }
+
+  .history-item {
+    background: rgba(0, 0, 0, 0.25);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 12px;
+    font-size: 0.85rem;
+    cursor: pointer;
+    transition: all 0.2s;
+    position: relative;
+  }
+
+  .history-item:hover {
+    background: rgba(0, 0, 0, 0.4);
+    border-color: var(--accent);
+  }
+
+  .history-type {
+    display: inline-block;
+    font-size: 0.7rem;
+    padding: 2px 8px;
+    border-radius: 4px;
+    background: var(--accent);
+    color: var(--bg-1);
+    font-weight: 700;
+    margin-bottom: 6px;
+  }
+
+  .history-type.mgrs { background: var(--accent-2); color: white; }
+
+  .history-from, .history-to {
+    font-family: 'Consolas', monospace;
+    font-size: 0.85rem;
+    word-break: break-all;
+  }
+
+  .history-from { color: var(--text-dim); }
+  .history-arrow { color: var(--accent); margin: 4px 0; }
+  .history-time {
+    font-size: 0.7rem;
+    color: var(--text-dim);
+    margin-top: 6px;
+  }
+
+  .history-empty {
+    text-align: center;
+    color: var(--text-dim);
+    padding: 40px 20px;
+    font-style: italic;
+  }
+
+  .history-actions {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+  }
+
+  .clear-btn {
+    background: transparent;
+    border: 1px solid var(--danger);
+    color: var(--danger);
+    padding: 6px 12px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.8rem;
+    transition: all 0.2s;
+  }
+
+  .clear-btn:hover { background: var(--danger); color: white; }
+
+  .toast {
+    position: fixed;
+    bottom: 30px;
+    left: 50%;
+    transform: translateX(-50%) translateY(100px);
+    background: var(--success);
+    color: white;
+    padding: 12px 24px;
+    border-radius: 10px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+    opacity: 0;
+    transition: all 0.3s;
+    z-index: 100;
+    font-weight: 500;
+  }
+
+  .toast.show {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+
+  .toast.error { background: var(--danger); }
+</style>
+</head>
+<body>
+  <div class="app">
+    <header>
+      <h1>🌍 Coordinate Converter</h1>
+      <p class="subtitle">Convert between Google Maps (Lat/Lng) ↔ MGRS coordinates</p>
+    </header>
+
+    <div class="orientation-toggle">
+      <button class="orient-btn" id="horizontalBtn">▦ Horizontal</button>
+      <button class="orient-btn" id="verticalBtn">▤ Vertical</button>
+    </div>
+
+    <div class="container horizontal" id="container">
+      <!-- Lat/Lng to MGRS -->
+      <div class="card">
+        <div class="card-header">
+          <div class="icon">📍</div>
+          <span>Lat/Lng → MGRS</span>
+        </div>
+        <div class="row">
+          <div class="form-group">
+            <label>Latitude</label>
+            <input type="text" id="latInput" placeholder="40.7128" />
+          </div>
+          <div class="form-group">
+            <label>Longitude</label>
+            <input type="text" id="lngInput" placeholder="-74.0060" />
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Or paste Google Maps coordinates</label>
+          <input type="text" id="gmapInput" placeholder="40.7128, -74.0060" />
+        </div>
+        <button class="btn" id="toMgrsBtn">Convert to MGRS</button>
+        <div class="form-group" style="margin-top: 16px;">
+          <label>MGRS Result</label>
+          <div class="result" id="mgrsResult">
+            <span>—</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- MGRS to Lat/Lng -->
+      <div class="card">
+        <div class="card-header">
+          <div class="icon">🎯</div>
+          <span>MGRS → Lat/Lng</span>
+        </div>
+        <div class="form-group">
+          <label>MGRS Coordinate</label>
+          <input type="text" id="mgrsInput" placeholder="18TWL8085712345" />
+        </div>
+        <button class="btn" id="toLatLngBtn">Convert to Lat/Lng</button>
+        <div class="form-group" style="margin-top: 16px;">
+          <label>Lat/Lng Result</label>
+          <div class="result" id="latLngResult">
+            <span>—</span>
+          </div>
+        </div>
+        <div class="form-group" style="margin-top: 10px;">
+          <label>Google Maps Link</label>
+          <div class="result" id="gmapLinkResult">
+            <span>—</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- History -->
+      <div class="card">
+        <div class="card-header">
+          <div class="icon">📜</div>
+          <span>Conversion History</span>
+        </div>
+        <div class="history-actions">
+          <span id="historyCount" style="color: var(--text-dim); font-size: 0.85rem;">0 conversions</span>
+          <button class="clear-btn" id="clearHistoryBtn">Clear All</button>
+        </div>
+        <div class="history-list" id="historyList">
+          <div class="history-empty">No conversions yet</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+<script>
+(function() {
+  const STORAGE_KEY = 'coordConverter_state_v1';
+  
+  const $ = id => document.getElementById(id);
+  
+  const state = {
+    orientation: 'horizontal',
+    inputs: { lat: '', lng: '', gmap: '', mgrs: '' },
+    outputs: { mgrs: '', latLng: '', gmapLink: '' },
+    history: []
+  };
+
+  // ---- Storage ----
+  function saveState() {
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    } catch(e) { console.warn('Storage failed', e); }
+  }
+
+  function loadState() {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (!raw) return;
+      const data = JSON.parse(raw);
+      Object.assign(state, data);
+    } catch(e) { console.warn('Load failed', e); }
+  }
+
+  // ---- UI Helpers ----
+  function toast(msg, isError = false) {
+    const t = $('toast');
+    t.textContent = msg;
+    t.className = 'toast show' + (isError ? ' error' : '');
+    setTimeout(() => t.className = 'toast', 2500);
+  }
+
+  function setResult(elId, value, isError = false) {
+    const el = $(elId);
+    if (!value) {
+      el.innerHTML = '<span>—</span>';
+      el.className = 'result';
+      return;
+    }
+    el.className = 'result ' + (isError ? 'error' : 'success');
+    if (isError) {
+      el.innerHTML = `<span>${escapeHtml(value)}</span>`;
+    } else {
+      el.innerHTML = `<span>${escapeHtml(value)}</span>
+        <button class="copy-btn" data-copy="${escapeHtml(value)}">📋 Copy</button>`;
+    }
+  }
+
+  function escapeHtml(s) {
+    return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  }
+
+  // ---- Conversions ----
+  function parseGoogleMaps(str) {
+    // accept "lat, lng", "lat,lng", or with spaces
+    const m = str.trim().match(/^(-?\d+\.?\d*)[,\s]+(-?\d+\.?\d*)$/);
+    if (!m) return null;
+    return { lat: parseFloat(m[1]), lng: parseFloat(m[2]) };
+  }
+
+  function convertToMgrs() {
+    let lat, lng;
+    const gmap = $('gmapInput').value.trim();
+    
+    if (gmap) {
+      const parsed = parseGoogleMaps(gmap);
+      if (!parsed) {
+        setResult('mgrsResult', 'Invalid Google Maps format. Use: lat, lng', true);
+        return;
+      }
+      lat = parsed.lat;
+      lng = parsed.lng;
+      $('latInput').value = lat;
+      $('lngInput').value = lng;
+    } else {
+      lat = parseFloat($('latInput').value);
+      lng = parseFloat($('lngInput').value);
+    }
+
+    if (isNaN(lat) || isNaN(lng)) {
+      setResult('mgrsResult', 'Please enter valid latitude and longitude', true);
+      return;
+    }
+    if (lat < -80 || lat > 84) {
+      setResult('mgrsResult', 'Latitude must be between -80 and 84', true);
+      return;
+    }
+    if (lng < -180 || lng > 180) {
+      setResult('mgrsResult', 'Longitude must be between -180 and 180', true);
+      return;
+    }
+
+    try {
+      const mgrs = window.mgrs.forward([lng, lat], 5);
+      setResult('mgrsResult', mgrs);
+      state.outputs.mgrs = mgrs;
+      addHistory({
+        type: 'latlng-to-mgrs',
+        from: `${lat}, ${lng}`,
+        to: mgrs,
+        time: Date.now()
+      });
+    } catch(e) {
+      setResult('mgrsResult', 'Conversion error: ' + e.message, true);
+    }
+  }
+
+  function convertToLatLng() {
+    const mgrsStr = $('mgrsInput').value.trim().replace(/\s+/g, '');
+    if (!mgrsStr) {
+      setResult('latLngResult', 'Please enter MGRS coordinate', true);
+      setResult('gmapLinkResult', '', false);
+      return;
+    }
+
+    try {
+      const coords = window.mgrs.toPoint(mgrsStr);
+      // coords = [lng, lat]
+      const lng = coords[0];
+      const lat = coords[1];
+      const latLngStr = `${lat.toFixed(6)}, ${lng.toFixed(6)}`;
+      const gmapLink = `https://www.google.com/maps?q=${lat.toFixed(6)},${lng.toFixed(6)}`;
+      
+      setResult('latLngResult', latLngStr);
+      setResult('gmapLinkResult', gmapLink);
+      state.outputs.latLng = latLngStr;
+      state.outputs.gmapLink = gmapLink;
+      
+      addHistory({
+        type: 'mgrs-to-latlng',
+        from: mgrsStr,
+        to: latLngStr,
+        time: Date.now()
+      });
+    } catch(e) {
+      setResult('latLngResult', 'Invalid MGRS: ' + e.message, true);
+      setResult('gmapLinkResult', '', false);
+    }
+  }
+
+  // ---- History ----
+  function addHistory(entry) {
+    state.history.unshift(entry);
+    if (state.history.length > 50) state.history = state.history.slice(0, 50);
+    renderHistory();
+    saveState();
+  }
+
+  function renderHistory() {
+    const list = $('historyList');
+    $('historyCount').textContent = `${state.history.length} conversion${state.history.length !== 1 ? 's' : ''}`;
+    
+    if (state.history.length === 0) {
+      list.innerHTML = '<div class="history-empty">No conversions yet</div>';
+      return;
+    }
+
+    list.innerHTML = state.history.map((h, i) => {
+      const typeLabel = h.type === 'mgrs-to-latlng' ? 'MGRS → LL' : 'LL → MGRS';
+      const typeClass = h.type === 'mgrs-to-latlng' ? 'mgrs' : '';
+      const date = new Date(h.time);
+      const timeStr = date.toLocaleString();
+      return `
+        <div class="history-item" data-idx="${i}">
+          <span class="history-type ${typeClass}">${typeLabel}</span>
+          <div class="history-from">${escapeHtml(h.from)}</div>
+          <div class="history-arrow">↓</div>
+          <div class="history-to">${escapeHtml(h.to)}</div>
+          <div class="history-time">${timeStr}</div>
+        </div>
+      `;
+    }).join('');
+  }
+
+  // ---- Orientation ----
+  function setOrientation(orient) {
+    state.orientation = orient;
+    const container = $('container');
+    container.className = 'container ' + orient;
+    $('horizontalBtn').classList.toggle('active', orient === 'horizontal');
+    $('verticalBtn').classList.toggle('active', orient === 'vertical');
+    saveState();
+  }
+
+  // ---- Event Bindings ----
+  function syncInputsToState() {
+    state.inputs.lat = $('latInput').value;
+    state.inputs.lng = $('lngInput').value;
+    state.inputs.gmap = $('gmapInput').value;
+    state.inputs.mgrs = $('mgrsInput').value;
+    saveState();
+  }
+
+  function restoreInputs() {
+    $('latInput').value = state.inputs.lat || '';
+    $('lngInput').value = state.inputs.lng || '';
+    $('gmapInput').value = state.inputs.gmap || '';
+    $('mgrsInput').value = state.inputs.mgrs || '';
+    if (state.outputs.mgrs) setResult('mgrsResult', state.outputs.mgrs);
+    if (state.outputs.latLng) setResult('latLngResult', state.outputs.latLng);
+    if (state.outputs.gmapLink) setResult('gmapLinkResult', state.outputs.gmapLink);
+  }
+
+  function init() {
+    loadState();
+    setOrientation(state.orientation || 'horizontal');
+    restoreInputs();
+    renderHistory();
+
+    $('toMgrsBtn').addEventListener('click', convertToMgrs);
+    $('toLatLngBtn').addEventListener('click', convertToLatLng);
+    $('horizontalBtn').addEventListener('click', () => setOrientation('horizontal'));
+    $('verticalBtn').addEventListener('click', () => setOrientation('vertical'));
+    
+    ['latInput', 'lngInput', 'gmapInput', 'mgrsInput'].forEach(id => {
+      $(id).addEventListener('input', syncInputsToState);
+      $(id).addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+          if (id === 'mgrsInput') convertToLatLng();
+          else convertToMgrs();
+        }
+      });
+    });
+
+    $('clearHistoryBtn').addEventListener('click', () => {
+      if (state.history.length === 0) return;
+      if (confirm('Clear all conversion history?')) {
+        state.history = [];
+        renderHistory();
+        saveState();
+        toast('History cleared');
+      }
+    });
+
+    // Copy buttons
+    document.addEventListener('click', (e) => {
+      if (e.target.classList.contains('copy-btn')) {
+        const val = e.target.getAttribute('data-copy');
+        navigator.clipboard.writeText(val).then(() => toast('Copied to clipboard!'))
+          .catch(() => toast('Copy failed', true));
+      }
+    });
+
+    // History item click - restore to inputs
+    $('historyList').addEventListener('click', (e) => {
+      const item = e.target.closest('.history-item');
+      if (!item) return;
+      const idx = parseInt(item.getAttribute('data-idx'));
+      const entry = state.history[idx];
+      if (!entry) return;
+      
+      if (entry.type === 'mgrs-to-latlng') {
+        $('mgrsInput').value = entry.from;
+      } else {
+        const parsed = parseGoogleMaps(entry.from);
+        if (parsed) {
+          $('latInput').value = parsed.lat;
+          $('lngInput').value = parsed.lng;
+          $('gmapInput').value = entry.from;
+        }
+      }
+      syncInputsToState();
+      toast('Loaded from history');
+    });
+
+    // Auto-adjust orientation on resize
+    window.addEventListener('resize', () => {
+      // keep user preference; no auto switch
+    });
+  }
+
+  // Wait for mgrs library
+  if (window.mgrs) {
+    init();
+  } else {
+    window.addEventListener('load', () => {
+      if (window.mgrs) init();
+      else toast('Failed to load MGRS library', true);
+    });
+  }
+})();
+</script>
+</body>
+</html>
