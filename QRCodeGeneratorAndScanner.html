@@ -1,9 +1,12 @@
 <!DOCTYPE html>
+<!-- MIT License
+Copyright (c) 2025-2026 Valentyn Kolesnikov <0009-0003-9608-3364@orcid.org>
+-->
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="Create beautiful, customizable QR codes with embedded images, emojis, gradient colors, and multiple dot styles. Scan QR codes from camera or file. Download as PNG or SVG instantly.">
+    <meta name="description" content="Create beautiful, customizable QR codes with embedded images, emojis, gradient colors, and multiple dot styles. Scan QR codes from camera or file. Download as PNG or SVG instantly. Supports FIDO/WebAuthn QR codes.">
     <title>QR Code Generator & Scanner</title>
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%236c5ce7'/><rect x='15' y='15' width='25' height='25' rx='5' fill='white'/><rect x='60' y='15' width='25' height='25' rx='5' fill='white'/><rect x='15' y='60' width='25' height='25' rx='5' fill='white'/><rect x='20' y='20' width='15' height='15' rx='3' fill='%236c5ce7'/><rect x='65' y='20' width='15' height='15' rx='3' fill='%236c5ce7'/><rect x='20' y='65' width='15' height='15' rx='3' fill='%236c5ce7'/><rect x='60' y='60' width='10' height='10' fill='white'/><rect x='75' y='60' width='10' height='10' fill='white'/><rect x='60' y='75' width='10' height='10' fill='white'/><rect x='75' y='75' width='10' height='10' fill='white'/></svg>">
     <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js"></script>
@@ -577,6 +580,17 @@
             box-shadow: 0 6px 20px rgba(0, 206, 201, 0.5);
         }
 
+        .btn-fido {
+            background: linear-gradient(135deg, #f39c12, #e67e22);
+            color: white;
+            box-shadow: 0 4px 15px rgba(230, 126, 34, 0.4);
+        }
+
+        .btn-fido:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(230, 126, 34, 0.5);
+        }
+
         .clear-image-btn {
             display: inline-block;
             margin-top: 8px;
@@ -859,6 +873,7 @@
         }
 
         .scan-result-box.has-result { border-color: var(--accent); }
+        .scan-result-box.has-fido { border-color: #f39c12; box-shadow: 0 0 0 3px rgba(243, 156, 18, 0.15); }
 
         .scan-result-label {
             font-size: 0.75rem;
@@ -867,6 +882,20 @@
             text-transform: uppercase;
             letter-spacing: 0.5px;
             margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .fido-badge {
+            display: inline-block;
+            padding: 2px 8px;
+            background: linear-gradient(135deg, #f39c12, #e67e22);
+            color: white;
+            font-size: 0.65rem;
+            border-radius: 6px;
+            font-weight: 700;
+            letter-spacing: 0.5px;
         }
 
         .scan-result-text {
@@ -883,13 +912,27 @@
 
         .scan-result-text a:hover { text-decoration: underline; }
 
+        .fido-info-box {
+            margin-top: 10px;
+            padding: 12px;
+            background: rgba(243, 156, 18, 0.08);
+            border: 1px solid rgba(243, 156, 18, 0.3);
+            border-radius: 10px;
+            font-size: 0.8rem;
+            color: var(--text);
+            line-height: 1.5;
+        }
+
+        .fido-info-box strong { color: #f39c12; }
+
         .scan-result-actions {
             display: flex;
             gap: 8px;
             margin-top: 12px;
+            flex-wrap: wrap;
         }
 
-        .scan-result-actions .btn { padding: 10px 16px; font-size: 0.8rem; }
+        .scan-result-actions .btn { padding: 10px 16px; font-size: 0.8rem; flex: 1 1 auto; min-width: 100px; }
 
         .history-panel { margin-top: 0; }
 
@@ -958,6 +1001,11 @@
         .history-item-type.text {
             background: rgba(108, 92, 231, 0.15);
             color: var(--primary);
+        }
+
+        .history-item-type.fido {
+            background: rgba(243, 156, 18, 0.15);
+            color: #f39c12;
         }
 
         .history-item-delete {
@@ -1076,6 +1124,133 @@
             to { transform: rotate(360deg); }
         }
 
+        /* ========== FIDO MODAL ========== */
+        .fido-modal-backdrop {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: rgba(0,0,0,0.7);
+            backdrop-filter: blur(6px);
+            z-index: 2000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+        }
+
+        .fido-modal-backdrop.visible {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .fido-modal {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            padding: 32px;
+            max-width: 500px;
+            width: 100%;
+            max-height: 90vh;
+            overflow-y: auto;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+            transform: scale(0.9);
+            transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        .fido-modal-backdrop.visible .fido-modal { transform: scale(1); }
+
+        .fido-modal-header {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .fido-modal-icon {
+            width: 64px;
+            height: 64px;
+            margin: 0 auto 12px;
+            background: linear-gradient(135deg, #f39c12, #e67e22);
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2rem;
+            box-shadow: 0 8px 24px rgba(243, 156, 18, 0.4);
+        }
+
+        .fido-modal-title {
+            font-size: 1.4rem;
+            font-weight: 700;
+            margin-bottom: 6px;
+        }
+
+        .fido-modal-subtitle {
+            font-size: 0.9rem;
+            color: var(--text-muted);
+        }
+
+        .fido-modal-body {
+            font-size: 0.9rem;
+            line-height: 1.6;
+            color: var(--text);
+        }
+
+        .fido-modal-body p { margin-bottom: 12px; }
+
+        .fido-detail-box {
+            background: var(--bg);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 12px 14px;
+            margin: 12px 0;
+            font-size: 0.8rem;
+            font-family: 'Courier New', monospace;
+            word-break: break-all;
+            max-height: 120px;
+            overflow-y: auto;
+        }
+
+        .fido-detail-box .label {
+            font-family: inherit;
+            font-weight: 700;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            font-size: 0.7rem;
+            letter-spacing: 0.5px;
+            margin-bottom: 4px;
+        }
+
+        .fido-modal-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .fido-warning {
+            background: rgba(243, 156, 18, 0.1);
+            border: 1px solid rgba(243, 156, 18, 0.3);
+            border-radius: 10px;
+            padding: 10px 14px;
+            font-size: 0.8rem;
+            color: #f39c12;
+            margin: 12px 0;
+        }
+
+        .fido-status {
+            padding: 10px 14px;
+            border-radius: 10px;
+            font-size: 0.85rem;
+            margin-top: 12px;
+            display: none;
+        }
+
+        .fido-status.visible { display: block; }
+        .fido-status.info { background: rgba(0, 206, 201, 0.1); color: var(--accent); border: 1px solid rgba(0, 206, 201, 0.3); }
+        .fido-status.success { background: rgba(0, 184, 148, 0.1); color: #00b894; border: 1px solid rgba(0, 184, 148, 0.3); }
+        .fido-status.error { background: rgba(255, 71, 87, 0.1); color: #ff6b81; border: 1px solid rgba(255, 71, 87, 0.3); }
+
         @media (max-width: 768px) {
             .main-layout, .scanner-layout { grid-template-columns: 1fr; }
             header h1 { font-size: 1.8rem; }
@@ -1091,6 +1266,7 @@
             .color-row { grid-template-columns: 1fr; }
             .btn-group { flex-direction: column; }
             .mode-btn { padding: 10px 16px; font-size: 0.85rem; }
+            .fido-modal { padding: 20px; }
         }
 
         .hidden { display: none !important; }
@@ -1106,7 +1282,7 @@
     <div class="app-container">
         <header>
             <h1>✨ QR Code Studio</h1>
-            <p>Generate beautiful QR codes or scan them from camera & files</p>
+            <p>Generate beautiful QR codes or scan them from camera & files • FIDO/WebAuthn supported</p>
         </header>
 
         <div class="mode-switcher">
@@ -1352,7 +1528,7 @@
                     <div class="scanner-video-wrapper" id="scanner-video-wrapper">
                         <div class="scanner-placeholder" id="scanner-placeholder">
                             <div class="placeholder-icon">📷</div>
-                            <div class="placeholder-text">Click "Start Camera" to begin scanning<br>or upload a QR code image below</div>
+                            <div class="placeholder-text">Click "Start Camera" to begin scanning<br>or upload a QR code image below<br><br><span style="color: #f39c12;">🔐 FIDO/WebAuthn QR codes supported</span></div>
                         </div>
                         <video id="scanner-video" playsinline autoplay muted class="hidden"></video>
                         <canvas id="scanner-canvas"></canvas>
@@ -1378,9 +1554,11 @@
                     </div>
 
                     <div class="scan-result-box" id="scan-result-box">
-                        <div class="scan-result-label">Scan Result</div>
+                        <div class="scan-result-label" id="scan-result-label">Scan Result</div>
                         <div class="scan-result-text" id="scan-result-text">No QR code scanned yet</div>
+                        <div class="fido-info-box hidden" id="fido-info-box"></div>
                         <div class="scan-result-actions hidden" id="scan-result-actions">
+                            <button class="btn btn-fido hidden" id="scan-fido-btn">🔐 Authenticate</button>
                             <button class="btn btn-primary" id="scan-copy-btn">📋 Copy</button>
                             <button class="btn btn-secondary" id="scan-open-btn">🔗 Open</button>
                             <button class="btn btn-secondary" id="scan-use-btn">✏️ Use in Generator</button>
@@ -1403,6 +1581,29 @@
                         </div>
                     </div>
                 </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ================== FIDO/WebAuthn MODAL ================== -->
+    <div class="fido-modal-backdrop" id="fido-modal-backdrop">
+        <div class="fido-modal">
+            <div class="fido-modal-header">
+                <div class="fido-modal-icon">🔐</div>
+                <div class="fido-modal-title" id="fido-modal-title">FIDO Authentication</div>
+                <div class="fido-modal-subtitle" id="fido-modal-subtitle">Secure passwordless login detected</div>
+            </div>
+            <div class="fido-modal-body" id="fido-modal-body">
+                <p>A FIDO/WebAuthn QR code has been detected. You can authenticate using your security key, fingerprint, or device biometrics.</p>
+                <div id="fido-detail-container"></div>
+                <div class="fido-warning" id="fido-warning">
+                    ⚠️ Only proceed if you initiated this login request. Never authenticate on behalf of others.
+                </div>
+                <div class="fido-status" id="fido-status"></div>
+            </div>
+            <div class="fido-modal-actions">
+                <button class="btn btn-secondary" id="fido-cancel-btn">Cancel</button>
+                <button class="btn btn-fido" id="fido-authenticate-btn">🔐 Authenticate</button>
             </div>
         </div>
     </div>
@@ -1444,8 +1645,9 @@
         let scannerAnimFrame = null;
         let scanHistory = [];
         const MAX_HISTORY = 10;
-        let qrScannerInstance = null; // for QrScanner library camera mode
-        let activeScanEngine = 'jsQR'; // track which engine is active
+        let qrScannerInstance = null;
+        let activeScanEngine = 'jsQR';
+        let currentFidoData = null;
 
         const EMOJIS = [
             '😀','😎','🥰','🤩','😇','🤖','👻','💀',
@@ -1503,34 +1705,343 @@
             stopCameraBtn: $('stop-camera-btn'),
             scanFileInput: $('scan-file-input'),
             scanResultBox: $('scan-result-box'),
+            scanResultLabel: $('scan-result-label'),
             scanResultText: $('scan-result-text'),
             scanResultActions: $('scan-result-actions'),
             scanCopyBtn: $('scan-copy-btn'),
             scanOpenBtn: $('scan-open-btn'),
             scanUseBtn: $('scan-use-btn'),
+            scanFidoBtn: $('scan-fido-btn'),
+            fidoInfoBox: $('fido-info-box'),
             historyList: $('history-list'),
             historyEmpty: $('history-empty'),
             historyClearBtn: $('history-clear-btn'),
-            scannerVideoWrapper: $('scanner-video-wrapper')
+            scannerVideoWrapper: $('scanner-video-wrapper'),
+            fidoModalBackdrop: $('fido-modal-backdrop'),
+            fidoModalTitle: $('fido-modal-title'),
+            fidoModalSubtitle: $('fido-modal-subtitle'),
+            fidoDetailContainer: $('fido-detail-container'),
+            fidoStatus: $('fido-status'),
+            fidoAuthBtn: $('fido-authenticate-btn'),
+            fidoCancelBtn: $('fido-cancel-btn')
         };
 
-        // ===================== DETECT AVAILABLE SCANNER ENGINES =====================
-        function hasQrScannerLib() {
-            return typeof QrScanner !== 'undefined' && !window._qrScannerFailed;
+        // ===================== FIDO / WebAuthn SUPPORT =====================
+
+        // Detect if the scanned data is a FIDO-related code
+        // Supports:
+        //  - FIDO: URIs (cross-device / caBLE hybrid authentication)
+        //  - otpauth:// (TOTP/HOTP authenticator setup)
+        //  - webauthn:// custom scheme
+        //  - URLs containing WebAuthn/FIDO hints
+        //  - Raw JSON payloads with FIDO challenge/options
+        function detectFidoType(data) {
+            if (!data) return null;
+            const trimmed = data.trim();
+            const lower = trimmed.toLowerCase();
+
+            // FIDO: scheme used by Chrome/Android for cross-device hybrid auth
+            if (lower.startsWith('fido:/')) {
+                return { type: 'fido-hybrid', subtype: 'caBLE', raw: trimmed };
+            }
+
+            // WebAuthn custom scheme
+            if (lower.startsWith('webauthn:')) {
+                return { type: 'webauthn-uri', raw: trimmed };
+            }
+
+            // OTP Auth (not strictly FIDO but related authentication QR)
+            if (lower.startsWith('otpauth://')) {
+                return { type: 'otpauth', raw: trimmed };
+            }
+
+            // JSON payload with WebAuthn challenge options
+            if (trimmed.startsWith('{') && trimmed.endsWith('}')) {
+                try {
+                    const obj = JSON.parse(trimmed);
+                    if (obj.challenge && (obj.rp || obj.rpId || obj.allowCredentials || obj.publicKey)) {
+                        return { type: 'webauthn-json', options: obj.publicKey || obj, raw: trimmed };
+                    }
+                    if (obj.publicKey && obj.publicKey.challenge) {
+                        return { type: 'webauthn-json', options: obj.publicKey, raw: trimmed };
+                    }
+                } catch (e) { /* not JSON */ }
+            }
+
+            // URL with WebAuthn hints
+            if (/^https?:\/\//i.test(trimmed)) {
+                if (/webauthn|fido|passkey|\/auth\/qr|\/login\/qr/i.test(trimmed)) {
+                    return { type: 'webauthn-url', raw: trimmed };
+                }
+            }
+
+            return null;
         }
 
-        function hasJsQR() {
-            return typeof jsQR === 'function';
-        }
-
-        function updateEngineInfo(engine) {
-            activeScanEngine = engine;
-            const names = {
-                'qr-scanner': 'QrScanner (ZXing-based — supports styled QR)',
-                'jsQR': 'jsQR (basic)',
-                'multi': 'Multi-engine (QrScanner + jsQR fallback)'
+        // Parse FIDO: URI into components
+        function parseFidoHybridUri(uri) {
+            // FIDO:/NNNNN... where payload is base10 digits representing packed data
+            const payload = uri.replace(/^FIDO:\/*/i, '');
+            return {
+                scheme: 'FIDO',
+                payloadLength: payload.length,
+                payloadPreview: payload.substring(0, 80) + (payload.length > 80 ? '...' : '')
             };
-            els.scannerEngineInfo.textContent = 'Engine: ' + (names[engine] || engine);
+        }
+
+        // Base64URL decode helper
+        function base64urlToUint8Array(str) {
+            if (!str) return new Uint8Array();
+            str = str.replace(/-/g, '+').replace(/_/g, '/');
+            while (str.length % 4) str += '=';
+            const bin = atob(str);
+            const arr = new Uint8Array(bin.length);
+            for (let i = 0; i < bin.length; i++) arr[i] = bin.charCodeAt(i);
+            return arr;
+        }
+
+        // Convert WebAuthn JSON options into proper types
+        function prepareWebAuthnOptions(opts) {
+            const prepared = { ...opts };
+            if (typeof prepared.challenge === 'string') {
+                prepared.challenge = base64urlToUint8Array(prepared.challenge);
+            }
+            if (prepared.user && typeof prepared.user.id === 'string') {
+                prepared.user = { ...prepared.user, id: base64urlToUint8Array(prepared.user.id) };
+            }
+            if (Array.isArray(prepared.allowCredentials)) {
+                prepared.allowCredentials = prepared.allowCredentials.map(c => ({
+                    ...c,
+                    id: typeof c.id === 'string' ? base64urlToUint8Array(c.id) : c.id
+                }));
+            }
+            if (Array.isArray(prepared.excludeCredentials)) {
+                prepared.excludeCredentials = prepared.excludeCredentials.map(c => ({
+                    ...c,
+                    id: typeof c.id === 'string' ? base64urlToUint8Array(c.id) : c.id
+                }));
+            }
+            return prepared;
+        }
+
+        // Convert ArrayBuffer → base64url
+        function arrayBufferToBase64url(buffer) {
+            const bytes = new Uint8Array(buffer);
+            let bin = '';
+            for (let i = 0; i < bytes.length; i++) bin += String.fromCharCode(bytes[i]);
+            return btoa(bin).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+        }
+
+        function credentialToJSON(cred) {
+            if (!cred) return null;
+            const result = {
+                id: cred.id,
+                rawId: arrayBufferToBase64url(cred.rawId),
+                type: cred.type,
+                response: {}
+            };
+            if (cred.response.clientDataJSON) {
+                result.response.clientDataJSON = arrayBufferToBase64url(cred.response.clientDataJSON);
+            }
+            if (cred.response.authenticatorData) {
+                result.response.authenticatorData = arrayBufferToBase64url(cred.response.authenticatorData);
+            }
+            if (cred.response.signature) {
+                result.response.signature = arrayBufferToBase64url(cred.response.signature);
+            }
+            if (cred.response.userHandle) {
+                result.response.userHandle = arrayBufferToBase64url(cred.response.userHandle);
+            }
+            if (cred.response.attestationObject) {
+                result.response.attestationObject = arrayBufferToBase64url(cred.response.attestationObject);
+            }
+            return result;
+        }
+
+        // Open the FIDO modal with details about the detected code
+        function openFidoModal(fidoInfo) {
+            currentFidoData = fidoInfo;
+            const container = els.fidoDetailContainer;
+            container.innerHTML = '';
+
+            let title = 'FIDO Authentication';
+            let subtitle = 'Secure passwordless login detected';
+
+            if (fidoInfo.type === 'fido-hybrid') {
+                title = '🔗 FIDO Cross-Device Sign-in';
+                subtitle = 'Hybrid transport (caBLE) QR detected';
+                const parsed = parseFidoHybridUri(fidoInfo.raw);
+                container.innerHTML = `
+                    <div class="fido-detail-box">
+                        <div class="label">Scheme</div>
+                        ${parsed.scheme}:/
+                        <div class="label" style="margin-top:8px;">Payload Length</div>
+                        ${parsed.payloadLength} chars
+                        <div class="label" style="margin-top:8px;">Payload Preview</div>
+                        ${escapeHtml(parsed.payloadPreview)}
+                    </div>
+                `;
+            } else if (fidoInfo.type === 'webauthn-url') {
+                title = '🌐 WebAuthn URL';
+                subtitle = 'Opens a WebAuthn authentication page';
+                container.innerHTML = `
+                    <div class="fido-detail-box">
+                        <div class="label">URL</div>
+                        ${escapeHtml(fidoInfo.raw)}
+                    </div>
+                `;
+            } else if (fidoInfo.type === 'webauthn-uri') {
+                title = '🔐 WebAuthn URI';
+                subtitle = 'Native WebAuthn scheme';
+                container.innerHTML = `
+                    <div class="fido-detail-box">
+                        <div class="label">URI</div>
+                        ${escapeHtml(fidoInfo.raw)}
+                    </div>
+                `;
+            } else if (fidoInfo.type === 'webauthn-json') {
+                title = '🔐 WebAuthn Challenge';
+                subtitle = 'JSON authentication options detected';
+                const o = fidoInfo.options || {};
+                const rp = o.rp ? (o.rp.name || o.rp.id) : (o.rpId || 'unknown');
+                container.innerHTML = `
+                    <div class="fido-detail-box">
+                        <div class="label">Relying Party</div>
+                        ${escapeHtml(String(rp))}
+                        <div class="label" style="margin-top:8px;">Operation</div>
+                        ${o.user ? 'Registration (create)' : 'Authentication (get)'}
+                        <div class="label" style="margin-top:8px;">Challenge (truncated)</div>
+                        ${escapeHtml(String(o.challenge || '').substring(0, 60))}...
+                    </div>
+                `;
+            } else if (fidoInfo.type === 'otpauth') {
+                title = '🔑 OTP Authenticator';
+                subtitle = 'TOTP/HOTP setup code detected';
+                try {
+                    const url = new URL(fidoInfo.raw);
+                    const issuer = url.searchParams.get('issuer') || decodeURIComponent(url.pathname.split('/').filter(Boolean)[1] || '').split(':')[0] || 'Unknown';
+                    const account = decodeURIComponent(url.pathname.split('/').filter(Boolean)[1] || '').split(':').pop() || 'Unknown';
+                    container.innerHTML = `
+                        <div class="fido-detail-box">
+                            <div class="label">Type</div>
+                            ${escapeHtml(url.host.toUpperCase())}
+                            <div class="label" style="margin-top:8px;">Issuer</div>
+                            ${escapeHtml(issuer)}
+                            <div class="label" style="margin-top:8px;">Account</div>
+                            ${escapeHtml(account)}
+                        </div>
+                    `;
+                } catch (e) {
+                    container.innerHTML = `<div class="fido-detail-box">${escapeHtml(fidoInfo.raw)}</div>`;
+                }
+            }
+
+            els.fidoModalTitle.textContent = title;
+            els.fidoModalSubtitle.textContent = subtitle;
+            els.fidoStatus.classList.remove('visible');
+            els.fidoAuthBtn.disabled = false;
+            els.fidoAuthBtn.textContent = '🔐 Authenticate';
+            els.fidoModalBackdrop.classList.add('visible');
+        }
+
+        function closeFidoModal() {
+            els.fidoModalBackdrop.classList.remove('visible');
+            currentFidoData = null;
+        }
+
+        function setFidoStatus(kind, msg) {
+            els.fidoStatus.className = 'fido-status visible ' + kind;
+            els.fidoStatus.textContent = msg;
+        }
+
+        // Handle the "Authenticate" action based on FIDO type
+        async function handleFidoAuthenticate() {
+            if (!currentFidoData) return;
+
+            // Check WebAuthn support
+            const webauthnSupported = typeof window.PublicKeyCredential !== 'undefined'
+                && navigator.credentials
+                && typeof navigator.credentials.get === 'function';
+
+            try {
+                if (currentFidoData.type === 'webauthn-json') {
+                    if (!webauthnSupported) {
+                        setFidoStatus('error', 'WebAuthn is not supported in this browser.');
+                        return;
+                    }
+                    setFidoStatus('info', 'Prompting for authenticator...');
+                    els.fidoAuthBtn.disabled = true;
+
+                    const opts = prepareWebAuthnOptions(currentFidoData.options);
+                    let credential;
+
+                    if (opts.user) {
+                        // Registration flow (create)
+                        credential = await navigator.credentials.create({ publicKey: opts });
+                    } else {
+                        // Authentication flow (get)
+                        credential = await navigator.credentials.get({ publicKey: opts });
+                    }
+
+                    const json = credentialToJSON(credential);
+                    setFidoStatus('success', '✅ Authentication succeeded! Credential obtained.');
+                    console.log('WebAuthn credential:', json);
+                    showToast('WebAuthn authentication successful! 🔐');
+
+                    // Copy credential JSON to clipboard for server submission
+                    try {
+                        await navigator.clipboard.writeText(JSON.stringify(json, null, 2));
+                        setTimeout(() => {
+                            setFidoStatus('success', '✅ Credential copied to clipboard. Send to your server.');
+                        }, 1500);
+                    } catch(e) {}
+
+                } else if (currentFidoData.type === 'webauthn-url' || currentFidoData.type === 'webauthn-uri') {
+                    // Try to open in external handler (browser / OS handles FIDO)
+                    setFidoStatus('info', 'Opening in browser / system handler...');
+                    window.open(currentFidoData.raw, '_blank', 'noopener');
+                    setTimeout(() => closeFidoModal(), 800);
+
+                } else if (currentFidoData.type === 'fido-hybrid') {
+                    // FIDO: cross-device URIs cannot be initiated from inside a browser tab.
+                    // They are meant to be scanned by a mobile authenticator (phone) which
+                    // then performs the caBLE/hybrid handshake over BLE.
+                    // The best we can do is inform the user and offer to open via system handler.
+                    setFidoStatus('info', 'FIDO cross-device codes must be scanned by a phone authenticator. Attempting to launch system handler...');
+                    // Try to invoke the scheme (may work on some platforms)
+                    try {
+                        const a = document.createElement('a');
+                        a.href = currentFidoData.raw;
+                        a.rel = 'noopener';
+                        a.target = '_blank';
+                        document.body.appendChild(a);
+                        a.click();
+                        a.remove();
+                        setTimeout(() => {
+                            setFidoStatus('info', 'If no prompt appeared, use your phone\'s camera/authenticator app to scan this QR directly.');
+                        }, 1200);
+                    } catch (e) {
+                        setFidoStatus('error', 'Could not launch FIDO handler: ' + e.message);
+                    }
+
+                } else if (currentFidoData.type === 'otpauth') {
+                    // Cannot programmatically add to authenticator apps — copy URI
+                    try {
+                        await navigator.clipboard.writeText(currentFidoData.raw);
+                        setFidoStatus('success', '✅ OTP URI copied. Paste into your authenticator app (Google Authenticator, Authy, etc.).');
+                    } catch (e) {
+                        setFidoStatus('error', 'Copy failed. Please manually copy the URI.');
+                    }
+                }
+            } catch (err) {
+                console.error('FIDO error:', err);
+                let msg = err.message || String(err);
+                if (err.name === 'NotAllowedError') msg = 'Authentication cancelled or denied.';
+                else if (err.name === 'SecurityError') msg = 'Security error: origin/RP ID mismatch. WebAuthn requires a matching origin.';
+                else if (err.name === 'NotSupportedError') msg = 'Requested authenticator options are not supported.';
+                setFidoStatus('error', '❌ ' + msg);
+                els.fidoAuthBtn.disabled = false;
+            }
         }
 
         // ===================== UTF-8 ENCODING =====================
@@ -1844,8 +2355,22 @@
         }
 
         // ===================== MULTI-ENGINE SCANNER =====================
+        function hasQrScannerLib() {
+            return typeof QrScanner !== 'undefined' && !window._qrScannerFailed;
+        }
+        function hasJsQR() {
+            return typeof jsQR === 'function';
+        }
+        function updateEngineInfo(engine) {
+            activeScanEngine = engine;
+            const names = {
+                'qr-scanner': 'QrScanner (ZXing-based — supports styled QR)',
+                'jsQR': 'jsQR (basic)',
+                'multi': 'Multi-engine (QrScanner + jsQR fallback)'
+            };
+            els.scannerEngineInfo.textContent = 'Engine: ' + (names[engine] || engine);
+        }
 
-        // Attempt scan with QrScanner library (ZXing-based, much better with styled QR codes)
         function scanImageWithQrScanner(imgOrBlob) {
             return new Promise((resolve, reject) => {
                 if (!hasQrScannerLib()) return reject(new Error('QrScanner not available'));
@@ -1858,26 +2383,21 @@
             });
         }
 
-        // Attempt scan with jsQR
         function scanImageDataWithJsQR(imageData) {
             if (!hasJsQR()) return null;
             const code = jsQR(imageData.data, imageData.width, imageData.height, { inversionAttempts: 'attemptBoth' });
             return code ? code.data : null;
         }
 
-        // Get ImageData from canvas for jsQR
         function getImageDataFromCanvas(canvas) {
             return canvas.getContext('2d', { willReadFrequently: true }).getImageData(0, 0, canvas.width, canvas.height);
         }
 
-        // Multi-scale scan: try original, then upscaled, then with preprocessing
         function multiScaleJsQRScan(sourceCanvas) {
-            // Try original
             let imageData = getImageDataFromCanvas(sourceCanvas);
             let result = scanImageDataWithJsQR(imageData);
             if (result) return result;
 
-            // Try upscaled 2x
             const scales = [2, 3];
             for (const scale of scales) {
                 const upCanvas = document.createElement('canvas');
@@ -1891,7 +2411,6 @@
                 if (result) return result;
             }
 
-            // Try with contrast enhancement
             const enhCanvas = document.createElement('canvas');
             enhCanvas.width = sourceCanvas.width * 2;
             enhCanvas.height = sourceCanvas.height * 2;
@@ -1902,7 +2421,6 @@
             result = scanImageDataWithJsQR(imageData);
             if (result) return result;
 
-            // Try with threshold binarization
             const binCanvas = document.createElement('canvas');
             binCanvas.width = sourceCanvas.width * 2;
             binCanvas.height = sourceCanvas.height * 2;
@@ -1916,13 +2434,12 @@
 
         function binarizeImageData(imageData) {
             const d = imageData.data;
-            // Compute average brightness
             let sum = 0;
             for (let i = 0; i < d.length; i += 4) {
                 sum += d[i] * 0.299 + d[i+1] * 0.587 + d[i+2] * 0.114;
             }
             const avg = sum / (d.length / 4);
-            const threshold = avg * 0.6; // slightly below average
+            const threshold = avg * 0.6;
             for (let i = 0; i < d.length; i += 4) {
                 const gray = d[i] * 0.299 + d[i+1] * 0.587 + d[i+2] * 0.114;
                 const val = gray < threshold ? 0 : 255;
@@ -1934,7 +2451,6 @@
         // ===================== CAMERA SCANNING =====================
         async function startCamera() {
             try {
-                // Prefer QrScanner library for camera (uses ZXing under the hood)
                 if (hasQrScannerLib()) {
                     await startCameraWithQrScanner();
                 } else {
@@ -1986,7 +2502,6 @@
                 await qrScannerInstance.start();
                 els.scannerStatus.textContent = 'Scanning...';
             } catch(e) {
-                // Fallback to jsQR
                 qrScannerInstance.destroy();
                 qrScannerInstance = null;
                 await startCameraWithJsQR();
@@ -2014,13 +2529,11 @@
         }
 
         function stopCamera() {
-            // Stop QrScanner instance
             if (qrScannerInstance) {
                 qrScannerInstance.stop();
                 qrScannerInstance.destroy();
                 qrScannerInstance = null;
             }
-            // Stop manual stream
             if (scannerAnimFrame) { cancelAnimationFrame(scannerAnimFrame); scannerAnimFrame = null; }
             if (scannerStream) { scannerStream.getTracks().forEach(t => t.stop()); scannerStream = null; }
             els.scannerVideo.srcObject = null;
@@ -2034,7 +2547,6 @@
             els.scannerEngineInfo.textContent = '';
         }
 
-        // jsQR camera frame scanning with multi-scale attempts
         function scanFrameJsQR() {
             if (!scannerStream) return;
             const video = els.scannerVideo;
@@ -2043,8 +2555,6 @@
 
             if (video.readyState === video.HAVE_ENOUGH_DATA) {
                 ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-
-                // Try multi-scale scan
                 const result = multiScaleJsQRScan(canvas);
 
                 if (result) {
@@ -2064,14 +2574,13 @@
             scannerAnimFrame = requestAnimationFrame(scanFrameJsQR);
         }
 
-        // ===================== FILE SCANNING (MULTI-ENGINE) =====================
+        // ===================== FILE SCANNING =====================
         async function scanFromFile(file) {
             if (!file) return;
 
             els.scannerStatus.textContent = 'Processing image...';
             els.scannerStatus.className = 'scanner-status scanning';
 
-            // Show processing overlay
             let overlay = els.scannerVideoWrapper.querySelector('.scan-processing-overlay');
             if (!overlay) {
                 overlay = document.createElement('div');
@@ -2084,22 +2593,19 @@
             try {
                 let result = null;
 
-                // Engine 1: Try QrScanner (ZXing-based) — best for styled QR codes
                 if (hasQrScannerLib()) {
                     try {
                         result = await scanImageWithQrScanner(file);
                         if (result) updateEngineInfo('qr-scanner');
-                    } catch(e) { /* continue to next engine */ }
+                    } catch(e) { /* continue */ }
                 }
 
-                // Engine 2: Try jsQR with multi-scale and preprocessing
                 if (!result && hasJsQR()) {
                     result = await new Promise((resolve) => {
                         const reader = new FileReader();
                         reader.onload = (ev) => {
                             const img = new Image();
                             img.onload = () => {
-                                // Try multiple sizes
                                 const sizes = [640, 1024, 1600, 320];
                                 for (const maxDim of sizes) {
                                     let w = img.width, h = img.height;
@@ -2122,10 +2628,8 @@
                     });
                 }
 
-                // Engine 3: Try QrScanner with blob if first attempt used File
                 if (!result && hasQrScannerLib()) {
                     try {
-                        // Convert to canvas blob with preprocessing
                         const processedBlob = await preprocessFileForScan(file);
                         if (processedBlob) {
                             result = await scanImageWithQrScanner(processedBlob);
@@ -2152,7 +2656,6 @@
             }
         }
 
-        // Preprocess image: enhance contrast, binarize, upscale
         function preprocessFileForScan(file) {
             return new Promise((resolve) => {
                 const reader = new FileReader();
@@ -2168,7 +2671,6 @@
                         const canvas = document.createElement('canvas');
                         canvas.width = w * 2; canvas.height = h * 2;
                         const ctx = canvas.getContext('2d');
-                        // High contrast grayscale
                         ctx.filter = 'contrast(2.5) grayscale(1) brightness(1.1)';
                         ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
                         canvas.toBlob(blob => resolve(blob), 'image/png');
@@ -2188,16 +2690,52 @@
             if (data === lastScanResult && now - lastScanTime < 3000) return;
             lastScanResult = data; lastScanTime = now;
 
+            const fidoInfo = detectFidoType(data);
             const isUrl = /^https?:\/\//i.test(data);
+
+            // Set label
+            if (fidoInfo) {
+                els.scanResultLabel.innerHTML = 'Scan Result <span class="fido-badge">🔐 FIDO / WebAuthn</span>';
+                els.scanResultBox.classList.add('has-fido');
+                els.scanResultBox.classList.add('has-result');
+            } else {
+                els.scanResultLabel.innerHTML = 'Scan Result';
+                els.scanResultBox.classList.remove('has-fido');
+                els.scanResultBox.classList.add('has-result');
+            }
+
             if (isUrl) {
                 els.scanResultText.innerHTML = `<a href="${escapeHtml(data)}" target="_blank" rel="noopener">${escapeHtml(data)}</a>`;
             } else {
                 els.scanResultText.textContent = data;
             }
-            els.scanResultBox.classList.add('has-result');
+
+            // FIDO info box
+            if (fidoInfo) {
+                let infoText = '';
+                if (fidoInfo.type === 'fido-hybrid') {
+                    infoText = '<strong>🔗 FIDO Cross-Device Sign-in</strong><br>This code is for hybrid transport (caBLE) authentication. Typically scanned by a mobile authenticator via BLE.';
+                } else if (fidoInfo.type === 'webauthn-json') {
+                    infoText = '<strong>🔐 WebAuthn Challenge</strong><br>Structured WebAuthn options detected. Click "Authenticate" to invoke your security key or biometric authenticator.';
+                } else if (fidoInfo.type === 'webauthn-url') {
+                    infoText = '<strong>🌐 WebAuthn URL</strong><br>Opens a webpage that will request WebAuthn authentication.';
+                } else if (fidoInfo.type === 'webauthn-uri') {
+                    infoText = '<strong>🔐 WebAuthn URI</strong><br>Native WebAuthn protocol handler.';
+                } else if (fidoInfo.type === 'otpauth') {
+                    infoText = '<strong>🔑 OTP Authenticator Setup</strong><br>Use your authenticator app (Google Authenticator, Authy, 1Password, etc.) to add this account.';
+                }
+                els.fidoInfoBox.innerHTML = infoText;
+                els.fidoInfoBox.classList.remove('hidden');
+                els.scanFidoBtn.classList.remove('hidden');
+            } else {
+                els.fidoInfoBox.classList.add('hidden');
+                els.scanFidoBtn.classList.add('hidden');
+            }
+
             els.scanResultActions.classList.remove('hidden');
             els.scanOpenBtn.style.display = isUrl ? '' : 'none';
 
+            // Bind actions
             els.scanCopyBtn.onclick = () => {
                 navigator.clipboard.writeText(data).then(() => showToast('Copied! 📋')).catch(() => showToast('Copy failed ❌'));
             };
@@ -2208,9 +2746,17 @@
                 $$('.mode-content').forEach(mc => mc.classList.toggle('active', mc.id === 'mode-generate'));
                 showToast('Text loaded into generator! ✏️');
             };
+            els.scanFidoBtn.onclick = () => openFidoModal(fidoInfo);
 
-            addToHistory(data);
-            showToast('QR Code scanned! ✓');
+            addToHistory(data, fidoInfo ? 'fido' : (isUrl ? 'url' : 'text'));
+
+            if (fidoInfo) {
+                showToast('🔐 FIDO/WebAuthn code detected!');
+                // Auto-open the modal for FIDO codes
+                setTimeout(() => openFidoModal(fidoInfo), 400);
+            } else {
+                showToast('QR Code scanned! ✓');
+            }
         }
 
         function escapeHtml(str) {
@@ -2218,9 +2764,13 @@
         }
 
         // ===================== HISTORY =====================
-        function addToHistory(data) {
+        function addToHistory(data, type) {
             scanHistory = scanHistory.filter(item => item.data !== data);
-            scanHistory.unshift({ data, timestamp: Date.now(), type: /^https?:\/\//i.test(data) ? 'url' : 'text' });
+            scanHistory.unshift({
+                data,
+                timestamp: Date.now(),
+                type: type || (/^https?:\/\//i.test(data) ? 'url' : 'text')
+            });
             if (scanHistory.length > MAX_HISTORY) scanHistory = scanHistory.slice(0, MAX_HISTORY);
             saveHistory(); renderHistory();
         }
@@ -2249,32 +2799,25 @@
                 const el = document.createElement('div');
                 el.className = 'history-item';
                 const timeStr = formatTime(item.timestamp);
-                const isUrl = item.type === 'url';
                 const displayText = item.data.length > 120 ? item.data.substring(0, 120) + '...' : item.data;
+                let typeBadge = '';
+                if (item.type === 'fido') typeBadge = '<span class="history-item-type fido">🔐 FIDO</span>';
+                else if (item.type === 'url') typeBadge = '<span class="history-item-type url">🔗 URL</span>';
+                else typeBadge = '<span class="history-item-type text">📝 Text</span>';
+
                 el.innerHTML = `
                     <div class="history-item-content">${escapeHtml(displayText)}</div>
                     <div class="history-item-meta">
                         <span class="history-item-time">${timeStr}</span>
-                        <span class="history-item-type ${item.type}">${isUrl ? '🔗 URL' : '📝 Text'}</span>
+                        ${typeBadge}
                     </div>
                     <button class="history-item-delete" title="Delete">✕</button>
                 `;
                 el.addEventListener('click', (e) => {
                     if (e.target.closest('.history-item-delete')) return;
-                    navigator.clipboard.writeText(item.data).then(() => showToast('Copied from history! 📋')).catch(() => {});
-                    if (isUrl) els.scanResultText.innerHTML = `<a href="${escapeHtml(item.data)}" target="_blank" rel="noopener">${escapeHtml(item.data)}</a>`;
-                    else els.scanResultText.textContent = item.data;
-                    els.scanResultBox.classList.add('has-result');
-                    els.scanResultActions.classList.remove('hidden');
-                    els.scanOpenBtn.style.display = isUrl ? '' : 'none';
-                    els.scanCopyBtn.onclick = () => navigator.clipboard.writeText(item.data).then(() => showToast('Copied! 📋'));
-                    els.scanOpenBtn.onclick = () => { if (isUrl) window.open(item.data, '_blank', 'noopener'); };
-                    els.scanUseBtn.onclick = () => {
-                        state.text = item.data; saveState(); applyStateToUI(); generateQR();
-                        $$('[data-mode]').forEach(b => b.classList.toggle('active', b.dataset.mode === 'generate'));
-                        $$('.mode-content').forEach(mc => mc.classList.toggle('active', mc.id === 'mode-generate'));
-                        showToast('Text loaded into generator! ✏️');
-                    };
+                    // Replay scan
+                    lastScanResult = ''; // force re-process
+                    handleScanResult(item.data);
                 });
                 el.querySelector('.history-item-delete').addEventListener('click', (e) => {
                     e.stopPropagation(); removeFromHistory(index);
@@ -2394,6 +2937,19 @@
                 const file = e.dataTransfer.files[0];
                 if (file && file.type.startsWith('image/')) scanFromFile(file);
             });
+
+            // FIDO Modal events
+            els.fidoCancelBtn.addEventListener('click', closeFidoModal);
+            els.fidoAuthBtn.addEventListener('click', handleFidoAuthenticate);
+            els.fidoModalBackdrop.addEventListener('click', (e) => {
+                if (e.target === els.fidoModalBackdrop) closeFidoModal();
+            });
+            // ESC to close modal
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape' && els.fidoModalBackdrop.classList.contains('visible')) {
+                    closeFidoModal();
+                }
+            });
         }
 
         // ===================== INIT =====================
@@ -2401,11 +2957,15 @@
             loadState(); loadHistory(); buildEmojiGrid(); bindEvents();
             applyStateToUI(); generateQR(); renderHistory();
 
-            // Show available engines
+            // Show available engines + WebAuthn support
             const engines = [];
             if (hasQrScannerLib()) engines.push('QrScanner (ZXing)');
             if (hasJsQR()) engines.push('jsQR');
-            els.scannerEngineInfo.textContent = 'Available engines: ' + (engines.length ? engines.join(', ') : 'None loaded!');
+
+            const webauthnOk = typeof window.PublicKeyCredential !== 'undefined';
+            let info = 'Available engines: ' + (engines.length ? engines.join(', ') : 'None loaded!');
+            info += ' • WebAuthn: ' + (webauthnOk ? '✅ supported' : '❌ unavailable');
+            els.scannerEngineInfo.textContent = info;
         }
 
         init();
