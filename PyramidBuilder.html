@@ -1,0 +1,1063 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Stack Attack - Pyramid Builder</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; user-select: none; -webkit-tap-highlight-color: transparent; }
+  
+  html, body {
+    width: 100%; height: 100%; overflow: hidden;
+    font-family: 'Segoe UI', Tahoma, sans-serif;
+    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+    color: #fff;
+  }
+  
+  #app {
+    width: 100vw; height: 100vh;
+    display: flex; flex-direction: column;
+    position: relative;
+  }
+  
+  /* ===== Menu ===== */
+  #menu {
+    position: absolute; inset: 0;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    gap: 20px; padding: 20px;
+    background: linear-gradient(135deg, rgba(26,26,46,0.95), rgba(15,52,96,0.95));
+    z-index: 100;
+    overflow-y: auto;
+  }
+  
+  #menu h1 {
+    font-size: clamp(2em, 8vw, 4em);
+    background: linear-gradient(90deg, #ff6b6b, #feca57, #48dbfb, #1dd1a1, #ff6b6b);
+    background-size: 300% 100%;
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    animation: shine 3s linear infinite;
+    text-shadow: 0 0 30px rgba(255,255,255,0.2);
+    letter-spacing: 2px;
+  }
+  
+  @keyframes shine {
+    0% { background-position: 0% 50%; }
+    100% { background-position: 300% 50%; }
+  }
+  
+  #menu h2 { font-size: 1.2em; opacity: 0.8; margin-bottom: 10px; text-align: center; }
+  
+  .preview {
+    width: min(280px, 70vw);
+    height: min(200px, 40vh);
+    border-radius: 15px;
+    background: linear-gradient(135deg, #fff, #ecf0f1);
+    display: flex; align-items: center; justify-content: center;
+    position: relative; overflow: hidden;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+  }
+  
+  .preview svg { width: 90%; height: 90%; }
+  
+  .difficulty-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+    gap: 10px;
+    width: min(500px, 90vw);
+  }
+  
+  .diff-btn {
+    padding: 15px 10px;
+    border: 2px solid rgba(255,255,255,0.2);
+    border-radius: 12px;
+    background: rgba(255,255,255,0.05);
+    color: #fff; cursor: pointer;
+    font-size: 0.9em; font-weight: bold;
+    transition: all 0.2s;
+    display: flex; flex-direction: column; align-items: center; gap: 5px;
+  }
+  
+  .diff-btn:hover, .diff-btn.selected {
+    background: linear-gradient(135deg, #ff6b6b, #feca57);
+    border-color: #feca57;
+    transform: translateY(-2px);
+    box-shadow: 0 5px 20px rgba(255,202,87,0.4);
+  }
+  
+  .diff-btn .stars { font-size: 0.8em; color: #feca57; }
+  .diff-btn.selected .stars { color: #fff; }
+  
+  .btn-primary {
+    padding: 15px 40px;
+    font-size: 1.2em; font-weight: bold;
+    border: none; border-radius: 50px;
+    background: linear-gradient(135deg, #1dd1a1, #10ac84);
+    color: #fff; cursor: pointer;
+    box-shadow: 0 5px 20px rgba(29,209,161,0.4);
+    transition: all 0.2s;
+  }
+  
+  .btn-primary:hover { transform: translateY(-2px) scale(1.05); }
+  .btn-primary:active { transform: translateY(0) scale(1); }
+  
+  .btn-secondary {
+    padding: 10px 25px;
+    border: 2px solid rgba(255,255,255,0.3);
+    border-radius: 50px;
+    background: rgba(255,255,255,0.05);
+    color: #fff; cursor: pointer;
+    font-size: 1em;
+    transition: all 0.2s;
+  }
+  .btn-secondary:hover { background: rgba(255,255,255,0.15); }
+  
+  /* ===== Game ===== */
+  #game {
+    width: 100%; height: 100%;
+    display: flex; flex-direction: column;
+  }
+  
+  #topbar {
+    padding: 10px 15px;
+    display: flex; justify-content: space-between; align-items: center;
+    background: rgba(0,0,0,0.3);
+    backdrop-filter: blur(10px);
+    border-bottom: 1px solid rgba(255,255,255,0.1);
+    z-index: 10;
+  }
+  
+  .player-info {
+    display: flex; align-items: center; gap: 10px;
+    padding: 8px 15px;
+    border-radius: 30px;
+    background: rgba(255,255,255,0.08);
+    font-size: 0.9em;
+  }
+  
+  .player-info.active {
+    background: linear-gradient(135deg, rgba(255,107,107,0.4), rgba(254,202,87,0.4));
+    box-shadow: 0 0 15px rgba(254,202,87,0.5);
+  }
+  
+  .avatar {
+    width: 30px; height: 30px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.2em;
+  }
+  
+  .avatar.human { background: linear-gradient(135deg, #48dbfb, #0abde3); }
+  .avatar.ai { background: linear-gradient(135deg, #ff6b6b, #ee5253); }
+  
+  #status {
+    flex: 1; text-align: center;
+    font-size: 1em; font-weight: bold;
+    padding: 0 10px;
+  }
+  
+  #menuBtn {
+    padding: 8px 15px;
+    border: none; border-radius: 20px;
+    background: rgba(255,255,255,0.1);
+    color: #fff; cursor: pointer;
+    font-size: 1.2em;
+  }
+  #menuBtn:hover { background: rgba(255,255,255,0.2); }
+  
+  #board {
+    flex: 1; position: relative;
+    display: flex; align-items: flex-end; justify-content: center;
+    overflow: hidden;
+    padding: 20px;
+  }
+  
+  canvas {
+    display: block;
+    touch-action: none;
+  }
+  
+  #piecesBar {
+    padding: 15px;
+    background: rgba(0,0,0,0.3);
+    backdrop-filter: blur(10px);
+    border-top: 1px solid rgba(255,255,255,0.1);
+    overflow-x: auto;
+    display: flex; gap: 10px;
+    align-items: center;
+    scrollbar-width: thin;
+  }
+  
+  #piecesBar::-webkit-scrollbar { height: 5px; }
+  #piecesBar::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 5px; }
+  
+  .piece-option {
+    flex-shrink: 0;
+    width: 70px; height: 70px;
+    border-radius: 10px;
+    background: rgba(255,255,255,0.08);
+    border: 2px solid transparent;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    transition: all 0.2s;
+  }
+  
+  .piece-option:hover { background: rgba(255,255,255,0.15); }
+  .piece-option.selected {
+    border-color: #feca57;
+    background: rgba(254,202,87,0.15);
+    box-shadow: 0 0 15px rgba(254,202,87,0.5);
+  }
+  
+  .piece-option canvas { width: 100%; height: 100%; }
+  
+  .rotate-btn {
+    flex-shrink: 0;
+    width: 50px; height: 50px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #5f27cd, #341f97);
+    border: none; color: #fff;
+    font-size: 1.5em; cursor: pointer;
+    box-shadow: 0 3px 10px rgba(95,39,205,0.5);
+    transition: all 0.2s;
+  }
+  .rotate-btn:hover { transform: rotate(90deg); }
+  .rotate-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+  
+  /* ===== Overlay / End Modal ===== */
+  #endModal {
+    position: absolute; inset: 0;
+    background: rgba(0,0,0,0.8);
+    backdrop-filter: blur(10px);
+    display: none;
+    align-items: center; justify-content: center;
+    z-index: 50;
+  }
+  #endModal.show { display: flex; }
+  
+  .modal-content {
+    background: linear-gradient(135deg, #2c3e50, #1a1a2e);
+    border: 2px solid rgba(255,255,255,0.1);
+    padding: 30px; border-radius: 20px;
+    text-align: center;
+    max-width: 90vw;
+    animation: popIn 0.4s ease;
+  }
+  
+  @keyframes popIn {
+    from { transform: scale(0.5); opacity: 0; }
+    to { transform: scale(1); opacity: 1; }
+  }
+  
+  .modal-content h2 { font-size: 2em; margin-bottom: 15px; }
+  .modal-content p { margin-bottom: 20px; opacity: 0.9; }
+  .modal-content .emoji { font-size: 4em; margin-bottom: 10px; }
+  
+  .win { color: #1dd1a1; }
+  .lose { color: #ff6b6b; }
+  
+  /* Orientation */
+  @media (orientation: landscape) and (max-height: 500px) {
+    #menu h1 { font-size: 2em; }
+    .preview { height: 120px; width: 180px; }
+    #piecesBar { padding: 8px; }
+    .piece-option { width: 55px; height: 55px; }
+  }
+</style>
+</head>
+<body>
+<div id="app">
+  
+  <!-- Main Menu -->
+  <div id="menu">
+    <h1>STACK ATTACK</h1>
+    <h2>🏛️ Build the Pyramid - Don't let it fall! 🏛️</h2>
+    
+    <div class="preview" id="previewBox">
+      <svg viewBox="0 0 200 140" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <linearGradient id="base" x1="0" x2="0" y1="0" y2="1">
+            <stop offset="0" stop-color="#fff"/>
+            <stop offset="1" stop-color="#bdc3c7"/>
+          </linearGradient>
+        </defs>
+        <!-- Tetromino pieces forming pyramid -->
+        <g stroke="#333" stroke-width="1.5">
+          <!-- Row 1 -->
+          <rect x="70" y="20" width="15" height="15" fill="#e74c3c"/>
+          <rect x="85" y="20" width="15" height="15" fill="#e74c3c"/>
+          <rect x="100" y="20" width="15" height="15" fill="#f1c40f"/>
+          <rect x="115" y="20" width="15" height="15" fill="#f1c40f"/>
+          <!-- Row 2 -->
+          <rect x="55" y="35" width="15" height="15" fill="#2ecc71"/>
+          <rect x="70" y="35" width="15" height="15" fill="#2ecc71"/>
+          <rect x="85" y="35" width="15" height="15" fill="#3498db"/>
+          <rect x="100" y="35" width="15" height="15" fill="#3498db"/>
+          <rect x="115" y="35" width="15" height="15" fill="#9b59b6"/>
+          <rect x="130" y="35" width="15" height="15" fill="#9b59b6"/>
+          <!-- Row 3 -->
+          <rect x="40" y="50" width="15" height="15" fill="#e67e22"/>
+          <rect x="55" y="50" width="15" height="15" fill="#e67e22"/>
+          <rect x="70" y="50" width="15" height="15" fill="#1abc9c"/>
+          <rect x="85" y="50" width="15" height="15" fill="#1abc9c"/>
+          <rect x="100" y="50" width="15" height="15" fill="#e74c3c"/>
+          <rect x="115" y="50" width="15" height="15" fill="#f39c12"/>
+          <rect x="130" y="50" width="15" height="15" fill="#f39c12"/>
+          <rect x="145" y="50" width="15" height="15" fill="#16a085"/>
+        </g>
+        <!-- Curved base -->
+        <path d="M 30 65 Q 100 85 170 65 L 170 100 Q 100 120 30 100 Z" fill="url(#base)" stroke="#95a5a6" stroke-width="2"/>
+        <text x="100" y="90" text-anchor="middle" font-family="Impact" font-size="14" fill="#e74c3c">STACK</text>
+        <text x="100" y="102" text-anchor="middle" font-family="Impact" font-size="8" fill="#3498db">ATTACK</text>
+        <!-- Base support -->
+        <rect x="80" y="115" width="40" height="20" rx="4" fill="#2c3e50"/>
+      </svg>
+    </div>
+    
+    <h2>Choose AI Difficulty:</h2>
+    <div class="difficulty-grid" id="diffGrid">
+      <div class="diff-btn" data-diff="1"><span>🌱 Rookie</span><span class="stars">★☆☆☆☆</span></div>
+      <div class="diff-btn" data-diff="2"><span>🎯 Easy</span><span class="stars">★★☆☆☆</span></div>
+      <div class="diff-btn selected" data-diff="3"><span>⚡ Medium</span><span class="stars">★★★☆☆</span></div>
+      <div class="diff-btn" data-diff="4"><span>🔥 Hard</span><span class="stars">★★★★☆</span></div>
+      <div class="diff-btn" data-diff="5"><span>👑 Master</span><span class="stars">★★★★★</span></div>
+    </div>
+    
+    <div style="display:flex; gap:15px; flex-wrap:wrap; justify-content:center;">
+      <button class="btn-primary" id="newGameBtn">🎮 New Game</button>
+      <button class="btn-secondary" id="continueBtn" style="display:none;">▶ Continue</button>
+    </div>
+  </div>
+  
+  <!-- Game -->
+  <div id="game" style="display:none;">
+    <div id="topbar">
+      <div class="player-info" id="humanInfo">
+        <div class="avatar human">👤</div>
+        <div><div style="font-size:0.75em;opacity:0.7">YOU</div><div id="humanPieces">7 pieces</div></div>
+      </div>
+      <div id="status">Your turn</div>
+      <div class="player-info" id="aiInfo">
+        <div><div style="font-size:0.75em;opacity:0.7;text-align:right">AI</div><div id="aiPieces">7 pieces</div></div>
+        <div class="avatar ai">🤖</div>
+      </div>
+      <button id="menuBtn">☰</button>
+    </div>
+    
+    <div id="board">
+      <canvas id="canvas"></canvas>
+    </div>
+    
+    <div id="piecesBar">
+      <button class="rotate-btn" id="rotateBtn" title="Rotate piece">↻</button>
+      <div id="piecesList" style="display:flex; gap:10px;"></div>
+    </div>
+    
+    <div id="endModal">
+      <div class="modal-content">
+        <div class="emoji" id="endEmoji">🎉</div>
+        <h2 id="endTitle">You Win!</h2>
+        <p id="endText">The tower collapsed on your opponent!</p>
+        <button class="btn-primary" id="playAgainBtn">Play Again</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ============== GAME CONFIG ==============
+const COLORS = ['#e74c3c','#f39c12','#f1c40f','#2ecc71','#1abc9c','#3498db','#9b59b6','#e91e63'];
+
+// Tetris-like pieces (relative cell coordinates)
+const PIECE_SHAPES = [
+  [[0,0],[1,0],[0,1],[1,1]],       // O
+  [[0,0],[1,0],[2,0],[3,0]],       // I
+  [[0,0],[1,0],[2,0],[1,1]],       // T
+  [[0,0],[1,0],[2,0],[0,1]],       // L
+  [[0,0],[1,0],[2,0],[2,1]],       // J
+  [[1,0],[2,0],[0,1],[1,1]],       // S
+  [[0,0],[1,0],[1,1],[2,1]],       // Z
+];
+
+const CELL = 28;                  // cell pixel size
+const BOARD_W = 12;               // board width in cells
+const BOARD_H = 18;               // board height in cells
+const GRAVITY = 0.5;
+const FRICTION = 0.98;
+const MAX_TILT = 0.35;            // radians before collapse
+
+// ============== STATE ==============
+let state = null;
+let selectedDifficulty = 3;
+
+function createInitialState() {
+  return {
+    difficulty: selectedDifficulty,
+    currentPlayer: 'human',
+    board: [],                   // array of placed pieces
+    humanPieces: generatePieceQueue(7),
+    aiPieces: generatePieceQueue(7),
+    selectedPieceIdx: 0,
+    rotation: 0,
+    tilt: 0,
+    angVel: 0,
+    gameOver: false,
+    winner: null,
+    turnCount: 0
+  };
+}
+
+function generatePieceQueue(n) {
+  const arr = [];
+  for (let i = 0; i < n; i++) {
+    arr.push({
+      shapeIdx: Math.floor(Math.random() * PIECE_SHAPES.length),
+      color: COLORS[Math.floor(Math.random() * COLORS.length)]
+    });
+  }
+  return arr;
+}
+
+function rotateShape(shape, rot) {
+  let s = shape.map(c => [...c]);
+  for (let r = 0; r < rot; r++) {
+    s = s.map(([x,y]) => [-y, x]);
+  }
+  // normalize to positive coords
+  const minX = Math.min(...s.map(c=>c[0]));
+  const minY = Math.min(...s.map(c=>c[1]));
+  return s.map(([x,y]) => [x-minX, y-minY]);
+}
+
+function getShape(piece, rotation) {
+  return rotateShape(PIECE_SHAPES[piece.shapeIdx], rotation);
+}
+
+// ============== PHYSICS / BOARD ==============
+// Board: stack of placed cells { x, y, color }
+// Pieces rest naturally; we compute drop Y for placement and balance.
+
+function canPlaceAt(piece, rotation, gridX, placed) {
+  const shape = getShape(piece, rotation);
+  const cells = shape.map(([dx,dy]) => [gridX+dx, dy]);
+  // Check horizontal bounds
+  for (const [x,y] of cells) {
+    if (x < 0 || x >= BOARD_W) return null;
+  }
+  // Find landing y: for each cell, find max stack height below
+  // Get occupied cells per column
+  const colHeights = {};
+  for (const cell of placed) {
+    if (colHeights[cell.x] === undefined || cell.y < colHeights[cell.x]) {
+      colHeights[cell.x] = cell.y;
+    }
+  }
+  // For each column in piece, find min y offset where it can stack
+  let landY = BOARD_H - 1; // bottom row
+  // compute shape per column (min y)
+  const shapeCols = {};
+  for (const [dx,dy] of shape) {
+    if (shapeCols[dx] === undefined || dy > shapeCols[dx]) shapeCols[dx] = dy;
+  }
+  // top row offset per column
+  const shapeTops = {};
+  for (const [dx,dy] of shape) {
+    if (shapeTops[dx] === undefined || dy < shapeTops[dx]) shapeTops[dx] = dy;
+  }
+  
+  // Landing: for each column, bottom cell of piece needs to rest on top of column stack (or floor)
+  let minTop = Infinity;
+  for (const dx in shapeCols) {
+    const absX = gridX + parseInt(dx);
+    const colTop = colHeights[absX] !== undefined ? colHeights[absX] : BOARD_H;
+    const bottomDy = shapeCols[dx];
+    // top row of piece
+    const pieceTop = colTop - 1 - (bottomDy - shapeTops[dx]);
+    if (pieceTop < minTop) minTop = pieceTop;
+  }
+  // Actually calculate topY properly - use stable algorithm
+  let topY = -Infinity;
+  for (const dx in shapeCols) {
+    const absX = gridX + parseInt(dx);
+    const colTop = colHeights[absX] !== undefined ? colHeights[absX] : BOARD_H;
+    // bottom cell of this column in shape
+    const bottomLocal = shapeCols[dx];
+    const candidateTop = colTop - 1 - bottomLocal;
+    if (candidateTop > topY) topY = candidateTop;
+  }
+  
+  // Return the absolute cells after placement
+  const finalCells = shape.map(([dx,dy]) => ({ x: gridX+dx, y: topY+dy }));
+  // Validate all within board
+  for (const c of finalCells) {
+    if (c.y < 0) return null; // overflow top
+    if (c.x < 0 || c.x >= BOARD_W) return null;
+  }
+  return finalCells;
+}
+
+function computeBalance(placed) {
+  // Compute center of mass relative to base center
+  if (placed.length === 0) return { cog: 0, unstable: 0 };
+  let sumX = 0;
+  for (const c of placed) sumX += c.x;
+  const cogX = sumX / placed.length;
+  const centerX = (BOARD_W - 1) / 2;
+  const offset = cogX - centerX;
+  // Higher pieces contribute more to tilt
+  let weighted = 0;
+  for (const c of placed) {
+    const height = BOARD_H - c.y;
+    weighted += (c.x - centerX) * height;
+  }
+  return { cog: offset, torque: weighted / placed.length };
+}
+
+// ============== RENDER ==============
+const canvas = document.getElementById('canvas');
+const ctx = canvas.getContext('2d');
+let boardWidth = 0, boardHeight = 0;
+let scale = 1;
+let ghostCell = null; // {gridX} preview
+let animFrame = null;
+
+function resize() {
+  const board = document.getElementById('board');
+  const rect = board.getBoundingClientRect();
+  const ideal_w = BOARD_W * CELL + 80;
+  const ideal_h = BOARD_H * CELL + 80;
+  const sx = rect.width / ideal_w;
+  const sy = rect.height / ideal_h;
+  scale = Math.min(sx, sy, 1.5);
+  boardWidth = ideal_w * scale;
+  boardHeight = ideal_h * scale;
+  canvas.width = boardWidth * devicePixelRatio;
+  canvas.height = boardHeight * devicePixelRatio;
+  canvas.style.width = boardWidth + 'px';
+  canvas.style.height = boardHeight + 'px';
+  ctx.setTransform(devicePixelRatio*scale, 0, 0, devicePixelRatio*scale, 0, 0);
+  render();
+}
+
+function render() {
+  if (!state) return;
+  const w = BOARD_W * CELL + 80;
+  const h = BOARD_H * CELL + 80;
+  ctx.clearRect(0, 0, w, h);
+  
+  // Apply tilt transform
+  ctx.save();
+  const cx = w/2;
+  const cy = h - 40;
+  ctx.translate(cx, cy);
+  ctx.rotate(state.tilt);
+  ctx.translate(-cx, -cy);
+  
+  // Draw board area background (subtle)
+  const boardLeft = 40;
+  const boardTop = 40;
+  const boardRight = boardLeft + BOARD_W * CELL;
+  const boardBottom = boardTop + BOARD_H * CELL;
+  
+  // Draw balance base (like in picture - curved white base)
+  drawBase(ctx, cx, boardBottom);
+  
+  // Draw grid hint
+  ctx.strokeStyle = 'rgba(255,255,255,0.05)';
+  ctx.lineWidth = 1;
+  for (let i = 0; i <= BOARD_W; i++) {
+    ctx.beginPath();
+    ctx.moveTo(boardLeft + i*CELL, boardTop);
+    ctx.lineTo(boardLeft + i*CELL, boardBottom);
+    ctx.stroke();
+  }
+  
+  // Draw placed pieces
+  for (const cell of state.board) {
+    drawCell(ctx, boardLeft + cell.x * CELL, boardTop + cell.y * CELL, cell.color);
+  }
+  
+  // Ghost preview
+  if (ghostCell && state.currentPlayer === 'human' && !state.gameOver) {
+    const piece = state.humanPieces[state.selectedPieceIdx];
+    if (piece) {
+      const placement = canPlaceAt(piece, state.rotation, ghostCell.gridX, state.board);
+      if (placement) {
+        ctx.globalAlpha = 0.4;
+        for (const cell of placement) {
+          drawCell(ctx, boardLeft + cell.x * CELL, boardTop + cell.y * CELL, piece.color);
+        }
+        ctx.globalAlpha = 1;
+      }
+    }
+  }
+  
+  ctx.restore();
+  
+  // Balance indicator (not tilted)
+  drawBalanceMeter(ctx, w, h);
+}
+
+function drawCell(ctx, x, y, color) {
+  const pad = 1;
+  // Main block
+  ctx.fillStyle = color;
+  ctx.fillRect(x+pad, y+pad, CELL-pad*2, CELL-pad*2);
+  // Highlight
+  ctx.fillStyle = 'rgba(255,255,255,0.3)';
+  ctx.fillRect(x+pad, y+pad, CELL-pad*2, 4);
+  ctx.fillRect(x+pad, y+pad, 4, CELL-pad*2);
+  // Shadow
+  ctx.fillStyle = 'rgba(0,0,0,0.25)';
+  ctx.fillRect(x+pad, y+CELL-pad-4, CELL-pad*2, 4);
+  ctx.fillRect(x+CELL-pad-4, y+pad, 4, CELL-pad*2);
+  // Inner border
+  ctx.strokeStyle = 'rgba(0,0,0,0.4)';
+  ctx.lineWidth = 1;
+  ctx.strokeRect(x+pad+0.5, y+pad+0.5, CELL-pad*2-1, CELL-pad*2-1);
+}
+
+function drawBase(ctx, cx, baseY) {
+  // Pedestal (curved white base like in the reference image)
+  const baseW = BOARD_W * CELL + 60;
+  const baseH = 30;
+  const grad = ctx.createLinearGradient(0, baseY, 0, baseY + baseH);
+  grad.addColorStop(0, '#fff');
+  grad.addColorStop(1, '#95a5a6');
+  ctx.fillStyle = grad;
+  ctx.beginPath();
+  ctx.moveTo(cx - baseW/2, baseY);
+  ctx.quadraticCurveTo(cx, baseY + 15, cx + baseW/2, baseY);
+  ctx.lineTo(cx + baseW/2 - 20, baseY + baseH);
+  ctx.lineTo(cx - baseW/2 + 20, baseY + baseH);
+  ctx.closePath();
+  ctx.fill();
+  ctx.strokeStyle = '#7f8c8d';
+  ctx.lineWidth = 2;
+  ctx.stroke();
+  
+  // STACK logo
+  ctx.fillStyle = '#e74c3c';
+  ctx.font = 'bold 14px Impact';
+  ctx.textAlign = 'center';
+  ctx.fillText('STACK', cx, baseY + 20);
+  
+  // Pivot circle
+  ctx.fillStyle = '#2c3e50';
+  ctx.beginPath();
+  ctx.arc(cx, baseY + baseH + 15, 20, 0, Math.PI*2);
+  ctx.fill();
+}
+
+function drawBalanceMeter(ctx, w, h) {
+  const mx = w/2, my = 20;
+  const mw = 120;
+  ctx.save();
+  ctx.fillStyle = 'rgba(0,0,0,0.4)';
+  ctx.fillRect(mx - mw/2, my, mw, 10);
+  // Zones
+  const norm = state.tilt / MAX_TILT; // -1..1
+  ctx.fillStyle = Math.abs(norm) > 0.7 ? '#e74c3c' : Math.abs(norm) > 0.4 ? '#f39c12' : '#2ecc71';
+  const indX = mx + norm * mw/2 - 3;
+  ctx.fillRect(indX, my - 3, 6, 16);
+  ctx.strokeStyle = 'rgba(255,255,255,0.5)';
+  ctx.strokeRect(mx - mw/2, my, mw, 10);
+  ctx.fillStyle = '#fff';
+  ctx.font = '10px sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('BALANCE', mx, my + 25);
+  ctx.restore();
+}
+
+// ============== GAME LOGIC ==============
+function placePiece(player, pieceIdx, gridX, rotation) {
+  const pieces = player === 'human' ? state.humanPieces : state.aiPieces;
+  const piece = pieces[pieceIdx];
+  if (!piece) return false;
+  const placement = canPlaceAt(piece, rotation, gridX, state.board);
+  if (!placement) return false;
+  // Add to board
+  for (const cell of placement) {
+    state.board.push({ ...cell, color: piece.color, owner: player });
+  }
+  // Remove from queue
+  pieces.splice(pieceIdx, 1);
+  
+  // Apply imbalance impulse
+  const bal = computeBalance(state.board);
+  state.angVel += (bal.torque || 0) * 0.002;
+  
+  state.turnCount++;
+  
+  // Check collapse after a short delay via physics
+  // Check win (no pieces left)
+  if (pieces.length === 0) {
+    endGame(player === 'human' ? 'human' : 'ai', 'nopieces');
+    return true;
+  }
+  
+  // Switch turn
+  state.currentPlayer = state.currentPlayer === 'human' ? 'ai' : 'human';
+  state.selectedPieceIdx = 0;
+  state.rotation = 0;
+  
+  saveState();
+  updateUI();
+  
+  // AI turn
+  if (state.currentPlayer === 'ai' && !state.gameOver) {
+    setTimeout(aiTurn, 800 + Math.random()*400);
+  }
+  return true;
+}
+
+function endGame(winner, reason) {
+  state.gameOver = true;
+  state.winner = winner;
+  state.endReason = reason;
+  saveState();
+  updateUI();
+  setTimeout(() => showEndModal(winner, reason), 600);
+}
+
+function showEndModal(winner, reason) {
+  const modal = document.getElementById('endModal');
+  const emoji = document.getElementById('endEmoji');
+  const title = document.getElementById('endTitle');
+  const text = document.getElementById('endText');
+  
+  const isWin = winner === 'human';
+  emoji.textContent = isWin ? '🏆' : '💥';
+  title.textContent = isWin ? 'You Win!' : 'You Lose!';
+  title.className = isWin ? 'win' : 'lose';
+  
+  if (reason === 'collapse') {
+    text.textContent = isWin 
+      ? 'The AI caused the tower to collapse! 🎉'
+      : 'Your move collapsed the tower! 😢';
+  } else {
+    text.textContent = isWin 
+      ? 'You placed all your pieces first!'
+      : 'The AI placed all pieces first!';
+  }
+  
+  modal.classList.add('show');
+}
+
+// ============== AI ==============
+function aiTurn() {
+  if (state.gameOver || state.currentPlayer !== 'ai') return;
+  
+  const diff = state.difficulty;
+  const pieces = state.aiPieces;
+  
+  // Generate all possible moves
+  const moves = [];
+  for (let pi = 0; pi < pieces.length; pi++) {
+    for (let rot = 0; rot < 4; rot++) {
+      for (let x = -2; x < BOARD_W + 2; x++) {
+        const placement = canPlaceAt(pieces[pi], rot, x, state.board);
+        if (placement) {
+          moves.push({ pieceIdx: pi, rotation: rot, gridX: x, placement });
+        }
+      }
+    }
+  }
+  
+  if (moves.length === 0) {
+    // No moves => AI loses
+    endGame('human', 'stuck');
+    return;
+  }
+  
+  // Evaluate moves
+  for (const m of moves) {
+    const testBoard = [...state.board, ...m.placement.map(c => ({...c, color:'#000'}))];
+    const bal = computeBalance(testBoard);
+    // Lower score = more balanced
+    const balanceScore = Math.abs(bal.torque);
+    // Center preference
+    const centerScore = Math.abs(m.gridX - BOARD_W/2) * 0.3;
+    // Height (lower is safer)
+    const maxY = Math.min(...m.placement.map(c=>c.y));
+    const heightScore = (BOARD_H - maxY) * 0.5;
+    // Compactness - prefer sitting next to other blocks
+    let contact = 0;
+    for (const c of m.placement) {
+      for (const b of state.board) {
+        if (Math.abs(c.x-b.x)+Math.abs(c.y-b.y) === 1) contact++;
+      }
+    }
+    m.score = balanceScore * 2 + centerScore + heightScore - contact * 0.4;
+  }
+  
+  moves.sort((a,b) => a.score - b.score);
+  
+  // Difficulty picks worse moves at lower levels
+  let pickIdx;
+  if (diff === 1) pickIdx = Math.floor(Math.random() * moves.length); // random
+  else if (diff === 2) pickIdx = Math.floor(Math.random() * Math.min(moves.length, Math.max(10, moves.length*0.7)));
+  else if (diff === 3) pickIdx = Math.floor(Math.random() * Math.min(moves.length, Math.max(5, moves.length*0.4)));
+  else if (diff === 4) pickIdx = Math.floor(Math.random() * Math.min(moves.length, 3));
+  else pickIdx = 0; // best move
+  
+  const chosen = moves[pickIdx];
+  placePiece('ai', chosen.pieceIdx, chosen.gridX, chosen.rotation);
+}
+
+// ============== PHYSICS LOOP ==============
+function physicsStep() {
+  if (!state || state.gameOver) {
+    if (state && state.tilt !== 0) {
+      // keep rendering collapse animation
+    }
+  }
+  if (state) {
+    const bal = computeBalance(state.board);
+    // Tilt drifts towards balance torque
+    const targetTilt = bal.torque * 0.003;
+    state.angVel += (targetTilt - state.tilt) * 0.002;
+    state.angVel *= FRICTION;
+    state.tilt += state.angVel;
+    
+    // Check collapse
+    if (Math.abs(state.tilt) > MAX_TILT && !state.gameOver) {
+      // The player who just placed (previous player) caused collapse
+      const loser = state.currentPlayer; // whoever's turn it is now didn't cause it, previous did
+      const causer = state.currentPlayer === 'human' ? 'ai' : 'human';
+      const winner = causer === 'human' ? 'ai' : 'human';
+      // collapse animation
+      state.angVel = Math.sign(state.tilt) * 0.05;
+      endGame(winner, 'collapse');
+    }
+    
+    if (state.gameOver) {
+      // continue falling
+      state.angVel += Math.sign(state.tilt || 1) * 0.003;
+      state.tilt += state.angVel;
+    }
+    
+    render();
+  }
+  animFrame = requestAnimationFrame(physicsStep);
+}
+
+// ============== INPUT ==============
+function getGridX(clientX, clientY) {
+  const rect = canvas.getBoundingClientRect();
+  const localX = (clientX - rect.left) / scale;
+  const localY = (clientY - rect.top) / scale;
+  // Inverse tilt
+  const w = BOARD_W * CELL + 80;
+  const h = BOARD_H * CELL + 80;
+  const cx = w/2, cy = h-40;
+  const dx = localX - cx, dy = localY - cy;
+  const cos = Math.cos(-state.tilt), sin = Math.sin(-state.tilt);
+  const rx = dx*cos - dy*sin + cx;
+  const boardLeft = 40;
+  const gridX = Math.floor((rx - boardLeft) / CELL);
+  return gridX;
+}
+
+canvas.addEventListener('pointermove', (e) => {
+  if (!state || state.gameOver || state.currentPlayer !== 'human') return;
+  const gridX = getGridX(e.clientX, e.clientY);
+  ghostCell = { gridX };
+  render();
+});
+
+canvas.addEventListener('pointerleave', () => {
+  ghostCell = null;
+  render();
+});
+
+canvas.addEventListener('pointerdown', (e) => {
+  if (!state || state.gameOver || state.currentPlayer !== 'human') return;
+  const gridX = getGridX(e.clientX, e.clientY);
+  ghostCell = { gridX };
+  render();
+});
+
+canvas.addEventListener('pointerup', (e) => {
+  if (!state || state.gameOver || state.currentPlayer !== 'human') return;
+  const gridX = getGridX(e.clientX, e.clientY);
+  const piece = state.humanPieces[state.selectedPieceIdx];
+  if (!piece) return;
+  const placement = canPlaceAt(piece, state.rotation, gridX, state.board);
+  if (placement) {
+    placePiece('human', state.selectedPieceIdx, gridX, state.rotation);
+    ghostCell = null;
+  }
+});
+
+document.getElementById('rotateBtn').addEventListener('click', () => {
+  if (!state || state.currentPlayer !== 'human') return;
+  state.rotation = (state.rotation + 1) % 4;
+  saveState();
+  updateUI();
+  render();
+});
+
+// Keyboard
+window.addEventListener('keydown', (e) => {
+  if (!state || state.gameOver) return;
+  if (e.key === 'r' || e.key === 'R' || e.key === ' ') {
+    state.rotation = (state.rotation + 1) % 4;
+    updateUI();
+    render();
+  }
+});
+
+// ============== UI ==============
+function updateUI() {
+  document.getElementById('humanPieces').textContent = state.humanPieces.length + ' pieces';
+  document.getElementById('aiPieces').textContent = state.aiPieces.length + ' pieces';
+  document.getElementById('humanInfo').classList.toggle('active', state.currentPlayer === 'human' && !state.gameOver);
+  document.getElementById('aiInfo').classList.toggle('active', state.currentPlayer === 'ai' && !state.gameOver);
+  document.getElementById('status').textContent = state.gameOver 
+    ? (state.winner === 'human' ? '🏆 You Won!' : '💥 You Lost!')
+    : (state.currentPlayer === 'human' ? 'Your turn — tap board to place' : '🤖 AI is thinking...');
+  
+  // Render piece selector
+  const list = document.getElementById('piecesList');
+  list.innerHTML = '';
+  state.humanPieces.forEach((piece, idx) => {
+    const btn = document.createElement('div');
+    btn.className = 'piece-option' + (idx === state.selectedPieceIdx ? ' selected' : '');
+    const c = document.createElement('canvas');
+    c.width = 70; c.height = 70;
+    const pctx = c.getContext('2d');
+    const shape = getShape(piece, idx === state.selectedPieceIdx ? state.rotation : 0);
+    const maxX = Math.max(...shape.map(c=>c[0]));
+    const maxY = Math.max(...shape.map(c=>c[1]));
+    const cellSize = Math.min(60 / (maxX+1), 60/(maxY+1));
+    const offX = (70 - (maxX+1)*cellSize)/2;
+    const offY = (70 - (maxY+1)*cellSize)/2;
+    for (const [dx,dy] of shape) {
+      pctx.fillStyle = piece.color;
+      pctx.fillRect(offX+dx*cellSize+1, offY+dy*cellSize+1, cellSize-2, cellSize-2);
+      pctx.strokeStyle = 'rgba(0,0,0,0.4)';
+      pctx.strokeRect(offX+dx*cellSize+1, offY+dy*cellSize+1, cellSize-2, cellSize-2);
+    }
+    btn.appendChild(c);
+    btn.addEventListener('click', () => {
+      state.selectedPieceIdx = idx;
+      state.rotation = 0;
+      saveState();
+      updateUI();
+      render();
+    });
+    list.appendChild(btn);
+  });
+  
+  document.getElementById('rotateBtn').disabled = state.currentPlayer !== 'human' || state.gameOver;
+}
+
+// ============== PERSISTENCE ==============
+const STORAGE_KEY = 'stackAttackGame_v1';
+
+function saveState() {
+  if (!state) return;
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+  } catch(e) {}
+}
+
+function loadState() {
+  try {
+    const s = localStorage.getItem(STORAGE_KEY);
+    if (s) return JSON.parse(s);
+  } catch(e) {}
+  return null;
+}
+
+function clearState() {
+  try { localStorage.removeItem(STORAGE_KEY); } catch(e) {}
+}
+
+// ============== MENU ==============
+document.querySelectorAll('.diff-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.diff-btn').forEach(b=>b.classList.remove('selected'));
+    btn.classList.add('selected');
+    selectedDifficulty = parseInt(btn.dataset.diff);
+    localStorage.setItem('stackAttack_diff', selectedDifficulty);
+  });
+});
+
+document.getElementById('newGameBtn').addEventListener('click', () => {
+  clearState();
+  state = createInitialState();
+  saveState();
+  enterGame();
+});
+
+document.getElementById('continueBtn').addEventListener('click', () => {
+  enterGame();
+});
+
+document.getElementById('menuBtn').addEventListener('click', () => {
+  saveState();
+  document.getElementById('menu').style.display = 'flex';
+  document.getElementById('game').style.display = 'none';
+  document.getElementById('continueBtn').style.display = state && !state.gameOver ? 'inline-block' : 'none';
+});
+
+document.getElementById('playAgainBtn').addEventListener('click', () => {
+  document.getElementById('endModal').classList.remove('show');
+  clearState();
+  state = createInitialState();
+  saveState();
+  updateUI();
+  render();
+});
+
+function enterGame() {
+  document.getElementById('menu').style.display = 'none';
+  document.getElementById('game').style.display = 'flex';
+  document.getElementById('endModal').classList.remove('show');
+  setTimeout(() => {
+    resize();
+    updateUI();
+    render();
+    if (state && state.gameOver) {
+      showEndModal(state.winner, state.endReason);
+    } else if (state && state.currentPlayer === 'ai') {
+      setTimeout(aiTurn, 800);
+    }
+  }, 50);
+}
+
+// ============== INIT ==============
+window.addEventListener('resize', resize);
+window.addEventListener('orientationchange', () => setTimeout(resize, 200));
+
+// Load saved difficulty
+const savedDiff = parseInt(localStorage.getItem('stackAttack_diff'));
+if (savedDiff >= 1 && savedDiff <= 5) {
+  selectedDifficulty = savedDiff;
+  document.querySelectorAll('.diff-btn').forEach(b => {
+    b.classList.toggle('selected', parseInt(b.dataset.diff) === savedDiff);
+  });
+}
+
+// Restore game state
+const loaded = loadState();
+if (loaded) {
+  state = loaded;
+  selectedDifficulty = state.difficulty;
+  document.getElementById('continueBtn').style.display = 'inline-block';
+}
+
+physicsStep();
+
+// Prevent touch scroll
+document.addEventListener('touchmove', e => {
+  if (e.target.closest('#piecesBar')) return;
+  e.preventDefault();
+}, { passive: false });
+
+</script>
+</body>
+</html>
