@@ -1,136 +1,523 @@
 <!DOCTYPE html>
-<html lang="en"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<html lang="en">
+<head>
+<meta charset="UTF-8">
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="keywords" content="Free Online XML To JSON Converter">
-<meta name="description" content="The tool will convert a XML file to JSON format.">
-<link rel="stylesheet" href="./files/bootstrap.min.css">
-<script src="./files/jquery.min.js" type="text/javascript"></script>
-<script src="./files/bootstrap.min.js" type="text/javascript"></script>
-<title>XML To JSON Converter</title>
-<script src="./files/localread.js" type="text/javascript"></script>
-<script src="./files/filesaver.js" type="text/javascript"></script>
-<script src="./files/csvsup.js" type="text/javascript"></script>
+<meta name="description" content="Free online XML to JSON and JSON to XML converter. Convert, format, and download your data instantly with a clean modern interface. Supports file upload, URL loading, and both horizontal and vertical layouts.">
+<meta name="keywords" content="XML to JSON, JSON to XML, converter, online tool, format XML, format JSON, free converter">
+<meta name="author" content="XML JSON Converter">
+<meta property="og:title" content="XML ⇄ JSON Converter">
+<meta property="og:description" content="Free online XML to JSON and JSON to XML converter with file and URL support.">
+<meta property="og:type" content="website">
+<title>XML ⇄ JSON Converter</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' x2='1' y1='0' y2='1'%3E%3Cstop offset='0' stop-color='%23667eea'/%3E%3Cstop offset='1' stop-color='%23764ba2'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='100' height='100' rx='20' fill='url(%23g)'/%3E%3Ctext x='50' y='45' text-anchor='middle' font-family='Arial' font-size='22' font-weight='bold' fill='white'%3EXML%3C/text%3E%3Ctext x='50' y='65' text-anchor='middle' font-size='20' fill='white'%3E⇅%3C/text%3E%3Ctext x='50' y='88' text-anchor='middle' font-family='Arial' font-size='22' font-weight='bold' fill='white'%3EJSON%3C/text%3E%3C/svg%3E">
 <script src="./files/xmltojson.nocache.js" type="text/javascript"></script>
-<link rel="icon" type="image/png" href="files/xmltojson.png">
-<link rel="stylesheet" href="./files/nav.css">
-<script async src="https://www.googletagmanager.com/gtag/js?id=UA-130695671-1"></script>
-<script type="text/javascript">function gtag(){dataLayer.push(arguments)}window.dataLayer=window.dataLayer||[],gtag("js",new Date),gtag("config","UA-130695671-1");</script>
-<script type="text/javascript">
-       
-function assignText(s) {
-   document.getElementById('txt1').value = s;
-   document.getElementById('btnRun').click();
-}
-function runit(s) {
-   var t;
-   var msg='Invalid XML entered.';
-
-   if(s.trim()!="") {
-      try {
-       t=xmlToJson(s);
-       if(t!="null" && t!="undefined")document.getElementById('txta').value = t;
-       }catch (e) {
-           alert(msg);
-           return;
-       }
-
-       if(!t || t=="null") {alert(msg); }
-   }
-   
-}
-</script>
+<style>
+  * { box-sizing: border-box; }
+  html, body { height: 100%; margin: 0; overflow: hidden; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: #2d3748;
+    display: flex;
+    flex-direction: column;
+  }
+  header {
+    padding: 10px 20px;
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 10px;
+    flex-shrink: 0;
+  }
+  header h1 {
+    margin: 0;
+    font-size: 1.4em;
+    font-weight: 600;
+    text-shadow: 0 2px 6px rgba(0,0,0,0.2);
+  }
+  .toolbar {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+  .toolbar select, .toolbar button, .toolbar label.file-btn, .toolbar input[type=text] {
+    padding: 7px 12px;
+    border: none;
+    border-radius: 6px;
+    background: rgba(255,255,255,0.95);
+    color: #2d3748;
+    font-size: 13px;
+    cursor: pointer;
+    transition: all 0.2s;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    font-family: inherit;
+  }
+  .toolbar input[type=text] {
+    cursor: text;
+    min-width: 180px;
+  }
+  .toolbar button:hover, .toolbar select:hover, .toolbar label.file-btn:hover {
+    background: #fff;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+  }
+  .toolbar button.primary {
+    background: #f6ad55;
+    color: #fff;
+    font-weight: 600;
+  }
+  .toolbar button.primary:hover { background: #ed8936; }
+  .toolbar .group {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    background: rgba(255,255,255,0.15);
+    padding: 3px 8px;
+    border-radius: 6px;
+    color: #fff;
+    font-size: 12px;
+  }
+  .toolbar .group select {
+    padding: 5px 8px;
+    font-size: 12px;
+  }
+  .status {
+    padding: 6px 20px;
+    font-size: 12px;
+    color: rgba(255,255,255,0.9);
+    flex-shrink: 0;
+    min-height: 26px;
+  }
+  .status.error { color: #fed7d7; }
+  .status.success { color: #c6f6d5; }
+  .container {
+    flex: 1;
+    padding: 0 20px 10px;
+    display: flex;
+    gap: 15px;
+    min-height: 0;
+    overflow: hidden;
+  }
+  .container.vertical { flex-direction: column; }
+  .container.horizontal { flex-direction: row; }
+  .panel {
+    flex: 1;
+    background: rgba(255,255,255,0.98);
+    border-radius: 10px;
+    box-shadow: 0 8px 25px rgba(0,0,0,0.2);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    min-height: 0;
+    min-width: 0;
+  }
+  .panel-header {
+    padding: 8px 12px;
+    background: #f7fafc;
+    border-bottom: 1px solid #e2e8f0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+    flex-shrink: 0;
+  }
+  .panel-header h2 {
+    margin: 0;
+    font-size: 0.9em;
+    color: #4a5568;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .dot {
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    display: inline-block;
+  }
+  .dot.xml { background: #48bb78; }
+  .dot.json { background: #4299e1; }
+  .panel-actions { display: flex; gap: 5px; align-items: center; }
+  .panel-actions button {
+    padding: 4px 9px;
+    font-size: 11px;
+    border: 1px solid #cbd5e0;
+    background: #fff;
+    border-radius: 4px;
+    cursor: pointer;
+    color: #4a5568;
+    transition: all 0.2s;
+  }
+  .panel-actions button:hover {
+    background: #edf2f7;
+    border-color: #a0aec0;
+  }
+  textarea {
+    flex: 1;
+    width: 100%;
+    border: none;
+    padding: 12px;
+    font-family: "Fira Code", "Courier New", monospace;
+    font-size: 13px;
+    resize: none;
+    outline: none;
+    background: #fafafa;
+    color: #2d3748;
+    line-height: 1.5;
+    min-height: 0;
+  }
+  textarea:focus { background: #fff; }
+  .panel-footer {
+    padding: 7px 10px;
+    border-top: 1px solid #e2e8f0;
+    background: #f7fafc;
+    display: flex;
+    gap: 6px;
+    align-items: center;
+    flex-wrap: wrap;
+    flex-shrink: 0;
+  }
+  .panel-footer input[type=text] {
+    padding: 4px 8px;
+    border: 1px solid #cbd5e0;
+    border-radius: 4px;
+    font-size: 12px;
+    flex: 1;
+    min-width: 80px;
+  }
+  .panel-footer span { font-size: 12px; color: #718096; }
+  .panel-footer button {
+    padding: 4px 10px;
+    border: none;
+    border-radius: 4px;
+    background: #4299e1;
+    color: #fff;
+    cursor: pointer;
+    font-size: 12px;
+  }
+  .panel-footer button:hover { background: #3182ce; }
+  footer.page-footer {
+    padding: 8px 20px;
+    background: rgba(0,0,0,0.25);
+    color: rgba(255,255,255,0.95);
+    font-size: 12px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+    flex-shrink: 0;
+    backdrop-filter: blur(6px);
+  }
+  footer.page-footer a {
+    color: #fff;
+    text-decoration: none;
+    border-bottom: 1px dotted rgba(255,255,255,0.6);
+  }
+  footer.page-footer a:hover {
+    border-bottom-color: #fff;
+  }
+  @media (max-width: 768px) {
+    .container.horizontal { flex-direction: column; }
+    header h1 { font-size: 1.1em; }
+    .toolbar input[type=text] { min-width: 120px; }
+    footer.page-footer { justify-content: center; text-align: center; }
+  }
+</style>
+</head>
 <body>
-<div class="container-fluid">
 
-	<div class="row">
-		<div class="col-md-3">
-				<a href="https://xmltojson.github.io/">
-					<div id="logo">
-						<img height="120" src="./files/xmltojson.png" alt="Home Page">
-					</div>
-				</a>
-		</div>
-		<div class="col-md-9">
-			<div id="site-title">
-                	    <div class="pageHeader">
-                <h1>Convert XML To JSON</h1>
-        </div>
+<header>
+  <h1>🔄 XML ⇄ JSON Converter</h1>
+  <div class="toolbar">
+    <select id="direction" title="Conversion direction">
+      <option value="x2j">XML → JSON</option>
+      <option value="j2x">JSON → XML</option>
+    </select>
+    <select id="orientation" title="Layout">
+      <option value="horizontal">Horizontal</option>
+      <option value="vertical">Vertical</option>
+    </select>
+    <div class="group" title="Indentation style used for Convert and Format">
+      <span>Indent:</span>
+      <select id="indentStyle">
+        <option value="TWO_SPACES">2 Spaces</option>
+        <option value="THREE_SPACES">3 Spaces</option>
+        <option value="FOUR_SPACES">4 Spaces</option>
+        <option value="TABS">Tabs</option>
+        <option value="COMPACT">Compact</option>
+      </select>
+    </div>
+    <label class="file-btn" title="Load local file">
+      📁 File
+      <input type="file" id="fileInput" style="display:none">
+    </label>
+    <input type="text" id="urlInput" placeholder="https://example.com/data.xml" title="Load from URL">
+    <button id="btnLoadUrl" title="Load from URL">🌐 Load</button>
+    <button id="btnConvert" class="primary" title="Convert (Ctrl+Enter)">⚡ Convert</button>
+    <button id="btnSwap" title="Swap input/output">⇅ Swap</button>
+    <button id="btnClear" title="Clear all">🗑 Clear</button>
+  </div>
+</header>
 
-				
-              <div class="row">
-                 <div class="container-fluid pageSubheader">
-                   <h2>Use this tool to convert XML into JSON format.</h2>
-                </div>
-             </div>
+<div class="status" id="status">Ready. Paste content, upload a file, or load from URL.</div>
 
-                
-			</div>
-		</div>
-	</div>
-	<div class="row">
-
-	<div class="col-md-12">
-
-<br>
-        Enter your data below and Press the Convert button. 
-            The output will display below the Convert button. <br>
-         See also <a href="https://xmltojson.github.io/json-to-xml.html">JSON to XML</a><br>
-
-	<form id="frm1" name="frm1" class="form-inline" onsubmit="return false">
-     <div class="form-group">
-     <b>Option 1 - Choose XML file here</b>
-    <input type="file" id="f1" class="form-control" onchange="loadTextFile(this,assignText)" title="Choose a local XML file">
-   Encoding <input type="text" id="txtEncoding" class="form-control" size="8" value="" onchange="loadTextFile(document.getElementById('f1'),assignText)" title="Enter encoding for input file or empty for default">
-         <br><b>Option 2 - Enter an URL</b> <input type="text" size="40" value="" name="url" id="url" class="form-control" title="Enter the URL of a web page returning XML">
-         <input type="button" id="btnUrl" class="btn btn-primary" value="Load URL" title="Load XML via URL" onclick="loadURL(document.getElementById('url').value)">
-       <br><b>Option 3 - Paste into Text Box below</b>
+<div class="container horizontal" id="container">
+  <div class="panel">
+    <div class="panel-header">
+      <h2><span class="dot xml" id="inDot"></span><span id="inLabel">XML Input</span></h2>
+      <div class="panel-actions">
+        <button id="btnFormatIn">Format</button>
+        <button id="btnCopyIn">Copy</button>
       </div>
-     </form></div>
-    
     </div>
-
-    <div class="row">
-	<div class="col-md-6 col-lg-6">
-			<div class="form-group">
-    <input type="button" value="Clear Input" class="btn btn-primary" onclick="window.location.reload(true)">
-    <input type="button" value="Format XML" class="btn btn-primary" onclick="document.getElementById('txt1').value=formatXml(document.getElementById('txt1').value)" title="Format XML below to look pretty">
-    &nbsp; Examples: 
-      <input type="button" value="1" class="btn btn-primary" title="Load and run example" onclick="document.getElementById('txt1').value=getExampleXml(1);document.getElementById('btnRun').click()">
-      <input type="button" value="2" class="btn btn-primary" title="Load and run example" onclick="document.getElementById('url').value='http://www.w3schools.com/xml/simple.xml';document.getElementById('btnUrl').click()">
-	<textarea class="form-control" rows="15" cols="80" id="txt1" placeholder="XML Data" onchange="if(this.value!='')runit(this.value)" wrap="soft"></textarea>
-			</div>
-                       <div class="form-group form-inline">
-                                               <label>Save your result:</label>
-<input type="text" size="15" id="fn1" value="convertxml" class="form-control" title="Enter filename without extension">.xml
-<input type="button" class="btn btn-primary" value="Download Result" onclick="saveFile(document.getElementById('txt1').value,'xml','fn1')">
-               </div>
-	  </div>
-
-        <div class="col-md-6 col-lg-6">
-			<div class="form-group">
-                 <input type="button" id="btnRun" value="Convert XML To JSON" class="btn btn-primary" title="Convert XML To JSON" onclick="runit(document.getElementById('txt1').value)">
-				<br>
-				<textarea id="txta" rows="15" cols="80" wrap="soft" class="form-control" placeholder="JSON Output"></textarea>
-			</div>
-			<div class="form-group form-inline">
-						<label>Save your result:</label>
-<input type="text" size="15" id="fn2" value="convertjson" class="form-control" title="Enter filename without extension">.json
-<input type="button" class="btn btn-primary" value="Download Result" onclick="saveFile(document.getElementById('txta').value,'json','fn2')">
-	        </div>
-    </div>
-	<div id="diva"></div>
-    </div>
-
-    <div class="row">
-	    <div class="col-md-12">
-
-</div>
-        </div>
-		</div>
-    
-    <br>
+    <textarea id="input" placeholder="Paste your XML here..." spellcheck="false"></textarea>
     <div class="panel-footer">
-        Copyright © 2015-2025 <a href="https://github.com/javadev/">Valentyn Kolesnikov</a> All Rights Reserved<span class="pull-right"> &nbsp; &nbsp; <a href="https://xmltojson.github.io/terms-of-use.html">Terms of Use</a></span>
+      <input type="text" id="fnIn" value="input" placeholder="filename">
+      <span id="extIn">.xml</span>
+      <button id="btnDownloadIn">💾 Download</button>
     </div>
-</body></html>
+  </div>
+
+  <div class="panel">
+    <div class="panel-header">
+      <h2><span class="dot json" id="outDot"></span><span id="outLabel">JSON Output</span></h2>
+      <div class="panel-actions">
+        <button id="btnFormatOut">Format</button>
+        <button id="btnCopyOut">Copy</button>
+      </div>
+    </div>
+    <textarea id="output" placeholder="Converted output will appear here..." spellcheck="false"></textarea>
+    <div class="panel-footer">
+      <input type="text" id="fnOut" value="output" placeholder="filename">
+      <span id="extOut">.json</span>
+      <button id="btnDownloadOut">💾 Download</button>
+    </div>
+  </div>
+</div>
+
+<footer class="page-footer">
+  <div>
+    Copyright © 2015-<span id="copyYear">2026</span>
+    <a href="https://github.com/javadev/" target="_blank" rel="noopener">Valentyn Kolesnikov</a>
+    All Rights Reserved
+  </div>
+  <div>
+    <a href="https://xmltojson.github.io/terms-of-use.html" target="_blank" rel="noopener">Terms of Use</a>
+  </div>
+</footer>
+
+<script>
+const STORAGE_KEY = 'xml_json_converter_state_v4';
+
+const $ = id => document.getElementById(id);
+const inp = $('input'), out = $('output'), status = $('status');
+const dirSel = $('direction'), orSel = $('orientation'), indentSel = $('indentStyle');
+const container = $('container');
+
+// Dynamic year for footer (minimum 2026)
+$('copyYear').textContent = Math.max(new Date().getFullYear(), 2026);
+
+function setStatus(msg, type) {
+  status.textContent = msg;
+  status.className = 'status' + (type ? ' ' + type : '');
+}
+
+function updateLabels() {
+  const x2j = dirSel.value === 'x2j';
+  $('inLabel').textContent = x2j ? 'XML Input' : 'JSON Input';
+  $('outLabel').textContent = x2j ? 'JSON Output' : 'XML Output';
+  $('inDot').className = 'dot ' + (x2j ? 'xml' : 'json');
+  $('outDot').className = 'dot ' + (x2j ? 'json' : 'xml');
+  inp.placeholder = x2j ? 'Paste your XML here...' : 'Paste your JSON here...';
+  out.placeholder = x2j ? 'JSON output will appear here...' : 'XML output will appear here...';
+  $('extIn').textContent = x2j ? '.xml' : '.json';
+  $('extOut').textContent = x2j ? '.json' : '.xml';
+}
+
+function applyOrientation() {
+  container.className = 'container ' + orSel.value;
+}
+
+function saveState() {
+  const state = {
+    direction: dirSel.value,
+    orientation: orSel.value,
+    indentStyle: indentSel.value,
+    input: inp.value,
+    output: out.value,
+    fnIn: $('fnIn').value,
+    fnOut: $('fnOut').value,
+    url: $('urlInput').value
+  };
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch(e) {}
+}
+
+function loadState() {
+  try {
+    const s = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
+    if (s.direction) dirSel.value = s.direction;
+    if (s.orientation) orSel.value = s.orientation;
+    if (s.indentStyle) indentSel.value = s.indentStyle;
+    if (s.input) inp.value = s.input;
+    if (s.output) out.value = s.output;
+    if (s.fnIn) $('fnIn').value = s.fnIn;
+    if (s.fnOut) $('fnOut').value = s.fnOut;
+    if (s.url) $('urlInput').value = s.url;
+  } catch(e) {}
+  updateLabels();
+  applyOrientation();
+}
+
+function autoDetectDirection(content) {
+  const c = content.trim();
+  if (c.startsWith('<')) dirSel.value = 'x2j';
+  else if (c.startsWith('{') || c.startsWith('[')) dirSel.value = 'j2x';
+  updateLabels();
+}
+
+function convert() {
+  const src = inp.value.trim();
+  if (!src) { setStatus('Please enter some content first.', 'error'); return; }
+  try {
+    const style = indentSel.value;
+    let result;
+    if (dirSel.value === 'x2j') {
+      if (typeof xmlToJson !== 'function') throw new Error('xmlToJson library not loaded');
+      result = xmlToJson(src, style);
+    } else {
+      if (typeof jsonToXml !== 'function') throw new Error('jsonToXml library not loaded');
+      result = jsonToXml(src, style);
+    }
+    if (!result || result === 'null' || result === 'undefined') {
+      throw new Error('Invalid input');
+    }
+    out.value = result;
+    setStatus('✓ Converted successfully (' + result.length + ' characters, ' + style + ')', 'success');
+    saveState();
+  } catch(e) {
+    setStatus('✗ Conversion failed: ' + (e.message || 'Invalid input'), 'error');
+  }
+}
+
+function formatContent(textarea, isXml) {
+  if (!textarea.value.trim()) { setStatus('Nothing to format', 'error'); return; }
+  try {
+    const style = indentSel.value;
+    if (isXml) {
+      if (typeof formatXml !== 'function') throw new Error('formatXml library not loaded');
+      textarea.value = formatXml(textarea.value, style);
+    } else {
+      if (typeof formatJson !== 'function') throw new Error('formatJson library not loaded');
+      textarea.value = formatJson(textarea.value, style);
+    }
+    setStatus('✓ Formatted (' + style + ')', 'success');
+    saveState();
+  } catch(e) {
+    setStatus('✗ Format failed: ' + e.message, 'error');
+  }
+}
+
+function download(content, filename, ext) {
+  if (!content) { setStatus('Nothing to download', 'error'); return; }
+  const blob = new Blob([content], {type: 'text/plain'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = filename + ext;
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+
+function copyText(text) {
+  if (!text) { setStatus('Nothing to copy', 'error'); return; }
+  navigator.clipboard.writeText(text).then(
+    () => setStatus('✓ Copied to clipboard', 'success'),
+    () => setStatus('✗ Copy failed', 'error')
+  );
+}
+
+async function loadFromUrl() {
+  const url = $('urlInput').value.trim();
+  if (!url) { setStatus('Please enter a URL', 'error'); return; }
+  setStatus('⏳ Loading from URL...');
+  try {
+    const response = await fetch(url);
+    if (!response.ok) throw new Error('HTTP ' + response.status);
+    const text = await response.text();
+    inp.value = text;
+    autoDetectDirection(text);
+    setStatus('✓ Loaded from URL (' + text.length + ' characters)', 'success');
+    saveState();
+  } catch(e) {
+    setStatus('✗ Failed to load URL: ' + e.message + ' (CORS may be blocking)', 'error');
+  }
+}
+
+// Event listeners
+$('btnConvert').onclick = convert;
+$('btnLoadUrl').onclick = loadFromUrl;
+$('btnClear').onclick = () => {
+  if (confirm('Clear all content?')) {
+    inp.value = ''; out.value = '';
+    setStatus('Cleared.');
+    saveState();
+  }
+};
+$('btnSwap').onclick = () => {
+  const tmp = inp.value;
+  inp.value = out.value;
+  out.value = tmp;
+  dirSel.value = dirSel.value === 'x2j' ? 'j2x' : 'x2j';
+  updateLabels();
+  saveState();
+};
+dirSel.onchange = () => { updateLabels(); saveState(); };
+orSel.onchange = () => { applyOrientation(); saveState(); };
+indentSel.onchange = () => { saveState(); setStatus('Indent style: ' + indentSel.value); };
+inp.oninput = saveState;
+out.oninput = saveState;
+$('fnIn').oninput = saveState;
+$('fnOut').oninput = saveState;
+$('urlInput').oninput = saveState;
+$('urlInput').addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') { e.preventDefault(); loadFromUrl(); }
+});
+
+$('btnFormatIn').onclick = () => formatContent(inp, dirSel.value === 'x2j');
+$('btnFormatOut').onclick = () => formatContent(out, dirSel.value === 'j2x');
+$('btnCopyIn').onclick = () => copyText(inp.value);
+$('btnCopyOut').onclick = () => copyText(out.value);
+$('btnDownloadIn').onclick = () => download(inp.value, $('fnIn').value || 'input', $('extIn').textContent);
+$('btnDownloadOut').onclick = () => download(out.value, $('fnOut').value || 'output', $('extOut').textContent);
+
+$('fileInput').onchange = (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = (ev) => {
+    inp.value = ev.target.result;
+    autoDetectDirection(ev.target.result);
+    setStatus('✓ Loaded ' + file.name + ' (' + ev.target.result.length + ' characters)', 'success');
+    saveState();
+  };
+  reader.readAsText(file);
+};
+
+document.addEventListener('keydown', (e) => {
+  if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+    e.preventDefault();
+    convert();
+  }
+});
+
+loadState();
+</script>
+</body>
+</html>
