@@ -216,12 +216,17 @@
     flex-shrink: 0;
     backdrop-filter: blur(6px);
   }
-  footer.page-footer a {
+  footer.page-footer a, footer.page-footer .link-btn {
     color: #fff;
     text-decoration: none;
     border-bottom: 1px dotted rgba(255,255,255,0.6);
+    background: none;
+    border-left: none; border-right: none; border-top: none;
+    font: inherit;
+    cursor: pointer;
+    padding: 0;
   }
-  footer.page-footer a:hover {
+  footer.page-footer a:hover, footer.page-footer .link-btn:hover {
     border-bottom-color: #fff;
   }
   @media (max-width: 768px) {
@@ -230,6 +235,110 @@
     .toolbar input[type=text] { min-width: 120px; }
     footer.page-footer { justify-content: center; text-align: center; }
   }
+
+  /* Modal */
+  .modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.55);
+    backdrop-filter: blur(4px);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    padding: 20px;
+    animation: fadeIn 0.2s ease;
+  }
+  .modal-overlay.open { display: flex; }
+  @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+  @keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+  .modal {
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.4);
+    max-width: 720px;
+    width: 100%;
+    max-height: 90vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    animation: slideUp 0.25s ease;
+  }
+  .modal-header {
+    padding: 16px 20px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: #fff;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-shrink: 0;
+  }
+  .modal-header h3 {
+    margin: 0;
+    font-size: 1.1em;
+    font-weight: 600;
+  }
+  .modal-close {
+    background: rgba(255,255,255,0.2);
+    border: none;
+    color: #fff;
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    cursor: pointer;
+    font-size: 18px;
+    line-height: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.2s;
+  }
+  .modal-close:hover { background: rgba(255,255,255,0.35); }
+  .modal-body {
+    padding: 20px;
+    overflow-y: auto;
+    flex: 1;
+    color: #2d3748;
+    line-height: 1.6;
+    font-size: 14px;
+  }
+  .modal-body p { margin: 0 0 12px; }
+  .modal-body ul { margin: 0 0 12px 0; padding-left: 22px; }
+  .modal-body li { margin-bottom: 6px; }
+  .modal-footer {
+    padding: 14px 20px;
+    border-top: 1px solid #e2e8f0;
+    background: #f7fafc;
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    flex-shrink: 0;
+  }
+  .btn {
+    padding: 8px 18px;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 500;
+    font-family: inherit;
+    transition: all 0.2s;
+  }
+  .btn-secondary {
+    background: #e2e8f0;
+    color: #2d3748;
+  }
+  .btn-secondary:hover { background: #cbd5e0; }
+  .btn-primary {
+    background: #4299e1;
+    color: #fff;
+  }
+  .btn-primary:hover { background: #3182ce; }
+  .btn-danger {
+    background: #e53e3e;
+    color: #fff;
+  }
+  .btn-danger:hover { background: #c53030; }
 </style>
 </head>
 <body>
@@ -310,9 +419,42 @@
     All Rights Reserved
   </div>
   <div>
-    <a href="https://xmltojson.github.io/terms-of-use.html" target="_blank" rel="noopener">Terms of Use</a>
+    <button type="button" class="link-btn" id="btnTerms">Terms of Use</button>
   </div>
 </footer>
+
+<!-- Generic modal -->
+<div class="modal-overlay" id="modal">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+    <div class="modal-header">
+      <h3 id="modalTitle">Dialog</h3>
+      <button class="modal-close" id="modalClose" aria-label="Close">×</button>
+    </div>
+    <div class="modal-body" id="modalBody"></div>
+    <div class="modal-footer" id="modalFooter"></div>
+  </div>
+</div>
+
+<!-- Terms of Use content (hidden, used for modal) -->
+<template id="termsTemplate">
+  <p>AGREEMENT BETWEEN USER AND XMLTOJSON.GITHUB.IO</p>
+  <p>The XMLTOJSON.GITHUB.IO Web Site is offered to you conditioned on your acceptance without modification of the terms, conditions, and notices contained herein. Your use of the XMLTOJSON.GITHUB.IO Web Site constitutes your agreement to all such terms, conditions, and notices.</p>
+  <p><strong>IMPLIED WARRANTIES</strong> — XMLTOJSON.GITHUB.IO does not warrant that the operation of the service will be uninterrupted or error free. Your reliance on the availability or accuracy of the service shall be entirely at your own risk.</p>
+  <p><strong>LINKS TO THIRD PARTY SITES</strong> — The XMLTOJSON.GITHUB.IO web site may contain links to other web sites ("Linked Sites"). The Linked Sites are not under the control of XMLTOJSON.GITHUB.IO and XMLTOJSON.GITHUB.IO is not responsible for the contents of any Linked Site, including without limitation any link contained in a Linked Site, or any changes or updates to a Linked Site. XMLTOJSON.GITHUB.IO is not responsible for webcasting, streaming, file downloads or any other form of transmission received from any Linked Site. XMLTOJSON.GITHUB.IO is providing these links to you only for convenience, informational or reporting purposes only, and the inclusion of any link does not imply endorsement by XMLTOJSON.GITHUB.IO of the Linked Site or any association with its operators.</p>
+  <p><strong>THIRD PARTY CONTENT</strong> — Third party content may appear on the Web Site or may be accessible via Linked Sites from the Web Site. We are not responsible for and assume no liability for any mistakes, misstatements of law, defamation, omissions, falsehood, obscenity, pornography or profanity in the statements, opinions, representations or any other form of content on the Site. You understand that the information and opinions in the third party content represent solely the thoughts of the author and is neither endorsed by nor does it necessarily reflect our belief.</p>
+  <p><strong>REVISIONS AND ERRATA</strong> — The materials appearing on the XMLTOJSON.GITHUB.IO Web Site could include technical, typographical, or photographic errors. XMLTOJSON.GITHUB.IO does not warrant that any of the materials on its web site are accurate, complete, or current. XMLTOJSON.GITHUB.IO may make changes to the materials contained on its web site at any time without notice. XMLTOJSON.GITHUB.IO does not, however, make any commitment to update the materials.</p>
+  <p><strong>NO UNLAWFUL OR PROHIBITED USE</strong> — As a condition of your use of the XMLTOJSON.GITHUB.IO Web Site, you warrant to XMLTOJSON.GITHUB.IO that you will not use the XMLTOJSON.GITHUB.IO Web Site for any purpose that is unlawful or prohibited by these terms, conditions, and notices. You may not use the XMLTOJSON.GITHUB.IO Web Site in any manner which could damage, disable, overburden, or impair the XMLTOJSON.GITHUB.IO Web Site or interfere with any other party's use of the XMLTOJSON.GITHUB.IO Web Site. You may not obtain or attempt to obtain any materials or information through any means not intentionally made available or provided for through the XMLTOJSON.GITHUB.IO Web Site. XMLTOJSON.GITHUB.IO reserves the right to terminate your access to any or all of its services at any time without notice for any reason whatsoever.</p>
+  <p><strong>USE OF COMMUNICATION SERVICES</strong> — The XMLTOJSON.GITHUB.IO Web Site may contain communication facilities designed to enable you to communicate with XMLTOJSON.GITHUB.IO administrators, you agree to use the Communication facilities only to post, send and receive messages and material that are proper and related to the particular Communication facilities. By way of example, and not as a limitation, you agree that when using a Communication Service, you will not:</p>
+  <ul>
+    <li>Publish, post, upload, distribute or disseminate any inappropriate, profane, defamatory, infringing, obscene, indecent or unlawful topic, name, material or information.</li>
+    <li>Upload files that contain software or other material protected by intellectual property laws (or by rights of privacy of publicity) unless you own or control the rights thereto or have received all necessary consents.</li>
+    <li>Upload files that contain viruses, corrupted files, or any other similar software or programs that may damage the operation of another's computer.</li>
+    <li>Falsify or delete any author attributions, legal or other proper notices or proprietary designations or labels of the origin or source of software or other material contained in a file that is uploaded.</li>
+    <li>Violate any applicable laws or regulations.</li>
+  </ul>
+  <p>XMLTOJSON.GITHUB.IO reserves the right at all times to disclose any information as necessary to satisfy any applicable law, regulation, legal process or governmental request.</p>
+  <p><strong>MATERIALS PROVIDED TO XMLTOJSON.GITHUB.IO OR POSTED AT THE XMLTOJSON.GITHUB.IO WEB SITE</strong> — XMLTOJSON.GITHUB.IO does not claim ownership of the materials you provide to XMLTOJSON.GITHUB.IO or post, upload, input or submit to any XMLTOJSON.GITHUB.IO Web Site or its associated services (collectively "Submissions").</p>
+</template>
 
 <script>
 const STORAGE_KEY = 'xml_json_converter_state_v4';
@@ -330,6 +472,58 @@ function setStatus(msg, type) {
   status.className = 'status' + (type ? ' ' + type : '');
 }
 
+/* ---------- Modal system ---------- */
+const modal = $('modal'), modalTitle = $('modalTitle'), modalBody = $('modalBody'), modalFooter = $('modalFooter');
+
+function closeModal() {
+  modal.classList.remove('open');
+  modalBody.innerHTML = '';
+  modalFooter.innerHTML = '';
+}
+$('modalClose').onclick = closeModal;
+modal.addEventListener('click', (e) => { if (e.target === modal) closeModal(); });
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && modal.classList.contains('open')) closeModal(); });
+
+function showModal(opts) {
+  modalTitle.textContent = opts.title || '';
+  modalBody.innerHTML = '';
+  if (opts.content instanceof Node) modalBody.appendChild(opts.content);
+  else if (typeof opts.content === 'string') modalBody.innerHTML = opts.content;
+
+  modalFooter.innerHTML = '';
+  (opts.buttons || [{label: 'OK', class: 'btn-primary', action: closeModal}]).forEach(b => {
+    const btn = document.createElement('button');
+    btn.className = 'btn ' + (b.class || 'btn-secondary');
+    btn.textContent = b.label;
+    btn.onclick = () => { if (b.action) b.action(); else closeModal(); };
+    modalFooter.appendChild(btn);
+  });
+  modal.classList.add('open');
+}
+
+function customConfirm(message, onOk) {
+  showModal({
+    title: 'Confirm',
+    content: '<p>' + message + '</p>',
+    buttons: [
+      { label: 'Cancel', class: 'btn-secondary', action: closeModal },
+      { label: 'OK', class: 'btn-danger', action: () => { closeModal(); onOk(); } }
+    ]
+  });
+}
+
+function showTerms() {
+  const tpl = $('termsTemplate');
+  const content = tpl.content.cloneNode(true);
+  showModal({
+    title: 'Terms of Use',
+    content: content,
+    buttons: [{ label: 'Close', class: 'btn-primary', action: closeModal }]
+  });
+}
+$('btnTerms').onclick = showTerms;
+
+/* ---------- App logic ---------- */
 function updateLabels() {
   const x2j = dirSel.value === 'x2j';
   $('inLabel').textContent = x2j ? 'XML Input' : 'JSON Input';
@@ -443,8 +637,6 @@ function copyText(text) {
   );
 }
 
-// Try a list of CORS proxies in order. Public free proxies used as fallback
-// when the remote server doesn't allow cross-origin requests directly.
 async function fetchWithFallback(url) {
   const attempts = [
     { label: 'direct', url: url },
@@ -471,7 +663,6 @@ async function fetchWithFallback(url) {
 async function loadFromUrl() {
   let url = $('urlInput').value.trim();
   if (!url) { setStatus('Please enter a URL', 'error'); return; }
-  // prepend protocol if missing
   if (!/^https?:\/\//i.test(url)) url = 'https://' + url;
   setStatus('⏳ Loading from URL...');
   try {
@@ -489,11 +680,11 @@ async function loadFromUrl() {
 $('btnConvert').onclick = convert;
 $('btnLoadUrl').onclick = loadFromUrl;
 $('btnClear').onclick = () => {
-  if (confirm('Clear all content?')) {
+  customConfirm('Clear all content?', () => {
     inp.value = ''; out.value = '';
     setStatus('Cleared.');
     saveState();
-  }
+  });
 };
 $('btnSwap').onclick = () => {
   const tmp = inp.value;
