@@ -443,20 +443,45 @@ function copyText(text) {
   );
 }
 
+// Try a list of CORS proxies in order. Public free proxies used as fallback
+// when the remote server doesn't allow cross-origin requests directly.
+async function fetchWithFallback(url) {
+  const attempts = [
+    { label: 'direct', url: url },
+    { label: 'allorigins', url: 'https://api.allorigins.win/raw?url=' + encodeURIComponent(url) },
+    { label: 'corsproxy.io', url: 'https://corsproxy.io/?' + encodeURIComponent(url) },
+    { label: 'codetabs', url: 'https://api.codetabs.com/v1/proxy?quest=' + encodeURIComponent(url) }
+  ];
+  let lastErr;
+  for (const a of attempts) {
+    try {
+      setStatus('⏳ Loading via ' + a.label + '...');
+      const resp = await fetch(a.url, { method: 'GET', redirect: 'follow' });
+      if (!resp.ok) { lastErr = new Error('HTTP ' + resp.status + ' (' + a.label + ')'); continue; }
+      const text = await resp.text();
+      if (!text || text.trim() === '') { lastErr = new Error('Empty response (' + a.label + ')'); continue; }
+      return { text, via: a.label };
+    } catch (e) {
+      lastErr = e;
+    }
+  }
+  throw lastErr || new Error('All fetch attempts failed');
+}
+
 async function loadFromUrl() {
-  const url = $('urlInput').value.trim();
+  let url = $('urlInput').value.trim();
   if (!url) { setStatus('Please enter a URL', 'error'); return; }
+  // prepend protocol if missing
+  if (!/^https?:\/\//i.test(url)) url = 'https://' + url;
   setStatus('⏳ Loading from URL...');
   try {
-    const response = await fetch(url);
-    if (!response.ok) throw new Error('HTTP ' + response.status);
-    const text = await response.text();
+    const { text, via } = await fetchWithFallback(url);
     inp.value = text;
     autoDetectDirection(text);
-    setStatus('✓ Loaded from URL (' + text.length + ' characters)', 'success');
+    setStatus('✓ Loaded from URL via ' + via + ' (' + text.length + ' characters)', 'success');
     saveState();
   } catch(e) {
-    setStatus('✗ Failed to load URL: ' + e.message + ' (CORS may be blocking)', 'error');
+    setStatus('✗ Failed to load URL: ' + (e.message || e) + '. Try downloading the file and using 📁 File.', 'error');
   }
 }
 
