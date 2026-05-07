@@ -52,6 +52,7 @@
   --border: #e5e7eb;
   --success: #10b981;
   --danger: #ef4444;
+  --warn: #f59e0b;
   --shadow: 0 4px 20px rgba(0,87,183,0.08);
 }
 
@@ -123,6 +124,7 @@ header {
   width: 38px; height: 38px;
   border-radius: 10px; cursor: pointer;
   font-size: 16px; transition: all 0.2s;
+  position: relative;
 }
 
 .icon-btn:hover, .icon-btn:active { background: rgba(255,255,255,0.25); }
@@ -338,6 +340,7 @@ header {
 .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
 .toast.error { background: var(--danger); }
 .toast.success { background: var(--success); }
+.toast.warn { background: var(--warn); }
 
 /* ============ CUSTOM MODAL ============ */
 .modal-overlay {
@@ -462,6 +465,64 @@ header {
   font-weight: 600;
 }
 
+/* ============ USAGE LIMITS ============ */
+.limits-bar {
+  display: flex; gap: 10px;
+  margin-top: 12px; flex-wrap: wrap;
+}
+
+.limit-item {
+  flex: 1; min-width: 140px;
+  padding: 10px 12px;
+  background: #f9fafb;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+}
+
+.limit-header {
+  display: flex; justify-content: space-between; align-items: center;
+  margin-bottom: 6px;
+  font-size: 11px; font-weight: 600;
+  color: var(--muted); text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.limit-count {
+  font-size: 13px; font-weight: 700;
+  color: var(--text);
+}
+
+.limit-count .used { color: var(--primary); }
+.limit-bar-bg {
+  height: 6px;
+  background: var(--border);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.limit-bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--success), var(--primary));
+  transition: width 0.3s;
+  border-radius: 3px;
+}
+
+.limit-bar-fill.warn { background: linear-gradient(90deg, var(--warn), #ea580c); }
+.limit-bar-fill.danger { background: var(--danger); }
+
+.usage-modal-stats {
+  background: #f9fafb;
+  border-radius: 12px;
+  padding: 14px;
+  margin: 12px 0;
+}
+
+.usage-modal-stats .limit-item {
+  background: white;
+  margin-bottom: 10px;
+}
+.usage-modal-stats .limit-item:last-child { margin-bottom: 0; }
+
 .hidden { display: none !important; }
 
 /* ============ SMALL SCREENS ============ */
@@ -500,6 +561,8 @@ header {
   .modal-footer .btn { flex: 1; min-width: 0; }
   .modal-title { font-size: 16px; }
   .modal-icon { width: 40px; height: 40px; font-size: 20px; }
+  
+  .limit-item { min-width: 0; }
 }
 
 @media (max-width: 380px) {
@@ -547,6 +610,7 @@ header {
         <div class="api-dot"></div>
         <span>100% Free</span>
       </div>
+      <button class="icon-btn" id="usageBtn" title="Usage stats">📊</button>
       <button class="icon-btn" id="infoBtn" title="About">ℹ️</button>
       <button class="icon-btn" id="clearAllBtn" title="Clear data">🗑️</button>
     </div>
@@ -613,6 +677,30 @@ header {
           <span class="provider-badge" id="providerBadge">—</span>
         </div>
         <div class="context-note hidden" id="contextNote"></div>
+      </div>
+    </div>
+
+    <div class="card" style="margin-top:14px">
+      <div class="section-title">Денний ліміт використання</div>
+      <div class="limits-bar">
+        <div class="limit-item">
+          <div class="limit-header">
+            <span>📝 Переклади</span>
+            <span class="limit-count"><span class="used" id="trUsed">0</span> / <span id="trMax">10</span></span>
+          </div>
+          <div class="limit-bar-bg">
+            <div class="limit-bar-fill" id="trBar" style="width:0%"></div>
+          </div>
+        </div>
+        <div class="limit-item">
+          <div class="limit-header">
+            <span>📷 Сканування</span>
+            <span class="limit-count"><span class="used" id="scUsed">0</span> / <span id="scMax">8</span></span>
+          </div>
+          <div class="limit-bar-bg">
+            <div class="limit-bar-fill" id="scBar" style="width:0%"></div>
+          </div>
+        </div>
       </div>
     </div>
   </div>
@@ -720,6 +808,13 @@ header {
 
 <script>
 const STORE_KEY = 'shvydkoperetlad_v3';
+const USAGE_KEY = 'shvydkoperetlad_usage';
+
+// Daily limits
+const LIMITS = {
+  translate: 10,
+  scan: 8,
+};
 
 const LANG_NAMES = { uk: 'Ukrainian', en: 'English', pl: 'Polish', de: 'German' };
 const TESSERACT_LANGS = { uk: 'ukr', en: 'eng', pl: 'pol', de: 'deu' };
@@ -777,6 +872,18 @@ let state = {
   phraseCat: 'emergency', phraseLang: 'en',
 };
 
+// Usage stored separately
+let usage = {
+  date: '',      // YYYY-MM-DD
+  translate: 0,
+  scan: 0,
+};
+
+function todayStr() {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+
 function loadState() {
   try {
     const saved = localStorage.getItem(STORE_KEY);
@@ -788,11 +895,98 @@ function saveState() {
   localStorage.setItem(STORE_KEY, JSON.stringify(state));
 }
 
+function loadUsage() {
+  try {
+    const raw = localStorage.getItem(USAGE_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (parsed.date === todayStr()) {
+        usage = { ...usage, ...parsed };
+      } else {
+        // New day — reset
+        usage = { date: todayStr(), translate: 0, scan: 0 };
+        saveUsage();
+      }
+    } else {
+      usage.date = todayStr();
+      saveUsage();
+    }
+  } catch(e) {
+    console.error(e);
+    usage = { date: todayStr(), translate: 0, scan: 0 };
+  }
+}
+
+function saveUsage() {
+  localStorage.setItem(USAGE_KEY, JSON.stringify(usage));
+}
+
+function checkRollover() {
+  if (usage.date !== todayStr()) {
+    usage = { date: todayStr(), translate: 0, scan: 0 };
+    saveUsage();
+    updateUsageDisplay();
+  }
+}
+
+function incrementUsage(type) {
+  checkRollover();
+  usage[type] = (usage[type] || 0) + 1;
+  saveUsage();
+  updateUsageDisplay();
+}
+
+function canUse(type) {
+  checkRollover();
+  return (usage[type] || 0) < LIMITS[type];
+}
+
+function remainingUsage(type) {
+  checkRollover();
+  return Math.max(0, LIMITS[type] - (usage[type] || 0));
+}
+
+function updateUsageDisplay() {
+  const trUsed = usage.translate || 0;
+  const scUsed = usage.scan || 0;
+  
+  document.getElementById('trUsed').textContent = trUsed;
+  document.getElementById('trMax').textContent = LIMITS.translate;
+  document.getElementById('scUsed').textContent = scUsed;
+  document.getElementById('scMax').textContent = LIMITS.scan;
+  
+  const trPct = Math.min(100, (trUsed / LIMITS.translate) * 100);
+  const scPct = Math.min(100, (scUsed / LIMITS.scan) * 100);
+  
+  const trBar = document.getElementById('trBar');
+  const scBar = document.getElementById('scBar');
+  
+  trBar.style.width = trPct + '%';
+  scBar.style.width = scPct + '%';
+  
+  trBar.className = 'limit-bar-fill' + (trPct >= 100 ? ' danger' : trPct >= 75 ? ' warn' : '');
+  scBar.className = 'limit-bar-fill' + (scPct >= 100 ? ' danger' : scPct >= 75 ? ' warn' : '');
+}
+
 function showToast(msg, type = '') {
   const t = document.getElementById('toast');
   t.textContent = msg;
   t.className = 'toast show ' + type;
   setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+function msUntilReset() {
+  const now = new Date();
+  const tomorrow = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
+  return tomorrow - now;
+}
+
+function formatResetTime() {
+  const ms = msUntilReset();
+  const h = Math.floor(ms / 3600000);
+  const m = Math.floor((ms % 3600000) / 60000);
+  if (h > 0) return `${h} год ${m} хв`;
+  return `${m} хв`;
 }
 
 // ============ CUSTOM MODAL ============
@@ -862,6 +1056,19 @@ async function confirmModal(title, body, { icon = 'question', okLabel = 'Так'
       { label: okLabel, type: danger ? 'danger' : 'primary', value: true },
     ],
   });
+}
+
+async function limitReachedModal(type) {
+  const label = type === 'translate' ? 'перекладів' : 'сканувань';
+  const icon = type === 'translate' ? '📝' : '📷';
+  const max = LIMITS[type];
+  await alertModal(
+    'Денний ліміт досягнуто',
+    `<p>${icon} Ви використали всі <strong>${max} ${label}</strong> на сьогодні.</p>
+     <p class="muted">Ліміт скидається опівночі. До скидання: <strong>${formatResetTime()}</strong></p>
+     <p class="muted">Обмеження допомагає зберегти безкоштовні API-сервіси доступними для всіх користувачів.</p>`,
+    'warn'
+  );
 }
 
 // ============ FREE TRANSLATION PROVIDERS ============
@@ -1082,11 +1289,20 @@ document.getElementById('swapBtn').onclick = () => {
 
 document.getElementById('translateBtn').onclick = async () => {
   if (!state.srcText.trim()) { showToast('Введіть текст для перекладу', 'error'); return; }
+  
+  if (!canUse('translate')) {
+    await limitReachedModal('translate');
+    return;
+  }
+  
   const btn = document.getElementById('translateBtn');
   btn.innerHTML = '<span class="loader"></span> Перекладаю...';
   btn.disabled = true;
   try {
     const { translation, provider } = await translate(state.srcText, state.srcLang, state.tgtLang);
+    
+    incrementUsage('translate');
+    
     state.tgtText = translation;
     document.getElementById('tgtText').value = translation;
     document.getElementById('providerBadge').textContent = provider;
@@ -1098,7 +1314,15 @@ document.getElementById('translateBtn').onclick = async () => {
     });
     state.history = state.history.slice(0, 100);
     saveState();
-    showToast(`✓ Готово (${provider})`, 'success');
+    
+    const remaining = remainingUsage('translate');
+    if (remaining === 0) {
+      showToast(`✓ Готово • Ліміт вичерпано`, 'warn');
+    } else if (remaining <= 2) {
+      showToast(`✓ Готово • Залишилось ${remaining}`, 'warn');
+    } else {
+      showToast(`✓ Готово (${provider})`, 'success');
+    }
   } catch (err) {
     showToast('❌ ' + err.message, 'error');
   } finally {
@@ -1188,25 +1412,48 @@ document.getElementById('removePhotoBtn').onclick = async e => {
 
 document.getElementById('ocrBtn').onclick = async () => {
   if (!state.photoData) { showToast('Спочатку додайте фото', 'error'); return; }
+  
+  if (!canUse('scan')) {
+    await limitReachedModal('scan');
+    return;
+  }
+  
   const btn = document.getElementById('ocrBtn');
   btn.innerHTML = '<span class="loader"></span> Ініціалізація...';
   btn.disabled = true;
   try {
     const ocrText = await performOCR(state.photoData, state.photoSrcLang);
     if (!ocrText.trim()) throw new Error('Текст не знайдено на зображенні');
+    
+    incrementUsage('scan');
+    
     btn.innerHTML = '<span class="loader"></span> Переклад...';
     let translation = '', provider = '';
     if (state.photoSrcLang !== state.photoTgtLang) {
-      try {
-        const r = await translate(ocrText, state.photoSrcLang, state.photoTgtLang);
-        translation = r.translation; provider = r.provider;
-      } catch (e) { translation = '(Помилка: ' + e.message + ')'; }
+      // Scan+translate uses translate quota too
+      if (canUse('translate')) {
+        try {
+          const r = await translate(ocrText, state.photoSrcLang, state.photoTgtLang);
+          translation = r.translation; provider = r.provider;
+          incrementUsage('translate');
+        } catch (e) { translation = '(Помилка: ' + e.message + ')'; }
+      } else {
+        translation = '(Ліміт перекладів вичерпано — показано лише розпізнаний текст)';
+      }
     }
     const result = `=== РОЗПІЗНАНО (${state.photoSrcLang.toUpperCase()}) ===\n\n${ocrText}\n\n${translation ? `=== ПЕРЕКЛАД (${state.photoTgtLang.toUpperCase()}) • ${provider} ===\n\n${translation}` : ''}`;
     state.ocrResult = result;
     document.getElementById('ocrResult').value = result;
     saveState();
-    showToast('✓ Готово', 'success');
+    
+    const remaining = remainingUsage('scan');
+    if (remaining === 0) {
+      showToast(`✓ Готово • Ліміт вичерпано`, 'warn');
+    } else if (remaining <= 2) {
+      showToast(`✓ Готово • Залишилось ${remaining}`, 'warn');
+    } else {
+      showToast('✓ Готово', 'success');
+    }
   } catch (err) {
     showToast('❌ ' + err.message, 'error');
   } finally {
@@ -1244,12 +1491,55 @@ document.getElementById('clearAllBtn').onclick = async () => {
        <li>Завантажене фото</li>
        <li>Налаштування</li>
      </ul>
+     <p class="muted">Лічильник денного ліміту <strong>не</strong> буде скинуто.</p>
      <p class="muted">Цю дію неможливо скасувати.</p>`,
     { danger: true, okLabel: 'Видалити все', icon: 'warn' }
   );
   if (!ok) return;
   localStorage.removeItem(STORE_KEY);
   location.reload();
+};
+
+document.getElementById('usageBtn').onclick = async () => {
+  checkRollover();
+  const trUsed = usage.translate || 0;
+  const scUsed = usage.scan || 0;
+  const trRem = LIMITS.translate - trUsed;
+  const scRem = LIMITS.scan - scUsed;
+  const trPct = Math.min(100, (trUsed / LIMITS.translate) * 100);
+  const scPct = Math.min(100, (scUsed / LIMITS.scan) * 100);
+  const trClass = trPct >= 100 ? 'danger' : trPct >= 75 ? 'warn' : '';
+  const scClass = scPct >= 100 ? 'danger' : scPct >= 75 ? 'warn' : '';
+  
+  await alertModal(
+    'Статистика використання',
+    `<p>Денні ліміти для безкоштовних сервісів:</p>
+     <div class="usage-modal-stats">
+       <div class="limit-item">
+         <div class="limit-header">
+           <span>📝 Переклади</span>
+           <span class="limit-count"><span class="used">${trUsed}</span> / ${LIMITS.translate}</span>
+         </div>
+         <div class="limit-bar-bg">
+           <div class="limit-bar-fill ${trClass}" style="width:${trPct}%"></div>
+         </div>
+         <div style="font-size:11px;color:var(--muted);margin-top:6px">Залишилось: <strong>${trRem}</strong></div>
+       </div>
+       <div class="limit-item">
+         <div class="limit-header">
+           <span>📷 Сканування</span>
+           <span class="limit-count"><span class="used">${scUsed}</span> / ${LIMITS.scan}</span>
+         </div>
+         <div class="limit-bar-bg">
+           <div class="limit-bar-fill ${scClass}" style="width:${scPct}%"></div>
+         </div>
+         <div style="font-size:11px;color:var(--muted);margin-top:6px">Залишилось: <strong>${scRem}</strong></div>
+       </div>
+     </div>
+     <p class="muted">🕛 Скидання через: <strong>${formatResetTime()}</strong></p>
+     <p class="muted">Обмеження допомагають зберегти безкоштовні API-сервіси доступними для всіх.</p>`,
+    'info'
+  );
 };
 
 document.getElementById('infoBtn').onclick = async () => {
@@ -1263,6 +1553,7 @@ document.getElementById('infoBtn').onclick = async () => {
        <li>LibreTranslate (резервний)</li>
      </ul>
      <p><strong>📷 OCR:</strong> Tesseract.js у браузері</p>
+     <p><strong>⏱️ Денні ліміти:</strong> ${LIMITS.translate} перекладів, ${LIMITS.scan} сканувань</p>
      <p><strong>🔒 Приватність:</strong> Дані зберігаються локально, не передаються на сервери</p>
      <p><strong>🌍 Мови:</strong> 🇺🇦 🇬🇧 🇵🇱 🇩🇪</p>`,
     'info'
@@ -1271,9 +1562,14 @@ document.getElementById('infoBtn').onclick = async () => {
 
 // Init
 loadState();
+loadUsage();
+updateUsageDisplay();
 restoreUI();
 renderPhrases();
 renderHistory();
+
+// Check rollover every minute
+setInterval(checkRollover, 60000);
 </script>
 </body>
 </html>
