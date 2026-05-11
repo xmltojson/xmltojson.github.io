@@ -349,6 +349,8 @@
     <select id="direction" title="Conversion direction">
       <option value="x2j">XML → JSON</option>
       <option value="j2x">JSON → XML</option>
+      <option value="x2jmin">XML → JSON (Minimum)</option>
+      <option value="j2xmin">JSON → XML (Minimum)</option>
     </select>
     <select id="orientation" title="Layout">
       <option value="horizontal">Horizontal</option>
@@ -524,16 +526,20 @@ function showTerms() {
 $('btnTerms').onclick = showTerms;
 
 /* ---------- App logic ---------- */
+function isXmlInputMode() {
+  return dirSel.value === 'x2j' || dirSel.value === 'x2jmin';
+}
+
 function updateLabels() {
-  const x2j = dirSel.value === 'x2j';
-  $('inLabel').textContent = x2j ? 'XML Input' : 'JSON Input';
-  $('outLabel').textContent = x2j ? 'JSON Output' : 'XML Output';
-  $('inDot').className = 'dot ' + (x2j ? 'xml' : 'json');
-  $('outDot').className = 'dot ' + (x2j ? 'json' : 'xml');
-  inp.placeholder = x2j ? 'Paste your XML here...' : 'Paste your JSON here...';
-  out.placeholder = x2j ? 'JSON output will appear here...' : 'XML output will appear here...';
-  $('extIn').textContent = x2j ? '.xml' : '.json';
-  $('extOut').textContent = x2j ? '.json' : '.xml';
+  const xmlIn = isXmlInputMode();
+  $('inLabel').textContent = xmlIn ? 'XML Input' : 'JSON Input';
+  $('outLabel').textContent = xmlIn ? 'JSON Output' : 'XML Output';
+  $('inDot').className = 'dot ' + (xmlIn ? 'xml' : 'json');
+  $('outDot').className = 'dot ' + (xmlIn ? 'json' : 'xml');
+  inp.placeholder = xmlIn ? 'Paste your XML here...' : 'Paste your JSON here...';
+  out.placeholder = xmlIn ? 'JSON output will appear here...' : 'XML output will appear here...';
+  $('extIn').textContent = xmlIn ? '.xml' : '.json';
+  $('extOut').textContent = xmlIn ? '.json' : '.xml';
 }
 
 function applyOrientation() {
@@ -572,8 +578,13 @@ function loadState() {
 
 function autoDetectDirection(content) {
   const c = content.trim();
-  if (c.startsWith('<')) dirSel.value = 'x2j';
-  else if (c.startsWith('{') || c.startsWith('[')) dirSel.value = 'j2x';
+  const cur = dirSel.value;
+  const isMin = cur === 'x2jmin' || cur === 'j2xmin';
+  if (c.startsWith('<')) {
+    dirSel.value = isMin ? 'x2jmin' : 'x2j';
+  } else if (c.startsWith('{') || c.startsWith('[')) {
+    dirSel.value = isMin ? 'j2xmin' : 'j2x';
+  }
   updateLabels();
 }
 
@@ -583,12 +594,19 @@ function convert() {
   try {
     const style = indentSel.value;
     let result;
-    if (dirSel.value === 'x2j') {
+    const mode = dirSel.value;
+    if (mode === 'x2j') {
       if (typeof xmlToJson !== 'function') throw new Error('xmlToJson library not loaded');
       result = xmlToJson(src, style);
-    } else {
+    } else if (mode === 'j2x') {
       if (typeof jsonToXml !== 'function') throw new Error('jsonToXml library not loaded');
       result = jsonToXml(src, style);
+    } else if (mode === 'x2jmin') {
+      if (typeof xmlToJsonMinimum !== 'function') throw new Error('xmlToJsonMinimum library not loaded');
+      result = xmlToJsonMinimum(src, style);
+    } else if (mode === 'j2xmin') {
+      if (typeof jsonToXmlMinimum !== 'function') throw new Error('jsonToXmlMinimum library not loaded');
+      result = jsonToXmlMinimum(src, style);
     }
     if (!result || result === 'null' || result === 'undefined') {
       throw new Error('Invalid input');
@@ -690,7 +708,8 @@ $('btnSwap').onclick = () => {
   const tmp = inp.value;
   inp.value = out.value;
   out.value = tmp;
-  dirSel.value = dirSel.value === 'x2j' ? 'j2x' : 'x2j';
+  const swapMap = { 'x2j': 'j2x', 'j2x': 'x2j', 'x2jmin': 'j2xmin', 'j2xmin': 'x2jmin' };
+  dirSel.value = swapMap[dirSel.value] || 'x2j';
   updateLabels();
   saveState();
 };
@@ -706,8 +725,8 @@ $('urlInput').addEventListener('keydown', (e) => {
   if (e.key === 'Enter') { e.preventDefault(); loadFromUrl(); }
 });
 
-$('btnFormatIn').onclick = () => formatContent(inp, dirSel.value === 'x2j');
-$('btnFormatOut').onclick = () => formatContent(out, dirSel.value === 'j2x');
+$('btnFormatIn').onclick = () => formatContent(inp, isXmlInputMode());
+$('btnFormatOut').onclick = () => formatContent(out, !isXmlInputMode());
 $('btnCopyIn').onclick = () => copyText(inp.value);
 $('btnCopyOut').onclick = () => copyText(out.value);
 $('btnDownloadIn').onclick = () => download(inp.value, $('fnIn').value || 'input', $('extIn').textContent);
