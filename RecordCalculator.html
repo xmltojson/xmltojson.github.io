@@ -152,6 +152,7 @@
             outline: none; flex: 1; min-width: 70px; padding: 2px; font-size: 0.85em;
         }
         .inline-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        .inline-cols-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
         .toggle-row {
             display: flex; align-items: center; gap: 10px; margin-bottom: 10px; font-size: 0.88em;
         }
@@ -349,6 +350,28 @@
         .summary-row .sr-bar-fill {
             height: 100%; border-radius: 2px; transition: width 0.8s ease;
         }
+        .source-section {
+            margin-bottom: 28px;
+        }
+        .source-section-header {
+            display: flex; align-items: center; gap: 10px;
+            padding: 12px 16px; margin-bottom: 12px;
+            background: linear-gradient(135deg, rgba(188,140,255,0.08), rgba(88,166,255,0.08));
+            border: 1px solid rgba(188,140,255,0.25);
+            border-radius: 10px;
+        }
+        .source-section-header .src-icon { font-size: 1.4em; }
+        .source-section-header .src-name {
+            font-weight: 700; font-size: 1.1em; flex: 1;
+            background: linear-gradient(135deg, #bc8cff, #58a6ff);
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+        }
+        .source-section-header .src-total {
+            font-size: 0.85em; color: var(--text-dim);
+        }
+        .source-section-header .src-total strong {
+            color: var(--blue); font-size: 1.15em;
+        }
         .badge {
             display: inline-block; padding: 2px 8px; border-radius: 4px;
             font-size: 0.78em; font-weight: 600; border: 1px solid;
@@ -358,6 +381,7 @@
         .badge-придушено { background: rgba(188,140,255,0.1); color: #bc8cff; border-color: rgba(188,140,255,0.3); }
         .badge-знищено { background: rgba(248,81,73,0.1); color: #f85149; border-color: rgba(248,81,73,0.3); }
         .badge-default { background: rgba(139,148,158,0.1); color: #8b949e; border-color: rgba(139,148,158,0.3); }
+        .badge-source { background: rgba(188,140,255,0.1); color: #bc8cff; border-color: rgba(188,140,255,0.3); }
         .chart-wrapper { padding: 20px 0; }
         .chart-container {
             display: flex; align-items: flex-end; gap: 6px;
@@ -493,6 +517,7 @@
             .content-scroll { padding: 16px; }
             .stats-row { grid-template-columns: repeat(2, 1fr); }
             .summary-grid { grid-template-columns: 1fr; }
+            .inline-cols-3 { grid-template-columns: 1fr 1fr; }
         }
         @media (max-width: 480px) {
             .top-bar { padding: 0 12px; }
@@ -500,6 +525,7 @@
             .stats-row { grid-template-columns: 1fr; }
             .content-toolbar .export-group { display: none; }
             .sidebar-scroll { padding: 14px; }
+            .inline-cols-3 { grid-template-columns: 1fr; }
         }
         @media (orientation: landscape) and (max-height: 500px) {
             .top-bar { height: 44px; min-height: 44px; }
@@ -612,15 +638,22 @@
                     <div style="height:12px"></div>
 
                     <div class="section-title">🔧 Column Mapping</div>
-                    <div class="inline-cols">
+                    <div class="inline-cols-3">
+                        <div class="form-group">
+                            <label>Type Col #</label>
+                            <input type="number" id="typeCol" value="2" min="1">
+                        </div>
                         <div class="form-group">
                             <label>Keyword Col #</label>
                             <input type="number" id="keywordCol" value="3" min="1">
                         </div>
                         <div class="form-group">
-                            <label>Type Col #</label>
-                            <input type="number" id="typeCol" value="2" min="1">
+                            <label>Source Col #</label>
+                            <input type="number" id="sourceCol" value="4" min="0" title="Set to 0 to disable source grouping">
                         </div>
+                    </div>
+                    <div style="font-size:0.72em;color:var(--text-dim);margin-top:-6px;margin-bottom:10px">
+                        Source Col: 0 = disabled, results grouped by Source value
                     </div>
 
                     <div class="toggle-row">
@@ -699,18 +732,21 @@
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <script>
-    const STATE_KEY = 'droneRecordCalcState_v7';
+    const STATE_KEY = 'droneRecordCalcState_v8';
     const MAX_INCLUDE_MASKS = 8;
     const MAX_EXCLUDE_MASKS = 8;
+    const NO_SOURCE_KEY = '__NO_SOURCE__';
 
     let appState = {
         keywords: ['виявлено', 'подавлено', 'придушено'],
         droneTypes: ['FPV', 'Shahed', 'Mavic', 'Орлан', 'ZALA', 'Ланцет', 'Supercam', 'Mohajer'],
         keywordCol: 3,
         typeCol: 2,
+        sourceCol: 4,
         caseSensitive: false,
         partialMatch: true,
-        results: null,
+        results: null,           // flat: { "type kw": count } - kept for backward compat
+        resultsBySource: null,   // { source: { "type kw": count } }
         rawMatches: [],
         fileNames: [],
         folderName: '',
@@ -718,7 +754,7 @@
         activeTab: 'overview',
         includeMasks: [],
         excludeMasks: [],
-        uncheckedFiles: {}  // manually unchecked files by path
+        uncheckedFiles: {}
     };
 
     let folderFiles = [];
@@ -736,6 +772,7 @@
                 if (!Array.isArray(appState.excludeMasks)) appState.excludeMasks = [];
                 if (!Array.isArray(appState.includeMasks)) appState.includeMasks = [];
                 if (!appState.uncheckedFiles || typeof appState.uncheckedFiles !== 'object') appState.uncheckedFiles = {};
+                if (typeof appState.sourceCol !== 'number') appState.sourceCol = 4;
             }
         } catch(e) {}
     }
@@ -755,7 +792,7 @@
             document.getElementById('persistFolderName').textContent = appState.folderName;
         }
 
-        if (appState.results) renderResults(appState.results, appState.rawMatches);
+        if (appState.results || appState.resultsBySource) renderResults(appState.results, appState.rawMatches, appState.resultsBySource);
     });
 
     function restoreUI() {
@@ -763,6 +800,7 @@
         renderTags('droneTypesContainer', appState.droneTypes, 'droneType');
         document.getElementById('keywordCol').value = appState.keywordCol;
         document.getElementById('typeCol').value = appState.typeCol;
+        document.getElementById('sourceCol').value = appState.sourceCol;
         document.getElementById('caseSensitive').checked = appState.caseSensitive;
         document.getElementById('partialMatch').checked = appState.partialMatch;
         renderIncludeTags();
@@ -944,18 +982,13 @@
     // ==================== FILENAME FILTERS ====================
     function filePassesFilter(fileName) {
         const fname = fileName.split('/').pop().toLowerCase();
-
-        // Include: file must match at least one include mask (if any defined)
         if (appState.includeMasks && appState.includeMasks.length > 0) {
             const matchesAny = appState.includeMasks.some(m => fname.includes(m.toLowerCase()));
             if (!matchesAny) return false;
         }
-
-        // Exclude: file must NOT match any exclude mask
         for (const mask of (appState.excludeMasks || [])) {
             if (mask && fname.includes(mask.toLowerCase())) return false;
         }
-
         return true;
     }
 
@@ -984,16 +1017,13 @@
 
     function getFileExclusionReason(fileName) {
         const fname = fileName.split('/').pop().toLowerCase();
-
         if (appState.includeMasks && appState.includeMasks.length > 0) {
             const matchesAny = appState.includeMasks.some(m => fname.includes(m.toLowerCase()));
             if (!matchesAny) return 'no-match';
         }
-
         for (const mask of (appState.excludeMasks || [])) {
             if (mask && fname.includes(mask.toLowerCase())) return 'excluded';
         }
-
         return null;
     }
 
@@ -1017,7 +1047,6 @@
     function applyFilter() {
         const allNames = appState.fileNames || [];
         const selected = getSelectedFileNames();
-
         renderFileTree(allNames, []);
         updateFolderZoneUI();
         updateSelectionCount();
@@ -1054,18 +1083,14 @@
 
     function selectAllFiles() {
         const filtered = getFilteredFileNames();
-        filtered.forEach(n => {
-            delete appState.uncheckedFiles[n];
-        });
+        filtered.forEach(n => { delete appState.uncheckedFiles[n]; });
         saveState();
         applyFilter();
     }
 
     function deselectAllFiles() {
         const filtered = getFilteredFileNames();
-        filtered.forEach(n => {
-            appState.uncheckedFiles[n] = true;
-        });
+        filtered.forEach(n => { appState.uncheckedFiles[n] = true; });
         saveState();
         applyFilter();
     }
@@ -1073,11 +1098,8 @@
     function invertFileSelection() {
         const filtered = getFilteredFileNames();
         filtered.forEach(n => {
-            if (appState.uncheckedFiles[n]) {
-                delete appState.uncheckedFiles[n];
-            } else {
-                appState.uncheckedFiles[n] = true;
-            }
+            if (appState.uncheckedFiles[n]) delete appState.uncheckedFiles[n];
+            else appState.uncheckedFiles[n] = true;
         });
         saveState();
         applyFilter();
@@ -1100,21 +1122,17 @@
             } else {
                 return selectFolderFallback();
             }
-
             appState.fileNames = folderFiles.map(f => f._relativePath || f.name);
-            // Clean up uncheckedFiles for files that no longer exist
             const nameSet = new Set(appState.fileNames);
             Object.keys(appState.uncheckedFiles).forEach(k => {
                 if (!nameSet.has(k)) delete appState.uncheckedFiles[k];
             });
             saveState();
-
             document.getElementById('persistBanner').classList.add('hidden');
             updateFolderZoneUI();
             applyFilter();
             addLog(`Folder selected: ${appState.folderName} — ${folderFiles.length} .docx files`, 'info');
             showToast(`Found ${folderFiles.length} .docx files`, 'info');
-
         } catch(e) {
             if (e.name !== 'AbortError') {
                 console.error(e);
@@ -1147,7 +1165,6 @@
             inp.setAttribute('directory', '');
             inp.setAttribute('multiple', '');
             document.body.appendChild(inp);
-
             inp.addEventListener('change', (e) => {
                 const files = Array.from(e.target.files).filter(
                     f => f.name.toLowerCase().endsWith('.docx') && !f.name.startsWith('~')
@@ -1159,13 +1176,11 @@
                     appState.folderName = 'Selected Folder';
                 }
                 appState.fileNames = files.map(f => f.webkitRelativePath || f.name);
-                // Clean up uncheckedFiles
                 const nameSet = new Set(appState.fileNames);
                 Object.keys(appState.uncheckedFiles).forEach(k => {
                     if (!nameSet.has(k)) delete appState.uncheckedFiles[k];
                 });
                 saveState();
-
                 document.getElementById('persistBanner').classList.add('hidden');
                 updateFolderZoneUI();
                 applyFilter();
@@ -1180,13 +1195,11 @@
     function renderFileTree(names, statuses) {
         const tree = document.getElementById('fileTree');
         const actionsBar = document.getElementById('fileSelectActions');
-
         if (!names || names.length === 0) {
             tree.innerHTML = '';
             actionsBar.classList.add('hidden');
             return;
         }
-
         actionsBar.classList.remove('hidden');
 
         const groups = {};
@@ -1201,14 +1214,9 @@
             const filterExcluded = !!reason;
             const manuallyUnchecked = !filterExcluded && !!appState.uncheckedFiles[n];
             groups[folder].push({
-                name: fname,
-                fullPath: n,
-                status: statuses[i] || '',
-                excluded: filterExcluded,
-                manuallyUnchecked,
-                reason,
-                matchedExclude,
-                matchedInclude
+                name: fname, fullPath: n, status: statuses[i] || '',
+                excluded: filterExcluded, manuallyUnchecked, reason,
+                matchedExclude, matchedInclude
             });
         });
 
@@ -1222,7 +1230,6 @@
                 html += `<div class="file-tree-folder">📁 ${escHtml(folder)} <span class="file-count-badge">${selectedCount}/${groups[folder].length}</span></div>`;
             }
             const sorted = [...groups[folder]].sort((a,b) => {
-                // Sort: selected first, then manually unchecked, then filter-excluded
                 const aOrder = a.excluded ? 2 : (a.manuallyUnchecked ? 1 : 0);
                 const bOrder = b.excluded ? 2 : (b.manuallyUnchecked ? 1 : 0);
                 return aOrder - bOrder;
@@ -1233,15 +1240,12 @@
                 const isChecked = !isFilterExcluded && !isManuallyUnchecked;
                 const icon = isFilterExcluded ? (f.reason === 'excluded' ? '🚫' : '⬜') : '📄';
                 const titleExtra = f.reason === 'excluded' ? ` (excluded by "${f.matchedExclude}")` : f.reason === 'no-match' ? ' (no include match)' : '';
-
                 let itemClass = 'file-tree-item';
                 if (isFilterExcluded) itemClass += ' excluded';
                 else if (isManuallyUnchecked) itemClass += ' manually-unchecked';
-
                 const checkboxDisabled = isFilterExcluded ? 'disabled' : '';
                 const checkboxChecked = isChecked ? 'checked' : '';
                 const escapedPath = escHtml(f.fullPath).replace(/'/g, "\\'");
-
                 html += `
                     <div class="${itemClass}">
                         <input type="checkbox" class="ft-checkbox" ${checkboxChecked} ${checkboxDisabled}
@@ -1254,14 +1258,12 @@
                 `;
             });
         });
-
         tree.innerHTML = html;
         updateSelectionCount();
     }
 
     function highlightFileMatch(text, includeMask, excludeMask) {
         const lower = text.toLowerCase();
-
         if (excludeMask) {
             const eLower = excludeMask.toLowerCase();
             const idx = lower.indexOf(eLower);
@@ -1272,7 +1274,6 @@
                 return `${escHtml(before)}<mark style="background:rgba(248,81,73,0.25);color:#f85149;border-radius:2px;padding:0 1px">${escHtml(match)}</mark>${escHtml(after)}`;
             }
         }
-
         if (includeMask) {
             const iLower = includeMask.toLowerCase();
             const idx = lower.indexOf(iLower);
@@ -1283,7 +1284,6 @@
                 return `${escHtml(before)}<mark style="background:rgba(88,166,255,0.25);color:var(--blue);border-radius:2px;padding:0 1px">${escHtml(match)}</mark>${escHtml(after)}`;
             }
         }
-
         return escHtml(text);
     }
 
@@ -1342,6 +1342,9 @@
         document.getElementById('typeCol').addEventListener('input', e => {
             appState.typeCol = parseInt(e.target.value) || 1; saveState();
         });
+        document.getElementById('sourceCol').addEventListener('input', e => {
+            appState.sourceCol = parseInt(e.target.value) || 0; saveState();
+        });
         document.getElementById('caseSensitive').addEventListener('change', e => {
             appState.caseSensitive = e.target.checked; saveState();
         });
@@ -1389,7 +1392,6 @@
     // ==================== SCANNING ====================
     async function startScan() {
         const filesToScan = getFilteredFiles();
-
         if (filesToScan.length === 0) {
             if (folderFiles.length === 0) {
                 if (appState.folderName && appState.fileNames.length > 0) {
@@ -1424,9 +1426,11 @@
         const manualUnchecks = Object.keys(appState.uncheckedFiles).length;
         if (manualUnchecks > 0) parts.push(`${manualUnchecks} manually unchecked`);
         const filterDesc = parts.length ? ' ' + parts.join(' ') : '';
-        addLog(`═══ Starting scan (${filesToScan.length} files${filterDesc}) ═══`, 'info');
+        const sourceEnabled = appState.sourceCol > 0;
+        addLog(`═══ Starting scan (${filesToScan.length} files${filterDesc}) — Source grouping: ${sourceEnabled ? 'ON (col ' + appState.sourceCol + ')' : 'OFF'} ═══`, 'info');
 
-        const results = {};
+        const results = {};               // flat
+        const resultsBySource = {};       // { source: { "type kw": count } }
         const rawMatches = [];
         let totalRows = 0, matchedRows = 0;
 
@@ -1436,7 +1440,6 @@
 
         const allStatuses = new Array(appState.fileNames.length).fill('');
         const filteredPaths = new Set(filesToScan.map(f => f._relativePath || f.webkitRelativePath || f.name));
-
         appState.fileNames.forEach((name, idx) => {
             if (!filteredPaths.has(name)) {
                 const reason = getFileExclusionReason(name);
@@ -1465,22 +1468,30 @@
 
                     const kwIdx = appState.keywordCol - 1;
                     const typeIdx = appState.typeCol - 1;
+                    const srcIdx = sourceEnabled ? (appState.sourceCol - 1) : -1;
 
                     for (const row of rows) {
                         totalRows++;
-                        if (row.length <= Math.max(kwIdx, typeIdx)) continue;
+                        const maxNeeded = Math.max(kwIdx, typeIdx, srcIdx);
+                        if (row.length <= maxNeeded) continue;
                         const kwCell = row[kwIdx] || '';
                         const typeCell = row[typeIdx] || '';
+                        const sourceCell = sourceEnabled ? (row[srcIdx] || '').trim() : '';
+                        const sourceKey = sourceEnabled ? (sourceCell || NO_SOURCE_KEY) : NO_SOURCE_KEY;
+
                         for (const droneType of appState.droneTypes) {
                             for (const keyword of appState.keywords) {
                                 if (matchText(typeCell, droneType) && matchText(kwCell, keyword)) {
                                     const key = `${droneType} ${keyword}`;
                                     results[key] = (results[key] || 0) + 1;
+                                    if (!resultsBySource[sourceKey]) resultsBySource[sourceKey] = {};
+                                    resultsBySource[sourceKey][key] = (resultsBySource[sourceKey][key] || 0) + 1;
                                     matchedRows++;
                                     fileMatches++;
                                     rawMatches.push({
                                         file: fname, row, droneType, keyword,
-                                        typeCell, keywordCell: kwCell
+                                        typeCell, keywordCell: kwCell,
+                                        source: sourceCell || (sourceEnabled ? '(empty)' : '')
                                     });
                                 }
                             }
@@ -1494,28 +1505,27 @@
                     addLog(`  ✗ Error: ${err.message}`, 'error');
                     if (allIdx >= 0) allStatuses[allIdx] = '❌';
                 }
-
                 await new Promise(r => setTimeout(r, 20));
             }
 
             pf.style.width = '100%';
             pl.textContent = '100% — Complete!';
-
-            addLog(`═══ Scan complete! Files: ${filesToScan.length}, Rows: ${totalRows}, Matches: ${matchedRows} ═══`, 'success');
+            const sourceCount = Object.keys(resultsBySource).length;
+            addLog(`═══ Scan complete! Files: ${filesToScan.length}, Rows: ${totalRows}, Matches: ${matchedRows}, Sources: ${sourceCount} ═══`, 'success');
 
             appState.results = results;
+            appState.resultsBySource = resultsBySource;
             appState.rawMatches = rawMatches;
             appState.lastScanTime = new Date().toISOString();
             saveState();
 
             renderFileTree(appState.fileNames, allStatuses);
-            renderResults(results, rawMatches);
+            renderResults(results, rawMatches, resultsBySource);
 
             document.getElementById('lastScanLabel').textContent =
                 'Last: ' + new Date(appState.lastScanTime).toLocaleString('uk-UA');
 
-            showToast(`Done! ${matchedRows} matches in ${filesToScan.length} files`, 'success');
-
+            showToast(`Done! ${matchedRows} matches in ${filesToScan.length} files${sourceEnabled ? ' across ' + sourceCount + ' source(s)' : ''}`, 'success');
         } catch (error) {
             addLog(`Fatal error: ${error.message}`, 'error');
             showToast('Scan error: ' + error.message, 'error');
@@ -1540,14 +1550,14 @@
     }
 
     // ==================== RENDER RESULTS ====================
-    function renderResults(results, rawMatches) {
-        renderOverview(results);
-        renderSummary(results);
+    function renderResults(results, rawMatches, resultsBySource) {
+        renderOverview(results, resultsBySource);
+        renderSummary(results, resultsBySource);
         renderChart(results);
         renderTable(rawMatches);
     }
 
-    function renderOverview(results) {
+    function renderOverview(results, resultsBySource) {
         const container = document.getElementById('statsRow');
         const byType = {}, byKeyword = {};
         let total = 0;
@@ -1570,6 +1580,8 @@
         if (appState.includeMasks.length) fp.push(`include: ${appState.includeMasks.length} mask(s)`);
         if (appState.excludeMasks.length) fp.push(`exclude: ${appState.excludeMasks.length} mask(s)`);
         const filterNote = fp.length ? ` · ${fp.join(', ')}` : '';
+        const sourceCount = resultsBySource ? Object.keys(resultsBySource).length : 0;
+        const hasSourceGrouping = appState.sourceCol > 0 && sourceCount > 0;
 
         let html = `
             <div class="stat-card">
@@ -1577,9 +1589,30 @@
                 <div class="sc-icon">🎯</div>
                 <div class="sc-label">Total Matches</div>
                 <div class="sc-value">${total}</div>
-                <div class="sc-sub">${Object.keys(byType).length} types · ${Object.keys(byKeyword).length} statuses${filterNote}</div>
+                <div class="sc-sub">${Object.keys(byType).length} types · ${Object.keys(byKeyword).length} statuses${hasSourceGrouping ? ' · ' + sourceCount + ' sources' : ''}${filterNote}</div>
             </div>
         `;
+
+        if (hasSourceGrouping) {
+            const sourceTotals = {};
+            Object.entries(resultsBySource).forEach(([src, data]) => {
+                sourceTotals[src] = Object.values(data).reduce((a,b)=>a+b,0);
+            });
+            const topSources = Object.entries(sourceTotals).sort((a,b)=>b[1]-a[1]).slice(0,4);
+            topSources.forEach(([src, count]) => {
+                const displaySrc = src === NO_SOURCE_KEY ? '(no source)' : src;
+                html += `
+                    <div class="stat-card">
+                        <div class="accent-bar" style="background:linear-gradient(135deg,#bc8cff,#58a6ff)"></div>
+                        <div class="sc-icon">📡</div>
+                        <div class="sc-label" title="${escHtml(displaySrc)}">${escHtml(truncate(displaySrc, 24))}</div>
+                        <div class="sc-value">${count}</div>
+                        <div class="sc-sub">${((count/total)*100).toFixed(1)}% of total</div>
+                    </div>
+                `;
+            });
+        }
+
         const kwColors = {
             'виявлено': 'linear-gradient(135deg,#00b894,#55efc4)',
             'подавлено': 'linear-gradient(135deg,#58a6ff,#a2d2ff)',
@@ -1612,8 +1645,103 @@
         container.innerHTML = html;
     }
 
-    function renderSummary(results) {
+    function truncate(s, n) {
+        return s.length > n ? s.slice(0, n-1) + '…' : s;
+    }
+
+    function renderSummary(results, resultsBySource) {
         const container = document.getElementById('summaryContent');
+        const sourceCount = resultsBySource ? Object.keys(resultsBySource).length : 0;
+        const hasSourceGrouping = appState.sourceCol > 0 && sourceCount > 0;
+
+        if (hasSourceGrouping) {
+            renderSummaryBySource(container, resultsBySource);
+        } else {
+            renderSummaryFlat(container, results);
+        }
+    }
+
+    function renderSummaryBySource(container, resultsBySource) {
+        // Sort sources by total count desc
+        const sourceTotals = {};
+        Object.entries(resultsBySource).forEach(([src, data]) => {
+            sourceTotals[src] = Object.values(data).reduce((a,b)=>a+b,0);
+        });
+        const sortedSources = Object.entries(resultsBySource)
+            .sort((a,b) => sourceTotals[b[0]] - sourceTotals[a[0]]);
+
+        if (sortedSources.length === 0) {
+            container.innerHTML = '<div class="empty-state"><div class="empty-icon">📋</div><p>No matches</p></div>';
+            return;
+        }
+
+        let html = '';
+        sortedSources.forEach(([source, sourceResults]) => {
+            const sourceTotal = sourceTotals[source];
+            const displaySrc = source === NO_SOURCE_KEY ? '(no source / empty)' : source;
+            const nonZero = Object.entries(sourceResults).filter(([,c]) => c > 0);
+            if (!nonZero.length) return;
+
+            // Group by drone type within this source
+            const groups = {};
+            nonZero.forEach(([key, count]) => {
+                const dt = extractDroneType(key);
+                const kw = extractKeyword(key);
+                if (!groups[dt]) groups[dt] = [];
+                groups[dt].push({ keyword: kw, count });
+            });
+            const maxCount = Math.max(...nonZero.map(([,c])=>c));
+
+            html += `
+                <div class="source-section">
+                    <div class="source-section-header">
+                        <span class="src-icon">📡</span>
+                        <span class="src-name">${escHtml(displaySrc)}</span>
+                        <span class="src-total"><strong>${sourceTotal}</strong> matches</span>
+                    </div>
+                    <div class="summary-grid">
+            `;
+
+            Object.entries(groups).sort((a,b) =>
+                b[1].reduce((s,x)=>s+x.count,0) - a[1].reduce((s,x)=>s+x.count,0)
+            ).forEach(([dt, items]) => {
+                const dtTotal = items.reduce((s,x)=>s+x.count,0);
+                html += `
+                    <div class="summary-group">
+                        <div class="summary-group-header">
+                            ${getDroneEmoji(dt)} ${escHtml(dt)}
+                            <span class="file-count-badge">${dtTotal} total</span>
+                        </div>
+                        <div class="summary-group-body">
+                `;
+                items.sort((a,b)=>b.count-a.count).forEach(item => {
+                    const badgeClass = getBadgeClass(item.keyword);
+                    const barPct = maxCount > 0 ? (item.count / maxCount) * 100 : 0;
+                    const barColor = getBarColor(item.keyword);
+                    html += `
+                        <div class="summary-row">
+                            <div class="sr-label"><span class="badge ${badgeClass}">${escHtml(item.keyword)}</span></div>
+                            <div class="sr-bar-bg"><div class="sr-bar-fill" style="width:${barPct}%;background:${barColor}"></div></div>
+                            <div class="sr-count">${item.count}</div>
+                        </div>
+                    `;
+                });
+                html += '</div></div>';
+            });
+            html += '</div></div>';
+        });
+
+        container.innerHTML = html;
+        setTimeout(() => {
+            container.querySelectorAll('.sr-bar-fill').forEach(bar => {
+                const w = bar.style.width;
+                bar.style.width = '0%';
+                requestAnimationFrame(() => { bar.style.width = w; });
+            });
+        }, 50);
+    }
+
+    function renderSummaryFlat(container, results) {
         const nonZero = Object.entries(results).filter(([,c]) => c > 0);
         if (!nonZero.length) {
             container.innerHTML = '<div class="empty-state"><div class="empty-icon">📋</div><p>No matches</p></div>';
@@ -1711,9 +1839,11 @@
             container.innerHTML = '<div class="empty-state"><div class="empty-icon">📑</div><p>No matching rows</p></div>';
             return;
         }
+        const showSource = appState.sourceCol > 0;
         let html = `<div class="data-table-wrap"><table class="data-table">
             <thead><tr>
                 <th>#</th><th>File</th><th>Drone Type</th><th>Status</th>
+                ${showSource ? '<th>Source</th>' : ''}
                 <th>Type Cell</th><th>Keyword Cell</th><th>Full Row</th>
             </tr></thead><tbody>`;
         rawMatches.forEach((m, i) => {
@@ -1724,6 +1854,7 @@
                 <td title="${escHtml(m.file)}">${escHtml(shortFile)}</td>
                 <td><strong>${escHtml(m.droneType)}</strong></td>
                 <td><span class="badge ${badgeClass}">${escHtml(m.keyword)}</span></td>
+                ${showSource ? `<td><span class="badge badge-source">${escHtml(m.source || '(empty)')}</span></td>` : ''}
                 <td>${escHtml(m.typeCell)}</td>
                 <td>${escHtml(m.keywordCell)}</td>
                 <td style="max-width:250px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${escHtml(m.row.join(' | '))}">${escHtml(m.row.join(' | '))}</td>
@@ -1815,18 +1946,44 @@
     // ==================== EXPORT ====================
     function exportCSV() {
         if (!appState.results) { showToast('No data', 'error'); return; }
-        let csv = '\uFEFF"Combination","Count"\n';
-        Object.entries(appState.results).filter(([,c])=>c>0).sort((a,b)=>b[1]-a[1])
-            .forEach(([k,c]) => { csv += `"${k}",${c}\n`; });
+        const hasSource = appState.sourceCol > 0 && appState.resultsBySource && Object.keys(appState.resultsBySource).length > 0;
+        let csv = '\uFEFF';
+
+        if (hasSource) {
+            csv += '"Source","Combination","Count"\n';
+            const sourceTotals = {};
+            Object.entries(appState.resultsBySource).forEach(([src, data]) => {
+                sourceTotals[src] = Object.values(data).reduce((a,b)=>a+b,0);
+            });
+            Object.entries(appState.resultsBySource)
+                .sort((a,b) => sourceTotals[b[0]] - sourceTotals[a[0]])
+                .forEach(([src, data]) => {
+                    const displaySrc = src === NO_SOURCE_KEY ? '(no source)' : src;
+                    Object.entries(data).filter(([,c])=>c>0).sort((a,b)=>b[1]-a[1])
+                        .forEach(([k,c]) => {
+                            csv += `"${displaySrc.replace(/"/g,'""')}","${k.replace(/"/g,'""')}",${c}\n`;
+                        });
+                });
+            csv += '\n"=== TOTALS (across all sources) ==="\n"Combination","Count"\n';
+            Object.entries(appState.results).filter(([,c])=>c>0).sort((a,b)=>b[1]-a[1])
+                .forEach(([k,c]) => { csv += `"${k.replace(/"/g,'""')}",${c}\n`; });
+        } else {
+            csv += '"Combination","Count"\n';
+            Object.entries(appState.results).filter(([,c])=>c>0).sort((a,b)=>b[1]-a[1])
+                .forEach(([k,c]) => { csv += `"${k.replace(/"/g,'""')}",${c}\n`; });
+        }
+
         if (appState.rawMatches?.length) {
-            csv += '\n"File","Drone Type","Status","Type Cell","Keyword Cell","Full Row"\n';
+            csv += '\n"File","Drone Type","Status"' + (hasSource ? ',"Source"' : '') + ',"Type Cell","Keyword Cell","Full Row"\n';
             appState.rawMatches.forEach(m => {
-                csv += `"${m.file}","${m.droneType}","${m.keyword}","${m.typeCell}","${m.keywordCell}","${m.row.join(' | ')}"\n`;
+                const srcCol = hasSource ? `,"${(m.source || '').replace(/"/g,'""')}"` : '';
+                csv += `"${m.file.replace(/"/g,'""')}","${m.droneType}","${m.keyword}"${srcCol},"${(m.typeCell||'').replace(/"/g,'""')}","${(m.keywordCell||'').replace(/"/g,'""')}","${m.row.join(' | ').replace(/"/g,'""')}"\n`;
             });
         }
         download(csv, 'drone_stats.csv', 'text/csv;charset=utf-8');
         showToast('CSV exported', 'success');
     }
+
     function exportJSON() {
         if (!appState.results) { showToast('No data', 'error'); return; }
         const data = {
@@ -1834,20 +1991,45 @@
             includeMasks: appState.includeMasks,
             excludeMasks: appState.excludeMasks,
             config: { keywords: appState.keywords, droneTypes: appState.droneTypes,
-                      keywordCol: appState.keywordCol, typeCol: appState.typeCol },
-            summary: appState.results, matches: appState.rawMatches
+                      keywordCol: appState.keywordCol, typeCol: appState.typeCol,
+                      sourceCol: appState.sourceCol },
+            summary: appState.results,
+            summaryBySource: appState.resultsBySource || null,
+            matches: appState.rawMatches
         };
         download(JSON.stringify(data, null, 2), 'drone_stats.json', 'application/json');
         showToast('JSON exported', 'success');
     }
+
     function exportText() {
         if (!appState.results) { showToast('No data', 'error'); return; }
+        const hasSource = appState.sourceCol > 0 && appState.resultsBySource && Object.keys(appState.resultsBySource).length > 0;
         let txt = '══════ DRONE DETECTION STATISTICS ══════\n';
         txt += `Folder: ${appState.folderName}\n`;
         if (appState.includeMasks.length) txt += `Include masks: ${appState.includeMasks.map(m=>'"'+m+'"').join(', ')}\n`;
         if (appState.excludeMasks.length) txt += `Exclude masks: ${appState.excludeMasks.map(m=>'"'+m+'"').join(', ')}\n`;
-        txt += `Date: ${appState.lastScanTime ? new Date(appState.lastScanTime).toLocaleString('uk-UA') : 'N/A'}\n\n`;
-        txt += '── SUMMARY ──\n';
+        txt += `Date: ${appState.lastScanTime ? new Date(appState.lastScanTime).toLocaleString('uk-UA') : 'N/A'}\n`;
+        txt += `Columns: Type=${appState.typeCol}, Keyword=${appState.keywordCol}, Source=${appState.sourceCol > 0 ? appState.sourceCol : 'disabled'}\n\n`;
+
+        if (hasSource) {
+            txt += '── BY SOURCE ──\n';
+            const sourceTotals = {};
+            Object.entries(appState.resultsBySource).forEach(([src, data]) => {
+                sourceTotals[src] = Object.values(data).reduce((a,b)=>a+b,0);
+            });
+            Object.entries(appState.resultsBySource)
+                .sort((a,b) => sourceTotals[b[0]] - sourceTotals[a[0]])
+                .forEach(([src, data]) => {
+                    const displaySrc = src === NO_SOURCE_KEY ? '(no source)' : src;
+                    txt += `\n📡 ${displaySrc} — ${sourceTotals[src]} total\n`;
+                    Object.entries(data).filter(([,c])=>c>0).sort((a,b)=>b[1]-a[1])
+                        .forEach(([k,c]) => { txt += `    ${k} — ${c}\n`; });
+                });
+            txt += '\n── OVERALL TOTALS ──\n';
+        } else {
+            txt += '── SUMMARY ──\n';
+        }
+
         Object.entries(appState.results).filter(([,c])=>c>0).sort((a,b)=>b[1]-a[1])
             .forEach(([k,c]) => { txt += `  ${k} — ${c}\n`; });
         const total = Object.values(appState.results).reduce((a,b)=>a+b,0);
@@ -1855,6 +2037,7 @@
         download(txt, 'drone_stats.txt', 'text/plain;charset=utf-8');
         showToast('Text exported', 'success');
     }
+
     function download(content, filename, mime) {
         const blob = new Blob([content], { type: mime });
         const url = URL.createObjectURL(blob);
@@ -1869,12 +2052,12 @@
         folderFiles = [];
         dirHandle = null;
         appState.results = null;
+        appState.resultsBySource = null;
         appState.rawMatches = [];
         appState.fileNames = [];
         appState.folderName = '';
         appState.lastScanTime = null;
         appState.uncheckedFiles = {};
-        // NOTE: includeMasks and excludeMasks are intentionally NOT cleared
         saveState();
 
         document.getElementById('folderZone').innerHTML = `
