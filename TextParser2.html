@@ -1917,7 +1917,7 @@
             }
             if (typeof docx === 'undefined') { showToast('DOCX library not loaded!'); return; }
 
-            const { Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell, WidthType, AlignmentType, BorderStyle, PageOrientation, convertInchesToTwip } = docx;
+            const { Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell, WidthType, AlignmentType, BorderStyle, PageOrientation, convertInchesToTwip, ShadingType } = docx;
 
             // Group rows: detection (ВИЯВЛЕНО) vs suppression/other (5.1)
             const detection = [];
@@ -1958,7 +1958,9 @@
                     width: { size: colWidths[i], type: WidthType.PERCENTAGE },
                     children: [new Paragraph({
                         alignment: AlignmentType.CENTER,
-                        children: [new TextRun({ text: String(c || ''), size: 20 })]
+                        children: state.pidrozdilName === c ? [new TextRun({ text: 'перша ', size: 20 }),
+                                      new TextRun({ text: 'приккшр', italics: true, size: 20 })]
+                                      : [new TextRun({ text: String(c || ''), size: 20 })]
                     })]
                 }))
             });
@@ -1974,6 +1976,23 @@
 
             const detRows = buildTableDocxRowsForSection(detection, 1, true);
             const detTableRows = [makeHeaderRow()];
+            const borders = { top: border, bottom: border, left: border, right: border };
+            const subHeaderShading = { type: ShadingType.SOLID, color: "FFFFFF", fill: "FFFFFF" };
+
+            detTableRows.push(new TableRow({
+                children: [
+                    new TableCell({
+                        columnSpan: 11,
+                        borders: borders,
+                        shading: subHeaderShading,
+                        children: [new Paragraph({
+                            alignment: AlignmentType.CENTER,
+                            children: [new TextRun({ text: 'перша ', bold: true, size: 20 }),
+                                      new TextRun({ text: 'приккшр', bold: true, italics: true, size: 20 })]
+                        })]
+                    })
+                ]
+            }));
             if (detRows.length === 0) {
                 detTableRows.push(new TableRow({
                     children: [new TableCell({
@@ -2001,6 +2020,20 @@
 
             const supRows = buildTableDocxRowsForSection(suppression, 1, false);
             const supTableRows = [makeHeaderRow()];
+            supTableRows.push(new TableRow({
+                children: [
+                    new TableCell({
+                        columnSpan: 11,
+                        borders: borders,
+                        shading: subHeaderShading,
+                        children: [new Paragraph({
+                            alignment: AlignmentType.CENTER,
+                            children: [new TextRun({ text: 'перша ', bold: true, size: 20 }),
+                                      new TextRun({ text: 'приккшр', bold: true, italics: true, size: 20 })]
+                        })]
+                    })
+                ]
+            }));
             if (supRows.length === 0) {
                 supTableRows.push(new TableRow({
                     children: [new TableCell({
@@ -2047,7 +2080,7 @@
                 const now = new Date();
                 const day = String(now.getDate()).padStart(2, '0');
                 const month = String(now.getMonth() + 1).padStart(2, '0');
-                const year = String(now.getFullYear()).slice(-2);
+                const year = String(now.getFullYear());
                 const fileName = `довідка РЕБ на 23.59 ${day}.${month}.${year}.docx`;
                 saveAs(blob, fileName);
                 showToast('Table DOCX downloaded!');
