@@ -1,0 +1,790 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Генератор таблиці - Дні народження</title>
+<script src="https://cdn.jsdelivr.net/npm/xlsx-js-style@1.2.0/dist/xlsx.bundle.js"></script>
+<style>
+  * {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  }
+
+  body {
+    min-height: 100vh;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    padding: 20px;
+    color: #333;
+  }
+
+  .container {
+    max-width: 1400px;
+    margin: 0 auto;
+    background: rgba(255, 255, 255, 0.97);
+    border-radius: 20px;
+    padding: 30px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  }
+
+  h1 {
+    text-align: center;
+    color: #4a5568;
+    margin-bottom: 10px;
+    font-size: 2.2em;
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .subtitle {
+    text-align: center;
+    color: #718096;
+    margin-bottom: 30px;
+  }
+
+  .controls {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-bottom: 20px;
+    justify-content: center;
+    align-items: center;
+    padding: 15px;
+    background: #f7fafc;
+    border-radius: 12px;
+  }
+
+  button {
+    padding: 10px 20px;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 600;
+    transition: all 0.3s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .btn-primary {
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    color: white;
+  }
+
+  .btn-success {
+    background: linear-gradient(135deg, #48bb78, #38a169);
+    color: white;
+  }
+
+  .btn-danger {
+    background: linear-gradient(135deg, #f56565, #e53e3e);
+    color: white;
+  }
+
+  .btn-info {
+    background: linear-gradient(135deg, #4299e1, #3182ce);
+    color: white;
+  }
+
+  button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
+  }
+
+  button:active {
+    transform: translateY(0);
+  }
+
+  .orientation-toggle {
+    display: flex;
+    gap: 5px;
+    background: #e2e8f0;
+    padding: 4px;
+    border-radius: 8px;
+  }
+
+  .orientation-toggle button {
+    padding: 8px 14px;
+    background: transparent;
+    color: #4a5568;
+    border-radius: 6px;
+  }
+
+  .orientation-toggle button.active {
+    background: white;
+    color: #667eea;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  }
+
+  .table-wrapper {
+    overflow-x: auto;
+    border-radius: 12px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+  }
+
+  table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    background: white;
+  }
+
+  th, td {
+    padding: 12px 15px;
+    text-align: left;
+    border-bottom: 1px solid #e2e8f0;
+  }
+
+  th {
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    color: white;
+    font-weight: 600;
+    position: sticky;
+    top: 0;
+    text-transform: uppercase;
+    font-size: 13px;
+    letter-spacing: 0.5px;
+  }
+
+  tr:hover {
+    background: #f7fafc;
+  }
+
+  /* Vertical orientation - default (each row is a person) */
+  table.vertical input {
+    width: 100%;
+    border: 1px solid #e2e8f0;
+    padding: 8px 10px;
+    border-radius: 6px;
+    font-size: 14px;
+    transition: all 0.2s;
+  }
+
+  table.vertical input:focus {
+    outline: none;
+    border-color: #667eea;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+  }
+
+  /* Horizontal orientation - each column is a person */
+  table.horizontal th:first-child {
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    min-width: 150px;
+  }
+
+  table.horizontal td:first-child {
+    background: #edf2f7;
+    font-weight: 600;
+    color: #4a5568;
+    text-transform: uppercase;
+    font-size: 13px;
+    letter-spacing: 0.5px;
+  }
+
+  table.horizontal input {
+    width: 100%;
+    border: 1px solid #e2e8f0;
+    padding: 8px 10px;
+    border-radius: 6px;
+    font-size: 14px;
+    min-width: 140px;
+  }
+
+  .delete-btn {
+    background: #fed7d7;
+    color: #c53030;
+    border: none;
+    padding: 6px 10px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 16px;
+    transition: all 0.2s;
+  }
+
+  .delete-btn:hover {
+    background: #fc8181;
+    color: white;
+    transform: scale(1.1);
+  }
+
+  .birthday-cell {
+    transition: background 0.5s ease;
+    font-weight: 500;
+  }
+
+  .legend {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 15px;
+    margin-top: 20px;
+    padding: 15px;
+    background: #f7fafc;
+    border-radius: 10px;
+    flex-wrap: wrap;
+  }
+
+  .legend-gradient {
+    width: 250px;
+    height: 25px;
+    border-radius: 6px;
+    background: linear-gradient(to right, #48bb78, #f6e05e, #fc8181);
+    border: 2px solid #fff;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  }
+
+  .legend-text {
+    color: #4a5568;
+    font-size: 14px;
+    font-weight: 500;
+  }
+
+  .empty-state {
+    text-align: center;
+    padding: 40px;
+    color: #a0aec0;
+  }
+
+  .stats {
+    display: flex;
+    gap: 15px;
+    justify-content: center;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+  }
+
+  .stat-card {
+    background: white;
+    padding: 12px 24px;
+    border-radius: 10px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+    text-align: center;
+  }
+
+  .stat-card .number {
+    font-size: 24px;
+    font-weight: bold;
+    color: #667eea;
+  }
+
+  .stat-card .label {
+    font-size: 12px;
+    color: #718096;
+    text-transform: uppercase;
+  }
+
+  @media (max-width: 768px) {
+    .container { padding: 15px; }
+    h1 { font-size: 1.5em; }
+    th, td { padding: 8px; }
+    .controls { flex-direction: column; }
+    button { width: 100%; justify-content: center; }
+    .orientation-toggle { width: 100%; }
+    .orientation-toggle button { flex: 1; }
+  }
+</style>
+</head>
+<body>
+<div class="container">
+  <h1>📊 Генератор таблиці</h1>
+  <p class="subtitle">Дні народження з градієнтним підсвічуванням</p>
+
+  <div class="stats">
+    <div class="stat-card">
+      <div class="number" id="totalCount">0</div>
+      <div class="label">Всього записів</div>
+    </div>
+    <div class="stat-card">
+      <div class="number" id="upcomingCount">0</div>
+      <div class="label">Найближчі (30 днів)</div>
+    </div>
+  </div>
+
+  <div class="controls">
+    <button class="btn-primary" onclick="addRow()">➕ Додати запис</button>
+    <button class="btn-success" onclick="exportToXLSX()">📥 Експорт XLSX</button>
+    <button class="btn-info" onclick="loadSample()">📋 Приклад даних</button>
+    <button class="btn-danger" onclick="clearAll()">🗑️ Очистити все</button>
+    <div class="orientation-toggle">
+      <button id="verticalBtn" class="active" onclick="setOrientation('vertical')">↕️ Вертикально</button>
+      <button id="horizontalBtn" onclick="setOrientation('horizontal')">↔️ Горизонтально</button>
+    </div>
+  </div>
+
+  <div class="table-wrapper">
+    <table id="dataTable" class="vertical"></table>
+  </div>
+
+  <div class="legend">
+    <span class="legend-text">Сьогодні</span>
+    <div class="legend-gradient"></div>
+    <span class="legend-text">Далеко (>180 днів)</span>
+  </div>
+</div>
+
+<script>
+  const STORAGE_KEY = 'birthdayTableData';
+  let data = [];
+  let orientation = 'vertical';
+
+  const FIELDS = [
+    { key: 'lastName', label: 'Призвіще' },
+    { key: 'firstName', label: "Ім'я" },
+    { key: 'middleName', label: 'По батькові' },
+    { key: 'birthDate', label: 'Дата народження', type: 'date' }
+  ];
+
+  // Load from localStorage
+  function loadState() {
+    const saved = localStorage.getItem(STORAGE_KEY);
+    if (saved) {
+      const state = JSON.parse(saved);
+      data = state.data || [];
+      orientation = state.orientation || 'vertical';
+    }
+    if (data.length === 0) {
+      addRow(false);
+    }
+  }
+
+  // Save to localStorage
+  function saveState() {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({ data, orientation }));
+  }
+
+  function addRow(save = true) {
+    data.push({
+      id: Date.now() + Math.random(),
+      lastName: '',
+      firstName: '',
+      middleName: '',
+      birthDate: ''
+    });
+    if (save) saveState();
+    render();
+  }
+
+  function deleteRow(id) {
+    data = data.filter(r => r.id !== id);
+    saveState();
+    render();
+  }
+
+  function updateField(id, field, value) {
+    const row = data.find(r => r.id === id);
+    if (row) {
+      row[field] = value;
+      saveState();
+      updateStats();
+      // Update only the affected birthday cell color
+      if (field === 'birthDate') {
+        document.querySelectorAll(`[data-row-id="${id}"].birthday-cell`).forEach(cell => {
+          cell.style.background = getGradientColor(value);
+        });
+      }
+    }
+  }
+
+  function setOrientation(o) {
+    orientation = o;
+    document.getElementById('verticalBtn').classList.toggle('active', o === 'vertical');
+    document.getElementById('horizontalBtn').classList.toggle('active', o === 'horizontal');
+    saveState();
+    render();
+  }
+
+  // Days until next birthday
+  function daysUntilBirthday(birthDateStr) {
+    if (!birthDateStr) return null;
+    const today = new Date();
+    today.setHours(0,0,0,0);
+    const bd = new Date(birthDateStr);
+    if (isNaN(bd)) return null;
+    const next = new Date(today.getFullYear(), bd.getMonth(), bd.getDate());
+    if (next < today) next.setFullYear(today.getFullYear() + 1);
+    return Math.floor((next - today) / (1000 * 60 * 60 * 24));
+  }
+
+  // Gradient: green (close) -> yellow -> red (far)
+  // Wait, requirement: closer to current day = green->red gradient
+  // Re-reading: "highlight with gradient color from green to red depend of birthday closer to current day"
+  // Closer = one color, farther = other. Common: closer = red (urgent/upcoming), far = green
+  // But "from green to red" suggests green->red as days increase or decrease.
+  // Going with: closer = RED (warning - upcoming!), farther = GREEN (relaxed)
+  function getGradientColor(birthDateStr) {
+    const days = daysUntilBirthday(birthDateStr);
+    if (days === null) return 'transparent';
+    
+    // 0 days = red, 180+ days = green
+    const maxDays = 180;
+    const ratio = Math.min(days / maxDays, 1);
+    
+    // Red (255, 100, 100) -> Yellow (245, 224, 94) -> Green (72, 187, 120)
+    let r, g, b;
+    if (ratio < 0.5) {
+      // Red to Yellow
+      const t = ratio * 2;
+      r = Math.round(255 + (245 - 255) * t);
+      g = Math.round(100 + (224 - 100) * t);
+      b = Math.round(100 + (94 - 100) * t);
+    } else {
+      // Yellow to Green
+      const t = (ratio - 0.5) * 2;
+      r = Math.round(245 + (72 - 245) * t);
+      g = Math.round(224 + (187 - 224) * t);
+      b = Math.round(94 + (120 - 94) * t);
+    }
+    return `rgb(${r}, ${g}, ${b})`;
+  }
+
+  function render() {
+    const table = document.getElementById('dataTable');
+    table.className = orientation;
+    table.innerHTML = '';
+
+    if (orientation === 'vertical') {
+      // Header row
+      const thead = document.createElement('thead');
+      const headerRow = document.createElement('tr');
+      FIELDS.forEach(f => {
+        const th = document.createElement('th');
+        th.textContent = f.label;
+        headerRow.appendChild(th);
+      });
+      const thAction = document.createElement('th');
+      thAction.textContent = 'Дія';
+      thAction.style.width = '70px';
+      headerRow.appendChild(thAction);
+      thead.appendChild(headerRow);
+      table.appendChild(thead);
+
+      const tbody = document.createElement('tbody');
+      data.forEach(row => {
+        const tr = document.createElement('tr');
+        FIELDS.forEach(f => {
+          const td = document.createElement('td');
+          const input = document.createElement('input');
+          input.type = f.type || 'text';
+          input.value = row[f.key] || '';
+          input.placeholder = f.label;
+          input.oninput = (e) => updateField(row.id, f.key, e.target.value);
+          td.appendChild(input);
+          if (f.key === 'birthDate') {
+            td.classList.add('birthday-cell');
+            td.dataset.rowId = row.id;
+            td.style.background = getGradientColor(row.birthDate);
+          }
+          tr.appendChild(td);
+        });
+        const tdAction = document.createElement('td');
+        const delBtn = document.createElement('button');
+        delBtn.className = 'delete-btn';
+        delBtn.innerHTML = '🗑️';
+        delBtn.onclick = () => deleteRow(row.id);
+        tdAction.appendChild(delBtn);
+        tr.appendChild(tdAction);
+        tbody.appendChild(tr);
+      });
+      table.appendChild(tbody);
+    } else {
+      // Horizontal: each column is a person
+      const thead = document.createElement('thead');
+      const headerRow = document.createElement('tr');
+      const thLabel = document.createElement('th');
+      thLabel.textContent = 'Поле';
+      headerRow.appendChild(thLabel);
+      data.forEach((row, i) => {
+        const th = document.createElement('th');
+        th.textContent = `Особа ${i + 1}`;
+        headerRow.appendChild(th);
+      });
+      const thAction = document.createElement('th');
+      thAction.textContent = '';
+      headerRow.appendChild(thAction);
+      thead.appendChild(headerRow);
+      table.appendChild(thead);
+
+      const tbody = document.createElement('tbody');
+      FIELDS.forEach(f => {
+        const tr = document.createElement('tr');
+        const tdLabel = document.createElement('td');
+        tdLabel.textContent = f.label;
+        tr.appendChild(tdLabel);
+        data.forEach(row => {
+          const td = document.createElement('td');
+          const input = document.createElement('input');
+          input.type = f.type || 'text';
+          input.value = row[f.key] || '';
+          input.placeholder = f.label;
+          input.oninput = (e) => updateField(row.id, f.key, e.target.value);
+          td.appendChild(input);
+          if (f.key === 'birthDate') {
+            td.classList.add('birthday-cell');
+            td.dataset.rowId = row.id;
+            td.style.background = getGradientColor(row.birthDate);
+          }
+          tr.appendChild(td);
+        });
+        const tdEmpty = document.createElement('td');
+        tr.appendChild(tdEmpty);
+        tbody.appendChild(tr);
+      });
+      // Delete row at bottom
+      const trDel = document.createElement('tr');
+      const tdDelLabel = document.createElement('td');
+      tdDelLabel.textContent = 'Видалити';
+      trDel.appendChild(tdDelLabel);
+      data.forEach(row => {
+        const td = document.createElement('td');
+        const delBtn = document.createElement('button');
+        delBtn.className = 'delete-btn';
+        delBtn.innerHTML = '🗑️';
+        delBtn.onclick = () => deleteRow(row.id);
+        td.style.textAlign = 'center';
+        td.appendChild(delBtn);
+        trDel.appendChild(td);
+      });
+      const tdEnd = document.createElement('td');
+      trDel.appendChild(tdEnd);
+      tbody.appendChild(trDel);
+
+      table.appendChild(tbody);
+    }
+
+    updateStats();
+  }
+
+  function updateStats() {
+    document.getElementById('totalCount').textContent = data.filter(r => r.lastName || r.firstName).length;
+    const upcoming = data.filter(r => {
+      const d = daysUntilBirthday(r.birthDate);
+      return d !== null && d <= 30;
+    }).length;
+    document.getElementById('upcomingCount').textContent = upcoming;
+  }
+
+  function clearAll() {
+    if (confirm('Видалити всі дані?')) {
+      data = [];
+      addRow();
+    }
+  }
+
+  function loadSample() {
+    const today = new Date();
+    const samples = [
+      { offset: 5, ln: 'Шевченко', fn: 'Тарас', mn: 'Григорович' },
+      { offset: 30, ln: 'Франко', fn: 'Іван', mn: 'Якович' },
+      { offset: 90, ln: 'Українка', fn: 'Леся', mn: 'Петрівна' },
+      { offset: 180, ln: 'Котляревський', fn: 'Іван', mn: 'Петрович' },
+      { offset: 250, ln: 'Грушевський', fn: 'Михайло', mn: 'Сергійович' }
+    ];
+    data = samples.map(s => {
+      const d = new Date(today);
+      d.setDate(d.getDate() + s.offset);
+      d.setFullYear(1990);
+      return {
+        id: Date.now() + Math.random(),
+        lastName: s.ln,
+        firstName: s.fn,
+        middleName: s.mn,
+        birthDate: d.toISOString().split('T')[0]
+      };
+    });
+    saveState();
+    render();
+  }
+
+  // Convert date string to Excel serial number
+  function dateToExcelSerial(dateStr) {
+    if (!dateStr) return null;
+    const d = new Date(dateStr);
+    if (isNaN(d)) return null;
+    // Excel epoch: Jan 1 1900, but with the leap year bug, we use Dec 30 1899
+    const epoch = new Date(Date.UTC(1899, 11, 30));
+    return Math.floor((d - epoch) / (1000 * 60 * 60 * 24));
+  }
+
+  function exportToXLSX() {
+    if (data.length === 0) {
+      alert('Немає даних для експорту');
+      return;
+    }
+
+    // Build worksheet data
+    const headers = FIELDS.map(f => f.label);
+    headers.push('Днів до Дня народження');
+    
+    const wsData = [headers];
+    data.forEach(row => {
+      const r = [
+        row.lastName || '',
+        row.firstName || '',
+        row.middleName || '',
+        row.birthDate ? new Date(row.birthDate) : ''
+      ];
+      // We'll compute days dynamically via formula
+      r.push(null); // placeholder - will be replaced with formula
+      wsData.push(r);
+    });
+
+    const ws = XLSX.utils.aoa_to_sheet(wsData);
+
+    // Set column widths
+    ws['!cols'] = [
+      { wch: 20 }, { wch: 15 }, { wch: 20 }, { wch: 15 }, { wch: 15 }
+    ];
+
+    // Style header
+    for (let c = 0; c < headers.length; c++) {
+      const cellRef = XLSX.utils.encode_cell({ r: 0, c });
+      if (ws[cellRef]) {
+        ws[cellRef].s = {
+          font: { bold: true, color: { rgb: 'FFFFFF' }, sz: 12 },
+          fill: { fgColor: { rgb: '667EEA' } },
+          alignment: { horizontal: 'center', vertical: 'center' },
+          border: {
+            top: { style: 'thin', color: { rgb: '000000' } },
+            bottom: { style: 'thin', color: { rgb: '000000' } },
+            left: { style: 'thin', color: { rgb: '000000' } },
+            right: { style: 'thin', color: { rgb: '000000' } }
+          }
+        };
+      }
+    }
+
+    // Format date cells and add formula for "days until birthday"
+    for (let i = 0; i < data.length; i++) {
+      const rowIdx = i + 1; // +1 for header
+      const excelRow = rowIdx + 1; // Excel rows are 1-indexed
+
+      // Date cell (column D, index 3)
+      const dateRef = XLSX.utils.encode_cell({ r: rowIdx, c: 3 });
+      if (ws[dateRef] && ws[dateRef].v instanceof Date) {
+        ws[dateRef].t = 'd';
+        ws[dateRef].z = 'dd.mm.yyyy';
+        ws[dateRef].s = {
+          alignment: { horizontal: 'center' },
+          border: {
+            top: { style: 'thin', color: { rgb: 'CCCCCC' } },
+            bottom: { style: 'thin', color: { rgb: 'CCCCCC' } },
+            left: { style: 'thin', color: { rgb: 'CCCCCC' } },
+            right: { style: 'thin', color: { rgb: 'CCCCCC' } }
+          }
+        };
+      }
+
+      // Days until birthday formula in column E (index 4)
+      const formulaRef = XLSX.utils.encode_cell({ r: rowIdx, c: 4 });
+      // Formula: calculate days until next birthday
+      const formula = `IF(D${excelRow}="","",MOD(DATE(YEAR(TODAY())+IF(DATE(YEAR(TODAY()),MONTH(D${excelRow}),DAY(D${excelRow}))<TODAY(),1,0),MONTH(D${excelRow}),DAY(D${excelRow}))-TODAY(),366))`;
+      
+      ws[formulaRef] = {
+        t: 'n',
+        f: formula,
+        s: {
+          alignment: { horizontal: 'center' },
+          font: { bold: true },
+          border: {
+            top: { style: 'thin', color: { rgb: 'CCCCCC' } },
+            bottom: { style: 'thin', color: { rgb: 'CCCCCC' } },
+            left: { style: 'thin', color: { rgb: 'CCCCCC' } },
+            right: { style: 'thin', color: { rgb: 'CCCCCC' } }
+          }
+        }
+      };
+
+      // Style date cell with computed gradient color (static)
+      const days = daysUntilBirthday(data[i].birthDate);
+      if (days !== null) {
+        const colorHex = getGradientHex(days);
+        if (ws[dateRef]) {
+          ws[dateRef].s = {
+            ...ws[dateRef].s,
+            fill: { fgColor: { rgb: colorHex } }
+          };
+        }
+        if (ws[formulaRef]) {
+          ws[formulaRef].s = {
+            ...ws[formulaRef].s,
+            fill: { fgColor: { rgb: colorHex } }
+          };
+        }
+      }
+
+      // Borders for other cells
+      for (let c = 0; c < 3; c++) {
+        const ref = XLSX.utils.encode_cell({ r: rowIdx, c });
+        if (ws[ref]) {
+          ws[ref].s = {
+            border: {
+              top: { style: 'thin', color: { rgb: 'CCCCCC' } },
+              bottom: { style: 'thin', color: { rgb: 'CCCCCC' } },
+              left: { style: 'thin', color: { rgb: 'CCCCCC' } },
+              right: { style: 'thin', color: { rgb: 'CCCCCC' } }
+            }
+          };
+        }
+      }
+    }
+
+    // Add conditional formatting note - using static colors plus formula
+    // Set range
+    const lastRow = data.length + 1;
+    ws['!ref'] = `A1:E${lastRow}`;
+
+    // Add conditional formatting (3-color scale) for column E
+    if (!ws['!condfmt']) ws['!condfmt'] = [];
+    
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Дні народження');
+
+    // Use writeFile with conditional formatting via raw approach
+    // xlsx-js-style supports cell styles directly which we've used
+    
+    XLSX.writeFile(wb, `birthdays_${new Date().toISOString().split('T')[0]}.xlsx`);
+  }
+
+  function getGradientHex(days) {
+    const maxDays = 180;
+    const ratio = Math.min(Math.max(days, 0) / maxDays, 1);
+    let r, g, b;
+    if (ratio < 0.5) {
+      const t = ratio * 2;
+      r = Math.round(255 + (245 - 255) * t);
+      g = Math.round(100 + (224 - 100) * t);
+      b = Math.round(100 + (94 - 100) * t);
+    } else {
+      const t = (ratio - 0.5) * 2;
+      r = Math.round(245 + (72 - 245) * t);
+      g = Math.round(224 + (187 - 224) * t);
+      b = Math.round(94 + (120 - 94) * t);
+    }
+    const toHex = (n) => n.toString(16).padStart(2, '0').toUpperCase();
+    return toHex(r) + toHex(g) + toHex(b);
+  }
+
+  // Initialize
+  loadState();
+  if (orientation === 'horizontal') {
+    document.getElementById('verticalBtn').classList.remove('active');
+    document.getElementById('horizontalBtn').classList.add('active');
+  }
+  render();
+
+  // Update gradients every minute (in case of date change)
+  setInterval(() => {
+    document.querySelectorAll('.birthday-cell').forEach(cell => {
+      const id = parseFloat(cell.dataset.rowId);
+      const row = data.find(r => r.id === id);
+      if (row) cell.style.background = getGradientColor(row.birthDate);
+    });
+  }, 60000);
+</script>
+</body>
+</html>
