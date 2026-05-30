@@ -6,8 +6,6 @@
     <meta name="description" content="Column Generator — a customizable text lines parser. Extract, transform, and export structured data from raw text with regex-powered column rules, replacements, and multiple output formats.">
     <title>Column Generator - Text Parser</title>
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><defs><linearGradient id='g' x1='0%25' y1='0%25' x2='100%25' y2='100%25'><stop offset='0%25' style='stop-color:%233b82f6'/><stop offset='100%25' style='stop-color:%2306b6d4'/></linearGradient></defs><rect width='100' height='100' rx='20' fill='url(%23g)'/><rect x='15' y='20' width='20' height='60' rx='4' fill='white' opacity='0.9'/><rect x='40' y='20' width='20' height='60' rx='4' fill='white' opacity='0.7'/><rect x='65' y='20' width='20' height='60' rx='4' fill='white' opacity='0.5'/></svg>">
-    <script src="https://unpkg.com/docx@8.5.0/build/index.umd.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
     <style>
         :root {
             --bg-primary: #0a0e17;
@@ -33,8 +31,6 @@
             --gradient-4: linear-gradient(135deg, #ec4899, #8b5cf6);
             --gradient-5: linear-gradient(135deg, #f59e0b, #ef4444);
             --gradient-6: linear-gradient(135deg, #14b8a6, #3b82f6);
-            --gradient-docx: linear-gradient(135deg, #2563eb, #1e40af);
-            --gradient-docx-table: linear-gradient(135deg, #059669, #0d9488);
             --shadow-glow: 0 0 20px rgba(59, 130, 246, 0.15);
         }
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -136,13 +132,13 @@
         .add-rule-btn:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(139,92,246,0.3); }
         .add-rule-btn.pink-btn { background: var(--gradient-4); }
         .add-rule-btn.pink-btn:hover { box-shadow: 0 4px 12px rgba(236,72,153,0.3); }
-        .rule-card, .replacement-card, .location-card, .source-card {
+        .rule-card, .replacement-card, .location-card {
             background: var(--bg-input); border: 1px solid var(--border-color); border-radius: 10px;
             padding: 14px; margin-bottom: 10px; transition: border-color 0.3s; animation: slideIn 0.3s ease;
         }
         @keyframes slideIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
-        .rule-card:hover, .replacement-card:hover, .location-card:hover, .source-card:hover { border-color: rgba(59,130,246,0.3); }
-        .rule-row, .replacement-row, .location-row, .source-row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+        .rule-card:hover, .replacement-card:hover, .location-card:hover { border-color: rgba(59,130,246,0.3); }
+        .rule-row, .replacement-row, .location-row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
         .rule-field { display: flex; flex-direction: column; gap: 4px; flex: 1; min-width: 120px; }
         .rule-field label { font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; }
         .rule-field input, .rule-field select {
@@ -168,10 +164,6 @@
         .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(59,130,246,0.4); }
         .btn-secondary { background: var(--gradient-3); color: white; box-shadow: 0 4px 15px rgba(16,185,129,0.3); }
         .btn-secondary:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(16,185,129,0.4); }
-        .btn-docx { background: var(--gradient-docx); color: white; box-shadow: 0 4px 15px rgba(37,99,235,0.4); }
-        .btn-docx:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(37,99,235,0.5); }
-        .btn-docx-table { background: var(--gradient-docx-table); color: white; box-shadow: 0 4px 15px rgba(5,150,105,0.4); }
-        .btn-docx-table:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(5,150,105,0.5); }
         .btn-outline { background: transparent; border: 1px solid var(--border-color); color: var(--text-secondary); }
         .btn-outline:hover { border-color: var(--accent-blue); color: var(--text-primary); background: rgba(59,130,246,0.05); }
         .btn-danger { background: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.3); color: var(--accent-red); }
@@ -226,7 +218,7 @@
             border-radius: 6px; color: var(--accent-purple); font-size: 0.78rem; cursor: pointer; transition: all 0.2s;
         }
         .preset-btn:hover { background: rgba(139,92,246,0.2); border-color: var(--accent-purple); }
-        .separator-select { display: flex; align-items: center; gap: 10px; margin-top: 15px; flex-wrap: wrap; }
+        .separator-select { display: flex; align-items: center; gap: 10px; margin-top: 15px; }
         .separator-select label { font-size: 0.85rem; color: var(--text-secondary); }
         .separator-select select, .separator-select input[type="text"] {
             padding: 6px 12px; background: var(--bg-input); border: 1px solid var(--border-color);
@@ -253,18 +245,6 @@
             color: var(--accent-teal); line-height: 1.6;
         }
         .extra-info code { background: rgba(20,184,166,0.1); padding: 1px 5px; border-radius: 3px; font-family: 'Cascadia Code','Fira Code','Consolas', monospace; }
-        .docx-info {
-            margin-top: 10px; padding: 12px; background: rgba(37,99,235,0.05);
-            border: 1px solid rgba(37,99,235,0.2); border-radius: 8px; font-size: 0.8rem;
-            color: #60a5fa; line-height: 1.6;
-        }
-        .docx-info code { background: rgba(37,99,235,0.15); padding: 1px 5px; border-radius: 3px; font-family: 'Cascadia Code','Fira Code','Consolas', monospace; }
-        .docx-table-info {
-            margin-top: 10px; padding: 12px; background: rgba(5,150,105,0.05);
-            border: 1px solid rgba(5,150,105,0.2); border-radius: 8px; font-size: 0.8rem;
-            color: #34d399; line-height: 1.6;
-        }
-        .docx-table-info code { background: rgba(5,150,105,0.15); padding: 1px 5px; border-radius: 3px; font-family: 'Cascadia Code','Fira Code','Consolas', monospace; }
         .tab-bar { display: flex; gap: 0; border-bottom: 1px solid var(--border-color); overflow-x: auto; }
         .tab-btn {
             padding: 10px 20px; background: transparent; border: none;
@@ -287,15 +267,9 @@
         .out-tab-content { display: none; }
         .out-tab-content.active { display: block; }
         .location-card { border-left: 3px solid var(--accent-pink); }
-        .source-card { border-left: 3px solid #2563eb; }
         .loc-count-badge {
             display: inline-flex; align-items: center; justify-content: center;
             background: rgba(236,72,153,0.15); color: var(--accent-pink);
-            border-radius: 10px; padding: 2px 8px; font-size: 0.72rem; font-weight: 600; margin-left: 6px;
-        }
-        .src-count-badge {
-            display: inline-flex; align-items: center; justify-content: center;
-            background: rgba(37,99,235,0.15); color: #60a5fa;
             border-radius: 10px; padding: 2px 8px; font-size: 0.72rem; font-weight: 600; margin-left: 6px;
         }
         .bulk-import-area {
@@ -348,17 +322,11 @@
             background: rgba(20,184,166,0.1); border: 1px solid rgba(20,184,166,0.3);
             border-radius: 20px; font-size: 0.72rem; color: var(--accent-teal); font-weight: 600;
         }
-        .empty-source-hint {
-            font-size: 0.7rem; color: var(--text-muted); margin-top: 4px; font-style: italic;
-        }
-        .source-empty-checkbox { display: flex; align-items: center; gap: 6px; margin-top: 4px; }
-        .source-empty-checkbox input { width: 14px; height: 14px; accent-color: #60a5fa; cursor: pointer; }
-        .source-empty-checkbox label { font-size: 0.72rem; color: #60a5fa; cursor: pointer; }
         @media (max-width: 768px) {
             .container { padding: 10px; }
             .main-content.horizontal { flex-direction: column; }
             h1 { font-size: 1.5rem; }
-            .rule-row, .replacement-row, .location-row, .source-row { flex-direction: column; }
+            .rule-row, .replacement-row, .location-row { flex-direction: column; }
             .rule-field { min-width: 100%; }
             .actions-bar { flex-direction: column; }
             .btn { justify-content: center; }
@@ -422,7 +390,6 @@
                         <button class="tab-btn" onclick="switchTab('locations', this)">📍 Locations <span class="loc-count-badge" id="locCountBadge">0</span></button>
                         <button class="tab-btn" onclick="switchTab('replacements', this)">Replacements</button>
                         <button class="tab-btn" onclick="switchTab('altformat', this)">📝 Alt Format</button>
-                        <button class="tab-btn" onclick="switchTab('docx', this)">📄 DOCX <span class="src-count-badge" id="srcCountBadge">0</span></button>
                         <button class="tab-btn" onclick="switchTab('settings', this)">⚙️ Settings</button>
                     </div>
                     <!-- Column Rules Tab -->
@@ -510,42 +477,6 @@
                             </div>
                         </div>
                     </div>
-                    <!-- DOCX Tab -->
-                    <div class="tab-content" id="tab-docx">
-                        <div class="rules-section" style="margin-top: 12px;">
-                            <h3 style="font-size:0.9rem;color:var(--text-secondary);font-weight:500;margin-bottom:12px;">📄 DOCX Document Sources Configuration</h3>
-                            <div class="docx-info">
-                                <strong>How it works:</strong><br>
-                                Configure each source/equipment that should appear in the DOCX summary table.<br>
-                                The generator will <strong>auto-calculate</strong> detection/suppression counts from your output (grouped by Source).<br>
-                                Each source becomes a <strong>section</strong> with its own table row + per-line text below (uses same template as <strong>Text Output</strong>).<br><br>
-                                <strong>Match Source values:</strong><br>
-                                <code>SOURCE_NAME</code> — Match rows where Source contains this value (e.g. "НОТА", "ELR")<br>
-                                <code>(empty)</code> or leave blank + check <strong>"Match empty/no source"</strong> — Match rows that have no Source value<br><br>
-                                <strong>Column widths:</strong> ПРИКЗ 11% · Наявність 8.5% · Випадків 12.5% · Результати 68%<br>
-                                <strong>Font sizes:</strong> Table = 9pt, Reported lines = 14pt
-                            </div>
-                            <div class="rules-header" style="margin-top: 16px;">
-                                <h3>Document Sources</h3>
-                                <button class="add-rule-btn" style="background: var(--gradient-docx);" onclick="addSource()">
-                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-                                    Add Source
-                                </button>
-                            </div>
-                            <div id="sourcesContainer"></div>
-                            <div class="separator-select">
-                                <label>Document Title:</label>
-                                <input type="text" id="docxTitle" placeholder="IV. Результати застосування технічних засобів охорони кордону" style="width: 400px;" onchange="saveState()">
-                            </div>
-                            <div class="separator-select">
-                                <label>Сортування рядків у тексті:</label>
-                                <select id="docxSortMode" onchange="saveState()">
-                                    <option value="datetime_asc">За датою/часом ↑ (старіші спочатку)</option>
-                                    <option value="datetime_desc">За датою/часом ↓ (новіші спочатку)</option>
-                                </select>
-                            </div>
-                        </div>
-                    </div>
                     <!-- Settings Tab -->
                     <div class="tab-content" id="tab-settings">
                         <div class="separator-select" style="margin-top: 12px;">
@@ -588,10 +519,6 @@
                         <div class="separator-select">
                             <label>Default Source label:</label>
                             <input type="text" id="defaultSource" placeholder="РЕБ" value="РЕБ" onchange="saveState()">
-                        </div>
-                        <div class="separator-select">
-                            <label>Підрозділ (Table DOCX):</label>
-                            <input type="text" id="pidrozdilName" placeholder="перша приккшр" value="перша приккшр" onchange="saveState()">
                         </div>
                         <div class="extra-info" style="margin-top:15px;">
                             <strong>Source column:</strong> Automatically appended as the last column in output.<br>
@@ -642,11 +569,6 @@
                             <button class="copy-btn" onclick="copyOutput()">📋 Copy</button>
                             <textarea class="output-text" id="outputText" readonly placeholder="Parsed output will appear here..."></textarea>
                         </div>
-                        <div class="docx-table-info">
-                            <strong>📄 Table DOCX</strong> generates a structured document matching the PDF template:<br>
-                            Section <code>5. ВИЯВЛЕННЯ ПОВІТРЯНИХ ЦІЛЕЙ ПРОТИВНИКА ЗА ДОПОМОГОЮ РЕР</code> (rows with action <strong>ВИЯВЛЕНО</strong>)<br>
-                            Section <code>5.1. ПРИДУШЕННЯ / ПОДАВЛЕННЯ ПОВІТРЯНИХ ЦІЛЕЙ ПРОТИВНИКА ЗА ДОПОМОГОЮ РЕБ</code> (other actions)
-                        </div>
                         <div class="actions-bar">
                             <button class="btn btn-secondary" onclick="downloadFile('table')">
                                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
@@ -655,10 +577,6 @@
                             <button class="btn btn-secondary" onclick="downloadCSV()" style="background: var(--gradient-2);">
                                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
                                 Download .csv
-                            </button>
-                            <button class="btn btn-docx-table" onclick="downloadTableDocx()">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
-                                Download .docx (Table)
                             </button>
                             <button class="btn btn-danger" onclick="clearOutput()">Clear Output</button>
                         </div>
@@ -674,10 +592,6 @@
                             <button class="btn btn-secondary" onclick="downloadFile('alt')" style="background: var(--gradient-5);">
                                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
                                 Download .txt
-                            </button>
-                            <button class="btn btn-docx" onclick="downloadDocx()">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
-                                Download .docx
                             </button>
                             <button class="btn btn-danger" onclick="clearAltOutput()">Clear</button>
                         </div>
@@ -699,15 +613,12 @@
             sortMode: 'none', groupMode: 'none', defaultSource: '',
             altTemplate: '{Time Date} в р-ні {Location} {Action} {Type}',
             altLowercase: true, altEnabled: true,
-            rules: [], replacements: [], locations: [],
-            sources: [], docxTitle: 'IV. Результати застосування технічних засобів охорони кордону',
-            docxSortMode: 'datetime_asc',
-            pidrozdilName: 'перша приккшр'
+            rules: [], replacements: [], locations: []
         };
 
         let parsedRows = [];
         let parsedRowMaps = [];
-        let groupBoundaries = [];
+        let groupBoundaries = []; // [{index, label, type}]
 
         const defaultRules = [
             { name: 'Time Date', type: 'regex', pattern: '(\\d{2}:\\d{2})\\.\\s', endDelim: '', postProcess: 'lastMatch', combineWith: '_date_' },
@@ -721,17 +632,11 @@
             { from: 'ЗИБИНО', to: 'ЗИБИНЕ' },
             { from: 'ЗИБІНО', to: 'ЗИБИНЕ' }
         ];
-        const defaultSources = [
-            { displayName: 'Комплекс радіоелектронної боротьби «Нота»', matchSource: 'НОТА', matchEmpty: false, prikz: '11', presence: '1', textTitle: 'Результати роботи виробу «НОТА»:' },
-            { displayName: 'Комплекс радіоелектронної боротьби «БУКОВЕЛЬ-АД 10»', matchSource: 'БУКОВЕЛЬ', matchEmpty: false, prikz: '11', presence: '0', textTitle: 'Результати роботи виробу «БУКОВЕЛЬ-АД 10»:' },
-            { displayName: 'Радіолокаційна станція «ELR»/ОКО', matchSource: 'ELR', matchEmpty: false, prikz: '11', presence: '1', textTitle: 'Результати роботи виробу «ELR»:' },
-            { displayName: 'Система радіоелектронної розвідки «Кулібін»', matchSource: 'КУЛІБІН', matchEmpty: false, prikz: '11', presence: '1', textTitle: 'Результати роботи виробу «КУЛІБІН»:' }
-        ];
         const defaultAltTemplate = '{Time Date} в р-ні {Location} {Action} {Type}';
 
         function init() {
             loadState();
-            renderRules(); renderReplacements(); renderLocations(); renderSources();
+            renderRules(); renderReplacements(); renderLocations();
             document.getElementById('inputText').value = state.input;
             document.getElementById('extraInput').value = state.extraInput || '';
             document.getElementById('outputText').value = state.output;
@@ -745,11 +650,8 @@
             document.getElementById('altTemplate').value = state.altTemplate || defaultAltTemplate;
             document.getElementById('altLowercase').checked = state.altLowercase !== false;
             document.getElementById('altEnabled').checked = state.altEnabled !== false;
-            document.getElementById('docxTitle').value = state.docxTitle || 'IV. Результати застосування технічних засобів охорони кордону';
-            document.getElementById('docxSortMode').value = state.docxSortMode || 'datetime_asc';
-            document.getElementById('pidrozdilName').value = state.pidrozdilName || 'перша приккшр';
             setLayout(state.layout, false);
-            updateLocBadge(); updateSrcBadge(); updateAltTabVisibility(); updateExtraBadge();
+            updateLocBadge(); updateAltTabVisibility(); updateExtraBadge();
             if (state.output) {
                 const sep = state.separator === '\\t' ? '\t' : state.separator;
                 const lines = state.output.split('\n').filter(l => l.trim());
@@ -768,27 +670,44 @@
 
         function loadState() {
             try {
-                const saved = localStorage.getItem('columnGeneratorState_v9');
+                const saved = localStorage.getItem('columnGeneratorState_v7');
                 if (saved) {
                     state = JSON.parse(saved);
                     if (!state.replacements) state.replacements = [];
                     if (!state.locations) state.locations = [];
-                    if (!state.sources) state.sources = JSON.parse(JSON.stringify(defaultSources));
-                    state.sources.forEach(s => { if (s.matchEmpty === undefined) s.matchEmpty = false; });
                     if (state.keepTimeRange === undefined) state.keepTimeRange = true;
                     if (!state.sortMode) state.sortMode = 'none';
                     if (!state.groupMode) state.groupMode = 'none';
+                    // migrate old actionGrouping boolean
+                    if (state.actionGrouping === true && state.groupMode === 'none') state.groupMode = 'action';
+                    delete state.actionGrouping;
                     if (!state.altTemplate) state.altTemplate = defaultAltTemplate;
                     if (state.altLowercase === undefined) state.altLowercase = true;
                     if (state.altEnabled === undefined) state.altEnabled = true;
                     if (!state.altOutput) state.altOutput = '';
                     if (!state.extraInput) state.extraInput = '';
                     if (!state.defaultSource) state.defaultSource = '';
-                    if (!state.docxTitle) state.docxTitle = 'IV. Результати застосування технічних засобів охорони кордону';
-                    if (!state.docxSortMode) state.docxSortMode = 'datetime_asc';
-                    if (!state.pidrozdilName) state.pidrozdilName = 'перша приккшр';
                 } else {
-                    setDefaults();
+                    // try v6
+                    const v6 = localStorage.getItem('columnGeneratorState_v6');
+                    if (v6) {
+                        state = JSON.parse(v6);
+                        if (!state.replacements) state.replacements = [];
+                        if (!state.locations) state.locations = [];
+                        if (state.keepTimeRange === undefined) state.keepTimeRange = true;
+                        if (!state.sortMode) state.sortMode = 'none';
+                        if (state.actionGrouping === true) state.groupMode = 'action';
+                        else state.groupMode = 'none';
+                        delete state.actionGrouping;
+                        if (!state.altTemplate) state.altTemplate = defaultAltTemplate;
+                        if (state.altLowercase === undefined) state.altLowercase = true;
+                        if (state.altEnabled === undefined) state.altEnabled = true;
+                        if (!state.altOutput) state.altOutput = '';
+                        if (!state.extraInput) state.extraInput = '';
+                        if (!state.defaultSource) state.defaultSource = '';
+                    } else {
+                        setDefaults();
+                    }
                 }
             } catch (e) { setDefaults(); }
         }
@@ -797,16 +716,12 @@
             state.rules = JSON.parse(JSON.stringify(defaultRules));
             state.replacements = JSON.parse(JSON.stringify(defaultReplacements));
             state.locations = JSON.parse(JSON.stringify(defaultLocations));
-            state.sources = JSON.parse(JSON.stringify(defaultSources));
             state.keepTimeRange = true; state.sortMode = 'none';
             state.groupMode = 'none';
             state.altTemplate = defaultAltTemplate;
             state.altLowercase = true; state.altEnabled = true;
             state.altOutput = ''; state.extraInput = '';
             state.defaultSource = '';
-            state.docxTitle = 'IV. Результати застосування технічних засобів охорони кордону';
-            state.docxSortMode = 'datetime_asc';
-            state.pidrozdilName = 'перша приккшр';
         }
 
         function saveState() {
@@ -823,13 +738,9 @@
             state.altTemplate = document.getElementById('altTemplate').value;
             state.altLowercase = document.getElementById('altLowercase').checked;
             state.altEnabled = document.getElementById('altEnabled').checked;
-            state.docxTitle = document.getElementById('docxTitle').value;
-            state.docxSortMode = document.getElementById('docxSortMode').value;
-            const pid = document.getElementById('pidrozdilName');
-            if (pid) state.pidrozdilName = pid.value;
-            collectRules(); collectReplacements(); collectLocations(); collectSources();
+            collectRules(); collectReplacements(); collectLocations();
             updateAltTabVisibility(); updateExtraBadge();
-            localStorage.setItem('columnGeneratorState_v9', JSON.stringify(state));
+            localStorage.setItem('columnGeneratorState_v7', JSON.stringify(state));
         }
 
         function updateAltTabVisibility() {
@@ -872,20 +783,6 @@
             state.locations = [];
             cards.forEach(card => {
                 state.locations.push({ from: card.querySelector('.loc-from').value, to: card.querySelector('.loc-to').value });
-            });
-        }
-        function collectSources() {
-            const cards = document.querySelectorAll('#sourcesContainer .source-card');
-            state.sources = [];
-            cards.forEach(card => {
-                state.sources.push({
-                    displayName: card.querySelector('.src-display').value,
-                    matchSource: card.querySelector('.src-match').value,
-                    matchEmpty: card.querySelector('.src-match-empty').checked,
-                    prikz: card.querySelector('.src-prikz').value,
-                    presence: card.querySelector('.src-presence').value,
-                    textTitle: card.querySelector('.src-title').value
-                });
             });
         }
 
@@ -960,35 +857,6 @@
         function addLocation() { collectLocations(); state.locations.push({from:'',to:''}); renderLocations(); saveState(); }
         function removeLocation(i) { collectLocations(); state.locations.splice(i,1); renderLocations(); saveState(); }
         function updateLocBadge() { document.getElementById('locCountBadge').textContent = (state.locations||[]).length; }
-
-        function renderSources() {
-            const c = document.getElementById('sourcesContainer'); c.innerHTML = '';
-            (state.sources||[]).forEach((s,i) => c.appendChild(createSourceCard(s,i)));
-            updateSrcBadge();
-        }
-        function createSourceCard(src, index) {
-            const card = document.createElement('div'); card.className = 'source-card';
-            const matchEmptyChecked = src.matchEmpty ? 'checked' : '';
-            card.innerHTML = `<div class="source-row">
-                <div class="rule-field" style="min-width:200px"><label>Display Name (Header)</label><input type="text" class="src-display" value="${escHtml(src.displayName)}" onchange="saveState()"></div>
-                <div class="rule-field" style="max-width:150px">
-                    <label>Match Source</label>
-                    <input type="text" class="src-match" value="${escHtml(src.matchSource)}" placeholder="e.g. НОТА" onchange="saveState()">
-                    <div class="source-empty-checkbox">
-                        <input type="checkbox" class="src-match-empty" id="srcEmpty${index}" ${matchEmptyChecked} onchange="saveState()">
-                        <label for="srcEmpty${index}">Match empty/no source</label>
-                    </div>
-                </div>
-                <div class="rule-field" style="max-width:80px"><label>ПРИКЗ</label><input type="text" class="src-prikz" value="${escHtml(src.prikz)}" onchange="saveState()"></div>
-                <div class="rule-field" style="max-width:90px"><label>Наявність</label><input type="text" class="src-presence" value="${escHtml(src.presence)}" onchange="saveState()"></div>
-                <button class="remove-rule-btn" onclick="removeSource(${index})">✕</button>
-            </div>
-            <div class="rule-field" style="margin-top:10px;"><label>Text Section Title</label><input type="text" class="src-title" value="${escHtml(src.textTitle)}" onchange="saveState()"></div>`;
-            return card;
-        }
-        function addSource() { collectSources(); state.sources.push({displayName:'',matchSource:'',matchEmpty:false,prikz:'11',presence:'1',textTitle:''}); renderSources(); saveState(); }
-        function removeSource(i) { collectSources(); state.sources.splice(i,1); renderSources(); saveState(); }
-        function updateSrcBadge() { document.getElementById('srcCountBadge').textContent = (state.sources||[]).length; }
 
         function importBulkLocations() {
             collectLocations();
@@ -1141,6 +1009,7 @@
         }
 
         function applySourceGrouping(rows, maps, sortMode, defaultSource) {
+            // Collect unique sources, default source first
             const sourceMap = {};
             for (let i = 0; i < rows.length; i++) {
                 const src = getSourceFromMap(maps[i]) || '(empty)';
@@ -1149,6 +1018,7 @@
                 sourceMap[src].maps.push(maps[i]);
             }
 
+            // Order: default source first, then others alphabetically
             const sourceKeys = Object.keys(sourceMap);
             const defKey = defaultSource || '';
             sourceKeys.sort((a, b) => {
@@ -1206,6 +1076,7 @@
             } else { ind.style.display = 'none'; }
         }
 
+        // ---- EXTRA DATA PARSING ----
         function parseExtraInput(separator) {
             const text = document.getElementById('extraInput').value;
             const lines = text.split('\n').filter(l => l.trim());
@@ -1242,41 +1113,42 @@
             return { rows, maps };
         }
 
-        function generateAltLineFromMap(map) {
+        // ---- ALT OUTPUT ----
+        function generateAltOutput(rowMaps) {
             const template = (document.getElementById('altTemplate').value || '').trim();
             if (!template) return '';
             const doLower = document.getElementById('altLowercase').checked;
             const lowerFields = ['action'];
 
-            const actionVal = (map['Action'] || '').toUpperCase();
-            if (actionVal === 'ПРИКРИТТЯ') {
-                const dt = map['Time Date'] || '';
-                const loc = map['Location'] || '';
-                const actionText = doLower ? 'прикриття' : 'ПРИКРИТТЯ';
-                return `${dt}  в р-ні ${loc} ${actionText}`.replace(/\s{2,}/g, ' ').trim();
-            }
-            let line = template;
-            line = line.replace(/\{([^}]+)\}/g, (match, colName) => {
-                let val = '';
-                if (map.hasOwnProperty(colName)) val = map[colName];
-                else {
-                    const key = Object.keys(map).find(k => k.toLowerCase() === colName.toLowerCase());
-                    if (key) val = map[key];
+            const lines = rowMaps.map(map => {
+                const actionVal = (map['Action'] || '').toUpperCase();
+                if (actionVal === 'ПРИКРИТТЯ') {
+                    const dt = map['Time Date'] || '';
+                    const loc = map['Location'] || '';
+                    const actionText = doLower ? 'прикриття' : 'ПРИКРИТТЯ';
+                    return `${dt}  в р-ні ${loc} ${actionText}`.replace(/\s{2,}/g, ' ').trim();
                 }
-                if (doLower && lowerFields.includes(colName.toLowerCase()) && val) val = val.toLowerCase();
-                return val;
+                let line = template;
+                line = line.replace(/\{([^}]+)\}/g, (match, colName) => {
+                    let val = '';
+                    if (map.hasOwnProperty(colName)) val = map[colName];
+                    else {
+                        const key = Object.keys(map).find(k => k.toLowerCase() === colName.toLowerCase());
+                        if (key) val = map[key];
+                    }
+                    if (doLower && lowerFields.includes(colName.toLowerCase()) && val) val = val.toLowerCase();
+                    return val;
+                });
+                line = line.replace(/\s{2,}/g, ' ').trim();
+                return line;
             });
-            line = line.replace(/\s{2,}/g, ' ').trim();
-            return line;
-        }
 
-        function generateAltOutput(rowMaps) {
-            const lines = rowMaps.map(map => generateAltLineFromMap(map));
             return lines.join('\n');
         }
 
+        // ---- PARSE ----
         function parseText() {
-            collectRules(); collectReplacements(); collectLocations(); collectSources();
+            collectRules(); collectReplacements(); collectLocations();
             const input = document.getElementById('inputText').value;
             const lines = input.split('\n').filter(l => l.trim());
             const sepVal = document.getElementById('separatorSelect').value;
@@ -1293,6 +1165,7 @@
             parsedRowMaps = [];
             groupBoundaries = [];
 
+            // Parse main input
             lines.forEach(line => {
                 const cols = [];
                 const colMap = {};
@@ -1313,177 +1186,187 @@
                                     const last = allMatches[allMatches.length - 1];
                                     value = last[1] || last[0];
                                 } else {
-                                    value = allMatches[0][1] || allMatches[0][0];
+                                    const first = allMatches[0];
+                                    value = first[1] || first[0];
                                 }
                             }
-                        } else if (rule.type === 'fixed') value = rule.pattern;
-                        else if (rule.type === 'between' && rule.pattern && rule.endDelim) {
-                            const idx = line.indexOf(rule.pattern);
-                            if (idx >= 0) {
-                                const after = line.substring(idx + rule.pattern.length);
-                                const endIdx = after.indexOf(rule.endDelim);
-                                value = endIdx >= 0 ? after.substring(0, endIdx).trim() : after.trim();
+                        } else if (rule.type === 'fixed') {
+                            value = rule.pattern;
+                        } else if (rule.type === 'between' && rule.pattern && rule.endDelim) {
+                            const si = line.indexOf(rule.pattern);
+                            if (si !== -1) {
+                                const after = si + rule.pattern.length;
+                                const ei = line.indexOf(rule.endDelim, after);
+                                if (ei !== -1) value = line.substring(after, ei).trim();
                             }
                         }
-                    } catch (e) { value = '[ERR]'; }
+                    } catch (e) { value = `[ERR: ${e.message}]`; }
 
                     if (rule.postProcess === 'actionMap') {
-                        const v = value.toUpperCase();
-                        if (v === 'ПОДАВЛЕННЯ') value = 'ПРИДУШЕНО';
-                        else if (v === 'ВИЯВЛЕНО') value = 'ВИЯВЛЕНО';
-                        else if (v === 'ПРИКРИТТЯ') value = 'ПРИКРИТТЯ';
+                        const map = { 'ПОДАВЛЕННЯ':'ПРИДУШЕНО', 'ВИЯВЛЕНО':'ВИЯВЛЕНО', 'ПРИКРИТТЯ':'ПРИКРИТТЯ', 'ПОДАВЛЕНО':'ПОДАВЛЕНО' };
+                        value = map[value] || value;
                     } else if (rule.postProcess === 'freqExtract') {
                         value = extractFreqFromParens(line);
                     } else if (rule.postProcess === 'locationMap') {
-                        if (value) {
-                            const upper = value.toUpperCase().trim();
-                            if (locMap[upper]) value = locMap[upper];
-                        }
+                        if (value) { const u = value.toUpperCase(); if (locMap[u] !== undefined) value = locMap[u]; }
                     } else if (rule.postProcess === 'timeRange') {
                         if (isPrykryttia && keepTimeRange && fullTimeRange) value = fullTimeRange;
-                    } else if (rule.postProcess === 'uppercase') value = value.toUpperCase();
-                    else if (rule.postProcess === 'lowercase') value = value.toLowerCase();
-                    else if (rule.postProcess === 'trim') value = value.trim();
+                    } else if (rule.postProcess === 'uppercase') { value = value.toUpperCase(); }
+                    else if (rule.postProcess === 'lowercase') { value = value.toLowerCase(); }
+                    else if (rule.postProcess === 'trim') { value = value.trim(); }
 
-                    if (rule.combineWith === '_date_' && value && dateFromLine) {
-                        if (isPrykryttia && keepTimeRange && fullTimeRange) value = fullTimeRange + ' ' + dateFromLine;
-                        else value = value + ' ' + dateFromLine;
+                    if (rule.postProcess === 'lastMatch' && rule.combineWith === '_date_') {
+                        if (isPrykryttia && keepTimeRange && fullTimeRange) value = fullTimeRange;
                     }
 
-                    state.replacements.forEach(repl => {
-                        if (!repl.find) return;
-                        try {
-                            if (repl.isRegex) value = value.replace(new RegExp(repl.find, 'g'), repl.replace);
-                            else value = value.split(repl.find).join(repl.replace);
-                        } catch (e) {}
-                    });
+                    if (rule.combineWith === '_date_' && dateFromLine) {
+                        value = value ? (value + ' ' + dateFromLine) : dateFromLine;
+                    }
 
                     if (value) hasContent = true;
                     cols.push(value);
                     colMap[rule.name] = value;
                 });
 
-                cols.push(defaultSource);
-                colMap['Source'] = defaultSource;
+                if (!skipEmpty || hasContent) {
+                    for (let ci = 0; ci < cols.length; ci++) {
+                        let cellVal = cols[ci];
+                        (state.replacements || []).forEach(repl => {
+                            if (repl.find) {
+                                if (repl.isRegex) {
+                                    try { cellVal = cellVal.replace(new RegExp(repl.find,'g'), repl.replace); } catch(e){}
+                                } else { cellVal = cellVal.split(repl.find).join(repl.replace); }
+                            }
+                        });
+                        cols[ci] = cellVal;
+                        if (state.rules[ci]) colMap[state.rules[ci].name] = cellVal;
+                    }
+                    cols.push(defaultSource);
+                    colMap['Source'] = defaultSource;
 
-                if (skipEmpty && !hasContent) return;
-                parsedRows.push(cols);
-                parsedRowMaps.push(colMap);
+                    parsedRows.push(cols);
+                    parsedRowMaps.push(colMap);
+                }
             });
 
+            // Parse extra input and merge
             const extra = parseExtraInput(separator);
-            extra.rows.forEach((r, i) => {
-                parsedRows.push(r);
-                parsedRowMaps.push(extra.maps[i]);
-            });
+            let extraMergedCount = extra.rows.length;
+            parsedRows = parsedRows.concat(extra.rows);
+            parsedRowMaps = parsedRowMaps.concat(extra.maps);
 
-            document.getElementById('extraMergedCount').textContent = extra.rows.length;
-
+            // Apply grouping or sorting
             if (groupMode === 'action') {
                 const result = applyActionGrouping(parsedRows, parsedRowMaps, sortMode);
-                parsedRows = result.rows; parsedRowMaps = result.maps; groupBoundaries = result.boundaries;
+                parsedRows = result.rows;
+                parsedRowMaps = result.maps;
+                groupBoundaries = result.boundaries;
             } else if (groupMode === 'source') {
                 const result = applySourceGrouping(parsedRows, parsedRowMaps, sortMode, defaultSource);
-                parsedRows = result.rows; parsedRowMaps = result.maps; groupBoundaries = result.boundaries;
+                parsedRows = result.rows;
+                parsedRowMaps = result.maps;
+                groupBoundaries = result.boundaries;
             } else {
-                if (sortMode !== 'none') {
-                    const sorted = sortSubgroup(parsedRows, parsedRowMaps, sortMode);
-                    parsedRows = sorted.rows; parsedRowMaps = sorted.maps;
+                // No grouping, just sort if needed
+                if (sortMode === 'datetime_asc' || sortMode === 'datetime_desc') {
+                    const dir = sortMode === 'datetime_asc' ? 'asc' : 'desc';
+                    const sorted = sortRowsByDateTime(parsedRows, parsedRowMaps, dir);
+                    parsedRows = sorted.rows;
+                    parsedRowMaps = sorted.maps;
                 }
                 groupBoundaries = [];
             }
 
-            const result = parsedRows.map(r => r.join(separator)).join('\n');
-            document.getElementById('outputText').value = result;
-            document.getElementById('lineCount').textContent = parsedRows.length;
+            const resultLines = parsedRows.map(row => row.join(separator));
+            const output = resultLines.join('\n');
+            document.getElementById('outputText').value = output;
+            document.getElementById('lineCount').textContent = resultLines.length;
             document.getElementById('colCount').textContent = state.rules.length + 1;
+            document.getElementById('extraMergedCount').textContent = extraMergedCount;
+            renderPreviewTable(resultLines, separator);
+            updateSortIndicator();
+            updateGroupIndicator();
 
-            if (altEnabled) {
+            // Alt output
+            if (altEnabled && parsedRowMaps.length > 0) {
                 const altText = generateAltOutput(parsedRowMaps);
                 document.getElementById('altOutputText').value = altText;
-                document.getElementById('altLineCount').textContent = altText ? altText.split('\n').filter(l=>l.trim()).length : 0;
+                const altLines = altText.split('\n').filter(l => l.trim());
+                document.getElementById('altLineCount').textContent = altLines.length;
+                document.getElementById('altOutTabBtn').style.display = '';
             } else {
                 document.getElementById('altOutputText').value = '';
-                document.getElementById('altLineCount').textContent = 0;
+                document.getElementById('altLineCount').textContent = '0';
             }
 
-            renderPreviewTable(result.split('\n').filter(l=>l.trim()), separator);
-            updateSortIndicator(); updateGroupIndicator();
+            updateAltTabVisibility();
             saveState();
-            showToast(`Parsed ${parsedRows.length} line(s)!`);
+
+            const sortLabel = sortMode === 'none' ? '' : sortMode === 'datetime_asc' ? ' (sorted ↑)' : ' (sorted ↓)';
+            const extraLabel = extraMergedCount > 0 ? ` + ${extraMergedCount} extra` : '';
+            const groupLabel = groupMode === 'none' ? '' : groupMode === 'action' ? ' [by action]' : ' [by source]';
+            showToast(`Done! ${resultLines.length} lines${extraLabel}${sortLabel}${groupLabel}`);
         }
 
-        function renderPreviewTable(lines, separator) {
-            const container = document.getElementById('previewTable');
-            if (lines.length === 0) { container.innerHTML = ''; return; }
-            const headers = state.rules.map(r => r.name).concat(['Source']);
+        function renderPreviewTable(results, separator) {
+            const c = document.getElementById('previewTable');
+            if (!results.length) { c.innerHTML = ''; return; }
+            const colNames = state.rules.map(r => r.name).concat(['Source']);
             let html = '<table><thead><tr>';
-            headers.forEach(h => html += `<th>${escHtml(h)}</th>`);
+            colNames.forEach((name, i) => {
+                const isSource = i === colNames.length - 1;
+                html += `<th${isSource ? ' style="color:var(--accent-teal)"' : ''}>${escHtml(name)}</th>`;
+            });
             html += '</tr></thead><tbody>';
 
+            const showLimit = Math.min(results.length, 100);
+            // Build a set of boundary indices for quick lookup
             const boundaryMap = {};
             groupBoundaries.forEach(b => { boundaryMap[b.index] = b; });
 
-            lines.forEach((line, i) => {
-                const b = boundaryMap[i];
-                if (b) {
-                    const clsExtra = b.type === 'source' ? ' source-group' : '';
-                    html += `<tr class="group-separator-row${clsExtra}"><td colspan="${headers.length}">━━ ${escHtml(b.label)} ━━</td></tr>`;
+            for (let idx = 0; idx < showLimit; idx++) {
+                // Insert group separator if this index is a boundary
+                if (boundaryMap[idx]) {
+                    const b = boundaryMap[idx];
+                    const cssClass = b.type === 'source' ? 'group-separator-row source-group' : 'group-separator-row';
+                    const icon = b.type === 'source' ? '🛰️' : '🏷️';
+                    html += `<tr class="${cssClass}"><td colspan="${colNames.length}">${icon} ── ${escHtml(b.label)} ──</td></tr>`;
                 }
+
+                const line = results[idx];
                 const cols = line.split(separator);
                 html += '<tr>';
-                cols.forEach((c, j) => {
-                    const isSourceCol = j === headers.length - 1;
-                    const cls = isSourceCol ? ' class="source-cell"' : '';
-                    html += `<td${cls}>${escHtml(c)}</td>`;
+                colNames.forEach((_, i) => {
+                    const isSource = i === colNames.length - 1;
+                    html += `<td${isSource ? ' class="source-cell"' : ''}>${escHtml(cols[i]||'')}</td>`;
                 });
                 html += '</tr>';
-            });
+            }
+
+            if (results.length > 100) html += `<tr><td colspan="${colNames.length}" style="text-align:center;color:var(--text-muted)">... and ${results.length-100} more rows</td></tr>`;
             html += '</tbody></table>';
-            container.innerHTML = html;
+            c.innerHTML = html;
         }
 
-        function copyOutput() {
-            const out = document.getElementById('outputText');
-            out.select(); out.setSelectionRange(0,99999);
-            try { document.execCommand('copy'); showToast('Copied!'); } catch(e){}
+        function setLayout(layout, save=true) {
+            state.layout = layout;
+            document.getElementById('mainContent').className = 'main-content ' + layout;
+            document.querySelectorAll('.layout-btn').forEach(b => b.classList.toggle('active', b.dataset.layout===layout));
+            if (save) saveState();
         }
-        function copyAltOutput() {
-            const out = document.getElementById('altOutputText');
-            out.select(); out.setSelectionRange(0,99999);
-            try { document.execCommand('copy'); showToast('Copied!'); } catch(e){}
+        function switchTab(tabName, btn) {
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+            btn.classList.add('active');
+            document.getElementById('tab-'+tabName).classList.add('active');
         }
-        function downloadFile(which) {
-            const text = which === 'alt' ? document.getElementById('altOutputText').value : document.getElementById('outputText').value;
-            if (!text) { showToast('Nothing to download!'); return; }
-            const blob = new Blob([text], {type:'text/plain;charset=utf-8'});
-            const url = URL.createObjectURL(blob); const a = document.createElement('a');
-            a.href = url; a.download = (which==='alt' ? 'alt_output' : 'parsed_output')+'_'+Date.now()+'.txt'; a.click();
-            URL.revokeObjectURL(url);
-            showToast('Downloaded!');
+        function switchOutTab(tabName, btn) {
+            document.querySelectorAll('.out-tab-btn').forEach(b => { b.classList.remove('active'); b.classList.remove('alt-active'); });
+            document.querySelectorAll('.out-tab-content').forEach(c => c.classList.remove('active'));
+            btn.classList.add(tabName === 'alt' ? 'alt-active' : 'active');
+            document.getElementById('out-tab-'+tabName).classList.add('active');
         }
-        function downloadCSV() {
-            const text = document.getElementById('outputText').value;
-            if (!text) { showToast('Nothing to download!'); return; }
-            const sepVal = document.getElementById('separatorSelect').value;
-            const sep = sepVal === '\\t' ? '\t' : sepVal;
-            const headers = state.rules.map(r => r.name).concat(['Source']);
-            const csvLines = [headers.map(h => '"'+h.replace(/"/g,'""')+'"').join(',')];
-            text.split('\n').forEach(line => {
-                if (!line.trim()) return;
-                const cols = line.split(sep);
-                csvLines.push(cols.map(c => '"'+(c||'').replace(/"/g,'""')+'"').join(','));
-            });
-            const blob = new Blob(['\ufeff' + csvLines.join('\n')], {type:'text/csv;charset=utf-8'});
-            const url = URL.createObjectURL(blob); const a = document.createElement('a');
-            a.href = url; a.download = 'parsed_'+Date.now()+'.csv'; a.click();
-            URL.revokeObjectURL(url);
-            showToast('CSV downloaded!');
-        }
-        function clearOutput() { document.getElementById('outputText').value=''; document.getElementById('previewTable').innerHTML=''; document.getElementById('lineCount').textContent='0'; document.getElementById('colCount').textContent='0'; document.getElementById('extraMergedCount').textContent='0'; document.getElementById('sortIndicator').style.display='none'; document.getElementById('groupIndicator').style.display='none'; parsedRows=[]; parsedRowMaps=[]; groupBoundaries=[]; saveState(); }
-        function clearAltOutput() { document.getElementById('altOutputText').value=''; document.getElementById('altLineCount').textContent='0'; saveState(); }
-        function clearInput() { if(confirm('Clear all input?')) { document.getElementById('inputText').value=''; document.getElementById('extraInput').value=''; saveState(); updateExtraBadge(); } }
-        function resetRules() { if(confirm('Reset all rules and replacements to defaults?')) { setDefaults(); renderRules(); renderReplacements(); renderLocations(); renderSources(); document.getElementById('separatorSelect').value='\\t'; document.getElementById('skipEmpty').value='no'; document.getElementById('keepTimeRange').checked=true; document.getElementById('sortMode').value='none'; document.getElementById('groupMode').value='none'; document.getElementById('defaultSource').value=''; document.getElementById('altTemplate').value=defaultAltTemplate; document.getElementById('altLowercase').checked=true; document.getElementById('altEnabled').checked=true; document.getElementById('docxTitle').value='IV. Результати застосування технічних засобів охорони кордону'; document.getElementById('docxSortMode').value='datetime_asc'; document.getElementById('pidrozdilName').value='перша приккшр'; saveState(); showToast('Reset done!'); } }
+
         function loadExample() {
             document.getElementById('inputText').value = `30.03.2025. 18:15. В Р-НІ ПЕТРОПАВЛІВКА ВИЯВЛЕНО ФПВ(АЗ131.3700.-96ДБМ)
 30.03.2025. 18:29. В Р-НІ ПОКАЛЯНЕ ВИЯВЛЕНО ФПВ(АЗ345.3440.-102ДБМ)
@@ -1495,620 +1378,117 @@
 30.03.2025. 23:45. В Р-НІ ПОКАЛЯНЕ ВИЯВЛЕНО ФПВ(АЗ200.2900.-100ДБМ)
 31.03.2025. 05:22. В Р-НІ ВОВЧАНСЬК ВИЯВЛЕНО БПЛА МОЛНІЯ(АЗ270.1385.-108ДБМ) 7985
 01.04.2025. 10:37-10:42. В Р-НІ ВОВЧАНСЬКІ ХУТОРИ ПОДАВЛЕННЯ КАБ(АЗ180.900-1200)`;
-            document.getElementById('extraInput').value = `06:49 15.05.2026\tГЕРБЕРА\tСТАРИЙ САЛТІВ\tВИЯВЛЕНО\t\tРЛС
-11:05 15.05.2026\tСУПЕРКАМ\tЗАРІЧНЕ\tВИЯВЛЕНО\t\tРЛС`;
-            updateExtraBadge();
+            document.getElementById('extraInput').value = `06:00 01.04.2025\tФПВ\tВОВЧ. ХУТОРИ\tВИЯВЛЕНО\t5800\tРЛС
+08:15 01.04.2025\tКАБ\tПОКАЛЯНЕ\tПРИДУШЕНО\t900-1200\tКулібін
+12:30 01.04.2025\tБПЛА МОЛНІЯ\tЗИБИНЕ\tВИЯВЛЕНО\t2400\tРЛС`;
+            state.rules = JSON.parse(JSON.stringify(defaultRules));
+            state.replacements = JSON.parse(JSON.stringify(defaultReplacements));
+            state.locations = JSON.parse(JSON.stringify(defaultLocations));
+            state.keepTimeRange = true; state.sortMode = 'none';
+            state.groupMode = 'none';
+            state.altTemplate = defaultAltTemplate;
+            state.altLowercase = true; state.altEnabled = true;
+            state.defaultSource = '';
+            document.getElementById('keepTimeRange').checked = true;
+            document.getElementById('sortMode').value = 'none';
+            document.getElementById('groupMode').value = 'none';
+            document.getElementById('altTemplate').value = defaultAltTemplate;
+            document.getElementById('altLowercase').checked = true;
+            document.getElementById('altEnabled').checked = true;
+            document.getElementById('defaultSource').value = '';
+            renderRules(); renderReplacements(); renderLocations(); updateExtraBadge(); saveState();
+            showToast('Example loaded with extra data!');
+        }
+
+        function clearInput() {
+            document.getElementById('inputText').value = '';
+            document.getElementById('extraInput').value = '';
+            updateExtraBadge(); saveState();
+        }
+        function clearOutput() {
+            document.getElementById('outputText').value = '';
+            document.getElementById('previewTable').innerHTML = '';
+            document.getElementById('lineCount').textContent = '0';
+            document.getElementById('extraMergedCount').textContent = '0';
+            parsedRows = []; parsedRowMaps = []; groupBoundaries = [];
+            updateSortIndicator(); updateGroupIndicator(); saveState();
+        }
+        function clearAltOutput() {
+            document.getElementById('altOutputText').value = '';
+            document.getElementById('altLineCount').textContent = '0';
             saveState();
-            showToast('Example loaded!');
         }
-        function showToast(msg) { const t = document.getElementById('toast'); document.getElementById('toastMsg').textContent = msg; t.classList.add('show'); setTimeout(() => t.classList.remove('show'), 2500); }
-        function setLayout(layout, save=true) {
-            state.layout = layout;
-            const mc = document.getElementById('mainContent');
-            mc.classList.remove('vertical','horizontal'); mc.classList.add(layout);
-            document.querySelectorAll('.layout-btn').forEach(b => b.classList.toggle('active', b.dataset.layout===layout));
-            if (save) saveState();
-        }
-        function switchTab(tab, btn) {
-            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
-            btn.classList.add('active');
-            document.getElementById('tab-'+tab).classList.add('active');
-        }
-        function switchOutTab(tab, btn) {
-            document.querySelectorAll('.out-tab-btn').forEach(b => b.classList.remove('active'));
-            document.querySelectorAll('.out-tab-content').forEach(c => c.classList.remove('active'));
-            btn.classList.add('active');
-            document.getElementById('out-tab-'+tab).classList.add('active');
+        function resetRules() {
+            state.rules = JSON.parse(JSON.stringify(defaultRules));
+            state.replacements = JSON.parse(JSON.stringify(defaultReplacements));
+            state.locations = JSON.parse(JSON.stringify(defaultLocations));
+            state.keepTimeRange = true; state.sortMode = 'none';
+            state.groupMode = 'none';
+            state.altTemplate = defaultAltTemplate;
+            state.altLowercase = true; state.altEnabled = true;
+            state.defaultSource = '';
+            document.getElementById('keepTimeRange').checked = true;
+            document.getElementById('sortMode').value = 'none';
+            document.getElementById('groupMode').value = 'none';
+            document.getElementById('altTemplate').value = defaultAltTemplate;
+            document.getElementById('altLowercase').checked = true;
+            document.getElementById('altEnabled').checked = true;
+            document.getElementById('defaultSource').value = '';
+            renderRules(); renderReplacements(); renderLocations(); saveState();
+            showToast('All reset to defaults.');
         }
 
-        // ===================== DOCX (Alt Text + Sources Table) =====================
-        function getSourcesGrouping() {
-            const groups = {};
-            state.sources.forEach((s, idx) => { groups[idx] = []; });
-            const unmatched = [];
-
-            parsedRowMaps.forEach((map, i) => {
-                const src = (map['Source'] || '').trim().toUpperCase();
-                let matchedIdx = -1;
-
-                for (let idx = 0; idx < state.sources.length; idx++) {
-                    const s = state.sources[idx];
-                    if (s.matchEmpty && !src) { matchedIdx = idx; break; }
-                }
-                if (matchedIdx < 0) {
-                    for (let idx = 0; idx < state.sources.length; idx++) {
-                        const s = state.sources[idx];
-                        if (!s.matchSource) continue;
-                        if (src.includes(s.matchSource.toUpperCase())) { matchedIdx = idx; break; }
-                    }
-                }
-
-                if (matchedIdx >= 0) groups[matchedIdx].push({ map, line: parsedRows[i] });
-                else unmatched.push({ map, line: parsedRows[i] });
+        function copyOutput() {
+            const o = document.getElementById('outputText');
+            if (!o.value) { showToast('Nothing to copy!'); return; }
+            navigator.clipboard.writeText(o.value).then(() => showToast('Copied!')).catch(() => { o.select(); document.execCommand('copy'); showToast('Copied!'); });
+        }
+        function copyAltOutput() {
+            const o = document.getElementById('altOutputText');
+            if (!o.value) { showToast('Nothing to copy!'); return; }
+            navigator.clipboard.writeText(o.value).then(() => showToast('Alt output copied!')).catch(() => { o.select(); document.execCommand('copy'); showToast('Copied!'); });
+        }
+        function downloadFile(type) {
+            const text = type === 'alt' ? document.getElementById('altOutputText').value : document.getElementById('outputText').value;
+            if (!text) { showToast('Nothing to download!'); return; }
+            const suffix = type === 'alt' ? '_text' : '_table';
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(new Blob([text], {type:'text/plain;charset=utf-8'}));
+            a.download = 'parsed_output' + suffix + '_' + new Date().toISOString().slice(0,10) + '.txt';
+            a.click(); URL.revokeObjectURL(a.href); showToast('File downloaded!');
+        }
+        function downloadCSV() {
+            const text = document.getElementById('outputText').value;
+            if (!text) { showToast('Nothing to download!'); return; }
+            const sep = state.separator === '\\t' ? '\t' : state.separator;
+            collectRules();
+            const colNames = state.rules.map(r => r.name).concat(['Source']);
+            let csv = colNames.map(n => '"'+n.replace(/"/g,'""')+'"').join(',') + '\n';
+            text.split('\n').forEach(line => {
+                if (!line.trim()) return;
+                csv += line.split(sep).map(c => '"'+c.replace(/"/g,'""')+'"').join(',') + '\n';
             });
-
-            return { groups, unmatched };
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(new Blob(['\ufeff'+csv], {type:'text/csv;charset=utf-8'}));
+            a.download = 'parsed_output_' + new Date().toISOString().slice(0,10) + '.csv';
+            a.click(); URL.revokeObjectURL(a.href); showToast('CSV downloaded!');
         }
 
-        function countActions(rows) {
-            let detected = 0, suppressed = 0, other = 0;
-            rows.forEach(({ map }) => {
-                const action = (map['Action'] || '').toUpperCase().trim();
-                if (action === 'ВИЯВЛЕНО') detected++;
-                else if (action === 'ПРИДУШЕНО' || action === 'ПОДАВЛЕНО' || action === 'ПОДАВЛЕННЯ') suppressed++;
-                else other++;
-            });
-            return { detected, suppressed, other, total: rows.length };
+        function showToast(msg) {
+            const t = document.getElementById('toast');
+            document.getElementById('toastMsg').textContent = msg;
+            t.classList.add('show');
+            clearTimeout(t._to);
+            t._to = setTimeout(() => t.classList.remove('show'), 2500);
         }
 
-        function buildResultsText(detected, suppressed, total) {
-            const parts = [];
-            if (detected > 0) parts.push(`виявлено - ${detected}`);
-            if (suppressed > 0) parts.push(`придушено - ${suppressed}`);
-            return parts.length ? `Всього випадків ${total}, з них:\n${parts.join(',\n')}` : (total > 0 ? `Всього випадків ${total}` : '—');
-        }
-
-        // ============ DOCX GENERATION ============
-        function matchesSource(rowSource, source) {
-            // Empty match support
-            const rowSrc = (rowSource || '').toUpperCase().trim();
-            if (source.matchEmpty) {
-                if (rowSrc === '') return true;
+        document.addEventListener('input', e => {
+            if (e.target.id === 'inputText' || e.target.id === 'extraInput') {
+                if (e.target.id === 'extraInput') updateExtraBadge();
+                saveState();
             }
-            const matchVal = (source.matchSource || '').toUpperCase().trim();
-            if (!matchVal) return false;
-            if (!rowSrc) return false;
-            return rowSrc === matchVal || rowSrc.includes(matchVal) || matchVal.includes(rowSrc);
-        }
+        });
 
-        function calculateSourceStats(sourceMaps) {
-            const stats = {
-                viavleno: { total: 0, byType: {} },
-                prydusheno: { total: 0, byType: {} },
-                podavleno: { total: 0, byType: {} },
-                prykryttia: { total: 0, byType: {} },
-                totalCases: 0
-            };
-
-            sourceMaps.forEach(map => {
-                const action = (map['Action'] || '').toUpperCase().trim();
-                let type = (map['Type'] || '').trim();
-                type = normalizeType(type);
-
-                let bucket = null;
-                if (action === 'ВИЯВЛЕНО') bucket = stats.viavleno;
-                else if (action === 'ПРИДУШЕНО') bucket = stats.prydusheno;
-                else if (action === 'ПОДАВЛЕНО') bucket = stats.podavleno;
-                else if (action === 'ПРИКРИТТЯ') bucket = stats.prykryttia;
-
-                if (bucket) {
-                    bucket.total++;
-                    if (type) {
-                        bucket.byType[type] = (bucket.byType[type] || 0) + 1;
-                    }
-                }
-                stats.totalCases++;
-            });
-
-            return stats;
-        }
-
-        function normalizeType(type) {
-            if (!type) return '';
-            const t = type.toUpperCase().trim();
-            const keywords = ['ФПВ', 'МОЛНІЯ', 'СКАТ', 'КАБ', 'ГЕРБЕРА', 'СУПЕРКАМ', 'ШАХЕД', 'ОРЛАН', 'ЛАНЦЕТ', 'ЗАЛА'];
-            for (const kw of keywords) {
-                if (t.includes(kw)) return kw;
-            }
-            return t;
-        }
-
-        function formatStatsLine(label, bucket) {
-            const parts = [];
-            const types = Object.keys(bucket.byType);
-            types.forEach(t => {
-                parts.push(`${t} – ${bucket.byType[t]}`);
-            });
-            const detail = parts.length > 0 ? ` (${parts.join(', ')})` : '';
-            return `${label} – ${bucket.total}${detail}`;
-        }
-
-        function getSourceMaps(source) {
-            return parsedRowMaps.filter(m => matchesSource(m['Source'], source));
-        }
-
-        function getSourceLines(source, sortDir) {
-            const maps = getSourceMaps(source);
-            const dir = sortDir === 'datetime_desc' ? 'desc' : 'asc';
-            const indexed = maps.map((m, i) => ({ m, ts: parseDateTimeFromCell(m['Time Date'] || '') }));
-            indexed.sort((a, b) => dir === 'asc' ? a.ts - b.ts : b.ts - a.ts);
-            const sortedMaps = indexed.map(x => x.m);
-
-            // Use the SAME alt-template lines as in Text Output tab
-            const lines = sortedMaps.map(map => generateAltLineFromMap(map)).filter(l => l && l.trim());
-            return lines;
-        }
-
-        async function downloadDocx() {
-            if (typeof docx === 'undefined') {
-                showToast('DOCX library not loaded yet, please retry...');
-                return;
-            }
-            if (parsedRowMaps.length === 0) {
-                showToast('Please parse text first!');
-                return;
-            }
-            collectSources();
-            if (!state.sources || state.sources.length === 0) {
-                showToast('No sources configured! Add sources in DOCX tab.');
-                return;
-            }
-
-            try {
-                const {
-                    Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell,
-                    WidthType, AlignmentType, BorderStyle, HeadingLevel, ShadingType, VerticalAlign
-                } = docx;
-
-                const docxSortMode = document.getElementById('docxSortMode').value;
-                const docTitle = document.getElementById('docxTitle').value || 'IV. Результати застосування технічних засобів охорони кордону';
-
-                // Font sizes (docx uses half-points: size 18 = 9pt, size 28 = 14pt)
-                const TABLE_FONT_SIZE = 18;   // 9pt
-                const REPORT_FONT_SIZE = 28;  // 14pt
-                const TITLE_FONT_SIZE = 28;   // 14pt for main title
-
-                const children = [];
-
-                const titleShading = { type: ShadingType.SOLID, color: "EEECE1", fill: "EEECE1" };
-                // Title
-                children.push(new Paragraph({
-                    alignment: AlignmentType.CENTER,
-                    spacing: { after: 0 },
-                    shading: titleShading,
-                    children: [
-                        new TextRun({ text: docTitle, italics: true, bold: true, size: TITLE_FONT_SIZE })
-                    ]
-                }));
-
-                // Table borders
-                const border = { style: BorderStyle.SINGLE, size: 4, color: "000000" };
-                const borders = { top: border, bottom: border, left: border, right: border };
-
-                const headerShading = { type: ShadingType.SOLID, color: "FFFFFF", fill: "FFFFFF" };
-                const subHeaderShading = { type: ShadingType.SOLID, color: "FFFFFF", fill: "FFFFFF" };
-
-                const tableRows = [];
-
-                // Top header row
-                tableRows.push(new TableRow({
-                    children: [
-                        headerCell('ПРИКЗ', borders, headerShading, true, TABLE_FONT_SIZE),
-                        headerCell('Наявність', borders, headerShading, true, TABLE_FONT_SIZE),
-                        headerCell('Випадків застосування', borders, headerShading, true, TABLE_FONT_SIZE, 1500),
-                        headerCell('Результати', borders, headerShading, true, TABLE_FONT_SIZE)
-                    ]
-                }));
-
-                state.sources.forEach(src => {
-                    const srcMaps = getSourceMaps(src);
-                    const stats = calculateSourceStats(srcMaps);
-
-                    // Subheader row spans full width
-                    tableRows.push(new TableRow({
-                        children: [
-                            new TableCell({
-                                columnSpan: 4,
-                                borders: borders,
-                                shading: subHeaderShading,
-                                children: [new Paragraph({
-                                    alignment: AlignmentType.CENTER,
-                                    children: [new TextRun({ text: src.displayName + ':', bold: true, size: TABLE_FONT_SIZE })]
-                                })]
-                            })
-                        ]
-                    }));
-
-                    // Build results paragraphs
-                    const resultsParas = [];
-                    if (src.presence > 0) {
-                    resultsParas.push(new Paragraph({
-                        indent: { left: 120 },
-                        children: [new TextRun({ text: formatStatsLine('виявлено', stats.viavleno), italics: true, size: TABLE_FONT_SIZE })]
-                    }));
-                    if (stats.prydusheno.total > 0) {
-                        resultsParas.push(new Paragraph({
-                            indent: { left: 120 },
-                            children: [new TextRun({ text: formatStatsLine('придушено', stats.prydusheno), italics: true, size: TABLE_FONT_SIZE })]
-                        }));
-                    }
-                    if (stats.podavleno.total > 0) {
-                        resultsParas.push(new Paragraph({
-                            indent: { left: 120 },
-                            children: [new TextRun({ text: formatStatsLine('подавлено', stats.podavleno), italics: true, size: TABLE_FONT_SIZE })]
-                        }));
-                    }
-                    if (stats.prykryttia.total > 0) {
-                        resultsParas.push(new Paragraph({
-                            indent: { left: 120 },
-                            children: [new TextRun({ text: formatStatsLine('прикриття', stats.prykryttia), italics: true, size: TABLE_FONT_SIZE })]
-                        }));
-                    }
-
-                    // Data row
-                    tableRows.push(new TableRow({
-                        children: [
-                            dataCell(src.prikz || '', borders, AlignmentType.CENTER, TABLE_FONT_SIZE),
-                            dataCell(src.presence || '0', borders, AlignmentType.CENTER, TABLE_FONT_SIZE),
-                            dataCell(String(stats.totalCases), borders, AlignmentType.CENTER, TABLE_FONT_SIZE),
-                            new TableCell({
-                                borders: borders,
-                                children: resultsParas
-                            })
-                        ]
-                    }));
-                    }
-                });
-
-                // Column widths: 11% / 8.5% / 12.5% / 68%
-                // Total = 100%. In DXA (twentieths of a point), full page width ~ 9000 dxa for A4 with margins.
-                // Use proportional values: 1100, 850, 1250, 6800 (sum = 10000) — docx will scale.
-                const summaryTable = new Table({
-                    width: { size: 100, type: WidthType.PERCENTAGE },
-                    rows: tableRows,
-                    columnWidths: [1100, 850, 1250, 6800]
-                });
-
-                children.push(summaryTable);
-                children.push(new Paragraph({ text: '', spacing: { after: 0 } }));
-
-                // Per-source text sections (using Text Output template lines, font size 14pt)
-                const order = [2, 3, 0, 1];
-                const reordered = order
-                    .map(i => state.sources[i])
-                    .filter(Boolean)
-                    .concat(state.sources.slice(4));
-                reordered.forEach(src => {
-                    if (src.presence > 0) {
-                    children.push(new Paragraph({
-                        spacing: { before: 0, after: 0 },
-                        children: [new TextRun({ text: src.textTitle || ('Результати роботи виробу «' + (src.matchSource || src.displayName) + '»:'), bold: true, size: REPORT_FONT_SIZE })]
-                    }));
-
-                    const lines = getSourceLines(src, docxSortMode);
-                    if (lines.length > 0) {
-                        lines.forEach(line => {
-                            children.push(new Paragraph({
-                                children: [new TextRun({ text: line, size: REPORT_FONT_SIZE })]
-                            }));
-                        });
-                    } else {
-                        children.push(new Paragraph({
-                            children: [new TextRun({ text: '', italics: true, color: "888888", size: REPORT_FONT_SIZE })]
-                        }));
-                    }
-                    }
-                });
-
-                const doc = new Document({
-                    creator: 'Column Generator',
-                    title: docTitle,
-                    styles: {
-                            default: {
-                                document: {
-                                    run: {
-                                        language: {
-                                            value: "uk-UA",
-                                            eastAsia: "uk-UA",
-                                            bidirectional: "uk-UA"
-                                        }
-                                    }
-                                }
-                            }
-                        },
-                    sections: [{
-                        properties: {
-                            page: {
-                                margin: { top: 720, right: 720, bottom: 720, left: 720 }
-                            }
-                        },
-                        children: children
-                    }]
-                });
-
-                const blob = await Packer.toBlob(doc);
-                const now = new Date();
-                const day = String(now.getDate()).padStart(2, '0');
-                const month = String(now.getMonth() + 1).padStart(2, '0');
-                const year = String(now.getFullYear()).slice(-2);
-                const fileName = `11_ПРИКЗ._доба.__СхРУ_ТЗОДК_${day}.${month}.${year}.docx`;
-                saveAs(blob, fileName);
-                showToast('DOCX downloaded! ' + state.sources.length + ' source section(s)');
-            } catch (e) {
-                console.error(e);
-                showToast('DOCX error: ' + e.message);
-            }
-        }
-
-        function headerCell(text, borders, shading, bold, fontSize, width) {
-            const { Paragraph, TextRun, TableCell, AlignmentType, VerticalAlign } = docx;
-            return new TableCell({
-                borders: borders,
-                shading: shading,
-                verticalAlign: VerticalAlign.CENTER,
-                width: width ? { size: width, type: "dxa" } : undefined,
-                children: [new Paragraph({
-                    alignment: AlignmentType.CENTER,
-                    children: [new TextRun({ text: text, bold: !!bold, size: fontSize || 18 })]
-                })]
-            });
-        }
-
-        function dataCell(text, borders, alignment, fontSize) {
-            const { Paragraph, TextRun, TableCell, AlignmentType, VerticalAlign } = docx;
-            return new TableCell({
-                borders: borders,
-                verticalAlign: VerticalAlign.CENTER,
-                children: [new Paragraph({
-                    alignment: alignment || AlignmentType.LEFT,
-                    children: [new TextRun({ text: text, italics: true, size: fontSize || 18 })]
-                })]
-            });
-        }
-
-        // ===================== TABLE DOCX (PDF Template) =====================
-        function buildTableDocxRowsForSection(rowsData, startNum, isDetectionSection) {
-            // Returns array of TableRow data (cells as strings) matching template columns:
-            // №, Підрозділ, Час та дата, Тип, Район напрямок, Доповідь про результат, Відстань, Напрямок руху, Частота MHz, Висота м, Додатково
-            const pidrozdil = state.pidrozdilName || 'перша приккшр';
-            const result = [];
-            rowsData.forEach((r, i) => {
-                const map = r.map;
-                const num = String(startNum + i);
-                const timeDate = map['Time Date'] || '';
-                const type = map['Type'] || '';
-                const location = map['Location'] || '';
-                const action = (map['Action'] || '').toUpperCase().trim();
-                const freq = map['Freq'] || '';
-                const source = map['Source'] || '';
-
-                // Доповідь про результат
-                let report = action;
-                if (isDetectionSection) {
-                    // section 5: just "ВИЯВЛЕНО"
-                    report = action || 'ВИЯВЛЕНО';
-                } else {
-                    // section 5.1: "ПРИДУШЕНО", "ПРИКРИТТЯ", etc.
-                    report = action;
-                }
-
-                const additional = source; // put source in "Додатково"
-
-                result.push([num, pidrozdil, timeDate, type, location, report, '', '', freq, '', additional]);
-            });
-            return result;
-        }
-
-        async function downloadTableDocx() {
-            if (!parsedRowMaps || parsedRowMaps.length === 0) {
-                showToast('Parse text first!');
-                return;
-            }
-            if (typeof docx === 'undefined') { showToast('DOCX library not loaded!'); return; }
-
-            const { Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell, WidthType, AlignmentType, BorderStyle, PageOrientation, convertInchesToTwip, ShadingType, NumberFormat, SectionType } = docx;
-
-            // Group rows: detection (ВИЯВЛЕНО) vs suppression/other (5.1)
-            const detection = [];
-            const suppression = [];
-            parsedRowMaps.forEach((map, i) => {
-                const action = (map['Action'] || '').toUpperCase().trim();
-                const item = { map, line: parsedRows[i] };
-                if (action === 'ВИЯВЛЕНО') detection.push(item);
-                else suppression.push(item);
-            });
-
-            // Sort each group by datetime
-            const sortMode = document.getElementById('docxSortMode').value;
-            const sortFn = (a, b) => {
-                const tsA = parseDateTimeFromCell(a.map['Time Date'] || '');
-                const tsB = parseDateTimeFromCell(b.map['Time Date'] || '');
-                return sortMode === 'datetime_asc' ? tsA - tsB : tsB - tsA;
-            };
-            detection.sort(sortFn);
-            suppression.sort(sortFn);
-
-            const headers = ['№ з/п', 'Підрозділ', 'Час та дата', 'Тип', 'Район напрямок', 'Доповідь про результат', 'Відстань (від н.п., місто), м', 'Напрямок руху (н.п., місто)', 'Частота, MHz', 'Висота, м', 'Додатково'];
-            const colWidths = [4, 11, 11, 8, 12, 12, 7, 9, 9, 7, 10]; // sums to 100
-
-            const border = { style: BorderStyle.SINGLE, size: 4, color: '000000' };
-            const tBorders = { top: border, bottom: border, left: border, right: border, insideHorizontal: border, insideVertical: border };
-
-            const makeHeaderRow = () => new TableRow({
-                tableHeader: true,
-                children: headers.map((h, i) => new TableCell({
-                    width: { size: colWidths[i], type: WidthType.PERCENTAGE },
-                    children: [new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: h, bold: true, size: 20 })] })]
-                }))
-            });
-
-            const makeDataRow = (cells) => new TableRow({
-                children: cells.map((c, i) => new TableCell({
-                    width: { size: colWidths[i], type: WidthType.PERCENTAGE },
-                    children: [new Paragraph({
-                        alignment: AlignmentType.CENTER,
-                        children: state.pidrozdilName === c ? [new TextRun({ text: 'перша ', size: 20 }),
-                                      new TextRun({ text: 'приккшр', italics: true, size: 20 })]
-                                      : [new TextRun({ text: String(c || ''), size: 20 })]
-                    })]
-                }))
-            });
-
-            const docElements = [];
-
-            // Section 5
-            docElements.push(new Paragraph({
-                children: [new TextRun({ text: '5. ВИЯВЛЕННЯ ПОВІТРЯНИХ ЦІЛЕЙ ПРОТИВНИКА ЗА ДОПОМОГОЮ РЕР', bold: true, size: 20 })],
-                alignment: AlignmentType.LEFT,
-                spacing: { after: 150 }
-            }));
-
-            const detRows = buildTableDocxRowsForSection(detection, 1, true);
-            const detTableRows = [makeHeaderRow()];
-            const borders = { top: border, bottom: border, left: border, right: border };
-            const subHeaderShading = { type: ShadingType.SOLID, color: "FFFFFF", fill: "FFFFFF" };
-
-            detTableRows.push(new TableRow({
-                children: [
-                    new TableCell({
-                        columnSpan: 11,
-                        borders: borders,
-                        shading: subHeaderShading,
-                        children: [new Paragraph({
-                            alignment: AlignmentType.CENTER,
-                            children: [new TextRun({ text: 'перша ', bold: true, size: 20 }),
-                                      new TextRun({ text: 'приккшр', bold: true, italics: true, size: 20 })]
-                        })]
-                    })
-                ]
-            }));
-            if (detRows.length === 0) {
-                detTableRows.push(new TableRow({
-                    children: [new TableCell({
-                        columnSpan: headers.length,
-                        children: [new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: '—', size: 16, italics: true })] })]
-                    })]
-                }));
-            } else {
-                detRows.forEach(r => detTableRows.push(makeDataRow(r)));
-            }
-            docElements.push(new Table({
-                width: { size: 100, type: WidthType.PERCENTAGE },
-                borders: tBorders,
-                rows: detTableRows,
-                columnWidths: [400, 1100, 1100, 800, 1200, 1200, 700, 900, 900, 700, 1000]
-            }));
-
-            docElements.push(new Paragraph({ children: [new TextRun({ text: '' })], spacing: { after: 250 } }));
-
-            // Section 5.1
-            docElements.push(new Paragraph({
-                children: [new TextRun({ text: '5.1. ПРИДУШЕННЯ / ПОДАВЛЕННЯ ПОВІТРЯНИХ ЦІЛЕЙ ПРОТИВНИКА ЗА ДОПОМОГОЮ РЕБ', bold: true, size: 20 })],
-                alignment: AlignmentType.LEFT,
-                spacing: { after: 150 }
-            }));
-
-            const supRows = buildTableDocxRowsForSection(suppression, 1, false);
-            const supTableRows = [makeHeaderRow()];
-            supTableRows.push(new TableRow({
-                children: [
-                    new TableCell({
-                        columnSpan: 11,
-                        borders: borders,
-                        shading: subHeaderShading,
-                        children: [new Paragraph({
-                            alignment: AlignmentType.CENTER,
-                            children: [new TextRun({ text: 'перша ', bold: true, size: 20 }),
-                                      new TextRun({ text: 'приккшр', bold: true, italics: true, size: 20 })]
-                        })]
-                    })
-                ]
-            }));
-            if (supRows.length === 0) {
-                supTableRows.push(new TableRow({
-                    children: [new TableCell({
-                        columnSpan: headers.length,
-                        children: [new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: '—', size: 20, italics: true })] })]
-                    })]
-                }));
-            } else {
-                supRows.forEach(r => supTableRows.push(makeDataRow(r)));
-            }
-            docElements.push(new Table({
-                width: { size: 100, type: WidthType.PERCENTAGE },
-                borders: tBorders,
-                rows: supTableRows,
-                columnWidths: [400, 1100, 1100, 800, 1200, 1200, 700, 900, 900, 700, 1000]
-            }));
-
-            const doc = new Document({
-                styles: {
-                        default: {
-                            document: {
-                                run: {
-                                    language: {
-                                        value: "uk-UA",
-                                        eastAsia: "uk-UA",
-                                        bidirectional: "uk-UA"
-                                    }
-                                }
-                            }
-                        }
-                    },
-                sections: [
-                    {
-                        properties: {
-                            page: {
-                                size: {
-                                    orientation: PageOrientation.LANDSCAPE,
-                                },
-                                margin: {
-                                    top: convertInchesToTwip(0.6),
-                                    bottom: convertInchesToTwip(0.6),
-                                    left: convertInchesToTwip(0.6),
-                                    right: convertInchesToTwip(0.6),
-                                    gutter: 0,
-                                },
-                                pageNumbers: {
-                                    start: 1,
-                                    formatType: NumberFormat.DECIMAL,
-                                },
-                            },
-                            type: SectionType.CONTINUOUS,
-                        },
-                        children: docElements,
-                    },
-                ]
-            });
-
-            try {
-                const blob = await Packer.toBlob(doc);
-                const now = new Date();
-                const day = String(now.getDate()).padStart(2, '0');
-                const month = String(now.getMonth() + 1).padStart(2, '0');
-                const year = String(now.getFullYear());
-                const fileName = `довідка РЕБ на 23.59 ${day}.${month}.${year}.docx`;
-                saveAs(blob, fileName);
-                showToast('Table DOCX downloaded!');
-            } catch (e) {
-                console.error(e);
-                showToast('Error generating DOCX: ' + e.message);
-            }
-        }
-
-        document.getElementById('inputText').addEventListener('input', () => { saveState(); });
-        document.getElementById('extraInput').addEventListener('input', () => { saveState(); });
         init();
     </script>
 </body>
