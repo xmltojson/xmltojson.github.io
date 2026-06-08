@@ -160,6 +160,14 @@
         }
         .remove-rule-btn:hover { background: rgba(239,68,68,0.2); border-color: var(--accent-red); }
         .actions-bar { display: flex; gap: 10px; margin-top: 20px; flex-wrap: wrap; }
+        .filter-bar { display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap; }
+        .filter-btn {
+            padding: 7px 14px; background: rgba(245,158,11,0.1); border: 1px solid rgba(245,158,11,0.3);
+            border-radius: 6px; color: var(--accent-orange); font-size: 0.78rem; cursor: pointer;
+            transition: all 0.2s; display: flex; align-items: center; gap: 5px;
+        }
+        .filter-btn:hover { background: rgba(245,158,11,0.2); border-color: var(--accent-orange); transform: translateY(-1px); }
+        .filter-btn svg { width: 14px; height: 14px; }
         .btn {
             padding: 10px 22px; border: none; border-radius: 8px; font-size: 0.9rem; font-weight: 500;
             cursor: pointer; display: flex; align-items: center; gap: 8px; transition: all 0.3s;
@@ -404,6 +412,17 @@
                 </div>
                 <div class="panel-body">
                     <textarea id="inputText" placeholder="Paste your raw text here for parsing..."></textarea>
+
+                    <div class="filter-bar">
+                        <button class="filter-btn" onclick="removeBeforeCutoff(15)" title="Remove all records before previous day 15:00">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                            🗑️ Remove before prev day 15:00
+                        </button>
+                        <button class="filter-btn" onclick="removeBeforeCutoff(21)" title="Remove all records before previous day 21:00">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                            🗑️ Remove before prev day 21:00
+                        </button>
+                    </div>
 
                     <!-- Extra Data Input -->
                     <div class="extra-section-header">
@@ -840,6 +859,90 @@
             const text = document.getElementById('extraInput').value;
             const count = text.split('\n').filter(l => l.trim()).length;
             document.getElementById('extraLinesBadge').textContent = count + ' line' + (count !== 1 ? 's' : '');
+        }
+
+        // ============ FILTER: Remove records before previous day cutoff ============
+        function removeBeforeCutoff(cutoffHour) {
+            const inputEl = document.getElementById('inputText');
+            const extraEl = document.getElementById('extraInput');
+            const inputText = inputEl.value;
+            const extraText = extraEl.value;
+
+            if (!inputText.trim() && !extraText.trim()) {
+                showToast('Nothing to filter!');
+                return;
+            }
+
+            // Build cutoff date: previous day at cutoffHour:00
+            const now = new Date();
+            const cutoff = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1, cutoffHour, 0, 0, 0);
+
+            // Parse line timestamp from input text (format: DD.MM.YYYY. HH:MM. or HH:MM-HH:MM)
+            const parseInputLineTs = (line) => {
+                const dateMatch = line.match(/(\d{2})\.(\d{2})\.(\d{4})/);
+                if (!dateMatch) return null;
+                const day = parseInt(dateMatch[1]);
+                const month = parseInt(dateMatch[2]) - 1;
+                const year = parseInt(dateMatch[3]);
+                // Try time range first (use start time)
+                const rangeMatch = line.match(/(\d{2}):(\d{2})\s*[-–]\s*\d{2}:\d{2}/);
+                let hour = 0, minute = 0;
+                if (rangeMatch) {
+                    hour = parseInt(rangeMatch[1]);
+                    minute = parseInt(rangeMatch[2]);
+                } else {
+                    const timeMatch = line.match(/(\d{2}):(\d{2})/);
+                    if (!timeMatch) return null;
+                    hour = parseInt(timeMatch[1]);
+                    minute = parseInt(timeMatch[2]);
+                }
+                return new Date(year, month, day, hour, minute, 0, 0);
+            };
+
+            // Parse extra line timestamp (format: HH:MM DD.MM.YYYY at start)
+            const parseExtraLineTs = (line) => {
+                const m = line.match(/(\d{2}):(\d{2})\s+(\d{2})\.(\d{2})\.(\d{4})/);
+                if (!m) return null;
+                const hour = parseInt(m[1]);
+                const minute = parseInt(m[2]);
+                const day = parseInt(m[3]);
+                const month = parseInt(m[4]) - 1;
+                const year = parseInt(m[5]);
+                return new Date(year, month, day, hour, minute, 0, 0);
+            };
+
+            let removedInput = 0, removedExtra = 0;
+
+            // Filter input
+            if (inputText.trim()) {
+                const lines = inputText.split('\n');
+                const kept = lines.filter(line => {
+                    if (!line.trim()) return true; // keep blank lines
+                    const ts = parseInputLineTs(line);
+                    if (!ts) return true; // keep lines without parseable date
+                    if (ts < cutoff) { removedInput++; return false; }
+                    return true;
+                });
+                inputEl.value = kept.join('\n');
+            }
+
+            // Filter extra
+            if (extraText.trim()) {
+                const lines = extraText.split('\n');
+                const kept = lines.filter(line => {
+                    if (!line.trim()) return true;
+                    const ts = parseExtraLineTs(line);
+                    if (!ts) return true;
+                    if (ts < cutoff) { removedExtra++; return false; }
+                    return true;
+                });
+                extraEl.value = kept.join('\n');
+            }
+
+            saveState();
+            updateExtraBadge();
+            const cutoffStr = cutoff.toLocaleDateString() + ' ' + String(cutoffHour).padStart(2,'0') + ':00';
+            showToast(`Removed ${removedInput + removedExtra} record(s) before ${cutoffStr}`);
         }
 
         function collectRules() {
