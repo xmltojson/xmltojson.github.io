@@ -2029,40 +2029,49 @@
             });
         }
 
-        function getDirectionForLocation(location) {
+        function getDirectionForLocation(location, callIndex = 0) {
             if (!location) return '';
 
             // ---- Map: string key -> array (list) of direction strings ----
             const directionMap = {
-                'РУБІЖНЕ':       ['СТАРИЙ САЛТІВ'],
-                'БІЛИЙ КОЛОДЯЗЬ':    ['БІЛИЙ КОЛОДЯЗЬ', 'ЮРЧЕНКОВЕ', 'БІЛИЙ КОЛОДЯЗЬ', 'ПЕТРОПАВЛІВКА'],
-                'ВОВЧАНСЬКІ ХУТОРИ':          ['ПОКАЛЯНЕ', 'БІЛИЙ КОЛОДЯЗЬ'],
-                'ВОВЧАНСЬК': ['ВОВЧАНСЬКІ ХУТОРИ'],
-                'ПЕТРОПАВЛІВКА': ['ЮРЧЕНКОВЕ'],
-                'СТАРИЙ САЛТІВ': ['ХОТІМЛЯ'],
-                'ЗАРІЧНЕ': ['ШИРОКЕ'],
-                'ПОКАЛЯНЕ': ['ЗЕМЛЯНИЙ ЯР', 'БІЛИЙ КОЛОДЯЗЬ'],
-                'ХОТІМЛЯ':        ['ГОНТАРІВКА'],
-                'ДОРОШЕНКОВЕ':   ['СЕРЕДІВКА'],
+                'РУБІЖНЕ':            ['СТАРИЙ САЛТІВ'],
+                'БІЛИЙ КОЛОДЯЗЬ':     ['БІЛИЙ КОЛОДЯЗЬ', 'ЮРЧЕНКОВЕ', 'БІЛИЙ КОЛОДЯЗЬ', 'ПЕТРОПАВЛІВКА'],
+                'ВОВЧАНСЬКІ ХУТОРИ':  ['ПОКАЛЯНЕ', 'БІЛИЙ КОЛОДЯЗЬ'],
+                'ВОВЧАНСЬК':          ['ВОВЧАНСЬКІ ХУТОРИ'],
+                'ПЕТРОПАВЛІВКА':      ['ЮРЧЕНКОВЕ'],
+                'СТАРИЙ САЛТІВ':      ['ХОТІМЛЯ'],
+                'ЗАРІЧНЕ':            ['ШИРОКЕ'],
+                'ПОКАЛЯНЕ':           ['ЗЕМЛЯНИЙ ЯР', 'БІЛИЙ КОЛОДЯЗЬ'],
+                'ХОТІМЛЯ':            ['ГОНТАРІВКА'],
+                'ДОРОШЕНКОВЕ':        ['СЕРЕДІВКА'],
                 'ШЕСТЕРІВКА':         ['ХОТІМЛЯ'],
-                'ЗИБИНЕ': ['ПОКАЛЯНЕ', 'ЗЕМЛЯНИЙ ЯР', 'БІЛИЙ КОЛОДЯЗЬ'],
+                'ЗИБИНЕ':             ['ПОКАЛЯНЕ', 'ЗЕМЛЯНИЙ ЯР', 'БІЛИЙ КОЛОДЯЗЬ'],
+                'СОСНОВИЙ БІР':       ['ХОТІМЛЯ'],
+                'ЗЕМЛЯНИЙ ЯР':        ['БІЛИЙ КОЛОДЯЗЬ', 'БІЛИЙ КОЛОДЯЗЬ', 'ЮРЧЕНКОВЕ'],
+                'ВОЛОХІВКА':          ['БІЛИЙ КОЛОДЯЗЬ', 'ВОЛОХІВСЬКЕ']
             };
 
             const key = location.toUpperCase().trim();
             const list = directionMap[key];
             if (!list || list.length === 0) return '';
 
-            // ---- Build deterministic seed: current date + location ----
+            // Single option — no need for randomness
+            if (list.length === 1) return list[0];
+
+            // ---- Build deterministic seed: current date + location + callIndex ----
             const d = new Date();
             const dateSeed = d.getFullYear() * 10000 + (d.getMonth() + 1) * 100 + d.getDate();
 
-            // Mix the location string into the seed so different locations
-            // pick differently on the same day.
+            // String hash so different locations pick differently on the same day.
             let locHash = 0;
             for (let i = 0; i < key.length; i++) {
                 locHash = ((locHash << 5) - locHash + key.charCodeAt(i)) | 0;
             }
-            const seed = (dateSeed ^ locHash) >>> 0;
+
+            // Combine date, location and callIndex into a single 32-bit seed.
+            // Multiplying callIndex by a large prime spreads consecutive indices
+            // far apart in the seed space, giving very different RNG streams.
+            const seed = (dateSeed ^ locHash ^ Math.imul(callIndex | 0, 0x9E3779B1)) >>> 0;
 
             // ---- Mulberry32 PRNG (tiny, fast, deterministic) ----
             function mulberry32(s) {
@@ -2106,7 +2115,7 @@
                 }
 
                 const additional = source; // put source in "Додатково"
-                const direction = getDirectionForLocation(location);
+                const direction = getDirectionForLocation(location, i);
 
                 result.push([num, pidrozdil, timeDate, type, location, report, distantions[i] || '',
                     isDetectionSection ? direction : '', freq, '', additional]);
