@@ -3,7 +3,15 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-<title>Дощ на склі</title>
+<meta name="description" content="Релаксаційний інтерактивний симулятор дощу на склі з реалістичними краплями та амбієнтним звуком. Налаштовуйте інтенсивність, швидкість та розмір крапель.">
+<meta name="keywords" content="дощ, rain, relax, ambient, краплі, медитація, sleep, focus, дощ на склі">
+<meta name="author" content="Rain on Window">
+<meta name="theme-color" content="#0a0e1a">
+<meta property="og:title" content="Дощ на склі — Rain on Window">
+<meta property="og:description" content="Реалістичний симулятор дощу на склі з амбієнтним звуком для релаксації та концентрації">
+<meta property="og:type" content="website">
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cdefs%3E%3CradialGradient id='g' cx='35%25' cy='30%25'%3E%3Cstop offset='0%25' stop-color='%23ffffff'/%3E%3Cstop offset='40%25' stop-color='%23a8c5e8'/%3E%3Cstop offset='100%25' stop-color='%231a3556'/%3E%3C/radialGradient%3E%3CradialGradient id='b' cx='50%25' cy='50%25'%3E%3Cstop offset='0%25' stop-color='%231a2940'/%3E%3Cstop offset='100%25' stop-color='%23050810'/%3E%3C/radialGradient%3E%3C/defs%3E%3Crect width='100' height='100' rx='20' fill='url(%23b)'/%3E%3Cpath d='M50 15 C 35 35, 25 50, 25 65 A 25 25 0 0 0 75 65 C 75 50, 65 35, 50 15 Z' fill='url(%23g)' stroke='%23ffffff' stroke-opacity='0.3' stroke-width='1'/%3E%3Ccircle cx='40' cy='45' r='4' fill='%23ffffff' fill-opacity='0.6'/%3E%3C/svg%3E">
+<title>Дощ на склі — Rain on Window</title>
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
   
@@ -159,7 +167,6 @@
     border-color: rgba(255,255,255,0.25);
   }
   
-  /* Language toggle */
   .lang-toggle {
     display: flex;
     background: rgba(255,255,255,0.08);
@@ -204,7 +211,6 @@
     background: linear-gradient(135deg, #5a8eff, #7aaeff) !important;
   }
   
-  /* Floating action buttons */
   .fab {
     position: fixed;
     z-index: 11;
@@ -395,11 +401,10 @@ function applyLanguage() {
     const key = el.getAttribute('data-i18n');
     if (i18n[state.language][key]) el.textContent = i18n[state.language][key];
   });
-  document.title = i18n[state.language].title;
+  document.title = state.language === 'uk' ? 'Дощ на склі — Rain on Window' : 'Rain on Window — Дощ на склі';
   document.querySelectorAll('.lang-toggle button').forEach(b => {
     b.classList.toggle('active', b.dataset.lang === state.language);
   });
-  // Update tooltips
   document.getElementById('toggleBtn').title = state.language === 'uk' ? 'Налаштування' : 'Settings';
   document.getElementById('fullscreenBtn').title = state.language === 'uk' ? 'Повний екран' : 'Fullscreen';
 }
@@ -525,19 +530,29 @@ function animate() {
   
   drops.forEach(d => { d.update(); d.draw(); });
   
+  // Trigger droplet sounds based on intensity
+  if (isAudioInit && state.sound) {
+    triggerDropletSounds();
+  }
+  
   requestAnimationFrame(animate);
 }
 
 // ============== AUDIO ==============
-let audioCtx, masterGain, rainNode, isAudioInit = false;
+let audioCtx, masterGain, rainNode, rainGain, lpFilter, hpFilter;
+let isAudioInit = false;
+let dropletGain;
 
 function initAudio() {
   if (isAudioInit) return;
   audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  
+  // Master volume
   masterGain = audioCtx.createGain();
   masterGain.gain.value = state.sound ? state.volume / 100 : 0;
   masterGain.connect(audioCtx.destination);
   
+  // === BACKGROUND RAIN NOISE ===
   const bufferSize = audioCtx.sampleRate * 4;
   const buffer = audioCtx.createBuffer(2, bufferSize, audioCtx.sampleRate);
   
@@ -548,9 +563,6 @@ function initAudio() {
       const white = Math.random() * 2 - 1;
       lastOut = (lastOut + 0.02 * white) / 1.02;
       data[i] = lastOut * 3.5;
-      if (Math.random() < 0.0008) {
-        data[i] += (Math.random() - 0.5) * 0.5;
-      }
     }
   }
   
@@ -558,21 +570,116 @@ function initAudio() {
   rainNode.buffer = buffer;
   rainNode.loop = true;
   
-  const hp = audioCtx.createBiquadFilter();
-  hp.type = 'highpass';
-  hp.frequency.value = 400;
+  // Filters - they will be modulated by intensity
+  hpFilter = audioCtx.createBiquadFilter();
+  hpFilter.type = 'highpass';
+  hpFilter.frequency.value = 400;
   
-  const lp = audioCtx.createBiquadFilter();
-  lp.type = 'lowpass';
-  lp.frequency.value = 4500;
+  lpFilter = audioCtx.createBiquadFilter();
+  lpFilter.type = 'lowpass';
+  lpFilter.frequency.value = 4500;
   
-  rainNode.connect(hp);
-  hp.connect(lp);
-  lp.connect(masterGain);
+  rainGain = audioCtx.createGain();
+  rainGain.gain.value = 0.5;
+  
+  rainNode.connect(hpFilter);
+  hpFilter.connect(lpFilter);
+  lpFilter.connect(rainGain);
+  rainGain.connect(masterGain);
   rainNode.start();
+  
+  // Droplet impacts gain channel
+  dropletGain = audioCtx.createGain();
+  dropletGain.gain.value = 1;
+  dropletGain.connect(masterGain);
   
   isAudioInit = true;
   document.getElementById('info').style.display = 'none';
+  
+  // Apply intensity-based settings
+  updateRainSound();
+}
+
+// Generates a single droplet "tap" sound
+function playDroplet() {
+  if (!audioCtx) return;
+  const now = audioCtx.currentTime;
+  
+  // Short noise burst with band-pass filter for "plop" sound
+  const bufferSize = audioCtx.sampleRate * 0.1;
+  const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+  const data = buffer.getChannelData(0);
+  for (let i = 0; i < bufferSize; i++) {
+    data[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / bufferSize, 2);
+  }
+  
+  const src = audioCtx.createBufferSource();
+  src.buffer = buffer;
+  
+  const bp = audioCtx.createBiquadFilter();
+  bp.type = 'bandpass';
+  bp.frequency.value = 800 + Math.random() * 2000;
+  bp.Q.value = 3 + Math.random() * 5;
+  
+  const g = audioCtx.createGain();
+  const peakVol = 0.08 + Math.random() * 0.12;
+  g.gain.setValueAtTime(0, now);
+  g.gain.linearRampToValueAtTime(peakVol, now + 0.001);
+  g.gain.exponentialRampToValueAtTime(0.001, now + 0.05 + Math.random() * 0.05);
+  
+  src.connect(bp);
+  bp.connect(g);
+  g.connect(dropletGain);
+  src.start(now);
+  src.stop(now + 0.15);
+}
+
+// Triggers droplet impacts based on intensity
+let lastDropletTime = 0;
+function triggerDropletSounds() {
+  const now = performance.now();
+  // Probability per frame - heavily based on intensity
+  const intensityRatio = state.intensity / 100;
+  // From sparse drops at low intensity to torrential downpour
+  const dropsPerSecond = 1 + intensityRatio * intensityRatio * 60;
+  const interval = 1000 / dropsPerSecond;
+  
+  if (now - lastDropletTime > interval * (0.5 + Math.random())) {
+    lastDropletTime = now;
+    playDroplet();
+    // At high intensity, sometimes play multiple drops
+    if (intensityRatio > 0.5 && Math.random() < intensityRatio) {
+      setTimeout(playDroplet, Math.random() * 80);
+    }
+    if (intensityRatio > 0.8 && Math.random() < 0.5) {
+      setTimeout(playDroplet, Math.random() * 120);
+    }
+  }
+}
+
+// Update rain sound character based on intensity
+function updateRainSound() {
+  if (!isAudioInit) return;
+  const t = audioCtx.currentTime;
+  const intensityRatio = state.intensity / 100;
+  
+  // Background rain volume (more = louder)
+  // From 0.1 (drizzle) to 1.0 (downpour)
+  const targetRainGain = 0.05 + intensityRatio * 0.95;
+  rainGain.gain.linearRampToValueAtTime(targetRainGain, t + 0.5);
+  
+  // Low-pass filter: low intensity = muffled, high intensity = bright
+  // From 1500 Hz (soft drizzle) to 7000 Hz (heavy rain)
+  const targetLp = 1500 + intensityRatio * 5500;
+  lpFilter.frequency.linearRampToValueAtTime(targetLp, t + 0.5);
+  
+  // High-pass: low intensity has less low-end rumble
+  const targetHp = 600 - intensityRatio * 300; // 600 -> 300
+  hpFilter.frequency.linearRampToValueAtTime(targetHp, t + 0.5);
+  
+  // Droplet impacts volume
+  const targetDropletGain = 0.3 + intensityRatio * 0.7;
+  dropletGain.gain.linearRampToValueAtTime(targetDropletGain, t + 0.5);
 }
 
 function updateVolume() {
@@ -602,11 +709,13 @@ function applyState() {
   applyLanguage();
   setupDrops();
   updateVolume();
+  updateRainSound();
 }
 
 intensitySlider.addEventListener('input', e => {
   state.intensity = +e.target.value;
   setupDrops();
+  updateRainSound();
   saveState();
 });
 
@@ -669,7 +778,6 @@ function toggleFullscreen() {
 
 function updateFullscreenIcon() {
   const isFs = document.fullscreenElement || document.webkitFullscreenElement;
-  fullscreenBtn.textContent = isFs ? '⛶' : '⛶';
   fullscreenBtn.style.color = isFs ? '#6a9eff' : '#d8e0f0';
 }
 
