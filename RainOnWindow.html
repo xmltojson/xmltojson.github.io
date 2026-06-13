@@ -1,0 +1,642 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Дощ на склі</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  
+  html, body {
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    background: #0a0e1a;
+    font-family: 'Segoe UI', Tahoma, sans-serif;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+  }
+  
+  #scene {
+    position: fixed;
+    inset: 0;
+    background: 
+      radial-gradient(ellipse at 30% 20%, rgba(80, 100, 140, 0.4) 0%, transparent 50%),
+      radial-gradient(ellipse at 70% 80%, rgba(40, 60, 90, 0.5) 0%, transparent 60%),
+      linear-gradient(180deg, #1a2332 0%, #0a1220 50%, #050810 100%);
+    overflow: hidden;
+  }
+  
+  #scene::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-image: 
+      radial-gradient(2px 2px at 20% 30%, rgba(255,255,200,0.4), transparent),
+      radial-gradient(1px 1px at 60% 70%, rgba(255,200,150,0.3), transparent),
+      radial-gradient(1.5px 1.5px at 80% 20%, rgba(200,220,255,0.4), transparent),
+      radial-gradient(1px 1px at 40% 90%, rgba(255,255,255,0.2), transparent),
+      radial-gradient(2px 2px at 90% 50%, rgba(255,180,100,0.5), transparent);
+    filter: blur(2px);
+    opacity: 0.6;
+    animation: cityFlicker 8s ease-in-out infinite;
+  }
+  
+  @keyframes cityFlicker {
+    0%, 100% { opacity: 0.6; }
+    50% { opacity: 0.4; }
+  }
+  
+  #rainCanvas {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 2;
+  }
+  
+  #fogOverlay {
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(ellipse at center, transparent 30%, rgba(20, 30, 50, 0.4) 100%);
+    pointer-events: none;
+    z-index: 3;
+  }
+  
+  #controls {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 10;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    background: rgba(15, 25, 40, 0.75);
+    backdrop-filter: blur(15px);
+    -webkit-backdrop-filter: blur(15px);
+    padding: 18px;
+    border-radius: 16px;
+    border: 1px solid rgba(255,255,255,0.1);
+    box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+    color: #d8e0f0;
+    min-width: 240px;
+    transition: transform 0.3s ease, opacity 0.3s ease;
+  }
+  
+  #controls.hidden {
+    transform: translateX(calc(100% + 20px));
+    opacity: 0;
+  }
+  
+  #controls h2 {
+    font-size: 14px;
+    font-weight: 600;
+    margin-bottom: 4px;
+    letter-spacing: 0.5px;
+    color: #a0b4d4;
+    text-transform: uppercase;
+  }
+  
+  .control-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    font-size: 13px;
+  }
+  
+  .control-row label {
+    flex: 1;
+    color: #b8c4dc;
+  }
+  
+  input[type="range"] {
+    width: 120px;
+    height: 4px;
+    -webkit-appearance: none;
+    appearance: none;
+    background: rgba(255,255,255,0.15);
+    border-radius: 2px;
+    outline: none;
+  }
+  
+  input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 14px;
+    height: 14px;
+    background: #6a9eff;
+    border-radius: 50%;
+    cursor: pointer;
+    box-shadow: 0 0 10px rgba(106, 158, 255, 0.6);
+  }
+  
+  input[type="range"]::-moz-range-thumb {
+    width: 14px;
+    height: 14px;
+    background: #6a9eff;
+    border-radius: 50%;
+    cursor: pointer;
+    border: none;
+  }
+  
+  select, button {
+    background: rgba(255,255,255,0.08);
+    color: #d8e0f0;
+    border: 1px solid rgba(255,255,255,0.15);
+    border-radius: 8px;
+    padding: 6px 10px;
+    font-size: 12px;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-family: inherit;
+  }
+  
+  select:hover, button:hover {
+    background: rgba(255,255,255,0.15);
+    border-color: rgba(255,255,255,0.25);
+  }
+  
+  .btn-primary {
+    background: linear-gradient(135deg, #4a7eff, #6a9eff);
+    border: none;
+    padding: 10px 14px;
+    font-weight: 600;
+    box-shadow: 0 4px 12px rgba(74, 126, 255, 0.3);
+  }
+  
+  .btn-primary:hover {
+    background: linear-gradient(135deg, #5a8eff, #7aaeff);
+  }
+  
+  #toggleBtn {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 11;
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    background: rgba(15, 25, 40, 0.75);
+    backdrop-filter: blur(15px);
+    border: 1px solid rgba(255,255,255,0.1);
+    color: #d8e0f0;
+    cursor: pointer;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+    transition: all 0.2s;
+  }
+  
+  #toggleBtn.visible { display: flex; }
+  #toggleBtn:hover { background: rgba(30, 45, 70, 0.85); }
+  
+  #info {
+    position: fixed;
+    bottom: 20px;
+    left: 20px;
+    color: rgba(216, 224, 240, 0.5);
+    font-size: 11px;
+    z-index: 5;
+    letter-spacing: 0.5px;
+  }
+  
+  .switch {
+    position: relative;
+    width: 40px;
+    height: 22px;
+    background: rgba(255,255,255,0.15);
+    border-radius: 11px;
+    cursor: pointer;
+    transition: background 0.3s;
+  }
+  
+  .switch.on { background: #4a7eff; }
+  
+  .switch::after {
+    content: '';
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    width: 18px;
+    height: 18px;
+    background: white;
+    border-radius: 50%;
+    transition: transform 0.3s;
+  }
+  
+  .switch.on::after { transform: translateX(18px); }
+  
+  @media (max-width: 600px) {
+    #controls { 
+      top: 10px; 
+      right: 10px; 
+      min-width: 200px;
+      padding: 14px;
+    }
+    #controls h2 { font-size: 12px; }
+    .control-row { font-size: 12px; }
+    input[type="range"] { width: 90px; }
+  }
+</style>
+</head>
+<body>
+
+<div id="scene">
+  <canvas id="rainCanvas"></canvas>
+  <div id="fogOverlay"></div>
+</div>
+
+<button id="toggleBtn" title="Налаштування">⚙</button>
+
+<div id="controls">
+  <h2 data-i18n="title">Дощ на склі</h2>
+  
+  <div class="control-row">
+    <label data-i18n="intensity">Інтенсивність</label>
+    <input type="range" id="intensity" min="0" max="100" value="50">
+  </div>
+  
+  <div class="control-row">
+    <label data-i18n="dropSize">Розмір крапель</label>
+    <input type="range" id="dropSize" min="1" max="10" value="5">
+  </div>
+  
+  <div class="control-row">
+    <label data-i18n="speed">Швидкість</label>
+    <input type="range" id="speed" min="1" max="10" value="5">
+  </div>
+  
+  <div class="control-row">
+    <label data-i18n="sound">Звук</label>
+    <div class="switch" id="soundSwitch"></div>
+  </div>
+  
+  <div class="control-row">
+    <label data-i18n="volume">Гучність</label>
+    <input type="range" id="volume" min="0" max="100" value="40">
+  </div>
+  
+  <div class="control-row">
+    <label data-i18n="language">Мова</label>
+    <select id="language">
+      <option value="uk">Українська</option>
+      <option value="en">English</option>
+    </select>
+  </div>
+  
+  <button class="btn-primary" id="hideBtn" data-i18n="hide">Сховати панель</button>
+</div>
+
+<div id="info" data-i18n="info">Натисніть будь-де, щоб увімкнути звук</div>
+
+<script>
+// ============== TRANSLATIONS ==============
+const i18n = {
+  uk: {
+    title: 'Дощ на склі',
+    intensity: 'Інтенсивність',
+    dropSize: 'Розмір крапель',
+    speed: 'Швидкість',
+    sound: 'Звук',
+    volume: 'Гучність',
+    language: 'Мова',
+    hide: 'Сховати панель',
+    info: 'Натисніть будь-де, щоб увімкнути звук'
+  },
+  en: {
+    title: 'Rain on Window',
+    intensity: 'Intensity',
+    dropSize: 'Drop Size',
+    speed: 'Speed',
+    sound: 'Sound',
+    volume: 'Volume',
+    language: 'Language',
+    hide: 'Hide Panel',
+    info: 'Click anywhere to enable sound'
+  }
+};
+
+// ============== STATE ==============
+const defaultState = {
+  intensity: 50,
+  dropSize: 5,
+  speed: 5,
+  sound: true,
+  volume: 40,
+  language: 'uk',
+  panelHidden: false
+};
+
+let state = { ...defaultState, ...JSON.parse(localStorage.getItem('rainState') || '{}') };
+
+function saveState() {
+  localStorage.setItem('rainState', JSON.stringify(state));
+}
+
+// ============== I18N ==============
+function applyLanguage() {
+  document.documentElement.lang = state.language;
+  document.querySelectorAll('[data-i18n]').forEach(el => {
+    const key = el.getAttribute('data-i18n');
+    if (i18n[state.language][key]) el.textContent = i18n[state.language][key];
+  });
+  document.title = i18n[state.language].title;
+}
+
+// ============== RAIN ENGINE ==============
+const canvas = document.getElementById('rainCanvas');
+const ctx = canvas.getContext('2d');
+let W, H, drops = [], trails = [];
+
+function resize() {
+  W = canvas.width = window.innerWidth * window.devicePixelRatio;
+  H = canvas.height = window.innerHeight * window.devicePixelRatio;
+  canvas.style.width = window.innerWidth + 'px';
+  canvas.style.height = window.innerHeight + 'px';
+  ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
+}
+
+class Drop {
+  constructor() { this.reset(true); }
+  
+  reset(initial = false) {
+    this.x = Math.random() * window.innerWidth;
+    this.y = initial ? Math.random() * window.innerHeight : -20;
+    this.r = (state.dropSize * 0.5) + Math.random() * (state.dropSize * 1.2);
+    this.vy = 0;
+    this.vx = 0;
+    this.stuck = Math.random() < 0.4;
+    this.stuckTimer = Math.random() * 200;
+    this.trail = [];
+    this.mass = this.r * this.r;
+    this.merging = false;
+  }
+  
+  update() {
+    const speedFactor = state.speed * 0.3;
+    
+    if (this.stuck && this.stuckTimer > 0) {
+      this.stuckTimer--;
+      // tiny vibration
+      if (Math.random() < 0.02) this.stuckTimer = 0;
+      return;
+    }
+    
+    // Gravity proportional to mass (bigger = faster)
+    const gravity = 0.05 * speedFactor * (this.mass / 25);
+    this.vy += gravity;
+    this.vy = Math.min(this.vy, this.r * 0.8 + 2);
+    
+    // Slight horizontal drift
+    this.vx += (Math.random() - 0.5) * 0.05;
+    this.vx *= 0.9;
+    
+    this.y += this.vy;
+    this.x += this.vx;
+    
+    // Leave trail
+    if (this.vy > 0.5 && Math.random() < 0.4) {
+      this.trail.push({ x: this.x + (Math.random()-0.5)*this.r*0.5, y: this.y, r: this.r * (0.3 + Math.random()*0.3), life: 1 });
+      if (this.trail.length > 50) this.trail.shift();
+    }
+    
+    // Random sticking
+    if (Math.random() < 0.005 && this.vy > 1) {
+      this.stuck = true;
+      this.stuckTimer = 30 + Math.random() * 100;
+      this.vy = 0;
+    }
+    
+    // Reset when off screen
+    if (this.y > window.innerHeight + 20) this.reset();
+    
+    // Update trail life
+    this.trail.forEach(t => t.life -= 0.003);
+    this.trail = this.trail.filter(t => t.life > 0);
+  }
+  
+  draw() {
+    // Draw trail (small static drops left behind)
+    this.trail.forEach(t => {
+      const grd = ctx.createRadialGradient(t.x - t.r*0.3, t.y - t.r*0.3, 0, t.x, t.y, t.r);
+      grd.addColorStop(0, `rgba(220, 230, 250, ${0.5 * t.life})`);
+      grd.addColorStop(0.5, `rgba(150, 170, 200, ${0.3 * t.life})`);
+      grd.addColorStop(1, `rgba(50, 70, 100, ${0.1 * t.life})`);
+      ctx.fillStyle = grd;
+      ctx.beginPath();
+      ctx.arc(t.x, t.y, t.r, 0, Math.PI * 2);
+      ctx.fill();
+    });
+    
+    // Main drop with refraction effect
+    const grd = ctx.createRadialGradient(
+      this.x - this.r * 0.4, this.y - this.r * 0.4, 0,
+      this.x, this.y, this.r
+    );
+    grd.addColorStop(0, 'rgba(255, 255, 255, 0.9)');
+    grd.addColorStop(0.3, 'rgba(200, 220, 240, 0.6)');
+    grd.addColorStop(0.7, 'rgba(100, 130, 170, 0.4)');
+    grd.addColorStop(1, 'rgba(30, 50, 80, 0.2)');
+    
+    ctx.fillStyle = grd;
+    ctx.beginPath();
+    
+    // Elongate drop when falling fast
+    if (this.vy > 1 && !this.stuck) {
+      const stretch = 1 + this.vy * 0.15;
+      ctx.ellipse(this.x, this.y, this.r * 0.9, this.r * stretch, 0, 0, Math.PI * 2);
+    } else {
+      ctx.arc(this.x, this.y, this.r, 0, Math.PI * 2);
+    }
+    ctx.fill();
+    
+    // Highlight
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
+    ctx.beginPath();
+    ctx.arc(this.x - this.r * 0.35, this.y - this.r * 0.35, this.r * 0.25, 0, Math.PI * 2);
+    ctx.fill();
+  }
+}
+
+function setupDrops() {
+  const count = Math.floor(20 + state.intensity * 1.5);
+  drops = [];
+  for (let i = 0; i < count; i++) drops.push(new Drop());
+}
+
+function animate() {
+  // Fade trail effect
+  ctx.fillStyle = 'rgba(10, 18, 32, 0.05)';
+  ctx.fillRect(0, 0, window.innerWidth, window.innerHeight);
+  
+  drops.forEach(d => { d.update(); d.draw(); });
+  
+  requestAnimationFrame(animate);
+}
+
+// ============== AUDIO ==============
+let audioCtx, masterGain, rainNode, isAudioInit = false;
+
+function initAudio() {
+  if (isAudioInit) return;
+  audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  masterGain = audioCtx.createGain();
+  masterGain.gain.value = state.sound ? state.volume / 100 : 0;
+  masterGain.connect(audioCtx.destination);
+  
+  // Generate rain noise
+  const bufferSize = audioCtx.sampleRate * 4;
+  const buffer = audioCtx.createBuffer(2, bufferSize, audioCtx.sampleRate);
+  
+  for (let ch = 0; ch < 2; ch++) {
+    const data = buffer.getChannelData(ch);
+    let lastOut = 0;
+    for (let i = 0; i < bufferSize; i++) {
+      const white = Math.random() * 2 - 1;
+      // Brown-ish noise
+      lastOut = (lastOut + 0.02 * white) / 1.02;
+      data[i] = lastOut * 3.5;
+      // Add occasional droplet impacts
+      if (Math.random() < 0.0008) {
+        data[i] += (Math.random() - 0.5) * 0.5;
+      }
+    }
+  }
+  
+  rainNode = audioCtx.createBufferSource();
+  rainNode.buffer = buffer;
+  rainNode.loop = true;
+  
+  // High-pass for rain feel
+  const hp = audioCtx.createBiquadFilter();
+  hp.type = 'highpass';
+  hp.frequency.value = 400;
+  
+  // Low-pass for muffled-through-glass
+  const lp = audioCtx.createBiquadFilter();
+  lp.type = 'lowpass';
+  lp.frequency.value = 4500;
+  
+  rainNode.connect(hp);
+  hp.connect(lp);
+  lp.connect(masterGain);
+  rainNode.start();
+  
+  isAudioInit = true;
+  document.getElementById('info').style.display = 'none';
+}
+
+function updateVolume() {
+  if (!masterGain) return;
+  const target = state.sound ? state.volume / 100 : 0;
+  masterGain.gain.linearRampToValueAtTime(target, audioCtx.currentTime + 0.3);
+}
+
+// ============== UI ==============
+const intensitySlider = document.getElementById('intensity');
+const dropSizeSlider = document.getElementById('dropSize');
+const speedSlider = document.getElementById('speed');
+const volumeSlider = document.getElementById('volume');
+const soundSwitch = document.getElementById('soundSwitch');
+const langSelect = document.getElementById('language');
+const hideBtn = document.getElementById('hideBtn');
+const toggleBtn = document.getElementById('toggleBtn');
+const controls = document.getElementById('controls');
+
+function applyState() {
+  intensitySlider.value = state.intensity;
+  dropSizeSlider.value = state.dropSize;
+  speedSlider.value = state.speed;
+  volumeSlider.value = state.volume;
+  langSelect.value = state.language;
+  soundSwitch.classList.toggle('on', state.sound);
+  
+  if (state.panelHidden) {
+    controls.classList.add('hidden');
+    toggleBtn.classList.add('visible');
+  }
+  
+  applyLanguage();
+  setupDrops();
+}
+
+intensitySlider.addEventListener('input', e => {
+  state.intensity = +e.target.value;
+  setupDrops();
+  saveState();
+});
+
+dropSizeSlider.addEventListener('input', e => {
+  state.dropSize = +e.target.value;
+  drops.forEach(d => d.r = (state.dropSize * 0.5) + Math.random() * (state.dropSize * 1.2));
+  saveState();
+});
+
+speedSlider.addEventListener('input', e => {
+  state.speed = +e.target.value;
+  saveState();
+});
+
+volumeSlider.addEventListener('input', e => {
+  state.volume = +e.target.value;
+  updateVolume();
+  saveState();
+});
+
+soundSwitch.addEventListener('click', () => {
+  state.sound = !state.sound;
+  soundSwitch.classList.toggle('on', state.sound);
+  if (state.sound && !isAudioInit) initAudio();
+  updateVolume();
+  saveState();
+});
+
+langSelect.addEventListener('change', e => {
+  state.language = e.target.value;
+  applyLanguage();
+  saveState();
+});
+
+hideBtn.addEventListener('click', () => {
+  state.panelHidden = true;
+  controls.classList.add('hidden');
+  toggleBtn.classList.add('visible');
+  saveState();
+});
+
+toggleBtn.addEventListener('click', () => {
+  state.panelHidden = false;
+  controls.classList.remove('hidden');
+  toggleBtn.classList.remove('visible');
+  saveState();
+});
+
+// First user interaction enables audio
+function firstInteraction() {
+  if (state.sound) initAudio();
+  document.removeEventListener('click', firstInteraction);
+  document.removeEventListener('touchstart', firstInteraction);
+  document.removeEventListener('keydown', firstInteraction);
+}
+document.addEventListener('click', firstInteraction);
+document.addEventListener('touchstart', firstInteraction);
+document.addEventListener('keydown', firstInteraction);
+
+// ============== INIT ==============
+window.addEventListener('resize', () => {
+  resize();
+  setupDrops();
+});
+window.addEventListener('orientationchange', () => {
+  setTimeout(() => { resize(); setupDrops(); }, 200);
+});
+
+resize();
+applyState();
+animate();
+</script>
+
+</body>
+</html>
