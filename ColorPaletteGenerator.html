@@ -3,6 +3,13 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="Безкоштовний генератор кольорових палітр онлайн. Створюйте гармонійні колірні схеми (аналогові, комплементарні, тріадні, тетрадні, монохромні) та експортуйте в HEX, RGB, CSS або JSON.">
+<meta name="keywords" content="генератор палітр, кольорові палітри, color palette generator, HEX, RGB, CSS, дизайн, гармонія кольорів">
+<meta name="author" content="Color Palette Generator">
+<meta property="og:title" content="Генератор Кольорових Палітр">
+<meta property="og:description" content="Створюйте гармонійні колірні схеми з опціями експорту в HEX, RGB, CSS та JSON.">
+<meta property="og:type" content="website">
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0%25' y1='0%25' x2='100%25' y2='100%25'%3E%3Cstop offset='0%25' stop-color='%2300d4ff'/%3E%3Cstop offset='50%25' stop-color='%23ff00e5'/%3E%3Cstop offset='100%25' stop-color='%23ffd700'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='100' height='100' rx='20' fill='url(%23g)'/%3E%3Ccircle cx='32' cy='35' r='10' fill='%23ff4757'/%3E%3Ccircle cx='68' cy='35' r='10' fill='%2300d4ff'/%3E%3Ccircle cx='32' cy='68' r='10' fill='%23ffd700'/%3E%3Ccircle cx='68' cy='68' r='10' fill='%237b2ff7'/%3E%3C/svg%3E">
 <title>Генератор Кольорових Палітр</title>
 <style>
   * {
@@ -66,7 +73,7 @@
     flex-wrap: wrap;
     gap: 12px;
     justify-content: center;
-    align-items: center;
+    align-items: flex-end;
     margin-bottom: 25px;
     background: var(--card);
     border: 1px solid var(--border);
@@ -130,6 +137,39 @@
     cursor: pointer;
     background: none;
     padding: 2px;
+  }
+
+  /* Icon toggle buttons (lang & orientation) */
+  .icon-btn {
+    background: rgba(255,255,255,0.1);
+    border: 1px solid var(--border);
+    color: var(--text);
+    width: 42px;
+    height: 42px;
+    border-radius: 10px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.1rem;
+    font-weight: 600;
+    transition: all 0.2s;
+    padding: 0;
+  }
+
+  .icon-btn:hover {
+    background: rgba(255,255,255,0.2);
+    transform: translateY(-2px);
+  }
+
+  .icon-btn svg {
+    width: 20px;
+    height: 20px;
+    stroke: currentColor;
+    fill: none;
+    stroke-width: 2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
   }
 
   .palette {
@@ -278,14 +318,6 @@
 
   <div class="controls">
     <div class="control-group">
-      <label id="lblLang">Мова</label>
-      <select id="langSelect">
-        <option value="uk">Українська</option>
-        <option value="en">English</option>
-      </select>
-    </div>
-
-    <div class="control-group">
       <label id="lblHarmony">Гармонія</label>
       <select id="harmonySelect"></select>
     </div>
@@ -298,16 +330,17 @@
     </div>
 
     <div class="control-group">
-      <label id="lblOrient">Орієнтація</label>
-      <select id="orientSelect">
-        <option value="horizontal">Горизонтальна</option>
-        <option value="vertical">Вертикальна</option>
-      </select>
+      <button class="btn-primary" id="generateBtn">🔄 Згенерувати</button>
     </div>
 
     <div class="control-group">
-      <label>&nbsp;</label>
-      <button class="btn-primary" id="generateBtn">🔄 Згенерувати</button>
+      <button class="icon-btn" id="orientToggle" title="Орієнтація" aria-label="Toggle orientation">
+        <svg viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="6" rx="1"/><rect x="4" y="14" width="16" height="6" rx="1"/></svg>
+      </button>
+    </div>
+
+    <div class="control-group">
+      <button class="icon-btn" id="langToggle" title="Мова / Language">UA</button>
     </div>
   </div>
 
@@ -333,10 +366,11 @@ const translations = {
   uk: {
     title: "🎨 Генератор Кольорових Палітр",
     subtitle: "Створюйте гармонійні колірні схеми з опціями експорту",
-    lblLang: "Мова", lblHarmony: "Гармонія", lblBase: "Базовий колір",
-    lblOrient: "Орієнтація", generate: "🔄 Згенерувати",
+    lblHarmony: "Гармонія", lblBase: "Базовий колір",
+    generate: "🔄 Згенерувати",
     exportTitle: "Експорт", copy: "Копіювати",
     horizontal: "Горизонтальна", vertical: "Вертикальна",
+    orientTitle: "Орієнтація",
     harmonies: {
       analogous: "Аналогова", complementary: "Комплементарна",
       triadic: "Тріадна", tetradic: "Тетрадна",
@@ -347,10 +381,11 @@ const translations = {
   en: {
     title: "🎨 Color Palette Generator",
     subtitle: "Create harmonious color schemes with export options",
-    lblLang: "Language", lblHarmony: "Harmony", lblBase: "Base color",
-    lblOrient: "Orientation", generate: "🔄 Generate",
+    lblHarmony: "Harmony", lblBase: "Base color",
+    generate: "🔄 Generate",
     exportTitle: "Export", copy: "Copy",
     horizontal: "Horizontal", vertical: "Vertical",
+    orientTitle: "Orientation",
     harmonies: {
       analogous: "Analogous", complementary: "Complementary",
       triadic: "Triadic", tetradic: "Tetradic",
@@ -515,15 +550,29 @@ function showToast(msg){
   toast._t = setTimeout(()=>toast.classList.remove('show'),1800);
 }
 
+function updateOrientToggle(){
+  const t = translations[state.lang];
+  const btn = document.getElementById('orientToggle');
+  btn.title = t.orientTitle + ": " + (state.orientation==="vertical"?t.vertical:t.horizontal);
+  // Rotate icon for visual feedback
+  const svg = btn.querySelector('svg');
+  if(svg) svg.style.transform = state.orientation==="vertical" ? "rotate(90deg)" : "rotate(0deg)";
+  svg.style.transition = "transform 0.3s";
+}
+
+function updateLangToggle(){
+  const btn = document.getElementById('langToggle');
+  btn.textContent = state.lang === "uk" ? "UA" : "EN";
+  btn.title = state.lang === "uk" ? "Перемкнути на English" : "Switch to Українська";
+}
+
 function applyLanguage(){
   const t = translations[state.lang];
   document.documentElement.lang = state.lang;
   document.getElementById('title').textContent = t.title;
   document.getElementById('subtitle').textContent = t.subtitle;
-  document.getElementById('lblLang').textContent = t.lblLang;
   document.getElementById('lblHarmony').textContent = t.lblHarmony;
   document.getElementById('lblBase').textContent = t.lblBase;
-  document.getElementById('lblOrient').textContent = t.lblOrient;
   document.getElementById('generateBtn').textContent = t.generate;
   document.getElementById('exportTitle').textContent = t.exportTitle;
   document.getElementById('copyText').textContent = t.copy;
@@ -537,9 +586,8 @@ function applyLanguage(){
     hs.appendChild(opt);
   });
 
-  const os = document.getElementById('orientSelect');
-  os.options[0].textContent = t.horizontal;
-  os.options[1].textContent = t.vertical;
+  updateLangToggle();
+  updateOrientToggle();
 }
 
 function saveState(){
@@ -556,9 +604,7 @@ function loadState(){
 // --- Init ---
 function init(){
   loadState();
-  document.getElementById('langSelect').value = state.lang;
   document.getElementById('baseColor').value = state.baseColor;
-  document.getElementById('orientSelect').value = state.orientation;
   applyLanguage();
 
   if(state.colors.length){
@@ -568,18 +614,27 @@ function init(){
     generatePalette();
   }
 
-  document.getElementById('langSelect').addEventListener('change', e=>{
-    state.lang = e.target.value; saveState(); applyLanguage(); renderPalette();
+  document.getElementById('langToggle').addEventListener('click', ()=>{
+    state.lang = state.lang === "uk" ? "en" : "uk";
+    saveState();
+    applyLanguage();
+    renderPalette();
   });
+
   document.getElementById('harmonySelect').addEventListener('change', e=>{
     state.harmony = e.target.value; generatePalette();
   });
   document.getElementById('baseColor').addEventListener('input', e=>{
     state.baseColor = e.target.value; generatePalette();
   });
-  document.getElementById('orientSelect').addEventListener('change', e=>{
-    state.orientation = e.target.value; saveState(); renderPalette();
+
+  document.getElementById('orientToggle').addEventListener('click', ()=>{
+    state.orientation = state.orientation === "horizontal" ? "vertical" : "horizontal";
+    saveState();
+    updateOrientToggle();
+    renderPalette();
   });
+
   document.getElementById('generateBtn').addEventListener('click', generatePalette);
 
   document.getElementById('exportHex').addEventListener('click', ()=>renderExport('hex'));
@@ -593,7 +648,7 @@ function init(){
 
   // keyboard shortcut: space to regenerate
   document.addEventListener('keydown', e=>{
-    if(e.code==="Space" && e.target.tagName!=="TEXTAREA" && e.target.tagName!=="SELECT"){
+    if(e.code==="Space" && e.target.tagName!=="TEXTAREA" && e.target.tagName!=="SELECT" && e.target.tagName!=="INPUT"){
       e.preventDefault(); generatePalette();
     }
   });
