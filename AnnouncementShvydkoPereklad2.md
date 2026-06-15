@@ -4,7 +4,7 @@ We're excited to announce a major update to **ШвидкоПереклад** —
 
 After listening to your feedback, we've packed this release with three powerful new features that make translation faster, more accessible, and more useful for everyday situations.
 
-🎁 **WHAT'S NEW IN v2.0:**
+🎁 **WHAT'S NEW IN v3.0:**
 
 🇨🇿 **Czech Language Support** — Full translation, OCR & voice for Čeština
 ⭐ **Saved Translations Tab** — One-click save with toggle (✓ Збережено)
