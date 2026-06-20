@@ -1128,6 +1128,7 @@
         function isTimeRangeLine(line) { return /ПРИКРИТТЯ/i.test(line); }
         function extractFullTimeRange(line) { const m = line.match(/(\d{2}:\d{2})\s*[-–]\s*(\d{2}:\d{2})/); return m ? m[1]+'-'+m[2] : null; }
 
+        /*
         function extractFreqFromParens(line) {
             const parenMatch = line.match(/[\(（]([^)）]+)[\)）]/g);
             if (!parenMatch || parenMatch.length === 0) return '';
@@ -1143,6 +1144,21 @@
                 if (freqParts.length > 0) return freqParts[0];
             }
             const numMatch = content.match(/(\d+[-–]?\d*)/);
+            return numMatch ? numMatch[0] : '';
+        }
+        */
+        function extractFreqFromParens(line) {
+            const parenMatches = line.match(/[\(（][^)）]+[\)）]/g);
+            if (!parenMatches || parenMatches.length === 0) return '';
+        
+            const content = parenMatches[parenMatches.length - 1].slice(1, -1);
+        
+            // Try to extract chained frequency ranges like "360-460.650-850.1100-1200"
+            const freqMatch = content.match(/\d+-\d+(?:\.\d+-\d+)*/);
+            if (freqMatch) return freqMatch[0];
+        
+            // Fallback: any number (with optional range)
+            const numMatch = content.match(/\d+[-–]?\d*/);
             return numMatch ? numMatch[0] : '';
         }
 
