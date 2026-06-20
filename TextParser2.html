@@ -1153,9 +1153,18 @@
         
             const content = parenMatches[parenMatches.length - 1].slice(1, -1);
         
-            // Try to extract chained frequency ranges like "360-460.650-850.1100-1200"
-            const freqMatch = content.match(/\d+-\d+(?:\.\d+-\d+)*/);
-            if (freqMatch) return freqMatch[0];
+            // Split by dots, find frequency parts (skip prefix like "АЗ340" and suffixes like "-101ДБМ")
+            const parts = content.split('.');
+            const freqParts = [];
+            for (let i = 1; i < parts.length; i++) {
+                const part = parts[i].trim();
+                // Skip parts containing ДБМ (signal strength) or empty parts
+                if (!part || /ДБМ/i.test(part)) continue;
+                // Match number or range: "4000" or "360-460"
+                const m = part.match(/^\d+(?:-\d+)?$/);
+                if (m) freqParts.push(m[0]);
+            }
+            if (freqParts.length > 0) return freqParts.join('.');
         
             // Fallback: any number (with optional range)
             const numMatch = content.match(/\d+[-–]?\d*/);
