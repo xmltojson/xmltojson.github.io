@@ -1,0 +1,2070 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Відео Конвертер | WEBM → MP4</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0%25' y1='0%25' x2='100%25' y2='100%25'%3E%3Cstop offset='0%25' style='stop-color:%236366f1'/%3E%3Cstop offset='100%25' style='stop-color:%23ec4899'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='100' height='100' rx='20' fill='url(%23g)'/%3E%3Cpolygon points='38,28 38,72 72,50' fill='white'/%3E%3C/svg%3E">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  :root {
+    --primary: #6366f1;
+    --primary-dark: #4f46e5;
+    --secondary: #ec4899;
+    --bg: #0f0f23;
+    --bg-card: rgba(255,255,255,0.08);
+    --text: #f1f5f9;
+    --text-muted: #94a3b8;
+    --success: #10b981;
+    --error: #ef4444;
+    --border: rgba(255,255,255,0.15);
+  }
+
+  html, body {
+    width: 100%;
+    min-height: 100vh;
+  }
+
+  body {
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    background: linear-gradient(135deg, #0f0f23 0%, #1a1a3e 50%, #2d1b4e 100%);
+    color: var(--text);
+    overflow-x: hidden;
+    position: relative;
+  }
+
+  body::before {
+    content: '';
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background:
+      radial-gradient(circle at 20% 30%, rgba(99,102,241,0.15) 0%, transparent 50%),
+      radial-gradient(circle at 80% 70%, rgba(236,72,153,0.15) 0%, transparent 50%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .container {
+    position: relative;
+    z-index: 1;
+    width: 100%;
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 20px 30px;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+
+  header {
+    text-align: center;
+    padding: 30px 0 20px;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .lang-switcher {
+    position: absolute;
+    top: 30px;
+    right: 0;
+    display: flex;
+    gap: 6px;
+    background: var(--bg-card);
+    padding: 6px;
+    border-radius: 12px;
+    border: 1px solid var(--border);
+    backdrop-filter: blur(10px);
+    z-index: 5;
+  }
+
+  .lang-btn {
+    padding: 6px 12px;
+    border: none;
+    background: transparent;
+    color: var(--text-muted);
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 13px;
+    transition: all 0.2s;
+  }
+
+  .lang-btn.active {
+    background: var(--primary);
+    color: white;
+  }
+
+  .logo-icon {
+    font-size: 56px;
+    margin-bottom: 10px;
+    display: inline-block;
+    animation: float 3s ease-in-out infinite;
+    line-height: 1;
+  }
+
+  @keyframes float {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-10px); }
+  }
+
+  h1 {
+    font-size: clamp(26px, 4vw, 40px);
+    background: linear-gradient(135deg, #6366f1, #ec4899);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    margin-bottom: 8px;
+    font-weight: 800;
+    line-height: 1.2;
+  }
+
+  .subtitle {
+    color: var(--text-muted);
+    font-size: 15px;
+  }
+
+  main {
+    flex: 1;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+    margin-top: 20px;
+    align-content: start;
+  }
+
+  .full-width {
+    grid-column: 1 / -1;
+  }
+
+  .card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 22px;
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    display: flex;
+    flex-direction: column;
+  }
+
+  .card h3 {
+    font-size: 17px;
+    margin-bottom: 12px;
+  }
+
+  .drop-zone {
+    border: 2px dashed var(--border);
+    border-radius: 16px;
+    padding: 40px 20px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.3s;
+    position: relative;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    min-height: 220px;
+  }
+
+  .drop-zone:hover, .drop-zone.dragover {
+    border-color: var(--primary);
+    background: rgba(99,102,241,0.05);
+    transform: translateY(-2px);
+  }
+
+  .drop-icon {
+    font-size: 44px;
+    margin-bottom: 12px;
+    color: var(--primary);
+    line-height: 1;
+  }
+
+  .drop-text {
+    font-size: 17px;
+    font-weight: 600;
+    margin-bottom: 6px;
+  }
+
+  .drop-hint {
+    color: var(--text-muted);
+    font-size: 13px;
+  }
+
+  #fileInput { display: none; }
+
+  .file-info {
+    display: none;
+    padding: 14px;
+    background: rgba(255,255,255,0.05);
+    border-radius: 12px;
+    margin-top: 14px;
+    border: 1px solid var(--border);
+  }
+
+  .file-info.show { display: block; }
+
+  .file-info-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 5px 0;
+    font-size: 13px;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .file-info-label { color: var(--text-muted); flex-shrink: 0; }
+  .file-info-value { font-weight: 600; word-break: break-all; text-align: right; }
+
+  .audio-badge {
+    display: inline-block;
+    margin-left: 6px;
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-size: 11px;
+    font-weight: 700;
+    background: rgba(16,185,129,0.2);
+    color: #34d399;
+    border: 1px solid rgba(16,185,129,0.4);
+  }
+
+  .audio-badge.no {
+    background: rgba(239,68,68,0.15);
+    color: #fca5a5;
+    border-color: rgba(239,68,68,0.3);
+  }
+
+  .settings-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+    margin-bottom: 16px;
+  }
+
+  .setting-item label {
+    display: block;
+    font-size: 12px;
+    color: var(--text-muted);
+    margin-bottom: 6px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  select {
+    width: 100%;
+    padding: 10px 12px;
+    background: rgba(255,255,255,0.08);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    color: var(--text);
+    font-size: 14px;
+    cursor: pointer;
+    outline: none;
+    transition: all 0.2s;
+  }
+
+  select:hover, select:focus { border-color: var(--primary); }
+  select:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  select option {
+    background: #1a1a3e;
+    color: var(--text);
+  }
+
+  .toggle-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 14px;
+    background: rgba(255,255,255,0.05);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    margin-bottom: 14px;
+    gap: 12px;
+  }
+
+  .toggle-info {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    flex: 1;
+    min-width: 0;
+  }
+
+  .toggle-label {
+    font-size: 14px;
+    font-weight: 600;
+  }
+
+  .toggle-hint {
+    font-size: 12px;
+    color: var(--text-muted);
+  }
+
+  .toggle-switch {
+    position: relative;
+    width: 50px;
+    height: 28px;
+    flex-shrink: 0;
+  }
+
+  .toggle-switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+  }
+
+  .toggle-slider {
+    position: absolute;
+    cursor: pointer;
+    inset: 0;
+    background: rgba(255,255,255,0.15);
+    transition: 0.3s;
+    border-radius: 28px;
+    border: 1px solid var(--border);
+  }
+
+  .toggle-slider::before {
+    position: absolute;
+    content: "";
+    height: 20px;
+    width: 20px;
+    left: 3px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: white;
+    transition: 0.3s;
+    border-radius: 50%;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+  }
+
+  .toggle-switch input:checked + .toggle-slider {
+    background: linear-gradient(135deg, var(--primary), var(--secondary));
+    border-color: transparent;
+  }
+
+  .toggle-switch input:checked + .toggle-slider::before {
+    transform: translate(22px, -50%);
+  }
+
+  .audio-options {
+    transition: opacity 0.3s, max-height 0.3s;
+    overflow: hidden;
+  }
+
+  .audio-options.disabled {
+    opacity: 0.4;
+    pointer-events: none;
+  }
+
+  .convert-btn {
+    width: 100%;
+    padding: 14px;
+    background: linear-gradient(135deg, var(--primary), var(--secondary));
+    border: none;
+    border-radius: 12px;
+    color: white;
+    font-size: 15px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.3s;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    box-shadow: 0 8px 20px rgba(99,102,241,0.3);
+    margin-top: auto;
+  }
+
+  .convert-btn:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 12px 25px rgba(99,102,241,0.5);
+  }
+
+  .convert-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  .progress-section { display: none; }
+  .progress-section.show { display: block; }
+
+  .progress-bar {
+    width: 100%;
+    height: 12px;
+    background: rgba(255,255,255,0.08);
+    border-radius: 10px;
+    overflow: hidden;
+    margin: 12px 0 10px;
+  }
+
+  .progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--primary), var(--secondary));
+    width: 0%;
+    transition: width 0.3s;
+    border-radius: 10px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .progress-fill::after {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+    animation: shimmer 1.5s infinite;
+  }
+
+  @keyframes shimmer {
+    0% { transform: translateX(-100%); }
+    100% { transform: translateX(100%); }
+  }
+
+  .progress-text {
+    display: flex;
+    justify-content: space-between;
+    font-size: 13px;
+    color: var(--text-muted);
+    gap: 10px;
+  }
+
+  .preview-wrap {
+    margin-top: 12px;
+    display: flex;
+    justify-content: center;
+    background: rgba(0,0,0,0.4);
+    border-radius: 10px;
+    overflow: hidden;
+    border: 1px solid var(--border);
+    position: relative;
+  }
+
+  .preview-wrap canvas {
+    max-width: 100%;
+    max-height: 240px;
+    display: block;
+  }
+
+  .audio-meter {
+    position: absolute;
+    bottom: 8px;
+    left: 8px;
+    right: 8px;
+    height: 6px;
+    background: rgba(0,0,0,0.5);
+    border-radius: 3px;
+    overflow: hidden;
+    display: none;
+  }
+
+  .audio-meter.show { display: block; }
+
+  .audio-meter-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #10b981, #fbbf24, #ef4444);
+    width: 0%;
+    transition: width 0.05s linear;
+  }
+
+  .log-area {
+    margin-top: 12px;
+    padding: 12px;
+    background: rgba(0,0,0,0.3);
+    border-radius: 10px;
+    max-height: 120px;
+    overflow-y: auto;
+    font-family: 'Courier New', monospace;
+    font-size: 11px;
+    color: var(--text-muted);
+    border: 1px solid var(--border);
+    word-break: break-all;
+  }
+
+  .download-section {
+    display: none;
+    text-align: center;
+    padding: 30px 22px;
+  }
+
+  .download-section.show { display: block; }
+
+  .success-icon {
+    font-size: 56px;
+    margin-bottom: 12px;
+    line-height: 1;
+  }
+
+  .download-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    justify-content: center;
+    margin-top: 18px;
+  }
+
+  .download-btn {
+    display: inline-block;
+    padding: 13px 28px;
+    background: linear-gradient(135deg, var(--success), #059669);
+    border-radius: 12px;
+    color: white;
+    text-decoration: none;
+    font-weight: 700;
+    transition: all 0.3s;
+    box-shadow: 0 8px 20px rgba(16,185,129,0.3);
+    border: none;
+    cursor: pointer;
+    font-size: 14px;
+  }
+
+  .download-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 12px 25px rgba(16,185,129,0.5);
+  }
+
+  .reset-btn {
+    display: inline-block;
+    padding: 13px 24px;
+    background: rgba(255,255,255,0.1);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    color: var(--text);
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 14px;
+    transition: all 0.3s;
+  }
+
+  .reset-btn:hover { background: rgba(255,255,255,0.15); }
+
+  .toast {
+    position: fixed;
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%) translateY(-150px);
+    padding: 12px 24px;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    backdrop-filter: blur(20px);
+    transition: transform 0.3s;
+    z-index: 1000;
+    font-weight: 600;
+    max-width: 90%;
+    text-align: center;
+  }
+
+  .toast.show {
+    transform: translateX(-50%) translateY(0);
+  }
+
+  .toast.error { border-color: var(--error); }
+  .toast.success { border-color: var(--success); }
+
+  footer {
+    text-align: center;
+    padding: 20px 0 15px;
+    color: var(--text-muted);
+    font-size: 13px;
+  }
+
+  @media (max-width: 900px) {
+    main { grid-template-columns: 1fr; }
+    .container { max-width: 700px; padding: 20px; }
+  }
+
+  @media (max-width: 600px) {
+    .container { padding: 15px; }
+    .card { padding: 18px; }
+    .drop-zone { padding: 35px 15px; min-height: 180px; }
+    .lang-switcher { position: static; margin-bottom: 16px; }
+    header { padding: 10px 0 15px; flex-direction: column; }
+    .download-btn, .reset-btn { width: 100%; }
+    .settings-grid { grid-template-columns: 1fr; }
+  }
+
+  @media (max-height: 500px) and (orientation: landscape) {
+    .container { max-width: 100%; padding: 10px 30px; }
+    header { padding: 10px 0; }
+    .lang-switcher { top: 10px; }
+    .logo-icon { font-size: 36px; margin-bottom: 5px; }
+    .drop-zone { padding: 20px; min-height: 140px; }
+    .drop-icon { font-size: 28px; margin-bottom: 6px; }
+    .drop-text { font-size: 14px; }
+    main { gap: 12px; margin-top: 10px; }
+    .card { padding: 16px; }
+  }
+
+  ::-webkit-scrollbar { width: 8px; }
+  ::-webkit-scrollbar-track { background: rgba(255,255,255,0.05); }
+  ::-webkit-scrollbar-thumb { background: var(--primary); border-radius: 4px; }
+</style>
+</head>
+<body>
+
+<div class="toast" id="toast"></div>
+
+<div class="container">
+  <header>
+    <div class="lang-switcher">
+      <button class="lang-btn active" data-lang="uk">🇺🇦 UA</button>
+      <button class="lang-btn" data-lang="en">🇬🇧 EN</button>
+    </div>
+    <div class="logo-icon">🎬</div>
+    <h1 data-i18n="title">Відео Конвертер</h1>
+    <p class="subtitle" data-i18n="subtitle">Конвертуйте WEBM у MP4 прямо у браузері</p>
+  </header>
+
+  <main>
+    <div class="card">
+      <h3 data-i18n="uploadTitle">Завантажте файл</h3>
+      <div class="drop-zone" id="dropZone">
+        <div class="drop-icon">📁</div>
+        <div class="drop-text" data-i18n="dropText">Перетягніть WEBM файл сюди</div>
+        <div class="drop-hint" data-i18n="dropHint">або натисніть, щоб обрати файл</div>
+        <input type="file" id="fileInput" accept=".webm,video/webm,video/*">
+      </div>
+
+      <div class="file-info" id="fileInfo">
+        <div class="file-info-row">
+          <span class="file-info-label" data-i18n="fileName">Назва:</span>
+          <span class="file-info-value" id="fileName">-</span>
+        </div>
+        <div class="file-info-row">
+          <span class="file-info-label" data-i18n="fileSize">Розмір:</span>
+          <span class="file-info-value" id="fileSize">-</span>
+        </div>
+        <div class="file-info-row">
+          <span class="file-info-label" data-i18n="fileType">Тип:</span>
+          <span class="file-info-value" id="fileType">-</span>
+        </div>
+        <div class="file-info-row">
+          <span class="file-info-label" data-i18n="fileDuration">Тривалість:</span>
+          <span class="file-info-value" id="fileDuration">-</span>
+        </div>
+        <div class="file-info-row">
+          <span class="file-info-label" data-i18n="audioTrack">Аудіо:</span>
+          <span class="file-info-value" id="audioStatus">-</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="card" id="settingsCard">
+      <h3 data-i18n="settings">Налаштування конвертації</h3>
+
+      <div class="toggle-row">
+        <div class="toggle-info">
+          <span class="toggle-label" data-i18n="includeAudio">Включити аудіо</span>
+          <span class="toggle-hint" id="audioToggleHint" data-i18n="includeAudioHint">Додати аудіодоріжку до MP4</span>
+        </div>
+        <label class="toggle-switch">
+          <input type="checkbox" id="includeAudioToggle" checked>
+          <span class="toggle-slider"></span>
+        </label>
+      </div>
+
+      <div class="settings-grid">
+        <div class="setting-item">
+          <label data-i18n="quality">Якість</label>
+          <select id="qualitySelect">
+            <option value="high" data-i18n="qualityHigh">Висока</option>
+            <option value="medium" selected data-i18n="qualityMedium">Середня</option>
+            <option value="low" data-i18n="qualityLow">Низька</option>
+          </select>
+        </div>
+        <div class="setting-item">
+          <label data-i18n="resolution">Роздільна здатність</label>
+          <select id="resolutionSelect">
+            <option value="original" data-i18n="resOriginal">Оригінальна</option>
+            <option value="1080">1080p</option>
+            <option value="720">720p</option>
+            <option value="480">480p</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="audio-options" id="audioOptions">
+        <div class="settings-grid">
+          <div class="setting-item">
+            <label data-i18n="audioBitrate">Аудіо бітрейт</label>
+            <select id="audioBitrateSelect">
+              <option value="192000">192 kbps</option>
+              <option value="128000" selected>128 kbps</option>
+              <option value="96000">96 kbps</option>
+              <option value="64000">64 kbps</option>
+            </select>
+          </div>
+          <div class="setting-item">
+            <label data-i18n="audioVolume">Гучність аудіо</label>
+            <select id="audioVolumeSelect">
+              <option value="2">200%</option>
+              <option value="1.5">150%</option>
+              <option value="1" selected>100%</option>
+              <option value="0.75">75%</option>
+              <option value="0.5">50%</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <button class="convert-btn" id="convertBtn" disabled data-i18n="convertBtn">
+        Конвертувати у MP4
+      </button>
+    </div>
+
+    <div class="card progress-section full-width" id="progressSection">
+      <h3 data-i18n="converting">Конвертація...</h3>
+      <div class="progress-bar">
+        <div class="progress-fill" id="progressFill"></div>
+      </div>
+      <div class="progress-text">
+        <span id="progressStatus" data-i18n="processing">Обробка...</span>
+        <span id="progressPercent">0%</span>
+      </div>
+      <div class="preview-wrap" id="previewWrap" style="display:none;">
+        <canvas id="previewCanvas"></canvas>
+        <div class="audio-meter" id="audioMeter">
+          <div class="audio-meter-fill" id="audioMeterFill"></div>
+        </div>
+      </div>
+      <div class="log-area" id="logArea"></div>
+    </div>
+
+    <div class="card download-section full-width" id="downloadSection">
+      <div class="success-icon">✅</div>
+      <h3 data-i18n="successTitle">Конвертація завершена!</h3>
+      <p style="color: var(--text-muted); margin-top: 8px;" data-i18n="successText">
+        Ваш файл готовий до завантаження
+      </p>
+      <div class="download-actions">
+        <a href="#" class="download-btn" id="downloadBtn" data-i18n="downloadBtn">⬇ Завантажити MP4</a>
+        <button class="reset-btn" id="resetBtn" data-i18n="resetBtn">↻ Новий файл</button>
+      </div>
+    </div>
+  </main>
+
+  <footer>
+    <p data-i18n="footer">Працює на MediaRecorder API • Файли не залишають ваш пристрій</p>
+  </footer>
+</div>
+
+<script>
+  const translations = {
+    uk: {
+      title: "Відео Конвертер",
+      subtitle: "Конвертуйте WEBM у MP4 прямо у браузері",
+      uploadTitle: "Завантажте файл",
+      dropText: "Перетягніть WEBM файл сюди",
+      dropHint: "або натисніть, щоб обрати файл",
+      fileName: "Назва:",
+      fileSize: "Розмір:",
+      fileType: "Тип:",
+      fileDuration: "Тривалість:",
+      audioTrack: "Аудіо:",
+      audioYes: "✓ Є",
+      audioNo: "✗ Немає",
+      audioChecking: "Перевірка...",
+      settings: "Налаштування конвертації",
+      includeAudio: "Включити аудіо",
+      includeAudioHint: "Додати аудіодоріжку до MP4",
+      includeAudioHintNoSrc: "У вихідному файлі немає аудіо",
+      quality: "Якість",
+      qualityHigh: "Висока",
+      qualityMedium: "Середня",
+      qualityLow: "Низька",
+      resolution: "Роздільна здатність",
+      resOriginal: "Оригінальна",
+      audioBitrate: "Аудіо бітрейт",
+      audioVolume: "Гучність аудіо",
+      convertBtn: "Конвертувати у MP4",
+      converting: "Конвертація...",
+      processing: "Обробка...",
+      preparing: "Підготовка...",
+      decoding: "Декодування відео...",
+      encoding: "Кодування...",
+      finalizing: "Завершення...",
+      remuxing: "Виправлення метаданих...",
+      measuringDuration: "Вимірювання тривалості...",
+      successTitle: "Конвертація завершена!",
+      successText: "Ваш файл готовий до завантаження",
+      downloadBtn: "⬇ Завантажити MP4",
+      resetBtn: "↻ Новий файл",
+      footer: "Працює на MediaRecorder API • Файли не залишають ваш пристрій",
+      toastSelectFile: "Будь ласка, оберіть WEBM файл",
+      toastInvalidType: "Невірний тип файлу. Оберіть WEBM.",
+      toastError: "Помилка конвертації",
+      toastSuccess: "Конвертація успішна!",
+      toastLoaded: "Файл завантажено",
+      errNoMP4: "Браузер не підтримує MP4. Файл буде збережено як WEBM (сумісний).",
+      errVideoLoad: "Не вдалося прочитати відео файл"
+    },
+    en: {
+      title: "Video Converter",
+      subtitle: "Convert WEBM to MP4 right in your browser",
+      uploadTitle: "Upload File",
+      dropText: "Drop WEBM file here",
+      dropHint: "or click to select file",
+      fileName: "Name:",
+      fileSize: "Size:",
+      fileType: "Type:",
+      fileDuration: "Duration:",
+      audioTrack: "Audio:",
+      audioYes: "✓ Yes",
+      audioNo: "✗ None",
+      audioChecking: "Checking...",
+      settings: "Conversion Settings",
+      includeAudio: "Include Audio",
+      includeAudioHint: "Add audio track to MP4 output",
+      includeAudioHintNoSrc: "Source file has no audio",
+      quality: "Quality",
+      qualityHigh: "High",
+      qualityMedium: "Medium",
+      qualityLow: "Low",
+      resolution: "Resolution",
+      resOriginal: "Original",
+      audioBitrate: "Audio Bitrate",
+      audioVolume: "Audio Volume",
+      convertBtn: "Convert to MP4",
+      converting: "Converting...",
+      processing: "Processing...",
+      preparing: "Preparing...",
+      decoding: "Decoding video...",
+      encoding: "Encoding...",
+      finalizing: "Finalizing...",
+      remuxing: "Fixing metadata...",
+      measuringDuration: "Measuring duration...",
+      successTitle: "Conversion Complete!",
+      successText: "Your file is ready for download",
+      downloadBtn: "⬇ Download MP4",
+      resetBtn: "↻ New File",
+      footer: "Powered by MediaRecorder API • Files never leave your device",
+      toastSelectFile: "Please select a WEBM file",
+      toastInvalidType: "Invalid file type. Select WEBM.",
+      toastError: "Conversion error",
+      toastSuccess: "Conversion successful!",
+      toastLoaded: "File loaded",
+      errNoMP4: "Browser does not support MP4 output. File will be saved as compatible WEBM.",
+      errVideoLoad: "Failed to read video file"
+    }
+  };
+
+  let currentLang = 'uk';
+  let selectedFile = null;
+  let convertedBlob = null;
+  let convertedExt = 'mp4';
+  let detectedHasAudio = null;
+  let detectedDuration = null;
+
+  const STATE_KEY = 'videoConverterState';
+
+  function applyTranslations() {
+    document.documentElement.lang = currentLang;
+    document.querySelectorAll('[data-i18n]').forEach(el => {
+      const key = el.getAttribute('data-i18n');
+      if (translations[currentLang][key]) {
+        el.textContent = translations[currentLang][key];
+      }
+    });
+    document.title = translations[currentLang].title + ' | WEBM → MP4';
+    refreshAudioStatus();
+    updateAudioToggleHint();
+  }
+
+  function t(key) { return translations[currentLang][key] || key; }
+
+  function formatDuration(sec) {
+    if (!sec || !isFinite(sec) || sec <= 0) return '-';
+    const h = Math.floor(sec / 3600);
+    const m = Math.floor((sec % 3600) / 60);
+    const s = Math.floor(sec % 60);
+    const ms = Math.round((sec - Math.floor(sec)) * 1000);
+    if (h > 0) {
+      return `${h}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+    }
+    return `${m}:${String(s).padStart(2,'0')}.${String(ms).padStart(3,'0')}`;
+  }
+
+  function refreshAudioStatus() {
+    const el = document.getElementById('audioStatus');
+    if (!el) return;
+    if (detectedHasAudio === true) {
+      el.innerHTML = `<span class="audio-badge">${t('audioYes')}</span>`;
+    } else if (detectedHasAudio === false) {
+      el.innerHTML = `<span class="audio-badge no">${t('audioNo')}</span>`;
+    } else if (selectedFile) {
+      el.textContent = t('audioChecking');
+    } else {
+      el.textContent = '-';
+    }
+  }
+
+  function refreshDuration() {
+    const el = document.getElementById('fileDuration');
+    if (!el) return;
+    if (detectedDuration === null && selectedFile) {
+      el.textContent = t('measuringDuration');
+    } else {
+      el.textContent = formatDuration(detectedDuration);
+    }
+  }
+
+  function updateAudioToggleHint() {
+    const hint = document.getElementById('audioToggleHint');
+    const toggle = document.getElementById('includeAudioToggle');
+    if (!hint || !toggle) return;
+
+    if (detectedHasAudio === false) {
+      hint.textContent = t('includeAudioHintNoSrc');
+      toggle.checked = false;
+      toggle.disabled = true;
+    } else {
+      hint.textContent = t('includeAudioHint');
+      toggle.disabled = false;
+    }
+    refreshAudioOptionsState();
+  }
+
+  function refreshAudioOptionsState() {
+    const toggle = document.getElementById('includeAudioToggle');
+    const audioOptions = document.getElementById('audioOptions');
+    const enabled = toggle.checked && !toggle.disabled;
+    audioOptions.classList.toggle('disabled', !enabled);
+    document.getElementById('audioBitrateSelect').disabled = !enabled;
+    document.getElementById('audioVolumeSelect').disabled = !enabled;
+  }
+
+  function saveState() {
+    const state = {
+      lang: currentLang,
+      quality: document.getElementById('qualitySelect').value,
+      resolution: document.getElementById('resolutionSelect').value,
+      audioBitrate: document.getElementById('audioBitrateSelect').value,
+      audioVolume: document.getElementById('audioVolumeSelect').value,
+      includeAudio: document.getElementById('includeAudioToggle').checked,
+      fileInfo: selectedFile ? {
+        name: selectedFile.name,
+        size: selectedFile.size,
+        type: selectedFile.type
+      } : null
+    };
+    localStorage.setItem(STATE_KEY, JSON.stringify(state));
+  }
+
+  function loadState() {
+    const saved = localStorage.getItem(STATE_KEY);
+    if (!saved) return;
+    try {
+      const state = JSON.parse(saved);
+      if (state.lang) {
+        currentLang = state.lang;
+        document.querySelectorAll('.lang-btn').forEach(btn => {
+          btn.classList.toggle('active', btn.dataset.lang === currentLang);
+        });
+      }
+      if (state.quality) document.getElementById('qualitySelect').value = state.quality;
+      if (state.resolution) document.getElementById('resolutionSelect').value = state.resolution;
+      if (state.audioBitrate) document.getElementById('audioBitrateSelect').value = state.audioBitrate;
+      if (state.audioVolume) document.getElementById('audioVolumeSelect').value = state.audioVolume;
+      if (typeof state.includeAudio === 'boolean') {
+        document.getElementById('includeAudioToggle').checked = state.includeAudio;
+      }
+      if (state.fileInfo) {
+        document.getElementById('fileName').textContent = state.fileInfo.name;
+        document.getElementById('fileSize').textContent = formatSize(state.fileInfo.size);
+        document.getElementById('fileType').textContent = state.fileInfo.type || 'video/webm';
+        document.getElementById('fileInfo').classList.add('show');
+      }
+    } catch(e) { console.error(e); }
+  }
+
+  function showToast(msg, type = '') {
+    const toast = document.getElementById('toast');
+    toast.textContent = msg;
+    toast.className = 'toast show ' + type;
+    setTimeout(() => toast.classList.remove('show'), 4000);
+  }
+
+  function formatSize(bytes) {
+    if (bytes < 1024) return bytes + ' B';
+    if (bytes < 1048576) return (bytes/1024).toFixed(2) + ' KB';
+    if (bytes < 1073741824) return (bytes/1048576).toFixed(2) + ' MB';
+    return (bytes/1073741824).toFixed(2) + ' GB';
+  }
+
+  document.querySelectorAll('.lang-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.lang-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      currentLang = btn.dataset.lang;
+      applyTranslations();
+      refreshDuration();
+      saveState();
+    });
+  });
+
+  const dropZone = document.getElementById('dropZone');
+  const fileInput = document.getElementById('fileInput');
+
+  dropZone.addEventListener('click', () => fileInput.click());
+  dropZone.addEventListener('dragover', e => {
+    e.preventDefault();
+    dropZone.classList.add('dragover');
+  });
+  dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
+  dropZone.addEventListener('drop', e => {
+    e.preventDefault();
+    dropZone.classList.remove('dragover');
+    if (e.dataTransfer.files.length) handleFile(e.dataTransfer.files[0]);
+  });
+
+  fileInput.addEventListener('change', e => {
+    if (e.target.files.length) handleFile(e.target.files[0]);
+  });
+
+  async function getAccurateDuration(file) {
+    return new Promise((resolve) => {
+      const url = URL.createObjectURL(file);
+      const v = document.createElement('video');
+      v.preload = 'metadata';
+      v.muted = true;
+      v.src = url;
+
+      let resolved = false;
+      const done = (duration) => {
+        if (resolved) return;
+        resolved = true;
+        URL.revokeObjectURL(url);
+        resolve(duration);
+      };
+
+      v.onloadedmetadata = () => {
+        if (v.duration === Infinity || isNaN(v.duration) || v.duration === 0) {
+          v.currentTime = Number.MAX_SAFE_INTEGER;
+          v.ontimeupdate = () => {
+            if (v.duration !== Infinity && !isNaN(v.duration) && v.duration > 0) {
+              v.ontimeupdate = null;
+              done(v.duration);
+            }
+          };
+          setTimeout(() => {
+            if (!resolved) {
+              if (v.duration !== Infinity && !isNaN(v.duration) && v.duration > 0) {
+                done(v.duration);
+              } else {
+                done(0);
+              }
+            }
+          }, 5000);
+        } else {
+          done(v.duration);
+        }
+      };
+      v.onerror = () => done(0);
+      setTimeout(() => done(0), 10000);
+    });
+  }
+
+  async function detectAudioTrack(file) {
+    return new Promise((resolve) => {
+      const url = URL.createObjectURL(file);
+      const v = document.createElement('video');
+      v.preload = 'metadata';
+      v.muted = true;
+      v.src = url;
+
+      let resolved = false;
+      const done = (result) => {
+        if (resolved) return;
+        resolved = true;
+        URL.revokeObjectURL(url);
+        resolve(result);
+      };
+
+      v.onloadedmetadata = () => {
+        if (typeof v.mozHasAudio === 'boolean') {
+          return done(v.mozHasAudio);
+        }
+        if (typeof v.webkitAudioDecodedByteCount === 'number') {
+          v.play().then(() => {
+            setTimeout(() => {
+              const hasAudio = v.webkitAudioDecodedByteCount > 0;
+              try { v.pause(); } catch(e) {}
+              done(hasAudio);
+            }, 300);
+          }).catch(() => {
+            if (v.audioTracks && v.audioTracks.length !== undefined) {
+              return done(v.audioTracks.length > 0);
+            }
+            done(true);
+          });
+          return;
+        }
+        if (v.audioTracks && v.audioTracks.length !== undefined) {
+          return done(v.audioTracks.length > 0);
+        }
+        done(true);
+      };
+
+      v.onerror = () => done(false);
+      setTimeout(() => done(true), 3000);
+    });
+  }
+
+  async function handleFile(file) {
+    const isWEBM = file.name.toLowerCase().endsWith('.webm') ||
+                   file.type === 'video/webm' ||
+                   file.type.startsWith('video/');
+    if (!isWEBM) {
+      showToast(t('toastInvalidType'), 'error');
+      return;
+    }
+    selectedFile = file;
+    detectedHasAudio = null;
+    detectedDuration = null;
+    document.getElementById('fileName').textContent = file.name;
+    document.getElementById('fileSize').textContent = formatSize(file.size);
+    document.getElementById('fileType').textContent = file.type || 'video/webm';
+    document.getElementById('fileInfo').classList.add('show');
+    document.getElementById('convertBtn').disabled = false;
+
+    const toggle = document.getElementById('includeAudioToggle');
+    toggle.disabled = false;
+    refreshAudioStatus();
+    refreshDuration();
+    updateAudioToggleHint();
+
+    showToast(t('toastLoaded'), 'success');
+    saveState();
+
+    detectAudioTrack(file).then(hasAudio => {
+      detectedHasAudio = hasAudio;
+      refreshAudioStatus();
+      updateAudioToggleHint();
+    });
+
+    getAccurateDuration(file).then(dur => {
+      detectedDuration = dur;
+      refreshDuration();
+    });
+  }
+
+  ['qualitySelect','resolutionSelect','audioBitrateSelect','audioVolumeSelect'].forEach(id => {
+    document.getElementById(id).addEventListener('change', saveState);
+  });
+
+  document.getElementById('includeAudioToggle').addEventListener('change', () => {
+    refreshAudioOptionsState();
+    saveState();
+  });
+
+  function updateProgress(percent, status) {
+    document.getElementById('progressFill').style.width = percent + '%';
+    document.getElementById('progressPercent').textContent = percent + '%';
+    if (status) document.getElementById('progressStatus').textContent = status;
+  }
+
+  function addLog(msg) {
+    const log = document.getElementById('logArea');
+    const time = new Date().toLocaleTimeString();
+    log.innerHTML += `[${time}] ${msg}<br>`;
+    log.scrollTop = log.scrollHeight;
+  }
+
+  /**
+   * STRATEGY CHANGE:
+   * Browsers' MediaRecorder MP4 output (when supported) has the SAME duration
+   * metadata problem as their WEBM output — duration is unknown when the moov
+   * is written. Since reliable MP4 remuxing in pure JS is hard, the new approach:
+   *
+   *   1. Always record to WEBM (most compatible MediaRecorder output)
+   *   2. Patch the WEBM Duration element in-place (we control this format)
+   *   3. Remux WEBM → MP4 container if the user wanted MP4
+   *
+   * For container remuxing WEBM->MP4 we'd need a full muxer. Instead, the
+   * pragmatic solution is to RECORD AS WEBM (since fixing WEBM is reliable)
+   * and let the user know. The OUTPUT will be a proper WEBM with correct
+   * duration. Most players treat .webm and .mp4 (H.264) similarly.
+   *
+   * HOWEVER, since you specifically want MP4 file extension, and Chrome
+   * supports recording MP4 directly with H.264, we keep MP4 recording when
+   * available but ALSO write a proper duration patch for it.
+   *
+   * For MP4: we patch the mvhd and tkhd duration boxes.
+   */
+
+  function pickBestMime(includeAudio) {
+    // Prefer MP4 first
+    const candidates = includeAudio ? [
+      { mime: 'video/mp4;codecs=avc1.42E01E,mp4a.40.2', ext: 'mp4'  },
+      { mime: 'video/mp4;codecs=h264,aac',              ext: 'mp4'  },
+      { mime: 'video/mp4;codecs=avc1.42001E',           ext: 'mp4'  },
+      { mime: 'video/mp4',                              ext: 'mp4'  },
+      { mime: 'video/webm;codecs=h264,opus',            ext: 'webm' },
+      { mime: 'video/webm;codecs=vp9,opus',             ext: 'webm' },
+      { mime: 'video/webm;codecs=vp8,opus',             ext: 'webm' },
+      { mime: 'video/webm',                             ext: 'webm' }
+    ] : [
+      { mime: 'video/mp4;codecs=avc1.42E01E', ext: 'mp4'  },
+      { mime: 'video/mp4;codecs=h264',        ext: 'mp4'  },
+      { mime: 'video/mp4',                    ext: 'mp4'  },
+      { mime: 'video/webm;codecs=h264',       ext: 'webm' },
+      { mime: 'video/webm;codecs=vp9',        ext: 'webm' },
+      { mime: 'video/webm;codecs=vp8',        ext: 'webm' },
+      { mime: 'video/webm',                   ext: 'webm' }
+    ];
+    for (const c of candidates) {
+      if (MediaRecorder.isTypeSupported(c.mime)) return c;
+    }
+    return null;
+  }
+
+  function getBitrate(quality, width, height) {
+    const pixels = width * height;
+    const base = pixels * 0.1;
+    const map = { high: 3.0, medium: 1.8, low: 0.9 };
+    return Math.max(800_000, Math.round(base * (map[quality] || 1.8)));
+  }
+
+  // ============================================================
+  // WEBM DURATION FIXER
+  // ============================================================
+  async function fixWebmDuration(blob, durationSeconds) {
+    try {
+      const buffer = await blob.arrayBuffer();
+      const data = new Uint8Array(buffer);
+
+      const SEGMENT_ID = [0x18, 0x53, 0x80, 0x67];
+      const INFO_ID = [0x15, 0x49, 0xA9, 0x66];
+      const DURATION_ID = [0x44, 0x89];
+      const TIMECODE_SCALE_ID = [0x2A, 0xD7, 0xB1];
+
+      function findBytes(arr, pattern, startFrom = 0, endAt = -1) {
+        const end = endAt === -1 ? arr.length - pattern.length : Math.min(endAt, arr.length - pattern.length);
+        outer: for (let i = startFrom; i <= end; i++) {
+          for (let j = 0; j < pattern.length; j++) {
+            if (arr[i + j] !== pattern[j]) continue outer;
+          }
+          return i;
+        }
+        return -1;
+      }
+
+      function readVint(arr, pos) {
+        const first = arr[pos];
+        let length = 0;
+        for (let i = 0; i < 8; i++) {
+          if (first & (0x80 >> i)) { length = i + 1; break; }
+        }
+        if (length === 0) return null;
+        let value = first & (0xFF >> length);
+        for (let i = 1; i < length; i++) {
+          value = (value * 256) + arr[pos + i];
+        }
+        return { value, length };
+      }
+
+      function encodeVint(value) {
+        let bytesNeeded = 1;
+        while (value >= Math.pow(2, 7 * bytesNeeded) - 1 && bytesNeeded < 8) {
+          bytesNeeded++;
+        }
+        const result = new Uint8Array(bytesNeeded);
+        const marker = 0x80 >> (bytesNeeded - 1);
+        let v = value;
+        for (let i = bytesNeeded - 1; i >= 0; i--) {
+          result[i] = v & 0xFF;
+          v = Math.floor(v / 256);
+        }
+        result[0] |= marker;
+        return result;
+      }
+
+      const segmentPos = findBytes(data, SEGMENT_ID);
+      if (segmentPos === -1) { addLog('⚠ No Segment found'); return blob; }
+
+      const infoPos = findBytes(data, INFO_ID, segmentPos);
+      if (infoPos === -1) { addLog('⚠ No Info found'); return blob; }
+
+      const infoSizeStart = infoPos + INFO_ID.length;
+      const infoSize = readVint(data, infoSizeStart);
+      if (!infoSize) { addLog('⚠ Cannot read Info size'); return blob; }
+
+      const infoContentStart = infoSizeStart + infoSize.length;
+      const infoContentEnd = infoContentStart + infoSize.value;
+
+      let timecodeScale = 1000000;
+      const tsPos = findBytes(data, TIMECODE_SCALE_ID, infoContentStart, infoContentEnd);
+      if (tsPos !== -1) {
+        const tsSizeInfo = readVint(data, tsPos + TIMECODE_SCALE_ID.length);
+        if (tsSizeInfo) {
+          let ts = 0;
+          const tsValueStart = tsPos + TIMECODE_SCALE_ID.length + tsSizeInfo.length;
+          for (let i = 0; i < tsSizeInfo.value; i++) {
+            ts = ts * 256 + data[tsValueStart + i];
+          }
+          if (ts > 0) timecodeScale = ts;
+        }
+      }
+
+      const durationValue = (durationSeconds * 1e9) / timecodeScale;
+
+      // Duration element: ID(2) + Size(1=0x88) + Float64(8) = 11 bytes
+      const newDurationBytes = new Uint8Array(11);
+      newDurationBytes[0] = 0x44;
+      newDurationBytes[1] = 0x89;
+      newDurationBytes[2] = 0x88;
+      const floatView = new DataView(newDurationBytes.buffer);
+      floatView.setFloat64(3, durationValue, false);
+
+      let durationPos = findBytes(data, DURATION_ID, infoContentStart, infoContentEnd);
+
+      if (durationPos !== -1) {
+        const oldSizeInfo = readVint(data, durationPos + DURATION_ID.length);
+        if (oldSizeInfo) {
+          const oldTotalLen = DURATION_ID.length + oldSizeInfo.length + oldSizeInfo.value;
+          if (oldTotalLen === newDurationBytes.length) {
+            const result = new Uint8Array(data.length);
+            result.set(data);
+            result.set(newDurationBytes, durationPos);
+            addLog(`✓ WEBM duration replaced in-place: ${durationSeconds.toFixed(2)}s`);
+            return new Blob([result], { type: blob.type });
+          }
+        }
+      }
+
+      // Inject new Duration: rebuild Info element
+      const oldInfoContent = data.slice(infoContentStart, infoContentEnd);
+      const newInfoContent = new Uint8Array(oldInfoContent.length + newDurationBytes.length);
+      newInfoContent.set(oldInfoContent, 0);
+      newInfoContent.set(newDurationBytes, oldInfoContent.length);
+
+      const newInfoSize = encodeVint(newInfoContent.length);
+      const oldInfoTotalLen = INFO_ID.length + infoSize.length + infoSize.value;
+      const newInfoTotalLen = INFO_ID.length + newInfoSize.length + newInfoContent.length;
+      const sizeDiff = newInfoTotalLen - oldInfoTotalLen;
+
+      const segmentSizeStart = segmentPos + SEGMENT_ID.length;
+      const segmentSizeInfo = readVint(data, segmentSizeStart);
+      const isUnknownSize = !segmentSizeInfo ||
+        (segmentSizeInfo.value === Math.pow(2, 7 * segmentSizeInfo.length) - 1);
+
+      let newSegmentBytes;
+      if (segmentSizeInfo && !isUnknownSize) {
+        const newSegmentSizeValue = segmentSizeInfo.value + sizeDiff;
+        const newSegmentSizeVint = encodeVint(newSegmentSizeValue);
+        newSegmentBytes = new Uint8Array(SEGMENT_ID.length + newSegmentSizeVint.length);
+        newSegmentBytes.set(SEGMENT_ID, 0);
+        newSegmentBytes.set(newSegmentSizeVint, SEGMENT_ID.length);
+      } else {
+        const segHeadLen = SEGMENT_ID.length + (segmentSizeInfo ? segmentSizeInfo.length : 1);
+        newSegmentBytes = data.slice(segmentPos, segmentPos + segHeadLen);
+      }
+
+      const segmentHeadEnd = segmentSizeStart + (segmentSizeInfo ? segmentSizeInfo.length : 1);
+      const beforeSegment = data.slice(0, segmentPos);
+      const betweenSegAndInfo = data.slice(segmentHeadEnd, infoPos);
+      const afterInfo = data.slice(infoContentEnd);
+
+      const newInfoBytes = new Uint8Array(INFO_ID.length + newInfoSize.length + newInfoContent.length);
+      newInfoBytes.set(INFO_ID, 0);
+      newInfoBytes.set(newInfoSize, INFO_ID.length);
+      newInfoBytes.set(newInfoContent, INFO_ID.length + newInfoSize.length);
+
+      const totalSize = beforeSegment.length + newSegmentBytes.length +
+                        betweenSegAndInfo.length + newInfoBytes.length + afterInfo.length;
+      const result = new Uint8Array(totalSize);
+      let offset = 0;
+      result.set(beforeSegment, offset); offset += beforeSegment.length;
+      result.set(newSegmentBytes, offset); offset += newSegmentBytes.length;
+      result.set(betweenSegAndInfo, offset); offset += betweenSegAndInfo.length;
+      result.set(newInfoBytes, offset); offset += newInfoBytes.length;
+      result.set(afterInfo, offset);
+
+      addLog(`✓ WEBM remuxed: duration ${durationSeconds.toFixed(2)}s`);
+      return new Blob([result], { type: blob.type });
+    } catch (e) {
+      addLog('⚠ WEBM remux error: ' + e.message);
+      return blob;
+    }
+  }
+
+  // ============================================================
+  // MP4 DURATION FIXER
+  // ============================================================
+  // MP4 (ISO BMFF) uses nested "boxes". Each box has:
+  //   [4 bytes size][4 bytes type ASCII][payload...]
+  // If size == 1, then next 8 bytes are extended size.
+  // If size == 0, box extends to EOF.
+  //
+  // We need to update:
+  //   - moov > mvhd : movie-level duration
+  //   - moov > trak > tkhd : track-level duration (for each track)
+  //   - moov > trak > mdia > mdhd : media-level duration
+  //
+  // Duration units:
+  //   - mvhd: in movie timescale (also stored in mvhd)
+  //   - tkhd: in movie timescale (mvhd timescale)
+  //   - mdhd: in media timescale (stored in mdhd itself)
+  //
+  // mvhd v0 layout (after box header):
+  //   1  version
+  //   3  flags
+  //   4  creation_time         (v0) / 8 (v1)
+  //   4  modification_time     (v0) / 8 (v1)
+  //   4  timescale
+  //   4  duration              (v0) / 8 (v1)
+  //   ...
+  //
+  // tkhd v0 layout:
+  //   1  version
+  //   3  flags
+  //   4  creation_time         (v0) / 8 (v1)
+  //   4  modification_time     (v0) / 8 (v1)
+  //   4  track_id
+  //   4  reserved
+  //   4  duration              (v0) / 8 (v1)
+  //   ...
+  //
+  // mdhd v0 layout:
+  //   1  version
+  //   3  flags
+  //   4  creation_time         (v0) / 8 (v1)
+  //   4  modification_time     (v0) / 8 (v1)
+  //   4  timescale
+  //   4  duration              (v0) / 8 (v1)
+  //   ...
+
+  async function fixMp4Duration(blob, durationSeconds) {
+    try {
+      const buffer = await blob.arrayBuffer();
+      const data = new Uint8Array(buffer);
+      const view = new DataView(buffer);
+
+      function readUint32(offset) { return view.getUint32(offset, false); }
+      function readUint64(offset) {
+        // JS doesn't have 64-bit ints natively, but durations fit in 53-bit safely
+        const high = view.getUint32(offset, false);
+        const low = view.getUint32(offset + 4, false);
+        return high * 0x100000000 + low;
+      }
+      function writeUint32(offset, value) { view.setUint32(offset, value >>> 0, false); }
+      function writeUint64(offset, value) {
+        const high = Math.floor(value / 0x100000000);
+        const low = value >>> 0;
+        view.setUint32(offset, high, false);
+        view.setUint32(offset + 4, low, false);
+      }
+      function readType(offset) {
+        return String.fromCharCode(data[offset], data[offset+1], data[offset+2], data[offset+3]);
+      }
+
+      // Walk top-level boxes to find 'moov'
+      function findBox(targetType, startOffset, endOffset) {
+        let pos = startOffset;
+        while (pos < endOffset - 8) {
+          let size = readUint32(pos);
+          const type = readType(pos + 4);
+          let headerLen = 8;
+          if (size === 1) {
+            size = readUint64(pos + 8);
+            headerLen = 16;
+          } else if (size === 0) {
+            size = endOffset - pos;
+          }
+          if (size < 8) return null;
+          if (type === targetType) {
+            return { offset: pos, size, headerLen, contentStart: pos + headerLen, contentEnd: pos + size };
+          }
+          pos += size;
+        }
+        return null;
+      }
+
+      function findAllBoxes(targetType, startOffset, endOffset) {
+        const found = [];
+        let pos = startOffset;
+        while (pos < endOffset - 8) {
+          let size = readUint32(pos);
+          const type = readType(pos + 4);
+          let headerLen = 8;
+          if (size === 1) {
+            size = readUint64(pos + 8);
+            headerLen = 16;
+          } else if (size === 0) {
+            size = endOffset - pos;
+          }
+          if (size < 8) break;
+          if (type === targetType) {
+            found.push({ offset: pos, size, headerLen, contentStart: pos + headerLen, contentEnd: pos + size });
+          }
+          pos += size;
+        }
+        return found;
+      }
+
+      const moov = findBox('moov', 0, data.length);
+      if (!moov) { addLog('⚠ MP4: no moov box found'); return blob; }
+      addLog(`MP4 moov at offset ${moov.offset}, size ${moov.size}`);
+
+      // Find mvhd inside moov
+      const mvhd = findBox('mvhd', moov.contentStart, moov.contentEnd);
+      if (!mvhd) { addLog('⚠ MP4: no mvhd found'); return blob; }
+
+      const mvhdContentStart = mvhd.contentStart;
+      const version = data[mvhdContentStart];
+      addLog(`mvhd version: ${version}`);
+
+      // Read movie timescale
+      let movieTimescale;
+      let mvhdDurationOffset;
+      if (version === 1) {
+        // version(1) + flags(3) + creation(8) + modification(8) + timescale(4) + duration(8)
+        movieTimescale = readUint32(mvhdContentStart + 4 + 8 + 8);
+        mvhdDurationOffset = mvhdContentStart + 4 + 8 + 8 + 4;
+      } else {
+        // version(1) + flags(3) + creation(4) + modification(4) + timescale(4) + duration(4)
+        movieTimescale = readUint32(mvhdContentStart + 4 + 4 + 4);
+        mvhdDurationOffset = mvhdContentStart + 4 + 4 + 4 + 4;
+      }
+      addLog(`Movie timescale: ${movieTimescale}`);
+
+      const oldMvhdDuration = version === 1
+        ? readUint64(mvhdDurationOffset)
+        : readUint32(mvhdDurationOffset);
+      addLog(`Old mvhd duration: ${oldMvhdDuration} units (${(oldMvhdDuration/movieTimescale).toFixed(2)}s)`);
+
+      const newMvhdDuration = Math.round(durationSeconds * movieTimescale);
+
+      // Write new movie duration
+      if (version === 1) {
+        writeUint64(mvhdDurationOffset, newMvhdDuration);
+      } else {
+        // Check for overflow on 32-bit
+        if (newMvhdDuration > 0xFFFFFFFF) {
+          addLog('⚠ Duration exceeds uint32, cannot patch v0 mvhd');
+        } else {
+          writeUint32(mvhdDurationOffset, newMvhdDuration);
+        }
+      }
+      addLog(`✓ mvhd duration → ${newMvhdDuration} units (${durationSeconds.toFixed(2)}s)`);
+
+      // Now patch each trak's tkhd and mdia/mdhd
+      const traks = findAllBoxes('trak', moov.contentStart, moov.contentEnd);
+      addLog(`Found ${traks.length} trak boxes`);
+
+      for (const trak of traks) {
+        // tkhd
+        const tkhd = findBox('tkhd', trak.contentStart, trak.contentEnd);
+        if (tkhd) {
+          const tkhdContentStart = tkhd.contentStart;
+          const tkhdVersion = data[tkhdContentStart];
+          let tkhdDurationOffset;
+          if (tkhdVersion === 1) {
+            // v1: version(1)+flags(3)+creation(8)+modification(8)+track_id(4)+reserved(4)+duration(8)
+            tkhdDurationOffset = tkhdContentStart + 4 + 8 + 8 + 4 + 4;
+            writeUint64(tkhdDurationOffset, newMvhdDuration);
+          } else {
+            // v0: version(1)+flags(3)+creation(4)+modification(4)+track_id(4)+reserved(4)+duration(4)
+            tkhdDurationOffset = tkhdContentStart + 4 + 4 + 4 + 4 + 4;
+            if (newMvhdDuration <= 0xFFFFFFFF) {
+              writeUint32(tkhdDurationOffset, newMvhdDuration);
+            }
+          }
+          addLog(`  ✓ tkhd v${tkhdVersion} patched`);
+        }
+
+        // mdia > mdhd
+        const mdia = findBox('mdia', trak.contentStart, trak.contentEnd);
+        if (mdia) {
+          const mdhd = findBox('mdhd', mdia.contentStart, mdia.contentEnd);
+          if (mdhd) {
+            const mdhdContentStart = mdhd.contentStart;
+            const mdhdVersion = data[mdhdContentStart];
+            let mediaTimescale;
+            let mdhdDurationOffset;
+            if (mdhdVersion === 1) {
+              mediaTimescale = readUint32(mdhdContentStart + 4 + 8 + 8);
+              mdhdDurationOffset = mdhdContentStart + 4 + 8 + 8 + 4;
+              const newMediaDuration = Math.round(durationSeconds * mediaTimescale);
+              writeUint64(mdhdDurationOffset, newMediaDuration);
+              addLog(`  ✓ mdhd v1 patched (ts=${mediaTimescale}, dur=${newMediaDuration})`);
+            } else {
+              mediaTimescale = readUint32(mdhdContentStart + 4 + 4 + 4);
+              mdhdDurationOffset = mdhdContentStart + 4 + 4 + 4 + 4;
+              const newMediaDuration = Math.round(durationSeconds * mediaTimescale);
+              if (newMediaDuration <= 0xFFFFFFFF) {
+                writeUint32(mdhdDurationOffset, newMediaDuration);
+                addLog(`  ✓ mdhd v0 patched (ts=${mediaTimescale}, dur=${newMediaDuration})`);
+              }
+            }
+          }
+        }
+      }
+
+      // Return a new Blob built from the modified buffer
+      return new Blob([data], { type: blob.type });
+    } catch (e) {
+      addLog('⚠ MP4 patch error: ' + e.message);
+      return blob;
+    }
+  }
+
+  async function convertVideo(file, options) {
+    const { quality, resolution, audioBitrate, audioVolume, includeAudio, knownDuration } = options;
+
+    updateProgress(2, t('preparing'));
+    addLog(t('preparing'));
+    addLog('Audio: ' + (includeAudio ? 'INCLUDED' : 'DISABLED'));
+
+    const videoURL = URL.createObjectURL(file);
+    const video = document.createElement('video');
+    video.src = videoURL;
+    video.crossOrigin = 'anonymous';
+    video.playsInline = true;
+    video.preload = 'auto';
+
+    if (!includeAudio) {
+      video.muted = true;
+    }
+
+    await new Promise((resolve, reject) => {
+      const onReady = () => {
+        video.removeEventListener('loadeddata', onReady);
+        video.removeEventListener('error', onErr);
+        resolve();
+      };
+      const onErr = () => {
+        video.removeEventListener('loadeddata', onReady);
+        video.removeEventListener('error', onErr);
+        reject(new Error(t('errVideoLoad')));
+      };
+      video.addEventListener('loadeddata', onReady);
+      video.addEventListener('error', onErr);
+      setTimeout(() => reject(new Error('Video load timeout')), 30000);
+    });
+
+    let realDuration = video.duration;
+    if (!isFinite(realDuration) || realDuration === 0) {
+      if (knownDuration && knownDuration > 0) {
+        realDuration = knownDuration;
+        addLog(`Using pre-measured duration: ${realDuration.toFixed(2)}s`);
+      } else {
+        addLog('Measuring duration on separate element...');
+        realDuration = await getAccurateDuration(file);
+        addLog(`Measured: ${realDuration.toFixed(2)}s`);
+      }
+    }
+
+    if (video.currentTime !== 0) {
+      await new Promise(resolve => {
+        const onSeeked = () => { video.removeEventListener('seeked', onSeeked); resolve(); };
+        video.addEventListener('seeked', onSeeked);
+        try { video.currentTime = 0; } catch(e) { resolve(); }
+        setTimeout(resolve, 500);
+      });
+    }
+
+    if ('requestVideoFrameCallback' in HTMLVideoElement.prototype) {
+      await new Promise(resolve => {
+        let resolved = false;
+        const done = () => { if (!resolved) { resolved = true; resolve(); } };
+        video.requestVideoFrameCallback(done);
+        setTimeout(done, 500);
+      });
+    } else {
+      await new Promise(r => setTimeout(r, 100));
+    }
+
+    addLog(`Video: ${video.videoWidth}x${video.videoHeight}, ${realDuration.toFixed(2)}s`);
+
+    if (!video.videoWidth || !video.videoHeight) {
+      throw new Error('Video has no visual track or is corrupted');
+    }
+    if (!realDuration || realDuration <= 0) {
+      throw new Error('Cannot determine video duration');
+    }
+
+    let outW = video.videoWidth;
+    let outH = video.videoHeight;
+    if (resolution !== 'original') {
+      const targetH = parseInt(resolution);
+      if (targetH < video.videoHeight) {
+        const ratio = video.videoWidth / video.videoHeight;
+        outH = targetH;
+        outW = Math.round(targetH * ratio);
+      }
+    }
+    outW = outW % 2 === 0 ? outW : outW + 1;
+    outH = outH % 2 === 0 ? outH : outH + 1;
+    addLog(`Output: ${outW}x${outH}`);
+
+    const canvas = document.getElementById('previewCanvas');
+    canvas.width = outW;
+    canvas.height = outH;
+    const ctx = canvas.getContext('2d', { alpha: false, desynchronized: true });
+    ctx.fillStyle = '#000';
+    ctx.fillRect(0, 0, outW, outH);
+
+    ctx.drawImage(video, 0, 0, outW, outH);
+    document.getElementById('previewWrap').style.display = 'flex';
+
+    const picked = pickBestMime(includeAudio);
+    if (!picked) throw new Error('MediaRecorder not supported');
+    convertedExt = picked.ext;
+    addLog('Output format: ' + picked.mime);
+    if (picked.ext !== 'mp4') showToast(t('errNoMP4'), 'error');
+
+    let audioCtx = null;
+    let audioDest = null;
+    let analyser = null;
+    let gainNode = null;
+    let hasAudio = false;
+    let audioMeterRAF = null;
+
+    if (includeAudio) {
+      try {
+        const AudioCtx = window.AudioContext || window.webkitAudioContext;
+        audioCtx = new AudioCtx();
+
+        const audioSource = audioCtx.createMediaElementSource(video);
+
+        gainNode = audioCtx.createGain();
+        gainNode.gain.value = parseFloat(audioVolume) || 1.0;
+
+        audioDest = audioCtx.createMediaStreamDestination();
+
+        analyser = audioCtx.createAnalyser();
+        analyser.fftSize = 256;
+
+        audioSource.connect(gainNode);
+        gainNode.connect(audioDest);
+        gainNode.connect(analyser);
+
+        const audioTracks = audioDest.stream.getAudioTracks();
+        hasAudio = audioTracks.length > 0;
+        addLog(`Audio pipeline: ${hasAudio ? 'OK' : 'no tracks'} | Volume: ${(gainNode.gain.value * 100).toFixed(0)}%`);
+
+        if (hasAudio) {
+          const meterEl = document.getElementById('audioMeter');
+          const meterFill = document.getElementById('audioMeterFill');
+          meterEl.classList.add('show');
+
+          const bufferLength = analyser.frequencyBinCount;
+          const dataArray = new Uint8Array(bufferLength);
+
+          const updateMeter = () => {
+            analyser.getByteFrequencyData(dataArray);
+            let sum = 0;
+            for (let i = 0; i < bufferLength; i++) sum += dataArray[i];
+            const avg = sum / bufferLength;
+            const pct = Math.min(100, (avg / 128) * 100);
+            meterFill.style.width = pct + '%';
+            audioMeterRAF = requestAnimationFrame(updateMeter);
+          };
+          updateMeter();
+        }
+      } catch (e) {
+        addLog('Audio pipeline failed: ' + e.message);
+        hasAudio = false;
+      }
+    } else {
+      addLog('Audio pipeline: SKIPPED (user disabled)');
+    }
+
+    const canvasStream = canvas.captureStream(0);
+    const videoTrack = canvasStream.getVideoTracks()[0];
+
+    const tracks = [videoTrack];
+    if (includeAudio && hasAudio && audioDest) {
+      audioDest.stream.getAudioTracks().forEach(tr => tracks.push(tr));
+    }
+    const combinedStream = new MediaStream(tracks);
+    const audioTrackCount = combinedStream.getAudioTracks().length;
+    addLog(`Stream: video=1, audio=${audioTrackCount}`);
+
+    const videoBps = getBitrate(quality, outW, outH);
+    addLog(`Video bitrate: ${(videoBps/1e6).toFixed(2)} Mbps`);
+
+    const recorderOpts = {
+      mimeType: picked.mime,
+      videoBitsPerSecond: videoBps
+    };
+    if (audioTrackCount > 0) {
+      recorderOpts.audioBitsPerSecond = parseInt(audioBitrate) || 128_000;
+      addLog(`Audio bitrate: ${(recorderOpts.audioBitsPerSecond/1000).toFixed(0)} kbps`);
+    }
+
+    const recorder = new MediaRecorder(combinedStream, recorderOpts);
+
+    const chunks = [];
+    recorder.ondataavailable = e => {
+      if (e.data && e.data.size > 0) chunks.push(e.data);
+    };
+
+    const recordingDone = new Promise((resolve, reject) => {
+      recorder.onstop = () => resolve();
+      recorder.onerror = e => reject(e.error || new Error('Recording error'));
+    });
+
+    let frameCount = 0;
+    let stopFrameLoop = false;
+    const useRVFC = 'requestVideoFrameCallback' in HTMLVideoElement.prototype;
+
+    function drawFrame() {
+      if (video.videoWidth && video.videoHeight) {
+        ctx.drawImage(video, 0, 0, outW, outH);
+        if (videoTrack.requestFrame) {
+          try { videoTrack.requestFrame(); } catch(e) {}
+        }
+        frameCount++;
+      }
+    }
+
+    function rvfcLoop() {
+      if (stopFrameLoop) return;
+      video.requestVideoFrameCallback(() => {
+        drawFrame();
+        rvfcLoop();
+      });
+    }
+
+    let rafId = null;
+    function rafLoop() {
+      if (stopFrameLoop) return;
+      drawFrame();
+      rafId = requestAnimationFrame(rafLoop);
+    }
+
+    updateProgress(8, t('decoding'));
+    addLog(t('decoding') + ' (' + (useRVFC ? 'rVFC' : 'rAF') + ')');
+
+    if (audioCtx && audioCtx.state === 'suspended') {
+      try {
+        await audioCtx.resume();
+        addLog('AudioContext resumed');
+      } catch(e) {
+        addLog('AudioContext resume failed: ' + e.message);
+      }
+    }
+
+    if (videoTrack.requestFrame) {
+      try { videoTrack.requestFrame(); } catch(e) {}
+    }
+
+    const startTime = performance.now();
+    recorder.start(100);
+
+    try {
+      await video.play();
+    } catch (e) {
+      throw new Error('Cannot start playback: ' + e.message);
+    }
+
+    if (useRVFC) rvfcLoop();
+    else rafId = requestAnimationFrame(rafLoop);
+
+    const progressInterval = setInterval(() => {
+      if (realDuration && isFinite(realDuration)) {
+        const pct = Math.min(92, 10 + Math.round((video.currentTime / realDuration) * 82));
+        updateProgress(pct, t('encoding'));
+      }
+    }, 200);
+
+    await new Promise((resolve) => {
+      let done = false;
+      const finish = () => { if (!done) { done = true; resolve(); } };
+
+      const onEnded = () => {
+        video.removeEventListener('ended', onEnded);
+        addLog('Video ended event fired');
+        finish();
+      };
+      video.addEventListener('ended', onEnded);
+
+      const endChecker = setInterval(() => {
+        if (done) { clearInterval(endChecker); return; }
+        if (video.currentTime >= realDuration - 0.05 || video.ended) {
+          clearInterval(endChecker);
+          addLog(`End reached at ${video.currentTime.toFixed(2)}s / ${realDuration.toFixed(2)}s`);
+          finish();
+        }
+      }, 100);
+
+      setTimeout(() => {
+        clearInterval(endChecker);
+        if (!done) {
+          addLog('Safety timeout reached');
+          finish();
+        }
+      }, (realDuration + 30) * 1000);
+    });
+
+    const elapsedSec = (performance.now() - startTime) / 1000;
+    addLog(`Recording elapsed: ${elapsedSec.toFixed(2)}s`);
+
+    for (let i = 0; i < 3; i++) {
+      drawFrame();
+      await new Promise(r => setTimeout(r, 33));
+    }
+
+    clearInterval(progressInterval);
+    stopFrameLoop = true;
+    if (rafId) cancelAnimationFrame(rafId);
+    if (audioMeterRAF) cancelAnimationFrame(audioMeterRAF);
+    document.getElementById('audioMeter').classList.remove('show');
+
+    addLog(`Frames drawn: ${frameCount}`);
+
+    await new Promise(r => setTimeout(r, 250));
+
+    updateProgress(94, t('finalizing'));
+    addLog(t('finalizing'));
+
+    if (recorder.state !== 'inactive') recorder.stop();
+    await recordingDone;
+
+    try { video.pause(); } catch(e) {}
+    URL.revokeObjectURL(videoURL);
+    canvasStream.getTracks().forEach(tr => tr.stop());
+    if (audioCtx && audioCtx.state !== 'closed') {
+      try { await audioCtx.close(); } catch(e) {}
+    }
+
+    const rawBlob = new Blob(chunks, { type: picked.mime });
+    addLog('Output size: ' + formatSize(rawBlob.size));
+
+    if (rawBlob.size < 1000) {
+      throw new Error('Output is empty or invalid');
+    }
+
+    // Use the actual recording elapsed time as the most reliable duration
+    const actualDuration = Math.max(elapsedSec, realDuration);
+
+    updateProgress(97, t('remuxing'));
+
+    let finalBlob;
+    if (picked.mime.includes('mp4')) {
+      addLog('Patching MP4 duration boxes (mvhd, tkhd, mdhd)...');
+      finalBlob = await fixMp4Duration(rawBlob, actualDuration);
+    } else {
+      addLog('Patching WEBM Duration element...');
+      finalBlob = await fixWebmDuration(rawBlob, actualDuration);
+    }
+
+    addLog(`✓ Final duration: ${actualDuration.toFixed(2)}s`);
+
+    // Verify the patched duration by loading the blob
+    const verifyDur = await verifyBlobDuration(finalBlob);
+    addLog(`✓ Verified duration: ${verifyDur.toFixed(2)}s`);
+
+    return finalBlob;
+  }
+
+  async function verifyBlobDuration(blob) {
+    return new Promise((resolve) => {
+      const url = URL.createObjectURL(blob);
+      const v = document.createElement('video');
+      v.preload = 'metadata';
+      v.muted = true;
+      v.src = url;
+      const cleanup = (d) => { URL.revokeObjectURL(url); resolve(d); };
+      v.onloadedmetadata = () => {
+        if (isFinite(v.duration) && v.duration > 0) {
+          cleanup(v.duration);
+        } else {
+          cleanup(0);
+        }
+      };
+      v.onerror = () => cleanup(0);
+      setTimeout(() => cleanup(0), 3000);
+    });
+  }
+
+  document.getElementById('convertBtn').addEventListener('click', async () => {
+    if (!selectedFile) {
+      showToast(t('toastSelectFile'), 'error');
+      return;
+    }
+
+    document.getElementById('settingsCard').style.display = 'none';
+    document.getElementById('progressSection').classList.add('show');
+    document.getElementById('downloadSection').classList.remove('show');
+    document.getElementById('logArea').innerHTML = '';
+    document.getElementById('previewWrap').style.display = 'none';
+
+    try {
+      updateProgress(0, t('preparing'));
+
+      const quality = document.getElementById('qualitySelect').value;
+      const resolution = document.getElementById('resolutionSelect').value;
+      const audioBitrate = document.getElementById('audioBitrateSelect').value;
+      const audioVolume = document.getElementById('audioVolumeSelect').value;
+      const audioToggle = document.getElementById('includeAudioToggle');
+      const includeAudio = audioToggle.checked && !audioToggle.disabled;
+
+      let knownDuration = detectedDuration;
+      if (!knownDuration || knownDuration <= 0) {
+        addLog('Measuring duration before conversion...');
+        knownDuration = await getAccurateDuration(selectedFile);
+        detectedDuration = knownDuration;
+        refreshDuration();
+      }
+
+      convertedBlob = await convertVideo(selectedFile, {
+        quality, resolution, audioBitrate, audioVolume, includeAudio,
+        knownDuration
+      });
+
+      updateProgress(100, '✓');
+
+      const url = URL.createObjectURL(convertedBlob);
+      const downloadBtn = document.getElementById('downloadBtn');
+      downloadBtn.href = url;
+      const baseName = selectedFile.name.replace(/\.webm$/i, '');
+      downloadBtn.download = baseName + '.' + convertedExt;
+      downloadBtn.textContent = (convertedExt === 'mp4' ? t('downloadBtn') : '⬇ Download .' + convertedExt.toUpperCase());
+
+      setTimeout(() => {
+        document.getElementById('progressSection').classList.remove('show');
+        document.getElementById('downloadSection').classList.add('show');
+        showToast(t('toastSuccess'), 'success');
+      }, 600);
+
+    } catch (err) {
+      console.error(err);
+      const errMsg = err.message || String(err);
+      addLog('❌ Error: ' + errMsg);
+      showToast(t('toastError') + ': ' + errMsg, 'error');
+      document.getElementById('settingsCard').style.display = 'flex';
+    }
+  });
+
+  document.getElementById('resetBtn').addEventListener('click', () => {
+    selectedFile = null;
+    convertedBlob = null;
+    detectedHasAudio = null;
+    detectedDuration = null;
+    fileInput.value = '';
+    document.getElementById('fileInfo').classList.remove('show');
+    document.getElementById('downloadSection').classList.remove('show');
+    document.getElementById('settingsCard').style.display = 'flex';
+    document.getElementById('convertBtn').disabled = true;
+    document.getElementById('downloadBtn').textContent = t('downloadBtn');
+    const toggle = document.getElementById('includeAudioToggle');
+    toggle.checked = true;
+    toggle.disabled = false;
+    refreshAudioStatus();
+    refreshDuration();
+    updateAudioToggleHint();
+    localStorage.removeItem(STATE_KEY);
+  });
+
+  loadState();
+  applyTranslations();
+  refreshAudioOptionsState();
+</script>
+</body>
+</html>
