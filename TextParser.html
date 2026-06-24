@@ -1128,6 +1128,7 @@
         function isTimeRangeLine(line) { return /ПРИКРИТТЯ/i.test(line); }
         function extractFullTimeRange(line) { const m = line.match(/(\d{2}:\d{2})\s*[-–]\s*(\d{2}:\d{2})/); return m ? m[1]+'-'+m[2] : null; }
 
+        /*
         function extractFreqFromParens(line) {
             const parenMatch = line.match(/[\(（]([^)）]+)[\)）]/g);
             if (!parenMatch || parenMatch.length === 0) return '';
@@ -1143,6 +1144,30 @@
                 if (freqParts.length > 0) return freqParts[0];
             }
             const numMatch = content.match(/(\d+[-–]?\d*)/);
+            return numMatch ? numMatch[0] : '';
+        }
+        */
+        function extractFreqFromParens(line) {
+            const parenMatches = line.match(/[\(（][^)）]+[\)）]/g);
+            if (!parenMatches || parenMatches.length === 0) return '';
+        
+            const content = parenMatches[parenMatches.length - 1].slice(1, -1);
+        
+            // Split by dots, find frequency parts (skip prefix like "АЗ340" and suffixes like "-101ДБМ")
+            const parts = content.split('.');
+            const freqParts = [];
+            for (let i = 1; i < parts.length; i++) {
+                const part = parts[i].trim();
+                // Skip parts containing ДБМ (signal strength) or empty parts
+                if (!part || /ДБМ/i.test(part)) continue;
+                // Match number or range: "4000" or "360-460"
+                const m = part.match(/^\d+(?:-\d+)?$/);
+                if (m) freqParts.push(m[0]);
+            }
+            if (freqParts.length > 0) return freqParts.join('.');
+        
+            // Fallback: any number (with optional range)
+            const numMatch = content.match(/\d+[-–]?\d*/);
             return numMatch ? numMatch[0] : '';
         }
 
@@ -2050,7 +2075,11 @@
                 'ЗЕМЛЯНИЙ ЯР':        ['БІЛИЙ КОЛОДЯЗЬ', 'БІЛИЙ КОЛОДЯЗЬ', 'ЮРЧЕНКОВЕ'],
                 'ВОЛОХІВКА':          ['БІЛИЙ КОЛОДЯЗЬ', 'БІЛИЙ КОЛОДЯЗЬ', 'ВОЛОХІВСЬКЕ'],
                 'КАРАЇЧНЕ':           ['БІЛИЙ КОЛОДЯЗЬ', 'БІЛИЙ КОЛОДЯЗЬ', 'ВОЛОХІВСЬКЕ'],
-                'БОЧКОВЕ':            ['БІЛИЙ КОЛОДЯЗЬ', 'ВОЛОХІВКА']
+                'БОЧКОВЕ':            ['БІЛИЙ КОЛОДЯЗЬ', 'ВОЛОХІВКА'],
+                'ВІЛЬЧА':             ['ЗЕМЛЯНИЙ ЯР', 'БІЛИЙ КОЛОДЯЗЬ'],
+                'ОХРІМІВКА':          ['ВОЛОХІВСЬКЕ', 'БІЛИЙ КОЛОДЯЗЬ'],
+                'ВОЛОХІВСЬКЕ':        ['ЮРЧЕНКОВЕ', 'БІЛИЙ КОЛОДЯЗЬ', 'БІЛИЙ КОЛОДЯЗЬ'],
+                'ЗАХАРІВКА':          ['ІВАНІВКА','ВОЛОХІВСЬКЕ','ОХРИМІВКА']
             };
 
             const key = location.toUpperCase().trim();
