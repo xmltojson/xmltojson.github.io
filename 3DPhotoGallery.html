@@ -1,0 +1,818 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>3D Фотогалерея</title>
+<style>
+  * {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  :root {
+    --bg-1: #0f0c29;
+    --bg-2: #302b63;
+    --bg-3: #24243e;
+    --accent: #00d4ff;
+    --accent2: #ff00aa;
+    --card-w: 240px;
+    --card-h: 320px;
+  }
+
+  html, body { height: 100%; }
+
+  body {
+    font-family: 'Segoe UI', Tahoma, sans-serif;
+    background: linear-gradient(135deg, var(--bg-1), var(--bg-2), var(--bg-3));
+    background-size: 400% 400%;
+    animation: bgShift 20s ease infinite;
+    min-height: 100vh;
+    min-height: 100dvh;
+    color: #fff;
+    overflow-x: hidden;
+    display: flex;
+    flex-direction: column;
+    padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+  }
+
+  @keyframes bgShift {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+  }
+
+  header {
+    text-align: center;
+    padding: clamp(10px, 3vw, 20px);
+    position: relative;
+    z-index: 10;
+  }
+
+  h1 {
+    font-size: clamp(1.3rem, 6vw, 2.2rem);
+    background: linear-gradient(90deg, var(--accent), var(--accent2));
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    text-shadow: 0 0 30px rgba(0, 212, 255, 0.3);
+    letter-spacing: 1px;
+  }
+
+  .subtitle {
+    color: rgba(255,255,255,0.6);
+    margin-top: 6px;
+    font-size: clamp(0.7rem, 3vw, 0.9rem);
+    padding: 0 10px;
+  }
+
+  .controls-top {
+    display: flex;
+    justify-content: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    padding: 0 10px 10px;
+  }
+
+  .btn {
+    background: rgba(255,255,255,0.08);
+    border: 1px solid rgba(255,255,255,0.2);
+    color: #fff;
+    padding: 9px 14px;
+    border-radius: 24px;
+    cursor: pointer;
+    font-size: clamp(0.75rem, 3vw, 0.85rem);
+    transition: all 0.3s;
+    backdrop-filter: blur(10px);
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    min-height: 40px;
+    white-space: nowrap;
+  }
+
+  .btn:hover {
+    background: rgba(0,212,255,0.2);
+    border-color: var(--accent);
+  }
+
+  @media (hover: hover) {
+    .btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 5px 20px rgba(0,212,255,0.3);
+    }
+  }
+
+  .btn:active { transform: scale(0.96); }
+
+  .btn.active {
+    background: linear-gradient(90deg, var(--accent), var(--accent2));
+    border-color: transparent;
+  }
+
+  /* Source selector */
+  .source-bar {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    padding: 0 10px 10px;
+  }
+
+  .source-bar label {
+    font-size: clamp(0.75rem, 3vw, 0.85rem);
+    color: rgba(255,255,255,0.7);
+    width: 100%;
+    text-align: center;
+  }
+
+  select {
+    background: rgba(255,255,255,0.08);
+    border: 1px solid rgba(255,255,255,0.2);
+    color: #fff;
+    padding: 9px 12px;
+    border-radius: 20px;
+    cursor: pointer;
+    font-size: clamp(0.75rem, 3vw, 0.85rem);
+    backdrop-filter: blur(10px);
+    min-height: 40px;
+    max-width: 60vw;
+  }
+
+  select option { background: #24243e; }
+
+  .status {
+    font-size: clamp(0.68rem, 2.6vw, 0.78rem);
+    color: rgba(0,212,255,0.8);
+    min-height: 16px;
+    text-align: center;
+    padding: 0 12px;
+    line-height: 1.4;
+  }
+
+  /* Scene */
+  .scene {
+    flex: 1;
+    perspective: 1400px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 340px;
+    position: relative;
+    touch-action: pan-y;
+    overflow: hidden;
+  }
+
+  .carousel {
+    position: relative;
+    width: var(--card-w);
+    height: var(--card-h);
+    transform-style: preserve-3d;
+    transition: transform 1s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .card {
+    position: absolute;
+    width: var(--card-w);
+    height: var(--card-h);
+    left: 0;
+    top: 0;
+    border-radius: 14px;
+    overflow: hidden;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.6);
+    transition: box-shadow 0.4s, opacity 0.6s, transform 1s cubic-bezier(0.4,0,0.2,1);
+    cursor: pointer;
+    backface-visibility: hidden;
+    background: rgba(255,255,255,0.05);
+  }
+
+  .card img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+
+  .card::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border: 2px solid rgba(255,255,255,0.15);
+    border-radius: 14px;
+    pointer-events: none;
+  }
+
+  .card .caption {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: linear-gradient(transparent, rgba(0,0,0,0.8));
+    padding: 26px 10px 10px;
+    font-size: clamp(0.75rem, 3vw, 0.9rem);
+  }
+
+  .reflection {
+    position: absolute;
+    width: var(--card-w);
+    height: var(--card-h);
+    left: 0;
+    top: 100%;
+    margin-top: 8px;
+    border-radius: 14px;
+    overflow: hidden;
+    transform: scaleY(-1);
+    opacity: 0.35;
+    -webkit-mask-image: linear-gradient(to bottom, rgba(0,0,0,0.7), transparent 60%);
+    mask-image: linear-gradient(to bottom, rgba(0,0,0,0.7), transparent 60%);
+    pointer-events: none;
+    transition: transform 1s cubic-bezier(0.4,0,0.2,1), opacity 0.6s;
+  }
+
+  .reflection img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .controls-bottom {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: clamp(12px, 4vw, 20px);
+    padding: clamp(12px, 3vw, 20px) 10px;
+    z-index: 10;
+    flex-wrap: wrap;
+  }
+
+  .nav-btn {
+    width: clamp(48px, 13vw, 56px);
+    height: clamp(48px, 13vw, 56px);
+    border-radius: 50%;
+    border: none;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    color: #fff;
+    font-size: clamp(1.3rem, 5vw, 1.5rem);
+    cursor: pointer;
+    transition: all 0.3s;
+    box-shadow: 0 5px 20px rgba(0,212,255,0.4);
+    flex-shrink: 0;
+  }
+
+  @media (hover: hover) {
+    .nav-btn:hover {
+      transform: scale(1.1);
+      box-shadow: 0 8px 30px rgba(255,0,170,0.5);
+    }
+  }
+
+  .nav-btn:active { transform: scale(0.92); }
+
+  .counter {
+    font-size: clamp(0.85rem, 3.5vw, 1rem);
+    min-width: 60px;
+    text-align: center;
+    color: rgba(255,255,255,0.8);
+  }
+
+  footer {
+    text-align: center;
+    padding: 12px 10px;
+    color: rgba(255,255,255,0.4);
+    font-size: clamp(0.68rem, 2.6vw, 0.8rem);
+    line-height: 1.4;
+  }
+
+  /* Modal */
+  .modal {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.94);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 100;
+    flex-direction: column;
+    gap: 14px;
+    padding: 20px 10px;
+  }
+
+  .modal.open { display: flex; }
+
+  .modal img {
+    max-width: 94%;
+    max-height: 72vh;
+    border-radius: 12px;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.8);
+  }
+
+  .modal-close {
+    position: absolute;
+    top: max(16px, env(safe-area-inset-top));
+    right: 16px;
+    font-size: 1.8rem;
+    cursor: pointer;
+    color: #fff;
+    background: rgba(255,255,255,0.12);
+    border-radius: 50%;
+    width: 46px;
+    height: 46px;
+    line-height: 46px;
+    text-align: center;
+  }
+
+  #modalCaption {
+    font-size: clamp(0.85rem, 3.5vw, 1rem);
+  }
+
+  /* Spinner */
+  .spinner {
+    width: 56px;
+    height: 56px;
+    border: 5px solid rgba(255,255,255,0.15);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin 0.9s linear infinite;
+    position: absolute;
+    z-index: 5;
+  }
+
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .hidden { display: none !important; }
+
+  /* ===== Small phones (portrait) ===== */
+  @media (max-width: 480px) {
+    :root { --card-w: 170px; --card-h: 230px; }
+    .scene { min-height: 300px; }
+    .subtitle { display: none; }
+  }
+
+  @media (max-width: 360px) {
+    :root { --card-w: 145px; --card-h: 195px; }
+    .controls-top .btn span:not(#langLabel) { display: none; }
+  }
+
+  /* ===== Landscape on short screens ===== */
+  @media (max-height: 500px) and (orientation: landscape) {
+    :root { --card-w: 150px; --card-h: 200px; }
+    header { padding: 6px; }
+    h1 { font-size: 1.1rem; }
+    .subtitle { display: none; }
+    .scene { min-height: 200px; }
+    .controls-top, .source-bar { padding-bottom: 5px; }
+    footer { display: none; }
+    .controls-bottom { padding: 8px; }
+  }
+</style>
+</head>
+<body>
+  <header>
+    <h1 data-i18n="title">3D Фотогалерея</h1>
+    <div class="subtitle" data-i18n="subtitle">Обертова карусель з 3D-ефектами та відображенням</div>
+  </header>
+
+  <div class="controls-top">
+    <button class="btn" id="orientBtn">🔄 <span data-i18n="orientation">Орієнтація</span></button>
+    <button class="btn" id="langBtn">🌐 <span id="langLabel">EN</span></button>
+    <button class="btn" id="reflectBtn">✨ <span data-i18n="reflection">Відображення</span></button>
+  </div>
+
+  <div class="source-bar">
+    <label data-i18n="source">Джерело фото:</label>
+    <select id="sourceSelect">
+      <option value="picsum" data-i18n-opt="srcPicsum">Lorem Picsum</option>
+      <option value="robohash" data-i18n-opt="srcRobo">Природа (Picsum HD)</option>
+    </select>
+    <button class="btn" id="refreshBtn">⬇ <span data-i18n="refresh">Оновити фото</span></button>
+  </div>
+
+  <div class="status" id="status"></div>
+
+  <div class="scene" id="scene">
+    <div class="spinner hidden" id="spinner"></div>
+    <div class="carousel" id="carousel"></div>
+  </div>
+
+  <div class="controls-bottom">
+    <button class="nav-btn" id="prevBtn">‹</button>
+    <span class="counter" id="counter">1 / 8</span>
+    <button class="nav-btn" id="nextBtn">›</button>
+    <button class="btn" id="autoBtn">▶ <span data-i18n="auto">Авто</span></button>
+  </div>
+
+  <footer data-i18n="footer">Клацніть на фото для перегляду • Нові фото завантажуються раз на день</footer>
+
+  <div class="modal" id="modal">
+    <span class="modal-close" id="modalClose">×</span>
+    <img id="modalImg" src="" alt="">
+    <div id="modalCaption"></div>
+  </div>
+
+<script>
+  // ===== Translations =====
+  const i18n = {
+    uk: {
+      title: "3D Фотогалерея",
+      subtitle: "Обертова карусель з 3D-ефектами та відображенням",
+      orientation: "Орієнтація",
+      reflection: "Відображення",
+      auto: "Авто",
+      source: "Джерело фото:",
+      refresh: "Оновити фото",
+      srcPicsum: "Lorem Picsum",
+      srcRobo: "Природа (Picsum HD)",
+      footer: "Клацніть на фото • Гортайте свайпом • Нові фото раз на день",
+      loading: "Завантаження нових фото...",
+      loaded: "Оновлено: ",
+      nextUpdate: "Наступне оновлення: завтра",
+      photo: "Фото",
+      lang: "EN"
+    },
+    en: {
+      title: "3D Photo Gallery",
+      subtitle: "Rotating carousel with 3D effects and reflection",
+      orientation: "Orientation",
+      reflection: "Reflection",
+      auto: "Auto",
+      source: "Photo source:",
+      refresh: "Refresh photos",
+      srcPicsum: "Lorem Picsum",
+      srcRobo: "Nature (Picsum HD)",
+      footer: "Tap a photo • Swipe to browse • New photos daily",
+      loading: "Loading new photos...",
+      loaded: "Updated: ",
+      nextUpdate: "Next update: tomorrow",
+      photo: "Photo",
+      lang: "UA"
+    }
+  };
+
+  const PHOTO_COUNT = 8;
+
+  // ===== Photo sources (keyless) =====
+  const SOURCES = {
+    picsum: {
+      thumb: (seed) => `https://picsum.photos/seed/${seed}/400/520`,
+      full:  (seed) => `https://picsum.photos/seed/${seed}/900/1100`
+    },
+    robohash: {
+      thumb: (seed) => `https://picsum.photos/seed/nat${seed}/400/520?grayscale=0`,
+      full:  (seed) => `https://picsum.photos/seed/nat${seed}/1000/1200?grayscale=0`
+    }
+  };
+
+  // ===== State =====
+  const defaultState = {
+    lang: 'uk',
+    orientation: 'horizontal',
+    reflection: true,
+    current: 0,
+    auto: false,
+    source: 'picsum',
+    photos: [],
+    lastUpdate: 0
+  };
+
+  let state = loadState();
+
+  function loadState() {
+    try {
+      const s = JSON.parse(localStorage.getItem('gallery3d'));
+      return s ? { ...defaultState, ...s } : { ...defaultState };
+    } catch { return { ...defaultState }; }
+  }
+
+  function saveState() {
+    localStorage.setItem('gallery3d', JSON.stringify(state));
+  }
+
+  // ===== DOM =====
+  const carousel = document.getElementById('carousel');
+  const scene = document.getElementById('scene');
+  const counter = document.getElementById('counter');
+  const langLabel = document.getElementById('langLabel');
+  const sourceSelect = document.getElementById('sourceSelect');
+  const statusEl = document.getElementById('status');
+  const spinner = document.getElementById('spinner');
+
+  let cards = [];
+
+  // ===== Responsive radius calculation =====
+  // Radius adapts to the actual card width so cards never overflow on small screens.
+  function getRadius() {
+    const cardW = parseFloat(getComputedStyle(document.documentElement)
+      .getPropertyValue('--card-w')) || 240;
+    const isVert = state.orientation === 'vertical';
+    const cardH = parseFloat(getComputedStyle(document.documentElement)
+      .getPropertyValue('--card-h')) || 320;
+
+    // base radius proportional to card dimension
+    const base = isVert ? cardH : cardW;
+    // factor keeps neighbours visible but not overlapping
+    let radius = base * 1.7;
+
+    // clamp so the whole ring fits the viewport
+    const vw = window.innerWidth;
+    const maxByWidth = vw * 0.75;
+    if (!isVert && radius > maxByWidth) radius = maxByWidth;
+
+    return Math.max(radius, base * 1.2);
+  }
+
+  // ===== Seed generation =====
+  function generateSeeds() {
+    const seeds = [];
+    const base = Date.now();
+    for (let i = 0; i < PHOTO_COUNT; i++) {
+      seeds.push(`${base}-${i}-${Math.floor(Math.random() * 100000)}`);
+    }
+    return seeds;
+  }
+
+  function thumbUrl(seed) { return SOURCES[state.source].thumb(seed); }
+  function fullUrl(seed) { return SOURCES[state.source].full(seed); }
+
+  // ===== Load / refresh =====
+  function refreshPhotos(showSpinner = true) {
+    if (showSpinner) {
+      spinner.classList.remove('hidden');
+      carousel.style.opacity = '0.3';
+    }
+    setStatus(i18n[state.lang].loading);
+
+    state.photos = generateSeeds();
+    state.lastUpdate = Date.now();
+    state.current = 0;
+    saveState();
+
+    buildCarousel();
+
+    const firstImgs = Array.from(carousel.querySelectorAll('.card img')).slice(0, 3);
+    let loaded = 0;
+    const done = () => {
+      loaded++;
+      if (loaded >= firstImgs.length) {
+        spinner.classList.add('hidden');
+        carousel.style.opacity = '1';
+        showLoadedStatus();
+      }
+    };
+    if (firstImgs.length === 0) { spinner.classList.add('hidden'); carousel.style.opacity='1'; }
+    firstImgs.forEach(img => {
+      if (img.complete) done();
+      else { img.onload = done; img.onerror = done; }
+    });
+    setTimeout(() => {
+      spinner.classList.add('hidden');
+      carousel.style.opacity = '1';
+    }, 4000);
+  }
+
+  function showLoadedStatus() {
+    const d = new Date(state.lastUpdate);
+    const loc = state.lang === 'uk' ? 'uk-UA' : 'en-US';
+    const dateStr = d.toLocaleDateString(loc) + ' ' +
+      d.toLocaleTimeString(loc, {hour:'2-digit',minute:'2-digit'});
+    setStatus(i18n[state.lang].loaded + dateStr + ' • ' + i18n[state.lang].nextUpdate);
+  }
+
+  function setStatus(text) { statusEl.textContent = text; }
+
+  // ===== Daily check =====
+  function isNewDay() {
+    if (!state.lastUpdate) return true;
+    const last = new Date(state.lastUpdate);
+    const now = new Date();
+    return last.getFullYear() !== now.getFullYear() ||
+           last.getMonth() !== now.getMonth() ||
+           last.getDate() !== now.getDate();
+  }
+
+  let dailyTimer = null;
+  function scheduleDailyCheck() {
+    clearInterval(dailyTimer);
+    dailyTimer = setInterval(() => {
+      if (isNewDay()) refreshPhotos(true);
+    }, 30 * 60 * 1000);
+  }
+
+  // ===== Build cards =====
+  function buildCarousel() {
+    carousel.innerHTML = '';
+    cards = [];
+    state.photos.forEach((seed, i) => {
+      const card = document.createElement('div');
+      card.className = 'card';
+      card.innerHTML = `
+        <img src="${thumbUrl(seed)}" alt="" loading="lazy">
+        <div class="caption"></div>`;
+      card.addEventListener('click', () => {
+        if (i === state.current) openModal(i);
+        else { state.current = i; update(); }
+      });
+
+      const reflection = document.createElement('div');
+      reflection.className = 'reflection';
+      reflection.innerHTML = `<img src="${thumbUrl(seed)}" alt="">`;
+
+      carousel.appendChild(card);
+      carousel.appendChild(reflection);
+      cards.push({ card, reflection });
+    });
+    update();
+  }
+
+  // ===== Position in 3D =====
+  function update() {
+    if (cards.length === 0) return;
+    const N = cards.length;
+    const isVert = state.orientation === 'vertical';
+    const radius = getRadius();
+    const angleStep = 360 / N;
+
+    // hide reflection on very short landscape screens to save room
+    const shortLandscape = window.innerHeight < 480 && window.innerWidth > window.innerHeight;
+
+    cards.forEach((c, i) => {
+      let offset = i - state.current;
+      if (offset > N/2) offset -= N;
+      if (offset < -N/2) offset += N;
+
+      const angle = offset * angleStep;
+      const dist = Math.abs(offset);
+      const opacity = dist > 3 ? 0 : 1 - dist * 0.18;
+
+      const transform = isVert
+        ? `rotateX(${-angle}deg) translateZ(${radius}px)`
+        : `rotateY(${angle}deg) translateZ(${radius}px)`;
+
+      c.card.style.transform = transform;
+      c.card.style.opacity = opacity;
+      c.card.style.zIndex = Math.round(100 - dist);
+      c.card.style.boxShadow = offset === 0
+        ? '0 10px 50px rgba(0,212,255,0.5)'
+        : '0 10px 40px rgba(0,0,0,0.6)';
+
+      c.reflection.style.transform = transform + ' scaleY(-1)';
+      c.reflection.style.opacity = (state.reflection && !shortLandscape) ? opacity * 0.35 : 0;
+      c.reflection.style.zIndex = Math.round(50 - dist);
+
+      c.card.querySelector('.caption').textContent = `${i18n[state.lang].photo} ${i + 1}`;
+    });
+
+    counter.textContent = `${state.current + 1} / ${N}`;
+    scene.classList.toggle('vertical', isVert);
+    saveState();
+  }
+
+  // ===== Navigation =====
+  function next() { state.current = (state.current + 1) % cards.length; update(); }
+  function prev() { state.current = (state.current - 1 + cards.length) % cards.length; update(); }
+
+  document.getElementById('nextBtn').addEventListener('click', next);
+  document.getElementById('prevBtn').addEventListener('click', prev);
+
+  document.addEventListener('keydown', e => {
+    if (e.key === 'ArrowRight' || e.key === 'ArrowDown') next();
+    if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') prev();
+    if (e.key === 'Escape') closeModal();
+  });
+
+  // ===== Orientation toggle =====
+  document.getElementById('orientBtn').addEventListener('click', () => {
+    state.orientation = state.orientation === 'horizontal' ? 'vertical' : 'horizontal';
+    update();
+  });
+
+  // ===== Reflection =====
+  const reflectBtn = document.getElementById('reflectBtn');
+  reflectBtn.addEventListener('click', () => {
+    state.reflection = !state.reflection;
+    reflectBtn.classList.toggle('active', state.reflection);
+    update();
+  });
+
+  // ===== Source =====
+  sourceSelect.addEventListener('change', () => {
+    state.source = sourceSelect.value;
+    saveState();
+    refreshPhotos(true);
+  });
+
+  document.getElementById('refreshBtn').addEventListener('click', () => refreshPhotos(true));
+
+  // ===== Language =====
+  document.getElementById('langBtn').addEventListener('click', () => {
+    state.lang = state.lang === 'uk' ? 'en' : 'uk';
+    applyLang();
+    update();
+    if (state.lastUpdate) showLoadedStatus();
+  });
+
+  function applyLang() {
+    const t = i18n[state.lang];
+    document.documentElement.lang = state.lang;
+    document.querySelectorAll('[data-i18n]').forEach(el => {
+      const key = el.getAttribute('data-i18n');
+      if (t[key]) el.textContent = t[key];
+    });
+    sourceSelect.querySelectorAll('option').forEach(opt => {
+      const key = opt.getAttribute('data-i18n-opt');
+      if (t[key]) opt.textContent = t[key];
+    });
+    langLabel.textContent = t.lang;
+    saveState();
+  }
+
+  // ===== Auto-rotate =====
+  let autoTimer = null;
+  const autoBtn = document.getElementById('autoBtn');
+  function setAuto(on) {
+    state.auto = on;
+    autoBtn.classList.toggle('active', on);
+    autoBtn.querySelector('span').previousSibling.textContent = on ? '⏸ ' : '▶ ';
+    clearInterval(autoTimer);
+    if (on) autoTimer = setInterval(next, 2500);
+    saveState();
+  }
+  autoBtn.addEventListener('click', () => setAuto(!state.auto));
+
+  // ===== Modal =====
+  const modal = document.getElementById('modal');
+  const modalImg = document.getElementById('modalImg');
+  const modalCaption = document.getElementById('modalCaption');
+
+  function openModal(i) {
+    modalImg.src = fullUrl(state.photos[i]);
+    modalCaption.textContent = `${i18n[state.lang].photo} ${i + 1}`;
+    modal.classList.add('open');
+  }
+  function closeModal() { modal.classList.remove('open'); }
+  document.getElementById('modalClose').addEventListener('click', closeModal);
+  modal.addEventListener('click', e => { if (e.target === modal) closeModal(); });
+
+  // ===== Touch / swipe (improved for mobile) =====
+  let touchStartX = 0, touchStartY = 0, touchMoved = false;
+  scene.addEventListener('touchstart', e => {
+    touchStartX = e.touches[0].clientX;
+    touchStartY = e.touches[0].clientY;
+    touchMoved = false;
+  }, { passive: true });
+
+  scene.addEventListener('touchmove', e => {
+    const dx = Math.abs(e.touches[0].clientX - touchStartX);
+    const dy = Math.abs(e.touches[0].clientY - touchStartY);
+    if (dx > 10 || dy > 10) touchMoved = true;
+  }, { passive: true });
+
+  scene.addEventListener('touchend', e => {
+    if (!touchMoved) return;
+    const dx = e.changedTouches[0].clientX - touchStartX;
+    const dy = e.changedTouches[0].clientY - touchStartY;
+    const isVert = state.orientation === 'vertical';
+
+    if (isVert) {
+      if (Math.abs(dy) > 40 && Math.abs(dy) > Math.abs(dx)) {
+        dy > 0 ? prev() : next();
+      }
+    } else {
+      if (Math.abs(dx) > 40 && Math.abs(dx) > Math.abs(dy)) {
+        dx > 0 ? prev() : next();
+      }
+    }
+  }, { passive: true });
+
+  // ===== Recalculate layout on resize / orientation change =====
+  let resizeTimer = null;
+  function onResize() {
+    clearTimeout(resizeTimer);
+    resizeTimer = setTimeout(() => update(), 150);
+  }
+  window.addEventListener('resize', onResize);
+  window.addEventListener('orientationchange', () => setTimeout(update, 300));
+
+  // ===== Init =====
+  function init() {
+    applyLang();
+    reflectBtn.classList.toggle('active', state.reflection);
+    sourceSelect.value = state.source;
+
+    if (!state.photos || state.photos.length === 0 || isNewDay()) {
+      refreshPhotos(true);
+    } else {
+      buildCarousel();
+      showLoadedStatus();
+    }
+
+    setAuto(state.auto);
+    scheduleDailyCheck();
+  }
+
+  init();
+</script>
+</body>
+</html>
