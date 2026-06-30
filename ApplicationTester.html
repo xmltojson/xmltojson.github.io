@@ -1,0 +1,605 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Application Tester</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  :root {
+    --bg: #0f1419; --panel: #1a2332; --panel2: #232f42;
+    --accent: #4a9eff; --accent2: #7c5cff; --success: #2ecc71;
+    --error: #e74c3c; --warn: #f39c12; --text: #e0e6ed;
+    --muted: #7a8699; --border: #2a3a52;
+  }
+  body { font-family:'Segoe UI',system-ui,sans-serif; background:var(--bg); color:var(--text); height:100vh; overflow:hidden; }
+  .app { display:flex; flex-direction:column; height:100vh; }
+  header {
+    background:linear-gradient(135deg,var(--panel),var(--panel2)); padding:12px 20px;
+    display:flex; align-items:center; gap:16px; border-bottom:2px solid var(--accent);
+    box-shadow:0 4px 20px rgba(0,0,0,0.4); flex-wrap:wrap;
+  }
+  .logo { font-size:20px; font-weight:700; background:linear-gradient(135deg,var(--accent),var(--accent2));
+    -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent;
+    display:flex; align-items:center; gap:8px; }
+  .logo-icon { width:32px; height:32px; background:linear-gradient(135deg,var(--accent),var(--accent2));
+    border-radius:8px; display:flex; align-items:center; justify-content:center; font-size:18px; -webkit-text-fill-color:white; }
+  .toolbar { display:flex; gap:8px; flex-wrap:wrap; align-items:center; margin-left:auto; }
+  button { background:var(--panel2); color:var(--text); border:1px solid var(--border);
+    padding:8px 14px; border-radius:6px; cursor:pointer; font-size:13px; transition:all .2s;
+    display:inline-flex; align-items:center; gap:6px; }
+  button:hover { background:var(--border); transform:translateY(-1px); }
+  button.primary { background:linear-gradient(135deg,var(--accent),var(--accent2)); border:none; color:white; }
+  button.success { background:var(--success); border:none; color:white; }
+  button.danger { background:var(--error); border:none; color:white; }
+  button.small { padding:4px 8px; font-size:11px; }
+  .main { flex:1; display:flex; overflow:hidden; }
+  .main.vertical { flex-direction:column; }
+  .panel-left,.panel-mid,.panel-right { overflow-y:auto; padding:16px; }
+  .panel-left { flex:1; border-right:1px solid var(--border); min-width:280px; }
+  .panel-mid { flex:1.2; border-right:1px solid var(--border); }
+  .panel-right { flex:1; }
+  .main.vertical .panel-left,.main.vertical .panel-mid { border-right:none; border-bottom:1px solid var(--border); }
+  .section-title { font-size:14px; text-transform:uppercase; letter-spacing:1px; color:var(--muted);
+    margin-bottom:12px; display:flex; justify-content:space-between; align-items:center; }
+  .group { background:var(--panel); border:1px solid var(--border); border-radius:10px; margin-bottom:12px; overflow:hidden; }
+  .group-header { padding:12px 14px; display:flex; align-items:center; gap:10px; background:var(--panel2); cursor:pointer; }
+  .group-header input[type=checkbox],.step input[type=checkbox] { width:16px; height:16px; cursor:pointer; accent-color:var(--accent); }
+  .group-title { flex:1; font-weight:600; font-size:15px; }
+  .group-title[contenteditable]:focus { background:var(--bg); padding:2px 6px; border-radius:4px; outline:none; }
+  .badge { font-size:11px; padding:2px 8px; border-radius:10px; background:var(--border); }
+  .steps { padding:8px; }
+  .step { display:flex; align-items:center; gap:8px; padding:8px 10px; border-radius:6px;
+    margin-bottom:6px; background:var(--panel2); border-left:3px solid transparent; }
+  .step.pass { border-left-color:var(--success); }
+  .step.fail { border-left-color:var(--error); }
+  .step.running { border-left-color:var(--warn); animation:pulse 1s infinite; }
+  @keyframes pulse { 50%{opacity:.6;} }
+  .step-info { flex:1; min-width:0; }
+  .step-name { font-size:13px; font-weight:500; }
+  .step-name[contenteditable]:focus { outline:1px solid var(--accent); border-radius:4px; }
+  .step-code { font-size:11px; color:var(--muted); font-family:monospace; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .step-status { font-size:11px; padding:2px 8px; border-radius:10px; white-space:nowrap; }
+  .step-status.pass { background:rgba(46,204,113,.2); color:var(--success); }
+  .step-status.fail { background:rgba(231,76,60,.2); color:var(--error); }
+  .step-status.running { background:rgba(243,156,18,.2); color:var(--warn); }
+  .step-actions { display:flex; gap:4px; }
+  .icon-btn { background:none; border:none; padding:4px; color:var(--muted); cursor:pointer; font-size:14px; }
+  .icon-btn:hover { color:var(--text); transform:none; }
+  .results { background:var(--panel); border:1px solid var(--border); border-radius:10px; padding:14px;
+    font-family:'Consolas',monospace; font-size:12px; height:calc(100% - 100px); overflow-y:auto; }
+  .log-entry { padding:6px 10px; margin-bottom:4px; border-radius:4px; border-left:3px solid var(--border); word-break:break-word; }
+  .log-entry.pass { border-left-color:var(--success); background:rgba(46,204,113,.08); }
+  .log-entry.fail { border-left-color:var(--error); background:rgba(231,76,60,.08); }
+  .log-entry.info { border-left-color:var(--accent); }
+  .log-entry.group { border-left-color:var(--accent2); background:rgba(124,92,255,.08); font-weight:bold; }
+  .log-time { color:var(--muted); margin-right:8px; }
+  .stats { display:flex; gap:10px; margin-bottom:12px; }
+  .stat { flex:1; background:var(--panel); border:1px solid var(--border); border-radius:8px; padding:10px; text-align:center; }
+  .stat-num { font-size:24px; font-weight:700; }
+  .stat-label { font-size:11px; color:var(--muted); text-transform:uppercase; }
+  .stat.pass .stat-num { color:var(--success); }
+  .stat.fail .stat-num { color:var(--error); }
+  .stat.total .stat-num { color:var(--accent); }
+  .modal-bg { position:fixed; inset:0; background:rgba(0,0,0,.7); display:none; align-items:center; justify-content:center; z-index:100; }
+  .modal-bg.show { display:flex; }
+  .modal { background:var(--panel); border:1px solid var(--border); border-radius:12px; padding:24px;
+    width:90%; max-width:680px; max-height:90vh; overflow-y:auto; }
+  .modal h2 { margin-bottom:16px; }
+  .form-group { margin-bottom:14px; }
+  .form-group label { display:block; font-size:13px; margin-bottom:6px; color:var(--muted); }
+  input[type=text],textarea,select { width:100%; background:var(--bg); border:1px solid var(--border);
+    color:var(--text); padding:10px; border-radius:6px; font-size:13px; font-family:inherit; }
+  textarea { resize:vertical; min-height:120px; font-family:monospace; }
+  .modal-actions { display:flex; gap:10px; justify-content:flex-end; margin-top:16px; }
+  .hint { font-size:11px; color:var(--muted); margin-top:4px; }
+  .vars-list { margin-top:12px; }
+  .var-item { display:flex; gap:8px; margin-bottom:8px; align-items:center; }
+  .var-item input { flex:1; }
+  .empty { text-align:center; color:var(--muted); padding:40px; font-size:14px; }
+  select { width:auto; padding:6px 10px; }
+  .browser-bar { display:flex; gap:6px; margin-bottom:8px; }
+  .browser-bar input { flex:1; }
+  .browser-frame { width:100%; height:calc(100% - 130px); border:1px solid var(--border);
+    border-radius:8px; background:white; }
+  .mode-pill { font-size:11px; padding:3px 10px; border-radius:12px; }
+  .mode-pill.iframe { background:rgba(74,158,255,.2); color:var(--accent); }
+  .html-output { background:var(--bg); border:1px solid var(--border); border-radius:8px;
+    padding:10px; font-family:monospace; font-size:11px; max-height:200px; overflow:auto; white-space:pre-wrap; margin-top:8px; }
+  .snippet-btns { display:flex; flex-wrap:wrap; gap:6px; margin-bottom:8px; }
+  .snippet-btns button { font-size:11px; padding:4px 8px; }
+  /* File manager */
+  .file-list { margin-top:12px; }
+  .file-item { display:flex; align-items:center; gap:8px; padding:8px 10px; background:var(--panel2);
+    border-radius:6px; margin-bottom:6px; }
+  .file-icon { font-size:18px; }
+  .file-meta { flex:1; min-width:0; }
+  .file-name { font-size:13px; font-weight:500; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .file-size { font-size:11px; color:var(--muted); }
+  .dropzone { border:2px dashed var(--border); border-radius:10px; padding:24px; text-align:center;
+    color:var(--muted); cursor:pointer; transition:all .2s; margin-top:8px; }
+  .dropzone.drag { border-color:var(--accent); background:rgba(74,158,255,.08); color:var(--accent); }
+  ::-webkit-scrollbar { width:8px; height:8px; }
+  ::-webkit-scrollbar-track { background:var(--bg); }
+  ::-webkit-scrollbar-thumb { background:var(--border); border-radius:4px; }
+</style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <div class="logo"><span class="logo-icon">⚡</span> <span data-i18n="title">Тестер Додатків</span></div>
+    <div class="toolbar">
+      <span class="mode-pill iframe">🖼 Iframe</span>
+      <select id="langSel"><option value="uk">🇺🇦 Українська</option><option value="en">🇬🇧 English</option></select>
+      <button onclick="toggleOrientation()" id="orientBtn">⇆ <span data-i18n="orientation">Орієнтація</span></button>
+      <button onclick="openFilesModal()">📎 <span data-i18n="files">Файли</span></button>
+      <button onclick="openVarsModal()">🔧 <span data-i18n="variables">Змінні</span></button>
+      <button onclick="addGroup()">➕ <span data-i18n="addGroup">Група</span></button>
+      <button onclick="exportStories()">⬇ <span data-i18n="export">Експорт</span></button>
+      <button onclick="document.getElementById('importFile').click()">⬆ <span data-i18n="import">Імпорт</span></button>
+      <input type="file" id="importFile" accept=".json" style="display:none" onchange="importStories(event)">
+      <button class="success" onclick="runSelected()">▶ <span data-i18n="runSelected">Вибрані</span></button>
+      <button class="primary" onclick="runAll()">▶▶ <span data-i18n="runAll">Всі</span></button>
+    </div>
+  </header>
+  <div class="main" id="main">
+    <div class="panel-left">
+      <div class="section-title">
+        <span data-i18n="stories">Сценарії</span>
+        <button class="small" onclick="toggleAll(true)" data-i18n="selectAll">Вибрати все</button>
+      </div>
+      <div id="groupsContainer"></div>
+    </div>
+    <div class="panel-mid">
+      <div class="section-title"><span data-i18n="browser">Браузер</span><span class="mode-pill iframe">Iframe</span></div>
+      <div class="browser-bar">
+        <input type="text" id="browserUrl" placeholder="https://..." value="about:blank">
+        <button class="primary" onclick="navigateFrame()">→ <span data-i18n="go">Перейти</span></button>
+        <button onclick="dumpHtml()" title="Get HTML">📄</button>
+      </div>
+      <iframe id="browserFrame" class="browser-frame" src="about:blank" sandbox="allow-same-origin allow-scripts allow-forms allow-modals"></iframe>
+      <div class="html-output" id="htmlOutput" style="display:none"></div>
+    </div>
+    <div class="panel-right">
+      <div class="section-title">
+        <span data-i18n="results">Результати</span>
+        <button class="small" onclick="clearLog()" data-i18n="clear">Очистити</button>
+      </div>
+      <div class="stats">
+        <div class="stat total"><div class="stat-num" id="statTotal">0</div><div class="stat-label" data-i18n="total">Всього</div></div>
+        <div class="stat pass"><div class="stat-num" id="statPass">0</div><div class="stat-label" data-i18n="passed">Успішно</div></div>
+        <div class="stat fail"><div class="stat-num" id="statFail">0</div><div class="stat-label" data-i18n="failed">Помилки</div></div>
+      </div>
+      <div class="results" id="results"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Step Modal -->
+<div class="modal-bg" id="stepModal">
+  <div class="modal">
+    <h2 id="stepModalTitle" data-i18n="newStep">Новий крок</h2>
+    <div class="form-group">
+      <label data-i18n="stepName">Назва кроку</label>
+      <input type="text" id="stepName">
+    </div>
+    <div class="form-group">
+      <label data-i18n="stepCode">Код кроку (async, await доступний)</label>
+      <div class="snippet-btns" id="snippetBtns"></div>
+      <textarea id="stepCode" placeholder="await driver.get(vars.url);&#10;await driver.click('#login');&#10;await driver.type('#user', 'admin');&#10;await driver.uploadFile('#fileInput', 'myfile.png');&#10;const title = await driver.getTitle();&#10;assert(title.includes('Home'), 'Wrong page');"></textarea>
+      <div class="hint" data-i18n="codeHint">Доступно: driver (WebDriver API), vars, files, assert(умова, повідомлення), log(...). Використовуйте await.</div>
+    </div>
+    <div class="modal-actions">
+      <button onclick="closeModal('stepModal')" data-i18n="cancel">Скасувати</button>
+      <button class="primary" onclick="saveStep()" data-i18n="save">Зберегти</button>
+    </div>
+  </div>
+</div>
+
+<!-- Variables Modal -->
+<div class="modal-bg" id="varsModal">
+  <div class="modal">
+    <h2 data-i18n="variables">Змінні</h2>
+    <div class="hint" data-i18n="varsHint">Змінні доступні у коді кроків через об'єкт vars.</div>
+    <div class="vars-list" id="varsList"></div>
+    <button class="small" onclick="addVarRow()" style="margin-top:8px">➕ <span data-i18n="addVar">Додати змінну</span></button>
+    <div class="modal-actions">
+      <button onclick="closeModal('varsModal')" data-i18n="cancel">Скасувати</button>
+      <button class="primary" onclick="saveVars()" data-i18n="save">Зберегти</button>
+    </div>
+  </div>
+</div>
+
+<!-- Files Modal -->
+<div class="modal-bg" id="filesModal">
+  <div class="modal">
+    <h2 data-i18n="files">Файли</h2>
+    <div class="hint" data-i18n="filesHint">Завантажені файли доступні у коді через files['ім'я']. Використовуйте driver.uploadFile(selector, ім'я) для завантаження у поле форми.</div>
+    <div class="dropzone" id="dropzone" onclick="document.getElementById('fileUploadInput').click()">
+      <div style="font-size:32px">📁</div>
+      <div data-i18n="dropHint">Перетягніть файли сюди або клікніть для вибору</div>
+    </div>
+    <input type="file" id="fileUploadInput" multiple style="display:none" onchange="handleFileSelect(event)">
+    <div class="file-list" id="fileList"></div>
+    <div class="modal-actions">
+      <button onclick="closeModal('filesModal')" data-i18n="close">Закрити</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ============ i18n ============
+const I18N = {
+  uk: {
+    title:"Тестер Додатків", orientation:"Орієнтація", variables:"Змінні", files:"Файли",
+    addGroup:"Група", export:"Експорт", import:"Імпорт", runSelected:"Вибрані", runAll:"Всі",
+    stories:"Сценарії", selectAll:"Вибрати все", results:"Результати", clear:"Очистити",
+    total:"Всього", passed:"Успішно", failed:"Помилки", newStep:"Новий крок", stepName:"Назва кроку",
+    stepCode:"Код кроку (async, await доступний)", browser:"Браузер", go:"Перейти",
+    codeHint:"Доступно: driver (WebDriver API), vars, files, assert(умова, повідомлення), log(...). Використовуйте await.",
+    cancel:"Скасувати", save:"Зберегти", close:"Закрити", varsHint:"Змінні доступні у коді кроків через об'єкт vars.",
+    addVar:"Додати змінну", editStep:"Редагувати крок", newGroup:"Нова група", addStep:"Крок",
+    noGroups:"Немає груп. Натисніть «Група» щоб створити.", deleteGroup:"Видалити групу?",
+    running:"виконується", passedTxt:"пройдено", failedTxt:"помилка", startRun:"▶ Запуск тестування",
+    endRun:"✓ Тестування завершено", group:"Група",
+    filesHint:"Завантажені файли доступні у коді через files['ім'я']. Використовуйте driver.uploadFile(selector, ім'я) для завантаження у поле форми.",
+    dropHint:"Перетягніть файли сюди або клікніть для вибору", noFiles:"Немає завантажених файлів",
+    htmlDump:"HTML сторінки отримано", fileUploaded:"Файл завантажено", deleteFile:"Видалити файл?"
+  },
+  en: {
+    title:"Application Tester", orientation:"Orientation", variables:"Variables", files:"Files",
+    addGroup:"Group", export:"Export", import:"Import", runSelected:"Selected", runAll:"All",
+    stories:"Stories", selectAll:"Select all", results:"Results", clear:"Clear",
+    total:"Total", passed:"Passed", failed:"Failed", newStep:"New step", stepName:"Step name",
+    stepCode:"Step code (async, await available)", browser:"Browser", go:"Go",
+    codeHint:"Available: driver (WebDriver API), vars, files, assert(condition, msg), log(...). Use await.",
+    cancel:"Cancel", save:"Save", close:"Close", varsHint:"Variables available in step code via vars object.",
+    addVar:"Add variable", editStep:"Edit step", newGroup:"New group", addStep:"Step",
+    noGroups:"No groups. Click 'Group' to create one.", deleteGroup:"Delete group?",
+    running:"running", passedTxt:"passed", failedTxt:"failed", startRun:"▶ Test run started",
+    endRun:"✓ Test run finished", group:"Group",
+    filesHint:"Uploaded files available in code via files['name']. Use driver.uploadFile(selector, name) to set a form file input.",
+    dropHint:"Drag files here or click to select", noFiles:"No uploaded files",
+    htmlDump:"Page HTML captured", fileUploaded:"File uploaded", deleteFile:"Delete file?"
+  }
+};
+
+let state = {
+  lang:'uk', orientation:'horizontal',
+  vars:{ url:'about:blank' },
+  groups:[],
+  files:{} // name -> { name, type, size, dataUrl }
+};
+let editing = { groupId:null, stepId:null };
+
+function uid(){ return Date.now().toString(36)+Math.random().toString(36).slice(2,7); }
+function t(k){ return I18N[state.lang][k] || k; }
+function save(){
+  try { localStorage.setItem('appTesterState', JSON.stringify(state)); }
+  catch(e){ logEntry('⚠ Storage full (files too large). Some data not saved.','fail'); }
+}
+function load(){
+  const s=localStorage.getItem('appTesterState');
+  if(s){ try{ const p=JSON.parse(s); state={...state,...p}; if(!state.files)state.files={}; }catch(e){} }
+  if(!state.groups||!state.groups.length) seedDemo();
+}
+function seedDemo(){
+  state.groups=[{ id:uid(), name:'Demo / Демо', checked:true, steps:[
+    { id:uid(), name:'Open page', code:"await driver.get(vars.url);\nlog('Opened', vars.url);\nreturn true;", checked:true, status:null },
+    { id:uid(), name:'Check title', code:"const title = await driver.getTitle();\nlog('Title:', title);\nassert(title.length >= 0, 'No title');\nreturn true;", checked:true, status:null },
+    { id:uid(), name:'Find element', code:"const exists = await driver.exists('body');\nassert(exists, 'No body element');\nreturn true;", checked:true, status:null },
+    { id:uid(), name:'Upload file (if input exists)', code:"if(await driver.exists('input[type=file]')){\n  const names = Object.keys(files);\n  if(names.length){ await driver.uploadFile('input[type=file]', names[0]); log('Uploaded', names[0]); }\n  else log('No files available — add some via Files button');\n} else log('No file input on page');\nreturn true;", checked:true, status:null },
+    { id:uid(), name:'Get full HTML', code:"const html = await driver.getPageSource();\nlog('HTML length:', html.length);\nshowHtml(html);\nreturn html.length > 0;", checked:true, status:null }
+  ]}];
+}
+
+// ============ Iframe WebDriver ============
+class IframeDriver {
+  constructor(frame){ this.frame=frame; }
+  _doc(){
+    try { const d=this.frame.contentDocument||this.frame.contentWindow.document;
+      if(!d) throw new Error('No document'); return d; }
+    catch(e){ throw new Error('Cross-origin frame: load a same-origin / local HTML page'); }
+  }
+  _win(){ return this.frame.contentWindow; }
+  _el(sel){ const el=this._doc().querySelector(sel); if(!el) throw new Error('Element not found: '+sel); return el; }
+  async get(url){
+    return new Promise((res)=>{
+      let done=false; const finish=()=>{ if(done)return; done=true; this.frame.onload=null; setTimeout(res,150); };
+      this.frame.onload=finish; this.frame.src=url;
+      document.getElementById('browserUrl').value=url;
+      setTimeout(finish, 4000);
+    });
+  }
+  async setContent(html){
+    return new Promise((res)=>{
+      let done=false; const finish=()=>{ if(done)return; done=true; this.frame.onload=null; setTimeout(res,100); };
+      this.frame.onload=finish;
+      this.frame.srcdoc=html;
+      setTimeout(finish, 2000);
+    });
+  }
+  async getTitle(){ return this._doc().title; }
+  async getCurrentUrl(){ try{ return this._win().location.href; }catch(e){ return this.frame.src; } }
+  async getPageSource(){ return '<!DOCTYPE html>\n'+this._doc().documentElement.outerHTML; }
+  async exists(sel){ try{ return !!this._doc().querySelector(sel); }catch(e){ return false; } }
+  async click(sel){ this._el(sel).click(); await this._wait(100); }
+  async type(sel, text){ const el=this._el(sel); el.focus(); el.value=text;
+    el.dispatchEvent(new Event('input',{bubbles:true})); el.dispatchEvent(new Event('change',{bubbles:true})); }
+  async clear(sel){ const el=this._el(sel); el.value=''; el.dispatchEvent(new Event('input',{bubbles:true})); }
+  async getText(sel){ return this._el(sel).textContent.trim(); }
+  async getAttribute(sel, attr){ return this._el(sel).getAttribute(attr); }
+  async getValue(sel){ return this._el(sel).value; }
+  async count(sel){ return this._doc().querySelectorAll(sel).length; }
+  async waitFor(sel, timeout=5000){ const start=Date.now();
+    while(Date.now()-start<timeout){ if(await this.exists(sel)) return true; await this._wait(150); }
+    throw new Error('Timeout waiting for: '+sel); }
+  async execute(script){ return this._win().eval(script); }
+  // ---- File upload into a form <input type=file> inside the iframe ----
+  async uploadFile(sel, fileName){
+    const el=this._el(sel);
+    if(el.tagName!=='INPUT'||el.type!=='file') throw new Error('Element is not a file input: '+sel);
+    const f=state.files[fileName];
+    if(!f) throw new Error('File not found in storage: '+fileName);
+    const blob=dataUrlToBlob(f.dataUrl);
+    const file=new (this._win().File||File)([blob], f.name, { type:f.type });
+    const dt=new (this._win().DataTransfer||DataTransfer)();
+    dt.items.add(file);
+    el.files=dt.files;
+    el.dispatchEvent(new Event('input',{bubbles:true}));
+    el.dispatchEvent(new Event('change',{bubbles:true}));
+    await this._wait(100);
+    return true;
+  }
+  async uploadFiles(sel, fileNames){
+    const el=this._el(sel);
+    if(el.tagName!=='INPUT'||el.type!=='file') throw new Error('Element is not a file input: '+sel);
+    const dt=new (this._win().DataTransfer||DataTransfer)();
+    for(const name of fileNames){
+      const f=state.files[name]; if(!f) throw new Error('File not found: '+name);
+      const blob=dataUrlToBlob(f.dataUrl);
+      dt.items.add(new (this._win().File||File)([blob], f.name, { type:f.type }));
+    }
+    el.files=dt.files;
+    el.dispatchEvent(new Event('input',{bubbles:true}));
+    el.dispatchEvent(new Event('change',{bubbles:true}));
+    await this._wait(100);
+    return true;
+  }
+  async _wait(ms){ return new Promise(r=>setTimeout(r,ms)); }
+}
+
+function dataUrlToBlob(dataUrl){
+  const [meta,b64]=dataUrl.split(',');
+  const mime=(meta.match(/:(.*?);/)||[])[1]||'application/octet-stream';
+  const bin=atob(b64); const len=bin.length; const arr=new Uint8Array(len);
+  for(let i=0;i<len;i++) arr[i]=bin.charCodeAt(i);
+  return new Blob([arr],{type:mime});
+}
+
+function getDriver(){ return new IframeDriver(document.getElementById('browserFrame')); }
+
+// ============ Render ============
+function applyI18n(){ document.querySelectorAll('[data-i18n]').forEach(el=>el.textContent=t(el.getAttribute('data-i18n'))); document.documentElement.lang=state.lang; }
+function render(){
+  applyI18n();
+  document.getElementById('langSel').value=state.lang;
+  document.getElementById('main').className='main '+(state.orientation==='vertical'?'vertical':'');
+  const c=document.getElementById('groupsContainer'); c.innerHTML='';
+  if(!state.groups.length){ c.innerHTML=`<div class="empty">${t('noGroups')}</div>`; updateStats(); return; }
+  state.groups.forEach(g=>{
+    const div=document.createElement('div'); div.className='group';
+    div.innerHTML=`<div class="group-header">
+        <input type="checkbox" ${g.checked?'checked':''} onchange="toggleGroup('${g.id}',this.checked)">
+        <span class="group-title" contenteditable onblur="renameGroup('${g.id}',this.textContent)">${escapeHtml(g.name)}</span>
+        <span class="badge">${g.steps.length}</span>
+        <button class="icon-btn" onclick="addStep('${g.id}')">➕</button>
+        <button class="icon-btn" onclick="runGroup('${g.id}')">▶</button>
+        <button class="icon-btn" onclick="deleteGroup('${g.id}')">🗑</button>
+      </div><div class="steps"></div>`;
+    const stepsEl=div.querySelector('.steps');
+    g.steps.forEach(s=>{
+      const se=document.createElement('div');
+      se.className='step'+(s.status?' '+(s.status==='pass'?'pass':s.status==='running'?'running':'fail'):'');
+      const statusTxt=s.status==='pass'?t('passedTxt'):s.status==='fail'?t('failedTxt'):s.status==='running'?t('running'):'';
+      se.innerHTML=`<input type="checkbox" ${s.checked?'checked':''} onchange="toggleStep('${g.id}','${s.id}',this.checked)">
+        <div class="step-info">
+          <div class="step-name" contenteditable onblur="renameStep('${g.id}','${s.id}',this.textContent)">${escapeHtml(s.name)}</div>
+          <div class="step-code">${escapeHtml(s.code.split('\n')[0])}</div>
+        </div>
+        ${s.status?`<span class="step-status ${s.status}">${statusTxt}</span>`:''}
+        <div class="step-actions">
+          <button class="icon-btn" onclick="runStep('${g.id}','${s.id}')">▶</button>
+          <button class="icon-btn" onclick="editStep('${g.id}','${s.id}')">✏</button>
+          <button class="icon-btn" onclick="deleteStep('${g.id}','${s.id}')">🗑</button>
+        </div>`;
+      stepsEl.appendChild(se);
+    });
+    c.appendChild(div);
+  });
+  updateStats();
+}
+function escapeHtml(s){ return (s||'').replace(/[&<>"]/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m])); }
+
+// ============ Group/Step ops ============
+function addGroup(){ state.groups.push({id:uid(),name:t('newGroup'),checked:true,steps:[]}); save(); render(); }
+function deleteGroup(id){ if(!confirm(t('deleteGroup')))return; state.groups=state.groups.filter(g=>g.id!==id); save(); render(); }
+function renameGroup(id,n){ const g=getGroup(id); if(g){g.name=n.trim()||g.name; save();} }
+function toggleGroup(id,c){ const g=getGroup(id); if(g){g.checked=c; g.steps.forEach(s=>s.checked=c);} save(); render(); }
+function getGroup(id){ return state.groups.find(g=>g.id===id); }
+function getStep(gid,sid){ const g=getGroup(gid); return g?g.steps.find(s=>s.id===sid):null; }
+function addStep(gid){ editing={groupId:gid,stepId:null}; document.getElementById('stepName').value=''; document.getElementById('stepCode').value=''; document.getElementById('stepModalTitle').textContent=t('newStep'); openModal('stepModal'); }
+function editStep(gid,sid){ const s=getStep(gid,sid); if(!s)return; editing={groupId:gid,stepId:sid}; document.getElementById('stepName').value=s.name; document.getElementById('stepCode').value=s.code; document.getElementById('stepModalTitle').textContent=t('editStep'); openModal('stepModal'); }
+function saveStep(){
+  const name=document.getElementById('stepName').value.trim()||'Step';
+  const code=document.getElementById('stepCode').value;
+  const g=getGroup(editing.groupId); if(!g)return;
+  if(editing.stepId){ const s=getStep(editing.groupId,editing.stepId); s.name=name; s.code=code; }
+  else g.steps.push({id:uid(),name,code,checked:true,status:null});
+  save(); render(); closeModal('stepModal');
+}
+function deleteStep(gid,sid){ const g=getGroup(gid); g.steps=g.steps.filter(s=>s.id!==sid); save(); render(); }
+function renameStep(gid,sid,n){ const s=getStep(gid,sid); if(s){s.name=n.trim()||s.name; save();} }
+function toggleStep(gid,sid,c){ const s=getStep(gid,sid); if(s)s.checked=c; save(); }
+function toggleAll(v){ state.groups.forEach(g=>{g.checked=v; g.steps.forEach(s=>s.checked=v);}); save(); render(); }
+
+// ============ Variables ============
+function openVarsModal(){ const l=document.getElementById('varsList'); l.innerHTML=''; Object.entries(state.vars).forEach(([k,v])=>addVarRow(k,v)); openModal('varsModal'); }
+function addVarRow(k='',v=''){ const l=document.getElementById('varsList'); const r=document.createElement('div'); r.className='var-item';
+  r.innerHTML=`<input type="text" class="vkey" placeholder="key" value="${escapeHtml(k)}"><input type="text" class="vval" placeholder="value" value="${escapeHtml(String(v))}"><button class="icon-btn" onclick="this.parentElement.remove()">🗑</button>`; l.appendChild(r); }
+function saveVars(){ const vars={}; document.querySelectorAll('#varsList .var-item').forEach(r=>{const k=r.querySelector('.vkey').value.trim(); if(k)vars[k]=r.querySelector('.vval').value;}); state.vars=vars; save(); closeModal('varsModal'); }
+
+// ============ Files ============
+function openFilesModal(){ renderFileList(); openModal('filesModal'); }
+function renderFileList(){
+  const l=document.getElementById('fileList'); l.innerHTML='';
+  const names=Object.keys(state.files);
+  if(!names.length){ l.innerHTML=`<div class="empty">${t('noFiles')}</div>`; return; }
+  names.forEach(name=>{
+    const f=state.files[name];
+    const item=document.createElement('div'); item.className='file-item';
+    const icon=fileIcon(f.type);
+    item.innerHTML=`<span class="file-icon">${icon}</span>
+      <div class="file-meta"><div class="file-name">${escapeHtml(f.name)}</div>
+        <div class="file-size">${f.type||'?'} • ${humanSize(f.size)}</div></div>
+      <button class="icon-btn" onclick="previewFile('${escapeHtml(name).replace(/'/g,"\\'")}')">👁</button>
+      <button class="icon-btn" onclick="deleteFile('${escapeHtml(name).replace(/'/g,"\\'")}')">🗑</button>`;
+    l.appendChild(item);
+  });
+}
+function fileIcon(type){
+  if(!type) return '📄';
+  if(type.startsWith('image/')) return '🖼';
+  if(type.startsWith('video/')) return '🎬';
+  if(type.startsWith('audio/')) return '🎵';
+  if(type.includes('pdf')) return '📕';
+  if(type.includes('json')||type.includes('javascript')||type.includes('html')) return '📜';
+  if(type.includes('zip')||type.includes('compressed')) return '🗜';
+  return '📄';
+}
+function humanSize(b){ if(b<1024)return b+' B'; if(b<1048576)return (b/1024).toFixed(1)+' KB'; return (b/1048576).toFixed(1)+' MB'; }
+function handleFileSelect(ev){ addFiles(ev.target.files); ev.target.value=''; }
+function addFiles(fileList){
+  const arr=Array.from(fileList);
+  let pending=arr.length;
+  if(!pending) return;
+  arr.forEach(file=>{
+    const reader=new FileReader();
+    reader.onload=e=>{
+      state.files[file.name]={ name:file.name, type:file.type, size:file.size, dataUrl:e.target.result };
+      logEntry(`📎 ${t('fileUploaded')}: ${file.name} (${humanSize(file.size)})`,'info');
+      if(--pending===0){ save(); renderFileList(); }
+    };
+    reader.readAsDataURL(file);
+  });
+}
+function deleteFile(name){ if(!confirm(t('deleteFile')))return; delete state.files[name]; save(); renderFileList(); }
+function previewFile(name){
+  const f=state.files[name]; if(!f)return;
+  if(f.type.startsWith('image/')){
+    getDriver().frame ; // noop
+    document.getElementById('browserFrame').srcdoc=`<body style="margin:0;display:flex;align-items:center;justify-content:center;height:100vh;background:#222"><img src="${f.dataUrl}" style="max-width:100%;max-height:100%"></body>`;
+  } else if(f.type.startsWith('text/')||f.type.includes('json')||f.type.includes('html')){
+    document.getElementById('browserFrame').srcdoc=`<pre style="white-space:pre-wrap;word-break:break-word;padding:12px;font-family:monospace">${escapeHtml(atob(f.dataUrl.split(',')[1]||''))}</pre>`;
+  } else {
+    showHtml('Preview not available for type: '+f.type);
+  }
+  closeModal('filesModal');
+}
+
+// Drag & drop
+const dz=document.getElementById('dropzone');
+['dragover','dragenter'].forEach(ev=>dz.addEventListener(ev,e=>{e.preventDefault(); dz.classList.add('drag');}));
+['dragleave','drop'].forEach(ev=>dz.addEventListener(ev,e=>{e.preventDefault(); dz.classList.remove('drag');}));
+dz.addEventListener('drop',e=>{ if(e.dataTransfer.files.length) addFiles(e.dataTransfer.files); });
+
+// ============ Execution ============
+function logEntry(msg,type='info'){ const r=document.getElementById('results'); const e=document.createElement('div'); e.className='log-entry '+type;
+  e.innerHTML=`<span class="log-time">${new Date().toLocaleTimeString()}</span>${escapeHtml(msg)}`; r.appendChild(e); r.scrollTop=r.scrollHeight; }
+function clearLog(){ document.getElementById('results').innerHTML=''; state.groups.forEach(g=>g.steps.forEach(s=>s.status=null)); save(); render(); }
+
+function showHtml(html){
+  const out=document.getElementById('htmlOutput'); out.style.display='block';
+  out.textContent=html.length>8000?html.slice(0,8000)+'\n... ('+html.length+' chars total)':html;
+  logEntry(t('htmlDump')+' ('+html.length+')','info');
+}
+
+async function execStep(g,s){
+  s.status='running'; render();
+  const logs=[]; const driver=getDriver();
+  const ctx={
+    driver, vars:state.vars, files:state.files,
+    assert:(cond,msg)=>{ if(!cond) throw new Error(msg||'Assertion failed'); },
+    log:(...a)=>{ const line=a.map(x=>typeof x==='object'?JSON.stringify(x):String(x)).join(' '); logs.push(line); },
+    showHtml, sleep:(ms)=>new Promise(r=>setTimeout(r,ms))
+  };
+  try {
+    const AsyncFn=Object.getPrototypeOf(async function(){}).constructor;
+    const fn=new AsyncFn('driver','vars','files','assert','log','showHtml','sleep', s.code);
+    const res=await fn(ctx.driver,ctx.vars,ctx.files,ctx.assert,ctx.log,ctx.showHtml,ctx.sleep);
+    logs.forEach(l=>logEntry('   '+l,'info'));
+    if(res===false) throw new Error('Returned false');
+    s.status='pass'; logEntry(`✓ ${g.name} → ${s.name}`,'pass');
+  } catch(err){
+    logs.forEach(l=>logEntry('   '+l,'info'));
+    s.status='fail'; logEntry(`✗ ${g.name} → ${s.name}: ${err.message}`,'fail');
+  }
+  save(); render();
+}
+async function runSteps(list){
+  logEntry(t('startRun'),'group');
+  for(const {g,s} of list) await execStep(g,s);
+  logEntry(t('endRun'),'group'); updateStats();
+}
+function runAll(){ const l=[]; state.groups.forEach(g=>g.steps.forEach(s=>l.push({g,s}))); runSteps(l); }
+function runSelected(){ const l=[]; state.groups.forEach(g=>g.steps.forEach(s=>{ if(s.checked)l.push({g,s}); })); runSteps(l); }
+function runGroup(gid){ const g=getGroup(gid); runSteps(g.steps.map(s=>({g,s}))); }
+function runStep(gid,sid){ const g=getGroup(gid),s=getStep(gid,sid); runSteps([{g,s}]); }
+
+function updateStats(){ let t=0,p=0,f=0; state.groups.forEach(g=>g.steps.forEach(s=>{t++; if(s.status==='pass')p++; if(s.status==='fail')f++;}));
+  document.getElementById('statTotal').textContent=t; document.getElementById('statPass').textContent=p; document.getElementById('statFail').textContent=f; }
+
+// ============ Browser frame ============
+function navigateFrame(){ const url=document.getElementById('browserUrl').value;
+  document.getElementById('browserFrame').removeAttribute('srcdoc');
+  document.getElementById('browserFrame').src=url; }
+async function dumpHtml(){ try{ const html=await getDriver().getPageSource(); showHtml(html); }catch(e){ logEntry('HTML error: '+e.message,'fail'); } }
+
+// ============ Export/Import ============
+function exportStories(){ const data=JSON.stringify({vars:state.vars,groups:state.groups,files:state.files},null,2);
+  const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([data],{type:'application/json'})); a.download='stories_'+Date.now()+'.json'; a.click(); }
+function importStories(ev){ const f=ev.target.files[0]; if(!f)return; const rd=new FileReader();
+  rd.onload=e=>{ try{ const d=JSON.parse(e.target.result); if(d.groups)state.groups=d.groups; if(d.vars)state.vars=d.vars; if(d.files)state.files=d.files;
+    state.groups.forEach(g=>{g.id=g.id||uid(); g.steps.forEach(s=>{s.id=s.id||uid(); s.status=null;});}); save(); render(); }catch(err){ alert('Import error: '+err.message); } };
+  rd.readAsText(f); ev.target.value=''; }
+
+// ============ Snippets ============
+const SNIPPETS=[
+  ['get','await driver.get(vars.url);'],
+  ['click','await driver.click("#selector");'],
+  ['type','await driver.type("#input", "text");'],
+  ['getText','const txt = await driver.getText(".class");\nlog(txt);'],
+  ['waitFor','await driver.waitFor("#element", 5000);'],
+  ['uploadFile','await driver.uploadFile("input[type=file]", "filename.png");'],
+  ['uploadFiles','await driver.uploadFiles("input[type=file]", ["a.png","b.png"]);'],
+  ['assert','assert(condition, "message");'],
+  ['getHTML','const html = await driver.getPageSource();\nshowHtml(html);\nreturn true;'],
+  ['execute','const r = await driver.execute("return document.title");']
+];
+function renderSnippets(){ const c=document.getElementById('snippetBtns'); c.innerHTML='';
+  SNIPPETS.forEach(([name,code])=>{ const b=document.createElement('button'); b.textContent='+ '+name;
+    b.onclick=()=>{ const ta=document.getElementById('stepCode'); ta.value+=(ta.value?'\n':'')+code; }; c.appendChild(b); }); }
+
+// ============ UI helpers ============
+function openModal(id){ document.getElementById(id).classList.add('show'); }
+function closeModal(id){ document.getElementById(id).classList.remove('show'); }
+function toggleOrientation(){ state.orientation=state.orientation==='vertical'?'horizontal':'vertical'; save(); render(); }
+document.getElementById('langSel').addEventListener('change',e=>{ state.lang=e.target.value; save(); render(); });
+document.querySelectorAll('.modal-bg').forEach(m=>m.addEventListener('click',e=>{ if(e.target===m)m.classList.remove('show'); }));
+document.getElementById('browserUrl').addEventListener('keydown',e=>{ if(e.key==='Enter')navigateFrame(); });
+
+// ============ Init ============
+load(); renderSnippets(); render();
+</script>
+</body>
+</html>
