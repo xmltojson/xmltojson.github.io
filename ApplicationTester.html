@@ -1,0 +1,608 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Application Tester</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  :root {
+    --bg: #0f1419;
+    --panel: #1a2332;
+    --panel2: #232f42;
+    --accent: #4a9eff;
+    --accent2: #7c5cff;
+    --success: #2ecc71;
+    --error: #e74c3c;
+    --warn: #f39c12;
+    --text: #e0e6ed;
+    --muted: #7a8699;
+    --border: #2a3a52;
+  }
+  body {
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    height: 100vh;
+    overflow: hidden;
+  }
+  .app {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+  }
+  header {
+    background: linear-gradient(135deg, var(--panel), var(--panel2));
+    padding: 12px 20px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    border-bottom: 2px solid var(--accent);
+    box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+    flex-wrap: wrap;
+  }
+  .logo {
+    font-size: 20px;
+    font-weight: 700;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .logo-icon {
+    width: 32px; height: 32px;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px;
+    -webkit-text-fill-color: white;
+  }
+  .toolbar { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-left: auto; }
+  button {
+    background: var(--panel2);
+    color: var(--text);
+    border: 1px solid var(--border);
+    padding: 8px 14px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 13px;
+    transition: all 0.2s;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+  button:hover { background: var(--border); transform: translateY(-1px); }
+  button.primary { background: linear-gradient(135deg, var(--accent), var(--accent2)); border: none; color: white; }
+  button.primary:hover { opacity: 0.9; }
+  button.success { background: var(--success); border: none; color: white; }
+  button.danger { background: var(--error); border: none; color: white; }
+  button.small { padding: 4px 8px; font-size: 11px; }
+  .main {
+    flex: 1;
+    display: flex;
+    overflow: hidden;
+  }
+  .main.vertical { flex-direction: column; }
+  .panel-left, .panel-right {
+    overflow-y: auto;
+    padding: 16px;
+  }
+  .panel-left { flex: 1; border-right: 1px solid var(--border); }
+  .panel-right { flex: 1; }
+  .main.vertical .panel-left { border-right: none; border-bottom: 1px solid var(--border); }
+  .section-title {
+    font-size: 14px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--muted);
+    margin-bottom: 12px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .group {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    margin-bottom: 12px;
+    overflow: hidden;
+  }
+  .group-header {
+    padding: 12px 14px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: var(--panel2);
+    cursor: pointer;
+  }
+  .group-header input[type=checkbox], .step input[type=checkbox] {
+    width: 16px; height: 16px; cursor: pointer; accent-color: var(--accent);
+  }
+  .group-title {
+    flex: 1;
+    font-weight: 600;
+    font-size: 15px;
+  }
+  .group-title[contenteditable] { outline: none; }
+  .group-title[contenteditable]:focus { background: var(--bg); padding: 2px 6px; border-radius: 4px; }
+  .badge {
+    font-size: 11px;
+    padding: 2px 8px;
+    border-radius: 10px;
+    background: var(--border);
+  }
+  .steps { padding: 8px; }
+  .step {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 10px;
+    border-radius: 6px;
+    margin-bottom: 6px;
+    background: var(--panel2);
+    border-left: 3px solid transparent;
+  }
+  .step.pass { border-left-color: var(--success); }
+  .step.fail { border-left-color: var(--error); }
+  .step.running { border-left-color: var(--warn); animation: pulse 1s infinite; }
+  @keyframes pulse { 50% { opacity: 0.6; } }
+  .step-info { flex: 1; min-width: 0; }
+  .step-name {
+    font-size: 13px;
+    font-weight: 500;
+  }
+  .step-name[contenteditable]:focus { outline: 1px solid var(--accent); border-radius: 4px; }
+  .step-code {
+    font-size: 11px;
+    color: var(--muted);
+    font-family: monospace;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .step-status {
+    font-size: 11px;
+    padding: 2px 8px;
+    border-radius: 10px;
+    white-space: nowrap;
+  }
+  .step-status.pass { background: rgba(46,204,113,0.2); color: var(--success); }
+  .step-status.fail { background: rgba(231,76,60,0.2); color: var(--error); }
+  .step-status.running { background: rgba(243,156,18,0.2); color: var(--warn); }
+  .step-actions { display: flex; gap: 4px; }
+  .icon-btn {
+    background: none; border: none; padding: 4px; color: var(--muted); cursor: pointer; font-size: 14px;
+  }
+  .icon-btn:hover { color: var(--text); transform: none; }
+  .results {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 14px;
+    font-family: 'Consolas', monospace;
+    font-size: 12px;
+    height: calc(100% - 100px);
+    overflow-y: auto;
+  }
+  .log-entry {
+    padding: 6px 10px;
+    margin-bottom: 4px;
+    border-radius: 4px;
+    border-left: 3px solid var(--border);
+    word-break: break-word;
+  }
+  .log-entry.pass { border-left-color: var(--success); background: rgba(46,204,113,0.08); }
+  .log-entry.fail { border-left-color: var(--error); background: rgba(231,76,60,0.08); }
+  .log-entry.info { border-left-color: var(--accent); }
+  .log-entry.group { border-left-color: var(--accent2); background: rgba(124,92,255,0.08); font-weight: bold; }
+  .log-time { color: var(--muted); margin-right: 8px; }
+  .stats {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 12px;
+  }
+  .stat {
+    flex: 1;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px;
+    text-align: center;
+  }
+  .stat-num { font-size: 24px; font-weight: 700; }
+  .stat-label { font-size: 11px; color: var(--muted); text-transform: uppercase; }
+  .stat.pass .stat-num { color: var(--success); }
+  .stat.fail .stat-num { color: var(--error); }
+  .stat.total .stat-num { color: var(--accent); }
+  /* Modal */
+  .modal-bg {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.7);
+    display: none; align-items: center; justify-content: center; z-index: 100;
+  }
+  .modal-bg.show { display: flex; }
+  .modal {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 24px;
+    width: 90%; max-width: 600px;
+    max-height: 90vh; overflow-y: auto;
+  }
+  .modal h2 { margin-bottom: 16px; }
+  .form-group { margin-bottom: 14px; }
+  .form-group label { display: block; font-size: 13px; margin-bottom: 6px; color: var(--muted); }
+  input[type=text], textarea, select {
+    width: 100%;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 10px;
+    border-radius: 6px;
+    font-size: 13px;
+    font-family: inherit;
+  }
+  textarea { resize: vertical; min-height: 100px; font-family: monospace; }
+  .modal-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 16px; }
+  .hint { font-size: 11px; color: var(--muted); margin-top: 4px; }
+  .vars-list { margin-top: 12px; }
+  .var-item {
+    display: flex; gap: 8px; margin-bottom: 8px; align-items: center;
+  }
+  .var-item input { flex: 1; }
+  .empty {
+    text-align: center; color: var(--muted); padding: 40px; font-size: 14px;
+  }
+  select { width: auto; padding: 6px 10px; }
+  ::-webkit-scrollbar { width: 8px; height: 8px; }
+  ::-webkit-scrollbar-track { background: var(--bg); }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+</style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <div class="logo"><span class="logo-icon">⚡</span> <span data-i18n="title">Тестер Додатків</span></div>
+    <div class="toolbar">
+      <select id="langSel">
+        <option value="uk">🇺🇦 Українська</option>
+        <option value="en">🇬🇧 English</option>
+      </select>
+      <button onclick="toggleOrientation()" id="orientBtn">⇆ <span data-i18n="orientation">Орієнтація</span></button>
+      <button onclick="openVarsModal()">🔧 <span data-i18n="variables">Змінні</span></button>
+      <button onclick="addGroup()">➕ <span data-i18n="addGroup">Група</span></button>
+      <button onclick="exportStories()">⬇ <span data-i18n="export">Експорт</span></button>
+      <button onclick="document.getElementById('importFile').click()">⬆ <span data-i18n="import">Імпорт</span></button>
+      <input type="file" id="importFile" accept=".json" style="display:none" onchange="importStories(event)">
+      <button class="success" onclick="runSelected()">▶ <span data-i18n="runSelected">Вибрані</span></button>
+      <button class="primary" onclick="runAll()">▶▶ <span data-i18n="runAll">Всі</span></button>
+    </div>
+  </header>
+  <div class="main" id="main">
+    <div class="panel-left">
+      <div class="section-title">
+        <span data-i18n="stories">Сценарії</span>
+        <button class="small" onclick="toggleAll(true)" data-i18n="selectAll">Вибрати все</button>
+      </div>
+      <div id="groupsContainer"></div>
+    </div>
+    <div class="panel-right">
+      <div class="section-title">
+        <span data-i18n="results">Результати</span>
+        <button class="small" onclick="clearLog()" data-i18n="clear">Очистити</button>
+      </div>
+      <div class="stats">
+        <div class="stat total"><div class="stat-num" id="statTotal">0</div><div class="stat-label" data-i18n="total">Всього</div></div>
+        <div class="stat pass"><div class="stat-num" id="statPass">0</div><div class="stat-label" data-i18n="passed">Успішно</div></div>
+        <div class="stat fail"><div class="stat-num" id="statFail">0</div><div class="stat-label" data-i18n="failed">Помилки</div></div>
+      </div>
+      <div class="results" id="results"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Step Modal -->
+<div class="modal-bg" id="stepModal">
+  <div class="modal">
+    <h2 id="stepModalTitle" data-i18n="newStep">Новий крок</h2>
+    <div class="form-group">
+      <label data-i18n="stepName">Назва кроку</label>
+      <input type="text" id="stepName">
+    </div>
+    <div class="form-group">
+      <label data-i18n="stepCode">Код перевірки (JavaScript)</label>
+      <textarea id="stepCode" placeholder="// return true/false або кидайте помилку&#10;assert(1 + 1 === 2, 'Math works');&#10;return vars.url.length > 0;"></textarea>
+      <div class="hint" data-i18n="codeHint">Доступно: vars (змінні), assert(умова, повідомлення), log(...). Поверніть true для успіху.</div>
+    </div>
+    <div class="modal-actions">
+      <button onclick="closeModal('stepModal')" data-i18n="cancel">Скасувати</button>
+      <button class="primary" onclick="saveStep()" data-i18n="save">Зберегти</button>
+    </div>
+  </div>
+</div>
+
+<!-- Variables Modal -->
+<div class="modal-bg" id="varsModal">
+  <div class="modal">
+    <h2 data-i18n="variables">Змінні</h2>
+    <div class="hint" data-i18n="varsHint">Змінні доступні у коді кроків через об'єкт vars.</div>
+    <div class="vars-list" id="varsList"></div>
+    <button class="small" onclick="addVarRow()" style="margin-top:8px">➕ <span data-i18n="addVar">Додати змінну</span></button>
+    <div class="modal-actions">
+      <button onclick="closeModal('varsModal')" data-i18n="cancel">Скасувати</button>
+      <button class="primary" onclick="saveVars()" data-i18n="save">Зберегти</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ============ i18n ============
+const I18N = {
+  uk: {
+    title: "Тестер Додатків", orientation: "Орієнтація", variables: "Змінні",
+    addGroup: "Група", export: "Експорт", import: "Імпорт", runSelected: "Вибрані",
+    runAll: "Всі", stories: "Сценарії", selectAll: "Вибрати все", results: "Результати",
+    clear: "Очистити", total: "Всього", passed: "Успішно", failed: "Помилки",
+    newStep: "Новий крок", stepName: "Назва кроку", stepCode: "Код перевірки (JavaScript)",
+    codeHint: "Доступно: vars (змінні), assert(умова, повідомлення), log(...). Поверніть true для успіху.",
+    cancel: "Скасувати", save: "Зберегти", varsHint: "Змінні доступні у коді кроків через об'єкт vars.",
+    addVar: "Додати змінну", editStep: "Редагувати крок", newGroup: "Нова група",
+    addStep: "Крок", noGroups: "Немає груп. Натисніть «Група» щоб створити.",
+    deleteGroup: "Видалити групу?", running: "виконується", passedTxt: "пройдено", failedTxt: "помилка",
+    startRun: "▶ Запуск тестування", endRun: "✓ Тестування завершено", group: "Група"
+  },
+  en: {
+    title: "Application Tester", orientation: "Orientation", variables: "Variables",
+    addGroup: "Group", export: "Export", import: "Import", runSelected: "Selected",
+    runAll: "All", stories: "Stories", selectAll: "Select all", results: "Results",
+    clear: "Clear", total: "Total", passed: "Passed", failed: "Failed",
+    newStep: "New step", stepName: "Step name", stepCode: "Check code (JavaScript)",
+    codeHint: "Available: vars (variables), assert(condition, message), log(...). Return true for success.",
+    cancel: "Cancel", save: "Save", varsHint: "Variables available in step code via vars object.",
+    addVar: "Add variable", editStep: "Edit step", newGroup: "New group",
+    addStep: "Step", noGroups: "No groups. Click 'Group' to create one.",
+    deleteGroup: "Delete group?", running: "running", passedTxt: "passed", failedTxt: "failed",
+    startRun: "▶ Test run started", endRun: "✓ Test run finished", group: "Group"
+  }
+};
+
+// ============ State ============
+let state = {
+  lang: 'uk',
+  orientation: 'horizontal',
+  vars: { url: 'https://example.com' },
+  groups: []
+};
+let editing = { groupId: null, stepId: null };
+
+function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2,7); }
+function t(key) { return I18N[state.lang][key] || key; }
+
+// ============ Persistence ============
+function save() { localStorage.setItem('appTesterState', JSON.stringify(state)); }
+function load() {
+  const s = localStorage.getItem('appTesterState');
+  if (s) { try { state = JSON.parse(s); } catch(e){} }
+  if (!state.groups || state.groups.length === 0) seedDemo();
+}
+function seedDemo() {
+  state.groups = [{
+    id: uid(), name: 'Demo / Демо', collapsed: false, checked: true,
+    steps: [
+      { id: uid(), name: 'Math check', code: "assert(2+2===4, '2+2 should be 4');\nreturn true;", checked: true, status: null },
+      { id: uid(), name: 'Variable check', code: "log('URL =', vars.url);\nreturn vars.url.startsWith('http');", checked: true, status: null },
+      { id: uid(), name: 'DOM check', code: "return document.title.length > 0;", checked: true, status: null }
+    ]
+  }];
+}
+
+// ============ Render ============
+function applyI18n() {
+  document.querySelectorAll('[data-i18n]').forEach(el => {
+    el.textContent = t(el.getAttribute('data-i18n'));
+  });
+  document.documentElement.lang = state.lang;
+}
+function render() {
+  applyI18n();
+  document.getElementById('langSel').value = state.lang;
+  document.getElementById('main').className = 'main ' + (state.orientation === 'vertical' ? 'vertical' : '');
+  const c = document.getElementById('groupsContainer');
+  c.innerHTML = '';
+  if (state.groups.length === 0) {
+    c.innerHTML = `<div class="empty">${t('noGroups')}</div>`;
+    return;
+  }
+  state.groups.forEach(g => {
+    const passCount = g.steps.filter(s=>s.status==='pass').length;
+    const div = document.createElement('div');
+    div.className = 'group';
+    div.innerHTML = `
+      <div class="group-header">
+        <input type="checkbox" ${g.checked?'checked':''} onchange="toggleGroup('${g.id}', this.checked)">
+        <span class="group-title" contenteditable onblur="renameGroup('${g.id}', this.textContent)">${escapeHtml(g.name)}</span>
+        <span class="badge">${g.steps.length}</span>
+        <button class="icon-btn" onclick="addStep('${g.id}')" title="${t('addStep')}">➕</button>
+        <button class="icon-btn" onclick="runGroup('${g.id}')" title="Run">▶</button>
+        <button class="icon-btn" onclick="deleteGroup('${g.id}')" title="✕">🗑</button>
+      </div>
+      <div class="steps"></div>`;
+    const stepsEl = div.querySelector('.steps');
+    g.steps.forEach(s => {
+      const se = document.createElement('div');
+      se.className = 'step' + (s.status ? ' '+(s.status==='pass'?'pass':s.status==='running'?'running':'fail') : '');
+      const statusTxt = s.status==='pass'?t('passedTxt'):s.status==='fail'?t('failedTxt'):s.status==='running'?t('running'):'';
+      se.innerHTML = `
+        <input type="checkbox" ${s.checked?'checked':''} onchange="toggleStep('${g.id}','${s.id}',this.checked)">
+        <div class="step-info">
+          <div class="step-name" contenteditable onblur="renameStep('${g.id}','${s.id}',this.textContent)">${escapeHtml(s.name)}</div>
+          <div class="step-code">${escapeHtml(s.code.split('\n')[0])}</div>
+        </div>
+        ${s.status?`<span class="step-status ${s.status}">${statusTxt}</span>`:''}
+        <div class="step-actions">
+          <button class="icon-btn" onclick="runStep('${g.id}','${s.id}')">▶</button>
+          <button class="icon-btn" onclick="editStep('${g.id}','${s.id}')">✏</button>
+          <button class="icon-btn" onclick="deleteStep('${g.id}','${s.id}')">🗑</button>
+        </div>`;
+      stepsEl.appendChild(se);
+    });
+    c.appendChild(div);
+  });
+  updateStats();
+}
+function escapeHtml(s){ return (s||'').replace(/[&<>"]/g, m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m])); }
+
+// ============ Group/Step ops ============
+function addGroup() {
+  state.groups.push({ id: uid(), name: t('newGroup'), collapsed:false, checked:true, steps:[] });
+  save(); render();
+}
+function deleteGroup(id) {
+  if (!confirm(t('deleteGroup'))) return;
+  state.groups = state.groups.filter(g=>g.id!==id); save(); render();
+}
+function renameGroup(id, name){ const g=getGroup(id); if(g){g.name=name.trim()||g.name; save();} }
+function toggleGroup(id, c){ const g=getGroup(id); if(g){g.checked=c; g.steps.forEach(s=>s.checked=c);} save(); render(); }
+function getGroup(id){ return state.groups.find(g=>g.id===id); }
+function getStep(gid, sid){ const g=getGroup(gid); return g?g.steps.find(s=>s.id===sid):null; }
+
+function addStep(gid){ editing={groupId:gid, stepId:null}; document.getElementById('stepName').value=''; document.getElementById('stepCode').value=''; document.getElementById('stepModalTitle').textContent=t('newStep'); openModal('stepModal'); }
+function editStep(gid, sid){ const s=getStep(gid,sid); if(!s)return; editing={groupId:gid, stepId:sid}; document.getElementById('stepName').value=s.name; document.getElementById('stepCode').value=s.code; document.getElementById('stepModalTitle').textContent=t('editStep'); openModal('stepModal'); }
+function saveStep(){
+  const name=document.getElementById('stepName').value.trim()||'Step';
+  const code=document.getElementById('stepCode').value;
+  const g=getGroup(editing.groupId); if(!g)return;
+  if(editing.stepId){ const s=getStep(editing.groupId, editing.stepId); s.name=name; s.code=code; }
+  else { g.steps.push({id:uid(), name, code, checked:true, status:null}); }
+  save(); render(); closeModal('stepModal');
+}
+function deleteStep(gid, sid){ const g=getGroup(gid); g.steps=g.steps.filter(s=>s.id!==sid); save(); render(); }
+function renameStep(gid, sid, name){ const s=getStep(gid,sid); if(s){s.name=name.trim()||s.name; save();} }
+function toggleStep(gid, sid, c){ const s=getStep(gid,sid); if(s){s.checked=c;} save(); }
+function toggleAll(v){ state.groups.forEach(g=>{g.checked=v; g.steps.forEach(s=>s.checked=v);}); save(); render(); }
+
+// ============ Variables ============
+function openVarsModal(){
+  const list=document.getElementById('varsList'); list.innerHTML='';
+  Object.entries(state.vars).forEach(([k,v])=>addVarRow(k,v));
+  openModal('varsModal');
+}
+function addVarRow(k='', v=''){
+  const list=document.getElementById('varsList');
+  const row=document.createElement('div'); row.className='var-item';
+  row.innerHTML=`<input type="text" class="vkey" placeholder="key" value="${escapeHtml(k)}">
+    <input type="text" class="vval" placeholder="value" value="${escapeHtml(String(v))}">
+    <button class="icon-btn" onclick="this.parentElement.remove()">🗑</button>`;
+  list.appendChild(row);
+}
+function saveVars(){
+  const vars={};
+  document.querySelectorAll('#varsList .var-item').forEach(r=>{
+    const k=r.querySelector('.vkey').value.trim();
+    const v=r.querySelector('.vval').value;
+    if(k) vars[k]=v;
+  });
+  state.vars=vars; save(); closeModal('varsModal');
+}
+
+// ============ Execution ============
+function logEntry(msg, type='info'){
+  const r=document.getElementById('results');
+  const e=document.createElement('div'); e.className='log-entry '+type;
+  const time=new Date().toLocaleTimeString();
+  e.innerHTML=`<span class="log-time">${time}</span>${escapeHtml(msg)}`;
+  r.appendChild(e); r.scrollTop=r.scrollHeight;
+}
+function clearLog(){ document.getElementById('results').innerHTML=''; state.groups.forEach(g=>g.steps.forEach(s=>s.status=null)); save(); render(); }
+
+async function execStep(g, s){
+  s.status='running'; render();
+  await new Promise(r=>setTimeout(r,120));
+  const logs=[];
+  const ctx = {
+    vars: state.vars,
+    assert: (cond, msg)=>{ if(!cond) throw new Error(msg||'Assertion failed'); },
+    log: (...a)=>{ logs.push(a.map(x=>typeof x==='object'?JSON.stringify(x):String(x)).join(' ')); }
+  };
+  try {
+    const fn = new Function('vars','assert','log', s.code);
+    const res = fn(ctx.vars, ctx.assert, ctx.log);
+    logs.forEach(l=>logEntry('   '+l,'info'));
+    if (res === false) throw new Error('Returned false');
+    s.status='pass';
+    logEntry(`✓ ${g.name} → ${s.name}`, 'pass');
+  } catch(err) {
+    logs.forEach(l=>logEntry('   '+l,'info'));
+    s.status='fail';
+    logEntry(`✗ ${g.name} → ${s.name}: ${err.message}`, 'fail');
+  }
+  save(); render();
+}
+
+async function runSteps(list){
+  logEntry(t('startRun'), 'group');
+  for (const {g,s} of list) await execStep(g,s);
+  logEntry(t('endRun'), 'group');
+  updateStats();
+}
+function runAll(){
+  const list=[]; state.groups.forEach(g=>g.steps.forEach(s=>list.push({g,s})));
+  runSteps(list);
+}
+function runSelected(){
+  const list=[]; state.groups.forEach(g=>g.steps.forEach(s=>{ if(s.checked) list.push({g,s}); }));
+  runSteps(list);
+}
+function runGroup(gid){ const g=getGroup(gid); runSteps(g.steps.map(s=>({g,s}))); }
+function runStep(gid, sid){ const g=getGroup(gid), s=getStep(gid,sid); runSteps([{g,s}]); }
+
+function updateStats(){
+  let total=0,pass=0,fail=0;
+  state.groups.forEach(g=>g.steps.forEach(s=>{ total++; if(s.status==='pass')pass++; if(s.status==='fail')fail++; }));
+  document.getElementById('statTotal').textContent=total;
+  document.getElementById('statPass').textContent=pass;
+  document.getElementById('statFail').textContent=fail;
+}
+
+// ============ Export/Import ============
+function exportStories(){
+  const data = JSON.stringify({ vars: state.vars, groups: state.groups }, null, 2);
+  const blob = new Blob([data], {type:'application/json'});
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download='stories_'+Date.now()+'.json';
+  a.click();
+}
+function importStories(ev){
+  const file=ev.target.files[0]; if(!file)return;
+  const reader=new FileReader();
+  reader.onload=e=>{
+    try {
+      const data=JSON.parse(e.target.result);
+      if(data.groups){ state.groups=data.groups; }
+      if(data.vars){ state.vars=data.vars; }
+      // ensure ids
+      state.groups.forEach(g=>{ g.id=g.id||uid(); g.steps.forEach(s=>{s.id=s.id||uid(); s.status=null;}); });
+      save(); render();
+    } catch(err){ alert('Import error: '+err.message); }
+  };
+  reader.readAsText(file);
+  ev.target.value='';
+}
+
+// ============ UI helpers ============
+function openModal(id){ document.getElementById(id).classList.add('show'); }
+function closeModal(id){ document.getElementById(id).classList.remove('show'); }
+function toggleOrientation(){ state.orientation = state.orientation==='vertical'?'horizontal':'vertical'; save(); render(); }
+
+document.getElementById('langSel').addEventListener('change', e=>{ state.lang=e.target.value; save(); render(); });
+document.querySelectorAll('.modal-bg').forEach(m=>m.addEventListener('click', e=>{ if(e.target===m) m.classList.remove('show'); }));
+
+// ============ Init ============
+load();
+render();
+</script>
+</body>
+</html>
