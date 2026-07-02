@@ -1,0 +1,642 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Дихальна вправа</title>
+<style>
+  * {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  :root {
+    --bg-1: #0f2027;
+    --bg-2: #203a43;
+    --bg-3: #2c5364;
+    --accent: #4fd1c5;
+    --accent-glow: rgba(79, 209, 197, 0.6);
+    --text: #e8f4f8;
+  }
+
+  body {
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    background: linear-gradient(135deg, var(--bg-1), var(--bg-2), var(--bg-3));
+    background-size: 300% 300%;
+    animation: gradientShift 20s ease infinite;
+    color: var(--text);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    position: relative;
+    padding: 20px;
+  }
+
+  @keyframes gradientShift {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+  }
+
+  /* Floating particles */
+  .particles {
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+  }
+  .particle {
+    position: absolute;
+    background: rgba(255,255,255,0.15);
+    border-radius: 50%;
+    animation: float linear infinite;
+  }
+  @keyframes float {
+    from { transform: translateY(100vh) scale(0); opacity: 0; }
+    10% { opacity: 1; }
+    90% { opacity: 1; }
+    to { transform: translateY(-10vh) scale(1); opacity: 0; }
+  }
+
+  .container {
+    position: relative;
+    z-index: 2;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 30px;
+    width: 100%;
+    max-width: 900px;
+  }
+
+  h1 {
+    font-size: clamp(1.5rem, 4vw, 2.4rem);
+    font-weight: 300;
+    letter-spacing: 3px;
+    text-align: center;
+    text-shadow: 0 0 20px var(--accent-glow);
+  }
+
+  /* Breathing circle */
+  .breath-area {
+    position: relative;
+    width: min(320px, 70vw);
+    height: min(320px, 70vw);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .ring {
+    position: absolute;
+    border-radius: 50%;
+    border: 2px solid rgba(79, 209, 197, 0.3);
+    inset: 0;
+  }
+  .ring:nth-child(2) { inset: 8%; opacity: 0.5; }
+  .ring:nth-child(3) { inset: 16%; opacity: 0.3; }
+
+  .circle {
+    position: relative;
+    width: 55%;
+    height: 55%;
+    border-radius: 50%;
+    background: radial-gradient(circle at 35% 35%, #7ee8dc, var(--accent) 60%, #2c9d92);
+    box-shadow: 0 0 60px var(--accent-glow), inset 0 0 40px rgba(255,255,255,0.3);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: transform 0.3s ease;
+    will-change: transform;
+  }
+
+  .phase-text {
+    font-size: clamp(1rem, 3vw, 1.4rem);
+    font-weight: 400;
+    letter-spacing: 2px;
+    text-align: center;
+    color: #06282b;
+    text-shadow: 0 1px 3px rgba(255,255,255,0.4);
+    padding: 0 10px;
+  }
+
+  .counter {
+    font-size: clamp(2.5rem, 8vw, 4rem);
+    font-weight: 200;
+    text-shadow: 0 0 30px var(--accent-glow);
+    min-height: 1em;
+  }
+
+  /* Controls */
+  .controls {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 15px;
+    justify-content: center;
+  }
+
+  button {
+    background: rgba(255,255,255,0.08);
+    border: 1px solid rgba(79, 209, 197, 0.4);
+    color: var(--text);
+    padding: 12px 28px;
+    border-radius: 50px;
+    font-size: 1rem;
+    cursor: pointer;
+    backdrop-filter: blur(10px);
+    transition: all 0.3s ease;
+    letter-spacing: 1px;
+  }
+  button:hover {
+    background: rgba(79, 209, 197, 0.2);
+    box-shadow: 0 0 20px var(--accent-glow);
+    transform: translateY(-2px);
+  }
+  button:active { transform: translateY(0); }
+
+  button.primary {
+    background: linear-gradient(135deg, var(--accent), #2c9d92);
+    color: #06282b;
+    font-weight: 600;
+    border: none;
+  }
+
+  /* Settings panel */
+  .settings {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 20px;
+    justify-content: center;
+    background: rgba(0,0,0,0.15);
+    padding: 18px 24px;
+    border-radius: 20px;
+    backdrop-filter: blur(10px);
+    width: 100%;
+    max-width: 700px;
+  }
+
+  .setting {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    min-width: 120px;
+  }
+  .setting label {
+    font-size: 0.8rem;
+    opacity: 0.8;
+    letter-spacing: 1px;
+  }
+  .setting select, .setting input {
+    background: rgba(255,255,255,0.1);
+    border: 1px solid rgba(79, 209, 197, 0.3);
+    color: var(--text);
+    padding: 8px 12px;
+    border-radius: 10px;
+    font-size: 0.95rem;
+    text-align: center;
+    width: 100%;
+  }
+  .setting select option { background: var(--bg-2); }
+
+  .duration-row {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+  }
+  .duration-row input {
+    width: 55px;
+    padding: 6px;
+  }
+
+  .lang-switch {
+    position: fixed;
+    top: 15px;
+    right: 15px;
+    z-index: 10;
+    display: flex;
+    gap: 5px;
+  }
+  .lang-switch button {
+    padding: 6px 12px;
+    font-size: 0.85rem;
+  }
+  .lang-switch button.active {
+    background: var(--accent);
+    color: #06282b;
+  }
+
+  .stats {
+    font-size: 0.9rem;
+    opacity: 0.75;
+    text-align: center;
+    letter-spacing: 1px;
+  }
+
+  /* Horizontal / landscape layout */
+  @media (orientation: landscape) and (max-height: 600px) {
+    .container {
+      flex-direction: row;
+      max-width: 100%;
+      flex-wrap: wrap;
+      gap: 20px;
+    }
+    h1 { width: 100%; font-size: 1.4rem; }
+    .breath-area { width: min(220px, 40vh); height: min(220px, 40vh); }
+    .right-panel {
+      display: flex;
+      flex-direction: column;
+      gap: 15px;
+      flex: 1;
+      min-width: 250px;
+    }
+  }
+
+  @media (orientation: portrait), (min-height: 601px) {
+    .right-panel {
+      display: contents;
+    }
+  }
+</style>
+</head>
+<body>
+<div class="particles" id="particles"></div>
+
+<div class="lang-switch">
+  <button data-lang="uk" class="active">УКР</button>
+  <button data-lang="en">ENG</button>
+</div>
+
+<div class="container">
+  <h1 id="title">Дихальна вправа</h1>
+
+  <div class="breath-area">
+    <div class="ring"></div>
+    <div class="ring"></div>
+    <div class="ring"></div>
+    <div class="circle" id="circle">
+      <div class="phase-text" id="phaseText">Готові?</div>
+    </div>
+  </div>
+
+  <div class="counter" id="counter"></div>
+
+  <div class="right-panel">
+    <div class="controls">
+      <button class="primary" id="startBtn">Почати</button>
+      <button id="resetBtn">Скинути</button>
+    </div>
+
+    <div class="settings">
+      <div class="setting">
+        <label id="lblPattern">Техніка</label>
+        <select id="pattern">
+          <option value="478">4-7-8 (Розслаблення)</option>
+          <option value="box">Квадрат (4-4-4-4)</option>
+          <option value="calm">Спокій (4-6)</option>
+          <option value="deep">Глибоке (5-5)</option>
+        </select>
+      </div>
+      <div class="setting">
+        <label id="lblCycles">Цикли</label>
+        <input type="number" id="cycles" min="1" max="99" value="5">
+      </div>
+    </div>
+
+    <div class="stats" id="stats"></div>
+  </div>
+</div>
+
+<script>
+// ---------- Translations ----------
+const i18n = {
+  uk: {
+    title: "Дихальна вправа",
+    start: "Почати",
+    pause: "Пауза",
+    resume: "Продовжити",
+    reset: "Скинути",
+    lblPattern: "Техніка",
+    lblCycles: "Цикли",
+    ready: "Готові?",
+    inhale: "Вдих",
+    hold: "Затримка",
+    exhale: "Видих",
+    holdEmpty: "Пауза",
+    done: "Чудово! 🌿",
+    stats: (done, total) => `Виконано циклів: ${done} / ${total}`,
+    patterns: {
+      "478": "4-7-8 (Розслаблення)",
+      "box": "Квадрат (4-4-4-4)",
+      "calm": "Спокій (4-6)",
+      "deep": "Глибоке (5-5)"
+    }
+  },
+  en: {
+    title: "Breathing Exercise",
+    start: "Start",
+    pause: "Pause",
+    resume: "Resume",
+    reset: "Reset",
+    lblPattern: "Technique",
+    lblCycles: "Cycles",
+    ready: "Ready?",
+    inhale: "Inhale",
+    hold: "Hold",
+    exhale: "Exhale",
+    holdEmpty: "Hold",
+    done: "Well done! 🌿",
+    stats: (done, total) => `Completed cycles: ${done} / ${total}`,
+    patterns: {
+      "478": "4-7-8 (Relaxation)",
+      "box": "Box (4-4-4-4)",
+      "calm": "Calm (4-6)",
+      "deep": "Deep (5-5)"
+    }
+  }
+};
+
+// ---------- Breathing patterns ----------
+// phases: [name, seconds] name in: inhale, hold, exhale, holdEmpty
+const patterns = {
+  "478":  [["inhale",4],["hold",7],["exhale",8]],
+  "box":  [["inhale",4],["hold",4],["exhale",4],["holdEmpty",4]],
+  "calm": [["inhale",4],["exhale",6]],
+  "deep": [["inhale",5],["exhale",5]]
+};
+
+// ---------- State ----------
+let state = {
+  lang: "uk",
+  pattern: "478",
+  cycles: 5,
+  running: false,
+  paused: false,
+  cyclesDone: 0
+};
+
+// runtime (not persisted)
+let phaseIndex = 0, timeLeft = 0, timerId = null, currentCycle = 0;
+
+// ---------- Elements ----------
+const el = {
+  title: document.getElementById('title'),
+  circle: document.getElementById('circle'),
+  phaseText: document.getElementById('phaseText'),
+  counter: document.getElementById('counter'),
+  startBtn: document.getElementById('startBtn'),
+  resetBtn: document.getElementById('resetBtn'),
+  pattern: document.getElementById('pattern'),
+  cycles: document.getElementById('cycles'),
+  lblPattern: document.getElementById('lblPattern'),
+  lblCycles: document.getElementById('lblCycles'),
+  stats: document.getElementById('stats'),
+  langBtns: document.querySelectorAll('.lang-switch button')
+};
+
+// ---------- Persistence ----------
+function save() {
+  localStorage.setItem('breathState', JSON.stringify({
+    lang: state.lang,
+    pattern: state.pattern,
+    cycles: state.cycles,
+    cyclesDone: state.cyclesDone
+  }));
+}
+function load() {
+  try {
+    const s = JSON.parse(localStorage.getItem('breathState'));
+    if (s) {
+      state.lang = s.lang || 'uk';
+      state.pattern = s.pattern || '478';
+      state.cycles = s.cycles || 5;
+      state.cyclesDone = s.cyclesDone || 0;
+    }
+  } catch(e){}
+}
+
+// ---------- UI language ----------
+function applyLang() {
+  const t = i18n[state.lang];
+  el.title.textContent = t.title;
+  el.lblPattern.textContent = t.lblPattern;
+  el.lblCycles.textContent = t.lblCycles;
+  el.resetBtn.textContent = t.reset;
+  document.documentElement.lang = state.lang;
+
+  // update pattern option labels
+  [...el.pattern.options].forEach(opt => {
+    opt.textContent = t.patterns[opt.value];
+  });
+
+  // start button text
+  if (!state.running) el.startBtn.textContent = t.start;
+  else el.startBtn.textContent = state.paused ? t.resume : t.pause;
+
+  // phase text if idle
+  if (!state.running) el.phaseText.textContent = t.ready;
+  else updatePhaseText();
+
+  updateStats();
+
+  el.langBtns.forEach(b => b.classList.toggle('active', b.dataset.lang === state.lang));
+}
+
+function updateStats() {
+  el.stats.textContent = i18n[state.lang].stats(state.cyclesDone, state.cycles);
+}
+
+function updatePhaseText() {
+  const seq = patterns[state.pattern];
+  const [name] = seq[phaseIndex];
+  el.phaseText.textContent = i18n[state.lang][name];
+}
+
+// ---------- Breathing engine ----------
+function setCircleForPhase(name, seconds) {
+  const c = el.circle;
+  c.style.transition = `transform ${seconds}s ease-in-out`;
+  if (name === 'inhale') {
+    c.style.transform = 'scale(1.55)';
+  } else if (name === 'exhale') {
+    c.style.transform = 'scale(0.85)';
+  }
+  // hold phases keep current transform
+}
+
+function tick() {
+  timeLeft--;
+  el.counter.textContent = timeLeft > 0 ? timeLeft : '';
+  if (timeLeft <= 0) {
+    nextPhase();
+  }
+}
+
+function nextPhase() {
+  const seq = patterns[state.pattern];
+  phaseIndex++;
+  if (phaseIndex >= seq.length) {
+    phaseIndex = 0;
+    currentCycle++;
+    state.cyclesDone = currentCycle;
+    updateStats();
+    save();
+    if (currentCycle >= state.cycles) {
+      finish();
+      return;
+    }
+  }
+  startPhase();
+}
+
+function startPhase() {
+  const seq = patterns[state.pattern];
+  const [name, secs] = seq[phaseIndex];
+  timeLeft = secs;
+  updatePhaseText();
+  el.counter.textContent = timeLeft;
+  setCircleForPhase(name, secs);
+}
+
+function runLoop() {
+  clearInterval(timerId);
+  timerId = setInterval(tick, 1000);
+}
+
+function startExercise() {
+  state.running = true;
+  state.paused = false;
+  phaseIndex = 0;
+  currentCycle = 0;
+  state.cyclesDone = 0;
+  updateStats();
+  startPhase();
+  runLoop();
+  applyLang();
+  lockControls(true);
+}
+
+function pauseExercise() {
+  state.paused = true;
+  clearInterval(timerId);
+  // freeze circle
+  const c = el.circle;
+  const cs = getComputedStyle(c).transform;
+  c.style.transition = 'none';
+  c.style.transform = cs;
+  applyLang();
+}
+
+function resumeExercise() {
+  state.paused = false;
+  const seq = patterns[state.pattern];
+  const [name] = seq[phaseIndex];
+  // re-apply transition for remaining time
+  setCircleForPhase(name, timeLeft > 0 ? timeLeft : 1);
+  runLoop();
+  applyLang();
+}
+
+function finish() {
+  clearInterval(timerId);
+  state.running = false;
+  state.paused = false;
+  el.counter.textContent = '';
+  el.phaseText.textContent = i18n[state.lang].done;
+  el.circle.style.transition = 'transform 1.5s ease';
+  el.circle.style.transform = 'scale(1)';
+  lockControls(false);
+  applyLang();
+}
+
+function resetExercise() {
+  clearInterval(timerId);
+  state.running = false;
+  state.paused = false;
+  phaseIndex = 0;
+  currentCycle = 0;
+  state.cyclesDone = 0;
+  timeLeft = 0;
+  el.counter.textContent = '';
+  el.circle.style.transition = 'transform 1s ease';
+  el.circle.style.transform = 'scale(1)';
+  lockControls(false);
+  save();
+  applyLang();
+}
+
+function lockControls(locked) {
+  el.pattern.disabled = locked;
+  el.cycles.disabled = locked;
+}
+
+// ---------- Event handlers ----------
+el.startBtn.addEventListener('click', () => {
+  if (!state.running) {
+    startExercise();
+  } else if (state.paused) {
+    resumeExercise();
+  } else {
+    pauseExercise();
+  }
+});
+
+el.resetBtn.addEventListener('click', resetExercise);
+
+el.pattern.addEventListener('change', () => {
+  state.pattern = el.pattern.value;
+  save();
+});
+
+el.cycles.addEventListener('change', () => {
+  let v = parseInt(el.cycles.value) || 1;
+  v = Math.max(1, Math.min(99, v));
+  el.cycles.value = v;
+  state.cycles = v;
+  updateStats();
+  save();
+});
+
+el.langBtns.forEach(b => {
+  b.addEventListener('click', () => {
+    state.lang = b.dataset.lang;
+    applyLang();
+    save();
+  });
+});
+
+// ---------- Particles ----------
+function createParticles() {
+  const container = document.getElementById('particles');
+  const count = 25;
+  for (let i = 0; i < count; i++) {
+    const p = document.createElement('div');
+    p.className = 'particle';
+    const size = Math.random() * 6 + 2;
+    p.style.width = size + 'px';
+    p.style.height = size + 'px';
+    p.style.left = Math.random() * 100 + '%';
+    p.style.animationDuration = (Math.random() * 15 + 10) + 's';
+    p.style.animationDelay = (Math.random() * 15) + 's';
+    container.appendChild(p);
+  }
+}
+
+// ---------- Init ----------
+function init() {
+  load();
+  el.pattern.value = state.pattern;
+  el.cycles.value = state.cycles;
+  applyLang();
+  createParticles();
+}
+
+init();
+</script>
+</body>
+</html>
