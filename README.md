@@ -2,7 +2,7 @@
 
 A free, fast, and modern online tool to convert between XML and JSON formats. Convert, format, and download your data instantly with a clean, responsive interface.
 
-🔗 **Live Demo:** [https://xmltojson.github.io](https://xmltojson.github.io)
+🔗 **Live Demo:** [xmltojson.github.io](https://xmltojson.github.io)
 
 ## Features
 
