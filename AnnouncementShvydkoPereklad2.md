@@ -1,6 +1,6 @@
 Dear Community,
 
-We're excited to announce a major update to **ШвидкоПереклад** — the free AI translator built especially for Ukrainians navigating life abroad! 🇺🇦
+We're excited to announce a major update to **ШвидкоПереклад** — the free AI translator for everyone communicating across different languages in everyday life! 🌍
 
 After listening to your feedback, we've packed this release with three powerful new features that make translation faster, more accessible, and more useful for everyday situations.
 
