@@ -2529,27 +2529,40 @@ document.getElementById('clearAllBtn').onclick = async () => {
 };
 
 // ============ INFO MODAL ============
-document.getElementById('infoBtn').onclick = () => {
-  checkRollover();
-  const tLeft = Math.max(0, LIMITS.translate - (usage.translate || 0));
-  const sLeft = Math.max(0, LIMITS.scan - (usage.scan || 0));
-  alertModal(
-    'Про ШвидкоПереклад',
-    `<p>🌻 <strong>Безкоштовний AI-перекладач зі спеціалізацією на офіційних документах, медичних та юридичних термінах.</strong></p>
-     <p><strong>Можливості:</strong></p>
+document.getElementById('infoBtn').onclick = async () => {
+  // Build voice info
+  let voiceInfo = '';
+  try {
+    const vs = await TTS.loadVoices();
+    if (vs && vs.length) {
+      const langs = ['uk', 'en', 'pl', 'de', 'cs'];
+      const found = langs.map(l => {
+        const target = SPEECH_LANG_MAP[l].toLowerCase();
+        const short = target.split('-')[0];
+        const has = vs.find(v => (v.lang||'').toLowerCase() === target ||
+                                  (v.lang||'').toLowerCase().startsWith(short+'-') ||
+                                  (v.lang||'').toLowerCase() === short);
+        return `<li>${l.toUpperCase()}: ${has ? '✅ ' + has.name : '⚠️ не знайдено'}</li>`;
+      }).join('');
+      voiceInfo = `<p><strong>🔊 Голоси озвучення:</strong></p><ul>${found}</ul>`;
+    } else {
+      voiceInfo = '<p class="muted">⚠️ Голоси озвучення недоступні в цьому браузері</p>';
+    }
+  } catch(e) {}
+
+  await alertModal(
+    'ШвидкоПереклад',
+    `<p>Безкоштовний AI-перекладач зі спеціалізацією на офіційних документах, медичних та юридичних термінах.</p>
+     <p><strong>🌐 Переклад:</strong></p>
      <ul>
-       <li>Переклад 🇺🇦 ↔ 🇬🇧 🇵🇱 🇩🇪 🇨🇿</li>
-       <li>Розпізнавання тексту з фото (OCR)</li>
-       <li>Голосове введення та озвучення</li>
-       <li>Корисні фрази для екстрених ситуацій</li>
-       <li>Історія та збережені переклади</li>
-       <li>Історія сканувань (до ${MAX_SCANS})</li>
+       <li>Google Translate (основний)</li>
+       <li>MyMemory (5000 слів/день)</li>
+       <li>LibreTranslate (резервний)</li>
      </ul>
-     <p class="muted"><strong>Ліміти на сьогодні:</strong><br>
-     📝 Перекладів залишилось: <strong>${tLeft} / ${LIMITS.translate}</strong><br>
-     📷 Сканувань залишилось: <strong>${sLeft} / ${LIMITS.scan}</strong><br>
-     Скидання через: <strong>${formatResetTime()}</strong></p>
-     <p class="muted">Усі дані зберігаються локально у вашому браузері. Нічого не надсилається на наші сервери.</p>`,
+     <p><strong>📷 OCR:</strong> Tesseract.js у браузері</p>
+     ${voiceInfo}
+     <p><strong>🔒 Приватність:</strong> Дані зберігаються локально (LocalStorage + IndexedDB), не передаються на сервери</p>
+     <p><strong>🌍 Мови:</strong> 🇺🇦 🇬🇧 🇵🇱 🇩🇪 🇨🇿</p>`,
     'info'
   );
 };
