@@ -2537,25 +2537,41 @@ function initMic() {
 
 // ============ INFO MODAL ============
 async function showInfo() {
-  await showModal({
-    title: 'Про застосунок',
-    icon: 'info',
-    body: `
-      <p><strong>ШвидкоПереклад</strong> — безкоштовний AI-перекладач для біженців та мігрантів.</p>
-      <p>🌐 <strong>Мови:</strong> українська ↔ англійська / польська / німецька / чеська</p>
-      <ul>
-        <li>📝 Переклад тексту з урахуванням контексту</li>
-        <li>📷 Розпізнавання тексту з фото (OCR)</li>
-        <li>💬 Готові фрази для екстрених ситуацій</li>
-        <li>🔊 Озвучення перекладів</li>
-        <li>🎤 Голосове введення</li>
-        <li>💾 Резервне копіювання в архів</li>
-      </ul>
-      <p class="muted">Денні ліміти: ${LIMITS.translate} перекладів, ${LIMITS.scan} сканувань. OCR та обробка відбуваються у вашому браузері.</p>
-      <p class="muted">Дані зберігаються локально на вашому пристрої.</p>
-    `,
-    buttons: [{ label: 'Зрозуміло', type: 'primary', value: true }],
-  });
+  // Build voice info
+  let voiceInfo = '';
+  try {
+    const vs = await TTS.loadVoices();
+    if (vs && vs.length) {
+      const langs = ['uk', 'en', 'pl', 'de', 'cs'];
+      const found = langs.map(l => {
+        const target = SPEECH_LANG_MAP[l].toLowerCase();
+        const short = target.split('-')[0];
+        const has = vs.find(v => (v.lang||'').toLowerCase() === target ||
+                                  (v.lang||'').toLowerCase().startsWith(short+'-') ||
+                                  (v.lang||'').toLowerCase() === short);
+        return `<li>${l.toUpperCase()}: ${has ? '✅ ' + has.name : '⚠️ не знайдено'}</li>`;
+      }).join('');
+      voiceInfo = `<p><strong>🔊 Голоси озвучення:</strong></p><ul>${found}</ul>`;
+    } else {
+      voiceInfo = '<p class="muted">⚠️ Голоси озвучення недоступні в цьому браузері</p>';
+    }
+  } catch(e) {}
+
+  await alertModal(
+    'ШвидкоПереклад',
+    `<p>Безкоштовний AI-перекладач зі спеціалізацією на офіційних документах, медичних та юридичних термінах.</p>
+     <p><strong>🌐 Переклад:</strong></p>
+     <ul>
+       <li>Google Translate (основний)</li>
+       <li>MyMemory (5000 слів/день)</li>
+       <li>LibreTranslate (резервний)</li>
+     </ul>
+     <p><strong>📷 OCR:</strong> Tesseract.js у браузері</p>
+     ${voiceInfo}
+     <p><strong>🔒 Приватність:</strong> Дані зберігаються локально (LocalStorage + IndexedDB), не передаються на сервери</p>
+     <p><strong>🌍 Мови:</strong> 🇺🇦 🇬🇧 🇵🇱 🇩🇪 🇨🇿</p>`,
+    'info'
+  );
 }
 
 // ============ CLEAR ALL DATA ============
