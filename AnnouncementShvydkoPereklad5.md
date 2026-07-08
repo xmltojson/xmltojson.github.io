@@ -9,7 +9,7 @@ This release is all about **owning your data**. Your translations, scanned docum
 💾 **Backup to ZIP Archive** — Export everything into one portable file with a single tap
 📥 **One-Click Restore** — Bring back all your data on any device, instantly
 🗂️ **Complete Scan Backup** — Your full-resolution images travel inside the archive too
-📁 **Smart Naming** — Archives auto-named `shvedkopereklad_YYMMDDHHMM.zip` for easy sorting
+📁 **Smart Naming** — Archives auto-named `shvydkopereklad_YYMMDDHHMM.zip` for easy sorting
 🏳️ **Crisp SVG Flags** — Language flags now render perfectly on every OS & browser
 🔒 **100% Offline Backups** — Your archive is generated locally and never uploaded anywhere
 🛡️ **Safe Restore Flow** — Clear confirmation before any data is replaced
