@@ -43,7 +43,7 @@ Powered by [Tesseract.js](https://tesseract.projectnaptha.com/) — runs entirel
 
 ### Backup & Restore
 Portable data ownership powered by [JSZip](https://stuk.github.io/jszip/):
-- **💾 Backup** — bundles everything into a single ZIP archive named `shvedkopereklad_YYMMDDHHMM.zip`
+- **💾 Backup** — bundles everything into a single ZIP archive named `shvydkopereklad_YYMMDDHHMM.zip`
 - The archive includes your settings, history, saved translations, current photo, and **all scan images** (encoded inside the ZIP)
 - **📥 Restore** — load a previously exported archive to instantly bring back all your data on the same or a different device
 - Fully offline — no cloud, no server, your archive stays with you
