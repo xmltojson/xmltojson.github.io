@@ -165,7 +165,7 @@ Ways you can help:
 
 ## 📄 License
 
-MIT © 2025-2026 Yuliya Kolesnikova
+MIT © 2025-2027 Yuliya Kolesnikova
 
 ---
 
