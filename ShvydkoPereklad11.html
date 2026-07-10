@@ -1,0 +1,3681 @@
+I'll add PDF generation for history, saved phrases, and scans with separate buttons, plus date range filtering for history and good Cyrillic support.
+
+For Cyrillic PDF support, I'll use jsPDF with an embedded font approach. Since embedding a full font is heavy, I'll use a reliable method: rendering text to canvas via `html2canvas`-free approach won't work well, so I'll load jsPDF and a Cyrillic-capable font (Roboto) dynamically.
+
+Here's the full HTML with all changes:
+
+```html
+<!DOCTYPE html>
+<!-- MIT License
+Copyright (c) 2025-2027 Yuliya Kolesnikova <0009-0000-6151-7415@orcid.org>
+-->
+<html lang="uk">
+<head>
+<script type="text/javascript">
+;window.NREUM||(NREUM={});NREUM.init={distributed_tracing:{enabled:true},performance:{capture_measures:true},browser_consent_mode:{enabled:false},privacy:{cookies_enabled:true},ajax:{deny_list:["bam.eu01.nr-data.net"],capture_payloads:'none'}};
+
+;NREUM.loader_config={accountID:"8048230",trustKey:"8048230",agentID:"538850689",licenseKey:"NRJS-1077b9bcc326b41c381",applicationID:"538850689"};
+;NREUM.info={beacon:"bam.eu01.nr-data.net",errorBeacon:"bam.eu01.nr-data.net",licenseKey:"NRJS-1077b9bcc326b41c381",applicationID:"538850689",sa:1};
+</script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
+
+<title>ШвидкоПереклад — Free AI Translator</title>
+<meta name="title" content="ШвидкоПереклад — Free AI Translator">
+<meta name="description" content="Безкоштовний AI-перекладач. Переклад українська ↔ англійська / польська / німецька / чеська. Спеціалізація: офіційні документи, медичні терміни, юридичні папери. Розпізнавання тексту з фото.">
+<meta name="keywords" content="переклад, українська, English, Polski, Deutsch, Čeština, translator, OCR, ШвидкоПереклад">
+<meta name="author" content="ШвидкоПереклад">
+<meta name="robots" content="index, follow">
+<meta name="theme-color" content="#0057b7">
+<meta name="application-name" content="ШвидкоПереклад">
+<meta name="apple-mobile-web-app-title" content="ШвидкоПереклад">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'><defs><linearGradient id='bg' x1='0' y1='0' x2='0' y2='1'><stop offset='0' stop-color='%230057b7'/><stop offset='0.5' stop-color='%230057b7'/><stop offset='0.5' stop-color='%23ffd700'/><stop offset='1' stop-color='%23ffd700'/></linearGradient></defs><rect width='64' height='64' rx='12' fill='url(%23bg)'/><g transform='translate(32 32)'><g fill='%23ffb300'><ellipse rx='6' ry='14' transform='rotate(0)'/><ellipse rx='6' ry='14' transform='rotate(45)'/><ellipse rx='6' ry='14' transform='rotate(90)'/><ellipse rx='6' ry='14' transform='rotate(135)'/><ellipse rx='6' ry='14' transform='rotate(22.5)'/><ellipse rx='6' ry='14' transform='rotate(67.5)'/><ellipse rx='6' ry='14' transform='rotate(112.5)'/><ellipse rx='6' ry='14' transform='rotate(157.5)'/></g><circle r='8' fill='%234a2c0f'/><circle r='6' fill='%236b3e1a'/></g></svg>">
+
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+:root {
+  --primary: #0057b7;
+  --accent: #ffd700;
+  --bg: #f5f7fa;
+  --card: #ffffff;
+  --text: #1a2332;
+  --muted: #6b7280;
+  --border: #e5e7eb;
+  --success: #10b981;
+  --danger: #ef4444;
+  --warn: #f59e0b;
+  --shadow: 0 4px 20px rgba(0,87,183,0.08);
+}
+
+html { -webkit-text-size-adjust: 100%; }
+
+body {
+  font-family: -apple-system, 'Segoe UI', Roboto, sans-serif;
+  background: linear-gradient(135deg, #e8f0ff 0%, #fff8d6 100%);
+  min-height: 100vh;
+  color: var(--text);
+  padding: 12px;
+  overflow-x: hidden;
+}
+
+.app { max-width: 1400px; margin: 0 auto; }
+
+header {
+  background: linear-gradient(135deg, var(--primary), #003d80);
+  color: white;
+  padding: 16px 20px;
+  border-radius: 16px;
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  box-shadow: var(--shadow);
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.logo { display: flex; align-items: center; gap: 12px; min-width: 0; }
+
+.logo-icon {
+  width: 44px; height: 44px;
+  background: var(--accent);
+  border-radius: 12px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 22px; font-weight: bold; color: var(--primary);
+  flex-shrink: 0;
+}
+
+.logo-text { min-width: 0; }
+.logo h1 { font-size: 20px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.logo p { font-size: 11px; opacity: 0.85; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+.header-actions { display: flex; gap: 6px; align-items: center; flex-shrink: 0; }
+
+.api-status {
+  display: flex; align-items: center; gap: 6px;
+  background: rgba(255,255,255,0.15);
+  padding: 6px 10px; border-radius: 20px;
+  font-size: 11px; font-weight: 600;
+}
+
+.api-dot {
+  width: 8px; height: 8px; border-radius: 50%;
+  background: var(--success);
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+.icon-btn {
+  background: rgba(255,255,255,0.15);
+  border: none; color: white;
+  width: 38px; height: 38px;
+  border-radius: 10px; cursor: pointer;
+  font-size: 16px; transition: all 0.2s;
+  position: relative;
+}
+
+.icon-btn:hover, .icon-btn:active { background: rgba(255,255,255,0.25); }
+
+/* Tips bar */
+.tips-bar {
+  background: linear-gradient(135deg, #fff8d6, #f0f4ff);
+  border: 1px solid var(--accent);
+  border-radius: 12px;
+  padding: 12px 16px;
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  box-shadow: var(--shadow);
+  position: relative;
+  overflow: hidden;
+}
+
+.tips-icon {
+  font-size: 22px;
+  flex-shrink: 0;
+  animation: tipBounce 2s ease-in-out infinite;
+}
+
+@keyframes tipBounce {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-4px); }
+}
+
+.tips-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.tips-label {
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--primary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 2px;
+}
+
+.tips-text {
+  font-size: 13px;
+  color: var(--text);
+  line-height: 1.4;
+  opacity: 1;
+  transition: opacity 0.4s;
+}
+
+.tips-text.fading { opacity: 0; }
+
+.tips-nav {
+  display: flex;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.tips-dot {
+  width: 7px; height: 7px;
+  border-radius: 50%;
+  background: var(--border);
+  cursor: pointer;
+  transition: all 0.3s;
+  border: none;
+  padding: 0;
+}
+
+.tips-dot.active { background: var(--primary); width: 18px; border-radius: 4px; }
+
+.tips-close {
+  background: transparent;
+  border: none;
+  color: var(--muted);
+  cursor: pointer;
+  font-size: 16px;
+  flex-shrink: 0;
+  padding: 2px 6px;
+  border-radius: 6px;
+  transition: all 0.2s;
+}
+
+.tips-close:hover { background: rgba(0,0,0,0.06); color: var(--text); }
+
+.tips-progress {
+  position: absolute;
+  bottom: 0; left: 0;
+  height: 3px;
+  background: var(--accent);
+  transition: width 0.1s linear;
+}
+
+.tabs {
+  display: flex; gap: 6px; margin-bottom: 16px;
+  background: var(--card); padding: 5px;
+  border-radius: 12px; box-shadow: var(--shadow);
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.tabs::-webkit-scrollbar { display: none; }
+
+.tab {
+  flex: 1; min-width: 90px;
+  padding: 11px 14px; border: none;
+  background: transparent; border-radius: 8px;
+  cursor: pointer; font-weight: 600; font-size: 13px;
+  color: var(--muted); transition: all 0.2s; white-space: nowrap;
+}
+
+.tab.active { background: var(--primary); color: white; }
+
+.main-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+
+@media (max-width: 900px) {
+  .main-grid { grid-template-columns: 1fr; }
+}
+
+.card {
+  background: var(--card);
+  border-radius: 14px; padding: 16px;
+  box-shadow: var(--shadow);
+}
+
+.lang-bar {
+  display: flex; align-items: center; gap: 6px;
+  margin-bottom: 12px; flex-wrap: wrap;
+}
+
+.lang-select {
+  flex: 1; min-width: 0;
+  padding: 10px 12px;
+  border: 2px solid var(--border);
+  border-radius: 10px;
+  font-size: 14px; font-weight: 600;
+  background: white; cursor: pointer;
+  transition: all 0.2s;
+  max-width: 100%;
+}
+
+.lang-select:hover { border-color: var(--primary); }
+
+.swap-btn {
+  background: var(--primary); color: white;
+  border: none; width: 40px; height: 40px;
+  border-radius: 10px; cursor: pointer;
+  font-size: 18px; flex-shrink: 0;
+  transition: transform 0.3s;
+}
+
+.swap-btn:hover, .swap-btn:active { transform: rotate(180deg); }
+
+.text-area {
+  width: 100%; min-height: 160px;
+  padding: 12px;
+  border: 2px solid var(--border);
+  border-radius: 12px;
+  font-size: 15px; font-family: inherit;
+  resize: vertical; transition: border-color 0.2s;
+}
+
+.text-area:focus { outline: none; border-color: var(--primary); }
+.text-area.readonly { background: #f9fafb; }
+
+.toolbar {
+  display: flex; gap: 6px;
+  margin-top: 10px; flex-wrap: wrap;
+}
+
+.btn {
+  padding: 10px 14px; border: none;
+  border-radius: 10px; cursor: pointer;
+  font-weight: 600; font-size: 13px;
+  transition: all 0.2s;
+  display: inline-flex; align-items: center; gap: 6px;
+  min-height: 40px;
+}
+
+.btn:active { transform: scale(0.97); }
+
+.btn-primary { background: var(--primary); color: white; }
+.btn-primary:hover { background: #003d80; }
+.btn-primary:disabled { opacity: 0.6; cursor: not-allowed; }
+
+.btn-secondary { background: var(--border); color: var(--text); }
+.btn-secondary:hover { background: #d1d5db; }
+
+.btn-secondary.speaking {
+  background: var(--danger);
+  color: white;
+  animation: speakingPulse 1.2s ease-in-out infinite;
+}
+
+@keyframes speakingPulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.5); }
+  50% { box-shadow: 0 0 0 8px rgba(239, 68, 68, 0); }
+}
+
+.btn-accent { background: var(--accent); color: var(--primary); }
+.btn-accent.saved { background: var(--success); color: white; }
+
+.btn-pdf { background: #b91c1c; color: white; }
+.btn-pdf:hover { background: #991b1b; }
+.btn-pdf:disabled { opacity: 0.6; cursor: not-allowed; }
+
+.btn-danger { background: var(--danger); color: white; }
+
+.btn-full { width: 100%; justify-content: center; }
+
+.context-tags {
+  display: flex; gap: 6px;
+  margin-bottom: 10px; flex-wrap: wrap;
+}
+
+.tag {
+  padding: 6px 12px;
+  background: #f0f4ff; color: var(--primary);
+  border: 1px solid #d0dfff;
+  border-radius: 20px;
+  font-size: 12px; font-weight: 600;
+  cursor: pointer; transition: all 0.2s;
+  white-space: nowrap;
+}
+
+.tag.active { background: var(--primary); color: white; }
+
+.section-title {
+  font-size: 12px; font-weight: 700;
+  color: var(--muted); text-transform: uppercase;
+  letter-spacing: 0.5px; margin-bottom: 10px;
+}
+
+.photo-area {
+  border: 2px dashed var(--border);
+  border-radius: 12px;
+  padding: 30px 16px; text-align: center;
+  cursor: pointer; transition: all 0.2s;
+}
+
+.photo-area:hover { border-color: var(--primary); background: #f0f4ff; }
+.photo-area.has-image { padding: 8px; cursor: default; }
+
+.photo-preview { max-width: 100%; max-height: 280px; border-radius: 8px; }
+
+.history-item {
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: 10px; margin-bottom: 8px;
+  cursor: pointer; transition: all 0.2s;
+  position: relative;
+}
+
+.history-item:hover, .history-item:active { background: #f0f4ff; border-color: var(--primary); }
+
+.history-meta {
+  font-size: 10px; color: var(--muted);
+  margin-bottom: 4px;
+  display: flex; justify-content: space-between;
+  gap: 6px; flex-wrap: wrap;
+}
+
+.history-text {
+  font-size: 13px; color: var(--text);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+
+.item-actions {
+  display: flex; gap: 6px;
+  margin-top: 8px;
+  flex-wrap: wrap;
+}
+
+.item-actions .btn { padding: 6px 10px; font-size: 11px; min-height: 32px; }
+
+/* Search box */
+.search-bar {
+  display: flex; gap: 8px; align-items: center;
+  margin-bottom: 12px;
+}
+
+.search-input {
+  flex: 1;
+  padding: 10px 14px;
+  border: 2px solid var(--border);
+  border-radius: 10px;
+  font-size: 14px; font-family: inherit;
+  transition: border-color 0.2s;
+}
+
+.search-input:focus { outline: none; border-color: var(--primary); }
+
+.search-count {
+  font-size: 11px; color: var(--muted);
+  white-space: nowrap;
+}
+
+/* Date range filter */
+.date-filter {
+  display: flex; gap: 8px; align-items: center;
+  margin-bottom: 12px; flex-wrap: wrap;
+  padding: 10px 12px;
+  background: #f0f4ff;
+  border: 1px solid #d0dfff;
+  border-radius: 10px;
+}
+
+.date-filter .date-lbl {
+  font-size: 11px; font-weight: 600;
+  color: var(--muted);
+}
+
+.date-input {
+  padding: 7px 9px;
+  border: 2px solid var(--border);
+  border-radius: 8px;
+  font-size: 12px; font-family: inherit;
+  background: white;
+}
+
+.date-input:focus { outline: none; border-color: var(--primary); }
+
+.date-filter .btn { padding: 6px 10px; font-size: 11px; min-height: 32px; }
+
+/* Toolbar for list export */
+.list-toolbar {
+  display: flex; gap: 6px; align-items: center;
+  flex-wrap: wrap;
+}
+
+/* Scan history item with thumbnail */
+.scan-item {
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: 10px; margin-bottom: 8px;
+  transition: all 0.2s;
+  display: flex; gap: 12px;
+}
+
+.scan-item:hover { background: #f0f4ff; border-color: var(--primary); }
+
+.scan-thumb {
+  width: 70px; height: 70px;
+  object-fit: cover;
+  border-radius: 8px;
+  flex-shrink: 0;
+  background: #f3f4f6;
+  cursor: pointer;
+  border: 1px solid var(--border);
+}
+
+.scan-body { flex: 1; min-width: 0; }
+
+.scan-text-preview {
+  font-size: 13px; color: var(--text);
+  line-height: 1.4;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  margin-bottom: 4px;
+}
+
+.scan-trans-preview {
+  font-size: 12px; color: var(--primary);
+  line-height: 1.4;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.phrase-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 10px;
+}
+
+.phrase-card {
+  padding: 12px;
+  background: linear-gradient(135deg, #f0f4ff, #fff8d6);
+  border-radius: 12px;
+  cursor: pointer; transition: all 0.2s;
+  border: 1px solid transparent;
+  position: relative;
+}
+
+.phrase-card:hover, .phrase-card:active {
+  transform: translateY(-2px);
+  border-color: var(--primary);
+  box-shadow: 0 4px 12px rgba(0,87,183,0.15);
+}
+
+.phrase-card.speaking {
+  border-color: var(--danger);
+  box-shadow: 0 0 0 3px rgba(239,68,68,0.2);
+}
+
+.phrase-card .uk { font-weight: 700; color: var(--primary); margin-bottom: 4px; font-size: 14px; }
+.phrase-card .tr { font-size: 13px; color: var(--text); }
+
+/* Custom phrase controls */
+.phrase-card.custom {
+  background: linear-gradient(135deg, #fef3c7, #fff8d6);
+}
+
+.phrase-del {
+  position: absolute;
+  top: 6px; right: 6px;
+  width: 22px; height: 22px;
+  border-radius: 50%;
+  background: rgba(239,68,68,0.9);
+  color: white; border: none;
+  font-size: 12px; line-height: 1;
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  opacity: 0; transition: opacity 0.2s;
+  z-index: 2;
+}
+
+.phrase-card:hover .phrase-del,
+.phrase-card:active .phrase-del { opacity: 1; }
+
+.custom-badge {
+  display: inline-block;
+  font-size: 9px;
+  background: var(--accent);
+  color: var(--primary);
+  padding: 1px 6px;
+  border-radius: 8px;
+  font-weight: 700;
+  margin-top: 6px;
+  text-transform: uppercase;
+}
+
+.phrase-header-bar {
+  display: flex; justify-content: space-between;
+  align-items: center; gap: 8px;
+  flex-wrap: wrap; margin-bottom: 12px;
+}
+
+.cat-tag-wrap {
+  display: inline-flex; align-items: center;
+  position: relative;
+}
+
+.cat-tag-wrap .cat-del {
+  margin-left: -2px;
+  background: transparent; border: none;
+  color: inherit; cursor: pointer;
+  font-size: 11px; padding: 0 4px;
+  opacity: 0.7;
+}
+
+.cat-tag-wrap .cat-del:hover { opacity: 1; }
+
+/* Modal form fields */
+.form-field { margin-bottom: 12px; }
+.form-field label {
+  display: block; font-size: 12px; font-weight: 600;
+  color: var(--muted); margin-bottom: 4px;
+}
+.form-input {
+  width: 100%;
+  padding: 10px 12px;
+  border: 2px solid var(--border);
+  border-radius: 10px;
+  font-size: 14px; font-family: inherit;
+  transition: border-color 0.2s;
+}
+.form-input:focus { outline: none; border-color: var(--primary); }
+.form-input.small { font-size: 13px; padding: 8px 10px; }
+.form-row { display: flex; gap: 8px; align-items: center; }
+.form-row .flag-lbl { width: 28px; flex-shrink: 0; text-align: center; }
+
+/* Prefill translate button + input group */
+.phrase-input-group {
+  display: flex; gap: 6px; align-items: stretch;
+}
+.phrase-input-group .form-input { flex: 1; }
+.phrase-lang-flag {
+  display: inline-flex; align-items: center;
+  gap: 4px; font-size: 12px; font-weight: 600;
+  color: var(--muted);
+}
+.field-just-filled {
+  border-color: var(--success) !important;
+  animation: fieldFlash 0.8s ease;
+}
+@keyframes fieldFlash {
+  0% { background: #d1fae5; }
+  100% { background: white; }
+}
+.prefill-bar {
+  display: flex; gap: 8px; align-items: center;
+  padding: 10px 12px;
+  background: #f0f4ff;
+  border: 1px solid #d0dfff;
+  border-radius: 10px;
+  margin-bottom: 14px;
+  flex-wrap: wrap;
+}
+.prefill-bar .prefill-hint {
+  font-size: 12px; color: var(--muted);
+  flex: 1; min-width: 120px;
+}
+.btn-prefill {
+  background: var(--primary); color: white;
+  padding: 8px 12px; font-size: 12px;
+  min-height: 36px;
+}
+.btn-prefill:disabled { opacity: 0.6; cursor: not-allowed; }
+
+/* Inline SVG flags */
+.flag-icon {
+  display: inline-block;
+  width: 20px; height: 14px;
+  border-radius: 2px;
+  vertical-align: middle;
+  margin-right: 4px;
+  box-shadow: 0 0 1px rgba(0,0,0,0.3);
+}
+.lang-select .flag-icon { display: none; }
+.opt-flag { width: 20px; height: 14px; vertical-align: middle; margin-right: 6px; }
+
+.empty-state { text-align: center; padding: 40px 20px; color: var(--muted); }
+
+.loader {
+  display: inline-block;
+  width: 14px; height: 14px;
+  border: 2px solid currentColor;
+  border-top-color: transparent;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.toast {
+  position: fixed; bottom: 20px;
+  left: 50%; transform: translateX(-50%) translateY(100px);
+  background: var(--text); color: white;
+  padding: 12px 20px; border-radius: 10px;
+  font-size: 14px; z-index: 2000;
+  opacity: 0; pointer-events: none;
+  transition: all 0.3s;
+  max-width: calc(100vw - 32px); text-align: center;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+}
+
+.toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+.toast.error { background: var(--danger); }
+.toast.success { background: var(--success); }
+.toast.warn { background: var(--warn); }
+
+.modal-overlay {
+  position: fixed; inset: 0;
+  background: rgba(15, 23, 42, 0.6);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  display: flex; align-items: center; justify-content: center;
+  z-index: 1500;
+  padding: 16px;
+  opacity: 0; pointer-events: none;
+  transition: opacity 0.25s;
+}
+
+.modal-overlay.show { opacity: 1; pointer-events: auto; }
+
+.modal {
+  background: white;
+  border-radius: 16px;
+  max-width: 440px; width: 100%;
+  max-height: 90vh;
+  overflow: hidden;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.25);
+  transform: scale(0.9) translateY(20px);
+  transition: transform 0.25s;
+  display: flex; flex-direction: column;
+}
+
+.modal-overlay.show .modal { transform: scale(1) translateY(0); }
+
+.modal-header {
+  padding: 20px 20px 0;
+  display: flex; align-items: center; gap: 12px;
+}
+
+.modal-icon {
+  width: 44px; height: 44px;
+  border-radius: 12px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 22px;
+  flex-shrink: 0;
+}
+
+.modal-icon.info { background: #dbeafe; color: #1d4ed8; }
+.modal-icon.warn { background: #fee2e2; color: #dc2626; }
+.modal-icon.success { background: #d1fae5; color: #047857; }
+
+.modal-title {
+  font-size: 17px; font-weight: 700;
+  color: var(--text);
+  line-height: 1.3;
+}
+
+.modal-body {
+  padding: 12px 20px 0;
+  overflow-y: auto;
+  flex: 1;
+}
+
+.modal-body p {
+  font-size: 14px;
+  color: var(--text);
+  line-height: 1.6;
+  margin-bottom: 10px;
+}
+
+.modal-body .muted {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.modal-body ul {
+  padding-left: 20px;
+  margin: 8px 0;
+}
+
+.modal-body li {
+  font-size: 13px;
+  color: var(--text);
+  line-height: 1.7;
+}
+
+.modal-body img {
+  max-width: 100%;
+  border-radius: 10px;
+  margin: 8px 0;
+}
+
+.modal-body pre {
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  font-family: inherit;
+  font-size: 13px;
+  background: #f9fafb;
+  padding: 10px;
+  border-radius: 8px;
+  margin: 8px 0;
+  line-height: 1.5;
+}
+
+.modal-footer {
+  padding: 16px 20px 20px;
+  display: flex; gap: 8px;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+}
+
+.modal-footer .btn { min-width: 100px; justify-content: center; }
+
+.info-badge {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 4px 8px;
+  background: #e0f2fe; color: #0369a1;
+  border-radius: 20px;
+  font-size: 10px; font-weight: 600;
+  margin-left: 6px;
+}
+
+.context-note {
+  padding: 10px 12px;
+  background: #fef3c7;
+  border-left: 3px solid var(--accent);
+  border-radius: 8px;
+  font-size: 12px;
+  color: #78350f;
+  margin-top: 10px;
+}
+
+.provider-info {
+  display: flex; gap: 8px; align-items: center;
+  font-size: 11px; color: var(--muted);
+  margin-top: 8px;
+  flex-wrap: wrap;
+}
+
+.provider-badge {
+  padding: 2px 8px;
+  background: #f3f4f6;
+  border-radius: 10px;
+  font-weight: 600;
+}
+
+.hidden { display: none !important; }
+
+@media (max-width: 600px) {
+  body { padding: 8px; }
+  
+  header { padding: 12px 14px; border-radius: 14px; margin-bottom: 12px; }
+  .logo-icon { width: 40px; height: 40px; font-size: 20px; border-radius: 10px; }
+  .logo h1 { font-size: 17px; }
+  .logo p { font-size: 10px; }
+  .icon-btn { width: 36px; height: 36px; font-size: 15px; }
+  .api-status { display: none; }
+  
+  .tips-bar { padding: 10px 12px; gap: 8px; }
+  .tips-icon { font-size: 18px; }
+  .tips-text { font-size: 12px; }
+  .tips-nav { display: none; }
+  
+  .tabs { padding: 4px; gap: 4px; margin-bottom: 12px; }
+  .tab { font-size: 12px; padding: 9px 10px; min-width: 75px; }
+  
+  .card { padding: 14px; border-radius: 12px; }
+  .main-grid { gap: 12px; }
+  
+  .text-area { min-height: 140px; font-size: 14px; padding: 10px; }
+  
+  .lang-select { padding: 9px 10px; font-size: 13px; }
+  .swap-btn { width: 38px; height: 38px; }
+  
+  .btn { padding: 9px 12px; font-size: 12px; min-height: 38px; }
+  
+  .tag { font-size: 11px; padding: 5px 10px; }
+  
+  .phrase-grid { grid-template-columns: 1fr; }
+  .phrase-card { padding: 12px; }
+  .phrase-del { opacity: 1; }
+  
+  .modal { max-width: 100%; border-radius: 14px; }
+  .modal-header { padding: 16px 16px 0; }
+  .modal-body { padding: 10px 16px 0; }
+  .modal-footer { padding: 12px 16px 16px; }
+  .modal-footer .btn { flex: 1; min-width: 0; }
+  .modal-title { font-size: 16px; }
+  .modal-icon { width: 40px; height: 40px; font-size: 20px; }
+
+  .scan-thumb { width: 56px; height: 56px; }
+}
+
+@media (max-width: 380px) {
+  .logo p { display: none; }
+  .tab { font-size: 11px; padding: 8px; min-width: 0; }
+  .btn { padding: 8px 10px; font-size: 12px; }
+  .text-area { min-height: 120px; }
+}
+
+@media (orientation: landscape) and (max-height: 500px) {
+  header { padding: 10px 14px; margin-bottom: 10px; }
+  .logo-icon { width: 36px; height: 36px; font-size: 18px; }
+  .logo h1 { font-size: 16px; }
+  .logo p { display: none; }
+  .tabs { margin-bottom: 10px; }
+  .text-area { min-height: 100px; }
+  .card { padding: 12px; }
+  .main-grid { gap: 10px; }
+}
+
+@supports (padding: max(0px)) {
+  body {
+    padding-left: max(12px, env(safe-area-inset-left));
+    padding-right: max(12px, env(safe-area-inset-right));
+    padding-bottom: max(12px, env(safe-area-inset-bottom));
+  }
+}
+</style>
+</head>
+<body>
+
+<div class="app">
+  <header>
+    <div class="logo">
+      <div class="logo-icon">🌻</div>
+      <div class="logo-text">
+        <h1>ШвидкоПереклад</h1>
+        <p>Free AI translator</p>
+      </div>
+    </div>
+    <div class="header-actions">
+      <div class="api-status">
+        <div class="api-dot"></div>
+        <span>100% Free</span>
+      </div>
+      <button class="icon-btn" id="backupBtn" title="Зберегти дані в архів">💾</button>
+      <button class="icon-btn" id="restoreBtn" title="Відновити дані з архіву">📥</button>
+      <input type="file" id="restoreInput" accept=".zip" style="display:none">
+      <button class="icon-btn" id="infoBtn" title="About">ℹ️</button>
+      <button class="icon-btn" id="clearAllBtn" title="Clear data">🗑️</button>
+    </div>
+  </header>
+
+  <div class="tips-bar" id="tipsBar">
+    <div class="tips-icon" id="tipsIcon">💡</div>
+    <div class="tips-content">
+      <div class="tips-label" id="tipsLabel">Порада</div>
+      <div class="tips-text" id="tipsText">Завантаження порад...</div>
+    </div>
+    <div class="tips-nav" id="tipsNav"></div>
+    <button class="tips-close" id="tipsClose" title="Приховати поради">✕</button>
+  </div>
+
+  <div class="tabs">
+    <button class="tab active" data-tab="translate">📝 Переклад</button>
+    <button class="tab" data-tab="photo">📷 Фото</button>
+    <button class="tab" data-tab="phrases">💬 Фрази</button>
+    <button class="tab" data-tab="saved">⭐ Збережені</button>
+    <button class="tab" data-tab="history">📚 Історія</button>
+    <button class="tab" data-tab="scans">🗂️ Сканування</button>
+  </div>
+
+  <!-- TRANSLATE TAB -->
+  <div class="tab-content" id="tab-translate">
+    <div class="card" style="margin-bottom:14px">
+      <div class="section-title">Контекст <span class="info-badge">🔍 Точність</span></div>
+      <div class="context-tags" id="contextTags">
+        <div class="tag active" data-ctx="general">🌐 Загальний</div>
+        <div class="tag" data-ctx="legal">⚖️ Юридичний</div>
+        <div class="tag" data-ctx="medical">🏥 Медичний</div>
+        <div class="tag" data-ctx="official">📋 Документи</div>
+        <div class="tag" data-ctx="education">🎓 Освіта</div>
+        <div class="tag" data-ctx="banking">🏦 Банк</div>
+      </div>
+    </div>
+
+    <div class="main-grid">
+      <div class="card">
+        <div class="lang-bar">
+          <select class="lang-select" id="srcLang"></select>
+          <button class="swap-btn" id="swapBtn">⇄</button>
+          <select class="lang-select" id="tgtLang"></select>
+        </div>
+        <textarea class="text-area" id="srcText" placeholder="Введіть текст для перекладу..."></textarea>
+        <div class="toolbar">
+          <button class="btn btn-primary" id="translateBtn">🔄 Перекласти</button>
+          <button class="btn btn-secondary" id="micBtn">🎤 Голос</button>
+          <button class="btn btn-secondary" id="clearSrcBtn">✕ Очистити</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="lang-bar">
+          <strong style="color:var(--muted);font-size:12px">ПЕРЕКЛАД</strong>
+        </div>
+        <textarea class="text-area" id="tgtText" placeholder="Тут з'явиться переклад (можна редагувати)..."></textarea>
+        <div class="toolbar">
+          <button class="btn btn-secondary" id="copyBtn">📋 Копіювати</button>
+          <button class="btn btn-secondary" id="speakBtn">🔊 Озвучити</button>
+          <button class="btn btn-accent" id="saveBtn">⭐ Зберегти</button>
+        </div>
+        <div class="provider-info hidden" id="providerInfo">
+          <span>Переклад від:</span>
+          <span class="provider-badge" id="providerBadge">—</span>
+        </div>
+        <div class="context-note hidden" id="contextNote"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- PHOTO TAB -->
+  <div class="tab-content hidden" id="tab-photo">
+    <div class="main-grid">
+      <div class="card">
+        <div class="section-title">Фото документа</div>
+        <div class="photo-area" id="photoArea">
+          <div id="photoPlaceholder">
+            <div style="font-size:44px;margin-bottom:8px">📄</div>
+            <p style="font-weight:600;margin-bottom:4px;font-size:14px">Оберіть файл або зробіть фото</p>
+            <p style="font-size:12px;color:var(--muted)">Форми, бланки, документи</p>
+          </div>
+          <img class="photo-preview hidden" id="photoPreview" alt="">
+        </div>
+        <input type="file" id="fileInput" accept="image/*" style="display:none">
+        <input type="file" id="cameraInput" accept="image/*" capture="environment" style="display:none">
+        <div class="toolbar">
+          <button class="btn btn-primary" id="uploadBtn">📁 Обрати файл</button>
+          <button class="btn btn-secondary" id="cameraBtn">📷 Камера</button>
+          <button class="btn btn-secondary hidden" id="removePhotoBtn">✕ Видалити</button>
+        </div>
+        <div class="context-note" style="margin-top:12px">
+          💡 OCR працює у вашому браузері (Tesseract.js)
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="section-title">Розпізнаний текст</div>
+        <div class="lang-bar">
+          <select class="lang-select" id="photoSrcLang">
+            <option value="uk">🇺🇦 З української</option>
+            <option value="en">🇬🇧 З англійської</option>
+            <option value="pl">🇵🇱 З польської</option>
+            <option value="de">🇩🇪 З німецької</option>
+            <option value="cs">🇨🇿 З чеської</option>
+          </select>
+          <select class="lang-select" id="photoTgtLang"></select>
+        </div>
+        <div class="toolbar" style="margin-top:0;margin-bottom:10px">
+          <button class="btn btn-primary btn-full" id="ocrBtn">🔍 Розпізнати і перекласти</button>
+        </div>
+        <textarea class="text-area readonly" id="ocrResult" readonly placeholder="Тут з'явиться результат..."></textarea>
+        <div class="toolbar">
+          <button class="btn btn-secondary" id="copyOcrBtn">📋 Копіювати</button>
+          <button class="btn btn-secondary" id="speakOcrBtn">🔊 Озвучити</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- PHRASES TAB -->
+  <div class="tab-content hidden" id="tab-phrases">
+    <div class="card">
+      <div class="phrase-header-bar">
+        <div class="section-title" style="margin:0">Корисні фрази</div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap">
+          <button class="btn btn-accent" id="addPhraseBtn">➕ Додати фразу</button>
+          <button class="btn btn-secondary" id="addCategoryBtn">📁 Нова секція</button>
+          <button class="btn btn-pdf" id="pdfPhrasesBtn">📄 PDF</button>
+        </div>
+      </div>
+      <div class="context-tags" id="phraseCategories"></div>
+      <div class="lang-bar" style="margin-top:12px">
+        <select class="lang-select" id="phraseLang"></select>
+      </div>
+      <div class="phrase-grid" id="phraseGrid"></div>
+    </div>
+  </div>
+
+  <!-- SAVED TAB -->
+  <div class="tab-content hidden" id="tab-saved">
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:8px">
+        <div class="section-title" style="margin:0">Збережені переклади</div>
+        <div class="list-toolbar">
+          <button class="btn btn-pdf" id="pdfSavedBtn">📄 PDF</button>
+          <button class="btn btn-secondary" id="clearSavedBtn">🗑️ Очистити</button>
+        </div>
+      </div>
+      <div class="search-bar">
+        <input type="text" class="search-input" id="savedSearch" placeholder="🔍 Пошук у збережених...">
+        <span class="search-count" id="savedCount"></span>
+      </div>
+      <div id="savedList"></div>
+    </div>
+  </div>
+
+  <!-- HISTORY TAB -->
+  <div class="tab-content hidden" id="tab-history">
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:8px">
+        <div class="section-title" style="margin:0">Історія</div>
+        <div class="list-toolbar">
+          <button class="btn btn-pdf" id="pdfHistoryBtn">📄 PDF</button>
+          <button class="btn btn-secondary" id="clearHistBtn">🗑️ Очистити</button>
+        </div>
+      </div>
+      <div class="date-filter">
+        <span class="date-lbl">📅 Від:</span>
+        <input type="date" class="date-input" id="histDateFrom">
+        <span class="date-lbl">До:</span>
+        <input type="date" class="date-input" id="histDateTo">
+        <button class="btn btn-secondary" id="histDateClear">✕ Скинути</button>
+      </div>
+      <div class="search-bar">
+        <input type="text" class="search-input" id="historySearch" placeholder="🔍 Пошук в історії...">
+        <span class="search-count" id="historyCount"></span>
+      </div>
+      <div id="historyList"></div>
+    </div>
+  </div>
+
+  <!-- SCANS TAB -->
+  <div class="tab-content hidden" id="tab-scans">
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:8px">
+        <div class="section-title" style="margin:0">Історія сканувань <span class="info-badge">до 100</span></div>
+        <div class="list-toolbar">
+          <button class="btn btn-pdf" id="pdfScansBtn">📄 PDF</button>
+          <button class="btn btn-secondary" id="clearScansBtn">🗑️ Очистити</button>
+        </div>
+      </div>
+      <div class="search-bar">
+        <input type="text" class="search-input" id="scanSearch" placeholder="🔍 Пошук у сканах...">
+        <span class="search-count" id="scanCount"></span>
+      </div>
+      <div id="scansList"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Custom Modal -->
+<div class="modal-overlay" id="modalOverlay">
+  <div class="modal" id="modal">
+    <div class="modal-header">
+      <div class="modal-icon info" id="modalIcon">ℹ️</div>
+      <div class="modal-title" id="modalTitle">Title</div>
+    </div>
+    <div class="modal-body" id="modalBody"></div>
+    <div class="modal-footer" id="modalFooter"></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+<script>
+const STORE_KEY = 'shvydkoperetlad_v3';
+const USAGE_KEY = 'shvydkoperetlad_usage';
+
+/* ============ SVG FLAGS ============ */
+const FLAG_SVGS = {
+  uk: `<svg class="opt-flag" viewBox="0 0 20 14" xmlns="http://www.w3.org/2000/svg"><rect width="20" height="7" fill="#0057b7"/><rect y="7" width="20" height="7" fill="#ffd700"/></svg>`,
+  en: `<svg class="opt-flag" viewBox="0 0 20 14" xmlns="http://www.w3.org/2000/svg"><rect width="20" height="14" fill="#012169"/><path d="M0,0 L20,14 M20,0 L0,14" stroke="#fff" stroke-width="2.8"/><path d="M0,0 L20,14 M20,0 L0,14" stroke="#c8102e" stroke-width="1.4"/><path d="M10,0 V14 M0,7 H20" stroke="#fff" stroke-width="4.6"/><path d="M10,0 V14 M0,7 H20" stroke="#c8102e" stroke-width="2.8"/></svg>`,
+  pl: `<svg class="opt-flag" viewBox="0 0 20 14" xmlns="http://www.w3.org/2000/svg"><rect width="20" height="7" fill="#fff"/><rect y="7" width="20" height="7" fill="#dc143c"/></svg>`,
+  de: `<svg class="opt-flag" viewBox="0 0 20 14" xmlns="http://www.w3.org/2000/svg"><rect width="20" height="4.67" fill="#000"/><rect y="4.67" width="20" height="4.67" fill="#dd0000"/><rect y="9.33" width="20" height="4.67" fill="#ffce00"/></svg>`,
+  cs: `<svg class="opt-flag" viewBox="0 0 20 14" xmlns="http://www.w3.org/2000/svg"><rect width="20" height="7" fill="#fff"/><rect y="7" width="20" height="7" fill="#d7141a"/><path d="M0,0 L10,7 L0,14 Z" fill="#11457e"/></svg>`,
+};
+
+const LANG_LABELS = {
+  translate: {
+    uk: 'Українська', en: 'English', pl: 'Polski', de: 'Deutsch', cs: 'Čeština',
+  },
+  photoSrc: {
+    uk: 'З української', en: 'З англійської', pl: 'З польської', de: 'З німецької', cs: 'З чеської',
+  },
+};
+
+// Plain language names for PDF (avoid special chars issues in headings)
+const LANG_PDF = { uk: 'UK', en: 'EN', pl: 'PL', de: 'DE', cs: 'CS' };
+
+// Populate a native select. Native <option> can't render SVG,
+// so we use flag glyph fallback text with the SVG shown alongside via label.
+function buildLangSelect(selectId, langs, labelMap) {
+  const sel = document.getElementById(selectId);
+  if (!sel) return;
+  sel.innerHTML = langs.map(l => {
+    const label = labelMap[l] || l.toUpperCase();
+    return `<option value="${l}">${label}</option>`;
+  }).join('');
+}
+
+// Render inline SVG flag helper (for lists / previews)
+function flagSvg(langCode) {
+  return FLAG_SVGS[langCode] || '';
+}
+
+/* ============ INDEXEDDB FOR IMAGES + SCAN HISTORY ============ */
+const IDB_NAME = 'shvydkoperetlad_db';
+const IDB_VERSION = 2;
+const IDB_STORE = 'images';
+const IDB_SCANS_STORE = 'scans';
+const IDB_PHOTO_KEY = 'currentPhoto';
+const MAX_SCANS = 100;
+
+let _idbPromise = null;
+function idbOpen() {
+  if (_idbPromise) return _idbPromise;
+  _idbPromise = new Promise((resolve, reject) => {
+    if (!('indexedDB' in window)) {
+      reject(new Error('IndexedDB not supported'));
+      return;
+    }
+    const req = indexedDB.open(IDB_NAME, IDB_VERSION);
+    req.onupgradeneeded = (e) => {
+      const db = e.target.result;
+      if (!db.objectStoreNames.contains(IDB_STORE)) {
+        db.createObjectStore(IDB_STORE);
+      }
+      if (!db.objectStoreNames.contains(IDB_SCANS_STORE)) {
+        const scanStore = db.createObjectStore(IDB_SCANS_STORE, { keyPath: 'id' });
+        scanStore.createIndex('time', 'time', { unique: false });
+      }
+    };
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = () => reject(req.error);
+  });
+  return _idbPromise;
+}
+
+async function idbPut(key, value) {
+  const db = await idbOpen();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(IDB_STORE, 'readwrite');
+    tx.objectStore(IDB_STORE).put(value, key);
+    tx.oncomplete = () => resolve();
+    tx.onerror = () => reject(tx.error);
+    tx.onabort = () => reject(tx.error);
+  });
+}
+
+async function idbGet(key) {
+  const db = await idbOpen();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(IDB_STORE, 'readonly');
+    const req = tx.objectStore(IDB_STORE).get(key);
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = () => reject(req.error);
+  });
+}
+
+async function idbDelete(key) {
+  const db = await idbOpen();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(IDB_STORE, 'readwrite');
+    tx.objectStore(IDB_STORE).delete(key);
+    tx.oncomplete = () => resolve();
+    tx.onerror = () => reject(tx.error);
+  });
+}
+
+async function idbClearStore() {
+  const db = await idbOpen();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(IDB_STORE, 'readwrite');
+    tx.objectStore(IDB_STORE).clear();
+    tx.oncomplete = () => resolve();
+    tx.onerror = () => reject(tx.error);
+  });
+}
+
+/* ---- Scan history store operations ---- */
+async function scanAdd(record) {
+  const db = await idbOpen();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(IDB_SCANS_STORE, 'readwrite');
+    const store = tx.objectStore(IDB_SCANS_STORE);
+    store.put(record);
+    tx.oncomplete = () => resolve();
+    tx.onerror = () => reject(tx.error);
+    tx.onabort = () => reject(tx.error);
+  });
+}
+
+async function scanGetAll() {
+  const db = await idbOpen();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(IDB_SCANS_STORE, 'readonly');
+    const req = tx.objectStore(IDB_SCANS_STORE).getAll();
+    req.onsuccess = () => {
+      const list = req.result || [];
+      list.sort((a, b) => b.time - a.time);
+      resolve(list);
+    };
+    req.onerror = () => reject(req.error);
+  });
+}
+
+async function scanGet(id) {
+  const db = await idbOpen();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(IDB_SCANS_STORE, 'readonly');
+    const req = tx.objectStore(IDB_SCANS_STORE).get(id);
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = () => reject(req.error);
+  });
+}
+
+async function scanDelete(id) {
+  const db = await idbOpen();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(IDB_SCANS_STORE, 'readwrite');
+    tx.objectStore(IDB_SCANS_STORE).delete(id);
+    tx.oncomplete = () => resolve();
+    tx.onerror = () => reject(tx.error);
+  });
+}
+
+async function scanClear() {
+  const db = await idbOpen();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(IDB_SCANS_STORE, 'readwrite');
+    tx.objectStore(IDB_SCANS_STORE).clear();
+    tx.oncomplete = () => resolve();
+    tx.onerror = () => reject(tx.error);
+  });
+}
+
+// Trim scan store to MAX_SCANS newest entries
+async function scanTrim() {
+  const all = await scanGetAll(); // sorted newest-first
+  if (all.length <= MAX_SCANS) return;
+  const toDelete = all.slice(MAX_SCANS);
+  for (const rec of toDelete) {
+    try { await scanDelete(rec.id); } catch(e) {}
+  }
+}
+
+function blobToDataURL(blob) {
+  return new Promise((resolve, reject) => {
+    const fr = new FileReader();
+    fr.onload = () => resolve(fr.result);
+    fr.onerror = () => reject(fr.error);
+    fr.readAsDataURL(blob);
+  });
+}
+
+// Create a small thumbnail blob from an image blob/dataURL
+function makeThumbnail(source, maxSize = 160) {
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.onload = () => {
+      let { width, height } = img;
+      const scale = Math.min(1, maxSize / Math.max(width, height));
+      const w = Math.round(width * scale);
+      const h = Math.round(height * scale);
+      const canvas = document.createElement('canvas');
+      canvas.width = w; canvas.height = h;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(img, 0, 0, w, h);
+      resolve(canvas.toDataURL('image/jpeg', 0.7));
+    };
+    img.onerror = () => resolve(null);
+    if (source instanceof Blob) {
+      const url = URL.createObjectURL(source);
+      img.src = url;
+      const orig = img.onload;
+      img.onload = () => { orig(); try { URL.revokeObjectURL(url); } catch(e){} };
+    } else {
+      img.src = source;
+    }
+  });
+}
+
+let _activeObjectURL = null;
+function setPreviewFromBlob(blob) {
+  if (_activeObjectURL) {
+    try { URL.revokeObjectURL(_activeObjectURL); } catch(e) {}
+    _activeObjectURL = null;
+  }
+  const url = URL.createObjectURL(blob);
+  _activeObjectURL = url;
+  document.getElementById('photoPreview').src = url;
+}
+
+const LIMITS = { translate: 20, scan: 15 };
+
+const LANG_NAMES = { uk: 'Ukrainian', en: 'English', pl: 'Polish', de: 'German', cs: 'Czech' };
+const TESSERACT_LANGS = { uk: 'ukr', en: 'eng', pl: 'pol', de: 'deu', cs: 'ces' };
+const SPEECH_LANG_MAP = { uk: 'uk-UA', en: 'en-US', pl: 'pl-PL', de: 'de-DE', cs: 'cs-CZ' };
+
+const CONTEXT_HINTS = {
+  general: '',
+  legal: '⚖️ Юридичний контекст — зверніть увагу на точність термінів',
+  medical: '🏥 Медичний контекст — при серйозних питаннях проконсультуйтеся з перекладачем',
+  official: '📋 Офіційні документи — перевірте переклад перед поданням',
+  education: '🎓 Освітній контекст',
+  banking: '🏦 Банківський контекст — фінансові терміни можуть відрізнятися',
+};
+
+/* ============ BUILT-IN PHRASE CATEGORIES ============ */
+const BUILTIN_CATEGORIES = [
+  { id: 'emergency', label: '🚨 Екстрена' },
+  { id: 'medical', label: '🏥 Медицина' },
+  { id: 'documents', label: '📋 Документи' },
+  { id: 'housing', label: '🏠 Житло' },
+  { id: 'work', label: '💼 Робота' },
+];
+
+const PHRASES = {
+  emergency: [
+    { uk: 'Допоможіть мені, будь ласка', en: 'Please help me', pl: 'Proszę o pomoc', de: 'Bitte helfen Sie mir', cs: 'Prosím, pomozte mi' },
+    { uk: 'Викличте поліцію', en: 'Call the police', pl: 'Zadzwoń na policję', de: 'Rufen Sie die Polizei', cs: 'Zavolejte policii' },
+    { uk: 'Мені потрібен лікар', en: 'I need a doctor', pl: 'Potrzebuję lekarza', de: 'Ich brauche einen Arzt', cs: 'Potřebuji lékaře' },
+    { uk: 'Я загубився', en: 'I am lost', pl: 'Zgubiłem się', de: 'Ich habe mich verlaufen', cs: 'Ztratil jsem se' },
+    { uk: 'Я не розмовляю мовою', en: "I don't speak the language", pl: 'Nie mówię w tym języku', de: 'Ich spreche die Sprache nicht', cs: 'Nemluvím tímto jazykem' },
+  ],
+  medical: [
+    { uk: 'У мене болить голова', en: 'I have a headache', pl: 'Boli mnie głowa', de: 'Ich habe Kopfschmerzen', cs: 'Bolí mě hlava' },
+    { uk: 'У мене температура', en: 'I have a fever', pl: 'Mam gorączkę', de: 'Ich habe Fieber', cs: 'Mám horečku' },
+    { uk: 'Я алергік', en: 'I have allergies', pl: 'Mam alergie', de: 'Ich habe Allergien', cs: 'Mám alergii' },
+    { uk: 'Мені потрібні ліки', en: 'I need medicine', pl: 'Potrzebuję leków', de: 'Ich brauche Medikamente', cs: 'Potřebuji léky' },
+    { uk: 'Я вагітна', en: 'I am pregnant', pl: 'Jestem w ciąży', de: 'Ich bin schwanger', cs: 'Jsem těhotná' },
+  ],
+  documents: [
+    { uk: 'Де я можу зареєструватися?', en: 'Where can I register?', pl: 'Gdzie mogę się zarejestrować?', de: 'Wo kann ich mich registrieren?', cs: 'Kde se mohu zaregistrovat?' },
+    { uk: 'Мені потрібен переклад', en: 'I need a translation', pl: 'Potrzebuję tłumaczenia', de: 'Ich brauche eine Übersetzung', cs: 'Potřebuji překlad' },
+    { uk: 'Це мій паспорт', en: 'This is my passport', pl: 'To mój paszport', de: 'Das ist mein Reisepass', cs: 'Toto je můj pas' },
+    { uk: 'Я подаю заяву на статус', en: 'I am applying for status', pl: 'Ubiegam się o status', de: 'Ich beantrage einen Status', cs: 'Žádám o status' },
+  ],
+  housing: [
+    { uk: 'Я шукаю житло', en: 'I am looking for housing', pl: 'Szukam mieszkania', de: 'Ich suche eine Unterkunft', cs: 'Hledám bydlení' },
+    { uk: 'Скільки коштує оренда?', en: 'How much is the rent?', pl: 'Ile kosztuje czynsz?', de: 'Wie viel kostet die Miete?', cs: 'Kolik stojí nájem?' },
+    { uk: 'Чи можу я заселитися сьогодні?', en: 'Can I move in today?', pl: 'Czy mogę się wprowadzić dziś?', de: 'Kann ich heute einziehen?', cs: 'Mohu se nastěhovat dnes?' },
+  ],
+  work: [
+    { uk: 'Я шукаю роботу', en: 'I am looking for work', pl: 'Szukam pracy', de: 'Ich suche Arbeit', cs: 'Hledám práci' },
+    { uk: 'Який графік роботи?', en: 'What are the working hours?', pl: 'Jakie są godziny pracy?', de: 'Wie sind die Arbeitszeiten?', cs: 'Jaká je pracovní doba?' },
+    { uk: 'Яка зарплата?', en: 'What is the salary?', pl: 'Jaka jest pensja?', de: 'Wie hoch ist das Gehalt?', cs: 'Jaký je plat?' },
+  ],
+};
+
+let state = {
+  srcLang: 'uk', tgtLang: 'en',
+  srcText: '', tgtText: '',
+  context: 'general',
+  activeTab: 'translate',
+  history: [], saved: [],
+  hasPhoto: false, ocrResult: '',
+  photoSrcLang: 'uk', photoTgtLang: 'en',
+  phraseCat: 'emergency', phraseLang: 'en',
+  // Custom phrase system:
+  customCategories: [], // [{ id, label }]
+  customPhrases: {},    // { categoryId: [ {uk,en,pl,de,cs}, ... ] }
+};
+
+// Search query state (not persisted)
+let searchQueries = { history: '', saved: '', scan: '' };
+// Date range filter for history (not persisted)
+let historyDateRange = { from: '', to: '' };
+// Cached scan list for rendering/search
+let scansCache = [];
+
+let usage = { date: '', translate: 0, scan: 0 };
+
+function todayStr() {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+
+/* ============ FRIENDLY DATE FORMATTING ============ */
+function formatFriendlyDate(ts) {
+  if (!ts) return '';
+  const d = new Date(ts);
+  const now = new Date();
+  const diffMs = now - d;
+  const diffSec = Math.floor(diffMs / 1000);
+  const diffMin = Math.floor(diffSec / 60);
+  const diffHour = Math.floor(diffMin / 60);
+
+  const timeStr = d.toLocaleTimeString('uk-UA', { hour: '2-digit', minute: '2-digit' });
+
+  // Just now / minutes / hours (within today)
+  if (diffSec < 45) return 'щойно';
+  if (diffMin < 60) return `${diffMin} хв тому`;
+
+  // Same calendar day
+  const isSameDay = d.toDateString() === now.toDateString();
+  if (isSameDay) {
+    if (diffHour < 6) return `${diffHour} год тому`;
+    return `сьогодні о ${timeStr}`;
+  }
+
+  // Yesterday
+  const yesterday = new Date(now);
+  yesterday.setDate(now.getDate() - 1);
+  if (d.toDateString() === yesterday.toDateString()) {
+    return `вчора о ${timeStr}`;
+  }
+
+  // Within last 7 days -> weekday name
+  const days = Math.floor(diffMs / 86400000);
+  if (days < 7) {
+    const weekday = d.toLocaleDateString('uk-UA', { weekday: 'long' });
+    return `${weekday} о ${timeStr}`;
+  }
+
+  // Same year -> day month
+  if (d.getFullYear() === now.getFullYear()) {
+    return d.toLocaleDateString('uk-UA', { day: 'numeric', month: 'long' }) + ` о ${timeStr}`;
+  }
+
+  // Otherwise full date
+  return d.toLocaleDateString('uk-UA', { day: 'numeric', month: 'long', year: 'numeric' });
+}
+
+// Full date-time string for PDF
+function formatFullDate(ts) {
+  if (!ts) return '';
+  const d = new Date(ts);
+  return d.toLocaleString('uk-UA', {
+    day: '2-digit', month: '2-digit', year: 'numeric',
+    hour: '2-digit', minute: '2-digit',
+  });
+}
+
+function loadState() {
+  try {
+    const saved = localStorage.getItem(STORE_KEY);
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      if ('photoData' in parsed) delete parsed.photoData;
+      state = { ...state, ...parsed };
+      if (!Array.isArray(state.saved)) state.saved = [];
+      if (!Array.isArray(state.history)) state.history = [];
+      if (!Array.isArray(state.customCategories)) state.customCategories = [];
+      if (!state.customPhrases || typeof state.customPhrases !== 'object') state.customPhrases = {};
+    }
+  } catch(e) { console.error(e); }
+}
+
+function saveState() {
+  const { photoData, ...clean } = state;
+  localStorage.setItem(STORE_KEY, JSON.stringify(clean));
+}
+
+function loadUsage() {
+  try {
+    const raw = localStorage.getItem(USAGE_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (parsed.date === todayStr()) {
+        usage = { ...usage, ...parsed };
+      } else {
+        usage = { date: todayStr(), translate: 0, scan: 0 };
+        saveUsage();
+      }
+    } else {
+      usage.date = todayStr();
+      saveUsage();
+    }
+  } catch(e) {
+    console.error(e);
+    usage = { date: todayStr(), translate: 0, scan: 0 };
+  }
+}
+
+function saveUsage() {
+  localStorage.setItem(USAGE_KEY, JSON.stringify(usage));
+}
+
+function checkRollover() {
+  if (usage.date !== todayStr()) {
+    usage = { date: todayStr(), translate: 0, scan: 0 };
+    saveUsage();
+  }
+}
+
+function incrementUsage(type) {
+  checkRollover();
+  usage[type] = (usage[type] || 0) + 1;
+  saveUsage();
+}
+
+function canUse(type) {
+  checkRollover();
+  return (usage[type] || 0) < LIMITS[type];
+}
+
+function showToast(msg, type = '') {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast show ' + type;
+  setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+function msUntilReset() {
+  const now = new Date();
+  const tomorrow = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
+  return tomorrow - now;
+}
+
+function formatResetTime() {
+  const ms = msUntilReset();
+  const h = Math.floor(ms / 3600000);
+  const m = Math.floor((ms % 3600000) / 60000);
+  if (h > 0) return `${h} год ${m} хв`;
+  return `${m} хв`;
+}
+
+// ============ MODAL ============
+function showModal({ title, body, icon = 'info', buttons, onRender }) {
+  return new Promise((resolve) => {
+    const overlay = document.getElementById('modalOverlay');
+    const modalIcon = document.getElementById('modalIcon');
+    const modalTitle = document.getElementById('modalTitle');
+    const modalBody = document.getElementById('modalBody');
+    const modalFooter = document.getElementById('modalFooter');
+    
+    const icons = { info: 'ℹ️', warn: '⚠️', success: '✅', question: '❓' };
+    modalIcon.textContent = icons[icon] || icons.info;
+    modalIcon.className = 'modal-icon ' + (icon === 'warn' ? 'warn' : icon === 'success' ? 'success' : 'info');
+    
+    modalTitle.textContent = title;
+    modalBody.innerHTML = body;
+    modalFooter.innerHTML = '';
+    
+    const btns = buttons || [{ label: 'OK', type: 'primary', value: true }];
+    btns.forEach((b, i) => {
+      const btn = document.createElement('button');
+      btn.className = 'btn btn-' + (b.type || 'secondary');
+      btn.textContent = b.label;
+      if (b.id) btn.id = b.id;
+      btn.onclick = () => {
+        // Allow a validator to prevent closing and supply a value
+        if (typeof b.onClick === 'function') {
+          const result = b.onClick(modalBody);
+          if (result === false) return; // keep modal open
+          if (result && typeof result.then === 'function') return; // async handled internally
+          closeModal(result === undefined ? b.value : result);
+        } else {
+          closeModal(b.value);
+        }
+      };
+      modalFooter.appendChild(btn);
+      if (i === btns.length - 1) setTimeout(() => btn.focus(), 100);
+    });
+
+    if (typeof onRender === 'function') {
+      try { onRender(modalBody); } catch(e) { console.error(e); }
+    }
+    
+    function closeModal(val) {
+      overlay.classList.remove('show');
+      document.removeEventListener('keydown', keyHandler);
+      overlay.removeEventListener('click', overlayHandler);
+      setTimeout(() => resolve(val), 200);
+    }
+    
+    function keyHandler(e) {
+      if (e.key === 'Escape') closeModal(false);
+    }
+    
+    function overlayHandler(e) {
+      if (e.target === overlay) closeModal(false);
+    }
+    
+    document.addEventListener('keydown', keyHandler);
+    overlay.addEventListener('click', overlayHandler);
+    overlay.classList.add('show');
+
+    // Expose a programmatic close for advanced modals
+    overlay._forceClose = closeModal;
+  });
+}
+
+async function alertModal(title, body, icon = 'info') {
+  return showModal({
+    title, body, icon,
+    buttons: [{ label: 'Зрозуміло', type: 'primary', value: true }],
+  });
+}
+
+async function confirmModal(title, body, { icon = 'question', okLabel = 'Так', cancelLabel = 'Скасувати', danger = false } = {}) {
+  return showModal({
+    title, body, icon,
+    buttons: [
+      { label: cancelLabel, type: 'secondary', value: false },
+      { label: okLabel, type: danger ? 'danger' : 'primary', value: true },
+    ],
+  });
+}
+
+async function limitReachedModal(type) {
+  const label = type === 'translate' ? 'перекладів' : 'сканувань';
+  const icon = type === 'translate' ? '📝' : '📷';
+  const max = LIMITS[type];
+  await alertModal(
+    'Денний ліміт досягнуто',
+    `<p>${icon} Ви використали всі <strong>${max} ${label}</strong> на сьогодні.</p>
+     <p class="muted">Ліміт скидається опівночі. До скидання: <strong>${formatResetTime()}</strong></p>
+     <p class="muted">Обмеження допомагає зберегти штовні API-сервіси доступними для всіх користувачів.</p>`,
+    'warn'
+  );
+}
+
+/* ============================================================
+   PDF GENERATION WITH CYRILLIC SUPPORT
+   ============================================================
+   jsPDF's built-in fonts don't support Cyrillic. We dynamically
+   load a Unicode TTF (Roboto) as base64 and register it with
+   jsPDF's VFS so Ukrainian/Polish/Czech/German chars render.
+   ============================================================ */
+
+let _pdfFontLoaded = false;
+let _pdfFontPromise = null;
+const PDF_FONT_NAME = 'Roboto';
+
+// Fetch a TTF font and convert to base64
+async function fetchFontBase64(url) {
+  const resp = await fetch(url);
+  if (!resp.ok) throw new Error('Font fetch failed: ' + resp.status);
+  const buf = await resp.arrayBuffer();
+  let binary = '';
+  const bytes = new Uint8Array(buf);
+  const chunk = 0x8000;
+  for (let i = 0; i < bytes.length; i += chunk) {
+    binary += String.fromCharCode.apply(null, bytes.subarray(i, i + chunk));
+  }
+  return btoa(binary);
+}
+
+// Ensure Cyrillic-capable font is registered in a jsPDF doc.
+// Loads regular + bold Roboto (full Cyrillic + Latin coverage).
+async function ensurePdfFont(doc) {
+  // Font sources (Roboto supports Cyrillic, Latin Extended)
+  const REGULAR_URL = 'https://cdn.jsdelivr.net/npm/@fontsource/roboto@5.0.8/files/roboto-cyrillic-400-normal.woff';
+  // We need TTF, not WOFF, for jsPDF. Use raw TTF from gstatic mirror via jsDelivr.
+  // Fallback approach: use a known TTF host.
+
+  if (_pdfFontPromise) {
+    await _pdfFontPromise;
+    applyFontToDoc(doc);
+    return;
+  }
+
+  _pdfFontPromise = (async () => {
+    // Try multiple TTF sources for robustness
+    const REGULAR_SOURCES = [
+      'https://cdn.jsdelivr.net/gh/google/fonts/apache/roboto/static/Roboto-Regular.ttf',
+      'https://raw.githubusercontent.com/google/fonts/main/apache/roboto/static/Roboto-Regular.ttf',
+    ];
+    const BOLD_SOURCES = [
+      'https://cdn.jsdelivr.net/gh/google/fonts/apache/roboto/static/Roboto-Bold.ttf',
+      'https://raw.githubusercontent.com/google/fonts/main/apache/roboto/static/Roboto-Bold.ttf',
+    ];
+
+    async function tryLoad(sources) {
+      for (const url of sources) {
+        try {
+          return await fetchFontBase64(url);
+        } catch (e) {
+          console.warn('Font source failed:', url, e.message);
+        }
+      }
+      throw new Error('All font sources failed');
+    }
+
+    const regularB64 = await tryLoad(REGULAR_SOURCES);
+    let boldB64 = null;
+    try { boldB64 = await tryLoad(BOLD_SOURCES); } catch(e) { /* bold optional */ }
+
+    _pdfFontData = { regular: regularB64, bold: boldB64 };
+    _pdfFontLoaded = true;
+  })();
+
+  await _pdfFontPromise;
+  applyFontToDoc(doc);
+}
+
+let _pdfFontData = null;
+
+function applyFontToDoc(doc) {
+  if (!_pdfFontData) return;
+  try {
+    doc.addFileToVFS('Roboto-Regular.ttf', _pdfFontData.regular);
+    doc.addFont('Roboto-Regular.ttf', PDF_FONT_NAME, 'normal');
+    if (_pdfFontData.bold) {
+      doc.addFileToVFS('Roboto-Bold.ttf', _pdfFontData.bold);
+      doc.addFont('Roboto-Bold.ttf', PDF_FONT_NAME, 'bold');
+    }
+    doc.setFont(PDF_FONT_NAME, 'normal');
+  } catch (e) {
+    console.warn('applyFontToDoc failed', e);
+  }
+}
+
+// Helper: create a jsPDF doc with Cyrillic font ready
+async function createPdfDoc() {
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({ unit: 'mm', format: 'a4' });
+  await ensurePdfFont(doc);
+  return doc;
+}
+
+// PDF layout engine — handles pagination, headers, wrapped text
+function makePdfWriter(doc) {
+  const pageW = doc.internal.pageSize.getWidth();
+  const pageH = doc.internal.pageSize.getHeight();
+  const margin = 15;
+  const contentW = pageW - margin * 2;
+  let y = margin;
+  let pageNum = 1;
+
+  function footer() {
+    doc.setFont(PDF_FONT_NAME, 'normal');
+    doc.setFontSize(8);
+    doc.setTextColor(150);
+    doc.text('ШвидкоПереклад', margin, pageH - 8);
+    doc.text('Стор. ' + pageNum, pageW - margin, pageH - 8, { align: 'right' });
+    doc.setTextColor(0);
+  }
+
+  function newPage() {
+    footer();
+    doc.addPage();
+    pageNum++;
+    y = margin;
+  }
+
+  function ensureSpace(h) {
+    if (y + h > pageH - 15) newPage();
+  }
+
+  function docTitle(title, subtitle) {
+    doc.setFillColor(0, 87, 183);
+    doc.rect(0, 0, pageW, 26, 'F');
+    doc.setTextColor(255);
+    doc.setFont(PDF_FONT_NAME, 'bold');
+    doc.setFontSize(16);
+    doc.text(title, margin, 13);
+    if (subtitle) {
+      doc.setFont(PDF_FONT_NAME, 'normal');
+      doc.setFontSize(9);
+      doc.text(subtitle, margin, 20);
+    }
+    doc.setTextColor(0);
+    y = 34;
+  }
+
+  // Write a label + text pair, wrapping as needed
+  function writeText(text, { size = 10, bold = false, color = [26,35,50], indent = 0, gap = 1.5 } = {}) {
+    if (!text) return;
+    doc.setFont(PDF_FONT_NAME, bold ? 'bold' : 'normal');
+    doc.setFontSize(size);
+    doc.setTextColor(...color);
+    const lines = doc.splitTextToSize(String(text), contentW - indent);
+    const lineH = size * 0.42;
+    for (const line of lines) {
+      ensureSpace(lineH + gap);
+      doc.text(line, margin + indent, y);
+      y += lineH + gap;
+    }
+  }
+
+  function spacer(h = 3) { ensureSpace(h); y += h; }
+
+  function divider() {
+    ensureSpace(4);
+    doc.setDrawColor(220);
+    doc.line(margin, y, pageW - margin, y);
+    y += 4;
+  }
+
+  function meta(text) {
+    writeText(text, { size: 8, color: [120,120,120] });
+  }
+
+  // Draw a card box around a callback that writes content
+  function itemNumber(n, langInfo, dateStr) {
+    ensureSpace(6);
+    doc.setFont(PDF_FONT_NAME, 'bold');
+    doc.setFontSize(9);
+    doc.setTextColor(0, 87, 183);
+    doc.text('#' + n + '  ' + (langInfo || ''), margin, y);
+    if (dateStr) {
+      doc.setFont(PDF_FONT_NAME, 'normal');
+      doc.setFontSize(8);
+      doc.setTextColor(120);
+      doc.text(dateStr, pageW - margin, y, { align: 'right' });
+    }
+    doc.setTextColor(0);
+    y += 5;
+  }
+
+  function addImage(dataUrl, maxW = 60, maxH = 45) {
+    if (!dataUrl) return;
+    try {
+      const props = doc.getImageProperties(dataUrl);
+      let w = maxW;
+      let h = (props.height / props.width) * w;
+      if (h > maxH) { h = maxH; w = (props.width / props.height) * h; }
+      ensureSpace(h + 3);
+      doc.addImage(dataUrl, 'JPEG', margin, y, w, h);
+      y += h + 3;
+    } catch (e) {
+      console.warn('addImage failed', e);
+    }
+  }
+
+  function finalize() {
+    footer();
+  }
+
+  return {
+    docTitle, writeText, spacer, divider, meta, itemNumber,
+    addImage, finalize, ensureSpace,
+    get y() { return y; },
+  };
+}
+
+function langPair(srcLang, tgtLang) {
+  return (LANG_PDF[srcLang] || srcLang || '?') + ' → ' + (LANG_PDF[tgtLang] || tgtLang || '?');
+}
+
+function pdfFileName(prefix) {
+  const d = new Date();
+  const pad = (n) => String(n).padStart(2, '0');
+  return `${prefix}_${d.getFullYear()}${pad(d.getMonth()+1)}${pad(d.getDate())}_${pad(d.getHours())}${pad(d.getMinutes())}.pdf`;
+}
+
+async function withPdfLoading(btn, fn) {
+  if (typeof window.jspdf === 'undefined') {
+    showToast('Бібліотека PDF недоступна', 'error');
+    return;
+  }
+  const orig = btn ? btn.innerHTML : '';
+  if (btn) { btn.disabled = true; btn.innerHTML = '<span class="loader"></span> PDF...'; }
+  try {
+    await fn();
+  } catch (e) {
+    console.error(e);
+    showToast('Помилка створення PDF: ' + e.message, 'error');
+  } finally {
+    if (btn) { btn.disabled = false; btn.innerHTML = orig; }
+  }
+}
+
+/* ---- Generate History PDF (with date range filter applied) ---- */
+async function generateHistoryPdf() {
+  const items = getFilteredHistory().map(({ h }) => h);
+  if (items.length === 0) {
+    showToast('Немає записів для експорту', 'warn');
+    return;
+  }
+
+  const doc = await createPdfDoc();
+  const w = makePdfWriter(doc);
+
+  let subtitle = 'Записів: ' + items.length + '  •  ' + formatFullDate(Date.now());
+  if (historyDateRange.from || historyDateRange.to) {
+    const f = historyDateRange.from || '...';
+    const t = historyDateRange.to || '...';
+    subtitle = `Період: ${f} — ${t}  •  Записів: ${items.length}`;
+  }
+  w.docTitle('Історія перекладів', subtitle);
+
+  items.forEach((h, i) => {
+    w.itemNumber(i + 1, langPair(h.srcLang, h.tgtLang) + (h.context ? '  [' + h.context + ']' : ''), formatFullDate(h.time));
+    w.writeText(h.src, { size: 10, bold: true });
+    w.spacer(1);
+    w.writeText(h.tgt, { size: 10, color: [0, 87, 183] });
+    w.divider();
+  });
+
+  w.finalize();
+  doc.save(pdfFileName('istoriya'));
+  showToast('PDF збережено', 'success');
+}
+
+/* ---- Generate Saved PDF ---- */
+async function generateSavedPdf() {
+  const items = state.saved;
+  if (!items || items.length === 0) {
+    showToast('Немає збережених для експорту', 'warn');
+    return;
+  }
+
+  const doc = await createPdfDoc();
+  const w = makePdfWriter(doc);
+  w.docTitle('Збережені переклади', 'Записів: ' + items.length + '  •  ' + formatFullDate(Date.now()));
+
+  items.forEach((s, i) => {
+    w.itemNumber(i + 1, langPair(s.srcLang, s.tgtLang), formatFullDate(s.time));
+    w.writeText(s.src, { size: 10, bold: true });
+    w.spacer(1);
+    w.writeText(s.tgt, { size: 10, color: [0, 87, 183] });
+    w.divider();
+  });
+
+  w.finalize();
+  doc.save(pdfFileName('zberezheni'));
+  showToast('PDF збережено', 'success');
+}
+
+/* ---- Generate Phrases PDF (all languages, current category) ---- */
+async function generatePhrasesPdf() {
+  const cats = getAllCategories();
+  if (cats.length === 0) {
+    showToast('Немає фраз для експорту', 'warn');
+    return;
+  }
+
+  const doc = await createPdfDoc();
+  const w = makePdfWriter(doc);
+  w.docTitle('Корисні фрази', 'Усі секції  •  ' + formatFullDate(Date.now()));
+
+  const ALL = ['uk', 'en', 'pl', 'de', 'cs'];
+
+  let total = 0;
+  cats.forEach((cat) => {
+    const list = getPhrasesForCategory(cat.id);
+    if (list.length === 0) return;
+
+    // Category heading
+    w.ensureSpace(8);
+    w.writeText(cat.label, { size: 12, bold: true, color: [0, 87, 183] });
+    w.spacer(1);
+
+    list.forEach((p, idx) => {
+      w.itemNumber(idx + 1, p.__custom ? '[власна]' : '', '');
+      ALL.forEach((l) => {
+        const val = p[l];
+        if (val) {
+          w.writeText(LANG_PDF[l] + ':  ' + val, { size: 9.5, indent: 2 });
+        }
+      });
+      total++;
+      w.divider();
+    });
+    w.spacer(2);
+  });
+
+  if (total === 0) {
+    showToast('Немає фраз для експорту', 'warn');
+    return;
+  }
+
+  w.finalize();
+  doc.save(pdfFileName('frazy'));
+  showToast('PDF збережено', 'success');
+}
+
+/* ---- Generate Scans PDF (with thumbnail images) ---- */
+async function generateScansPdf() {
+  if (!scansCache || scansCache.length === 0) {
+    showToast('Немає сканувань для експорту', 'warn');
+    return;
+  }
+
+  const doc = await createPdfDoc();
+  const w = makePdfWriter(doc);
+  w.docTitle('Історія сканувань', 'Записів: ' + scansCache.length + '  •  ' + formatFullDate(Date.now()));
+
+  for (let i = 0; i < scansCache.length; i++) {
+    const s = scansCache[i];
+    w.itemNumber(i + 1, langPair(s.srcLang, s.tgtLang), formatFullDate(s.time));
+
+    // Add thumbnail if available
+    if (s.thumb) {
+      w.addImage(s.thumb, 55, 45);
+    }
+
+    w.writeText('Розпізнаний текст:', { size: 9, bold: true, color: [100,100,100] });
+    w.writeText(s.ocrText || '(порожньо)', { size: 9.5 });
+    w.spacer(1);
+    w.writeText('Переклад:', { size: 9, bold: true, color: [100,100,100] });
+    w.writeText(s.translation || '(порожньо)', { size: 9.5, color: [0, 87, 183] });
+    w.divider();
+  }
+
+  w.finalize();
+  doc.save(pdfFileName('skanuvannya'));
+  showToast('PDF збережено', 'success');
+}
+
+/* ============ CUSTOM PHRASE / CATEGORY HELPERS ============ */
+
+// Returns full list of categories (built-in + custom)
+function getAllCategories() {
+  return [...BUILTIN_CATEGORIES, ...state.customCategories];
+}
+
+// Returns array of phrases for a category (built-in + custom appended)
+function getPhrasesForCategory(catId) {
+  const builtin = PHRASES[catId] || [];
+  const custom = state.customPhrases[catId] || [];
+  // Mark custom ones so we can render delete buttons & badges
+  return [
+    ...builtin.map(p => ({ ...p, __custom: false })),
+    ...custom.map((p, idx) => ({ ...p, __custom: true, __idx: idx })),
+  ];
+}
+
+function isCustomCategory(catId) {
+  return state.customCategories.some(c => c.id === catId);
+}
+
+// Add a custom category, returns its id
+function addCustomCategory(label) {
+  const id = 'cust_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6);
+  state.customCategories.push({ id, label });
+  if (!state.customPhrases[id]) state.customPhrases[id] = [];
+  saveState();
+  return id;
+}
+
+function deleteCustomCategory(catId) {
+  state.customCategories = state.customCategories.filter(c => c.id !== catId);
+  delete state.customPhrases[catId];
+  // If active category was deleted, fall back to first available
+  if (state.phraseCat === catId) {
+    const all = getAllCategories();
+    state.phraseCat = all.length ? all[0].id : 'emergency';
+  }
+  saveState();
+}
+
+function addCustomPhrase(catId, phraseObj) {
+  if (!state.customPhrases[catId]) state.customPhrases[catId] = [];
+  state.customPhrases[catId].push(phraseObj);
+  saveState();
+}
+
+function deleteCustomPhrase(catId, idx) {
+  if (!state.customPhrases[catId]) return;
+  state.customPhrases[catId].splice(idx, 1);
+  saveState();
+}
+
+/* ============ PREFILL TRANSLATION FOR ADD-PHRASE MODAL ============ */
+// Given a source language + text, translate into the remaining languages.
+// Only fills fields that are currently empty (won't overwrite user edits).
+async function prefillPhraseTranslations(bodyEl) {
+  const ALL_LANGS = ['uk', 'en', 'pl', 'de', 'cs'];
+  const srcLang = bodyEl.querySelector('#prefillSrcLang')?.value || 'uk';
+  const srcInput = bodyEl.querySelector(`input[data-lang="${srcLang}"]`);
+  const sourceText = (srcInput?.value || '').trim();
+
+  if (!sourceText) {
+    showToast('Введіть текст мовою-джерелом', 'warn');
+    srcInput?.focus();
+    return;
+  }
+
+  if (!canUse('translate')) {
+    await limitReachedModal('translate');
+    return;
+  }
+
+  const btn = bodyEl.querySelector('#prefillBtn') || document.getElementById('prefillBtn');
+  const origHtml = btn ? btn.innerHTML : '';
+  if (btn) { btn.disabled = true; btn.innerHTML = '<span class="loader"></span> Переклад...'; }
+
+  // Target languages: everything except the source that is currently empty
+  const targets = ALL_LANGS.filter(l => {
+    if (l === srcLang) return false;
+    const inp = bodyEl.querySelector(`input[data-lang="${l}"]`);
+    return inp && !inp.value.trim();
+  });
+
+  if (targets.length === 0) {
+    if (btn) { btn.disabled = false; btn.innerHTML = origHtml; }
+    
+    showToast('Усі поля вже заповнені', 'warn');
+    return;
+  }
+
+  incrementUsage('translate');
+
+  let successCount = 0;
+  for (const tgt of targets) {
+    try {
+      const translated = await translateText(sourceText, srcLang, tgt);
+      if (translated) {
+        const inp = bodyEl.querySelector(`input[data-lang="${tgt}"]`);
+        if (inp && !inp.value.trim()) {
+          inp.value = translated;
+          inp.classList.add('field-just-filled');
+          setTimeout(() => inp.classList.remove('field-just-filled'), 800);
+          successCount++;
+        }
+      }
+    } catch (e) {
+      console.warn('Prefill translation failed for', tgt, e);
+    }
+  }
+
+  if (btn) { btn.disabled = false; btn.innerHTML = origHtml; }
+
+  if (successCount > 0) {
+    showToast(`Заповнено ${successCount} ${successCount === 1 ? 'поле' : 'полів'}`, 'success');
+  } else {
+    showToast('Не вдалося перекласти', 'error');
+  }
+}
+
+/* ============ TRANSLATION API ============ */
+// Uses free translation providers with fallback chain.
+const TRANSLATE_PROVIDERS = [
+  {
+    name: 'MyMemory',
+    async translate(text, src, tgt) {
+      const url = `https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=${src}|${tgt}`;
+      const resp = await fetch(url);
+      if (!resp.ok) throw new Error('MyMemory HTTP ' + resp.status);
+      const data = await resp.json();
+      if (data.responseStatus !== 200 && !data.responseData?.translatedText) {
+        throw new Error('MyMemory error');
+      }
+      return data.responseData.translatedText;
+    },
+  },
+  {
+    name: 'Lingva',
+    async translate(text, src, tgt) {
+      const url = `https://lingva.ml/api/v1/${src}/${tgt}/${encodeURIComponent(text)}`;
+      const resp = await fetch(url);
+      if (!resp.ok) throw new Error('Lingva HTTP ' + resp.status);
+      const data = await resp.json();
+      if (!data.translation) throw new Error('Lingva empty');
+      return data.translation;
+    },
+  },
+];
+
+let lastProvider = '—';
+
+async function translateText(text, src, tgt) {
+  if (src === tgt) return text;
+  let lastErr = null;
+  for (const provider of TRANSLATE_PROVIDERS) {
+    try {
+      const result = await provider.translate(text, src, tgt);
+      if (result && result.trim()) {
+        lastProvider = provider.name;
+        return result.trim();
+      }
+    } catch (e) {
+      lastErr = e;
+      console.warn(`Provider ${provider.name} failed:`, e.message);
+    }
+  }
+  throw lastErr || new Error('Усі провайдери недоступні');
+}
+
+/* ============ MAIN TRANSLATE ACTION ============ */
+async function doTranslate() {
+  const text = document.getElementById('srcText').value.trim();
+  if (!text) {
+    showToast('Введіть текст для перекладу', 'warn');
+    return;
+  }
+
+  if (!canUse('translate')) {
+    await limitReachedModal('translate');
+    return;
+  }
+
+  const btn = document.getElementById('translateBtn');
+  const orig = btn.innerHTML;
+  btn.disabled = true;
+  btn.innerHTML = '<span class="loader"></span> Переклад...';
+
+  try {
+    const result = await translateText(text, state.srcLang, state.tgtLang);
+    document.getElementById('tgtText').value = result;
+    state.srcText = text;
+    state.tgtText = result;
+
+    incrementUsage('translate');
+
+    // Provider info
+    const providerInfo = document.getElementById('providerInfo');
+    providerInfo.classList.remove('hidden');
+    document.getElementById('providerBadge').textContent = lastProvider;
+
+    // Context note
+    const note = document.getElementById('contextNote');
+    const hint = CONTEXT_HINTS[state.context];
+    if (hint) {
+      note.textContent = hint;
+      note.classList.remove('hidden');
+    } else {
+      note.classList.add('hidden');
+    }
+
+    // Add to history
+    addToHistory({
+      src: text,
+      tgt: result,
+      srcLang: state.srcLang,
+      tgtLang: state.tgtLang,
+      context: state.context,
+      time: Date.now(),
+    });
+
+    saveState();
+  } catch (e) {
+    console.error(e);
+    showToast('Помилка перекладу: ' + e.message, 'error');
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = orig;
+  }
+}
+
+function addToHistory(entry) {
+  state.history.unshift(entry);
+  if (state.history.length > 200) state.history = state.history.slice(0, 200);
+  saveState();
+  if (state.activeTab === 'history') renderHistory();
+}
+
+/* ============ HISTORY FILTERING ============ */
+function getFilteredHistory() {
+  const q = searchQueries.history.toLowerCase().trim();
+  const from = historyDateRange.from ? new Date(historyDateRange.from + 'T00:00:00').getTime() : null;
+  const to = historyDateRange.to ? new Date(historyDateRange.to + 'T23:59:59').getTime() : null;
+
+  return state.history
+    .map((h, idx) => ({ h, idx }))
+    .filter(({ h }) => {
+      if (from !== null && h.time < from) return false;
+      if (to !== null && h.time > to) return false;
+      if (q) {
+        const hay = (h.src + ' ' + h.tgt).toLowerCase();
+        if (!hay.includes(q)) return false;
+      }
+      return true;
+    });
+}
+
+function renderHistory() {
+  const list = document.getElementById('historyList');
+  const filtered = getFilteredHistory();
+  const countEl = document.getElementById('historyCount');
+
+  const totalFilters = searchQueries.history || historyDateRange.from || historyDateRange.to;
+  countEl.textContent = totalFilters
+    ? `${filtered.length} / ${state.history.length}`
+    : `${state.history.length}`;
+
+  if (state.history.length === 0) {
+    list.innerHTML = `<div class="empty-state"><div style="font-size:44px;margin-bottom:8px">📚</div><p>Історія порожня</p></div>`;
+    return;
+  }
+
+  if (filtered.length === 0) {
+    list.innerHTML = `<div class="empty-state"><div style="font-size:44px;margin-bottom:8px">🔍</div><p>Нічого не знайдено</p></div>`;
+    return;
+  }
+
+  list.innerHTML = filtered.map(({ h, idx }) => `
+    <div class="history-item" data-idx="${idx}">
+      <div class="history-meta">
+        <span>${flagSvg(h.srcLang)} → ${flagSvg(h.tgtLang)} ${h.context && h.context !== 'general' ? '• ' + h.context : ''}</span>
+        <span>${formatFriendlyDate(h.time)}</span>
+      </div>
+      <div class="history-text"><strong>${escapeHtml(h.src)}</strong></div>
+      <div class="history-text" style="color:var(--primary)">${escapeHtml(h.tgt)}</div>
+      <div class="item-actions">
+        <button class="btn btn-secondary" data-act="load" data-idx="${idx}">↩️ Відкрити</button>
+        <button class="btn btn-secondary" data-act="copy" data-idx="${idx}">📋 Копіювати</button>
+        <button class="btn btn-danger" data-act="del" data-idx="${idx}">🗑️</button>
+      </div>
+    </div>
+  `).join('');
+
+  list.querySelectorAll('[data-act]').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const idx = parseInt(btn.dataset.idx);
+      const act = btn.dataset.act;
+      const h = state.history[idx];
+      if (!h) return;
+      if (act === 'load') {
+        state.srcLang = h.srcLang; state.tgtLang = h.tgtLang;
+        document.getElementById('srcText').value = h.src;
+        document.getElementById('tgtText').value = h.tgt;
+        state.srcText = h.src; state.tgtText = h.tgt;
+        syncLangSelects();
+        switchTab('translate');
+        saveState();
+      } else if (act === 'copy') {
+        copyText(h.tgt);
+      } else if (act === 'del') {
+        state.history.splice(idx, 1);
+        saveState();
+        renderHistory();
+        showToast('Видалено', 'success');
+      }
+    });
+  });
+}
+
+/* ============ SAVED ============ */
+function getFilteredSaved() {
+  const q = searchQueries.saved.toLowerCase().trim();
+  return state.saved
+    .map((s, idx) => ({ s, idx }))
+    .filter(({ s }) => {
+      if (!q) return true;
+      return (s.src + ' ' + s.tgt).toLowerCase().includes(q);
+    });
+}
+
+function renderSaved() {
+  const list = document.getElementById('savedList');
+  const filtered = getFilteredSaved();
+  const countEl = document.getElementById('savedCount');
+
+  countEl.textContent = searchQueries.saved
+    ? `${filtered.length} / ${state.saved.length}`
+    : `${state.saved.length}`;
+
+  if (state.saved.length === 0) {
+    list.innerHTML = `<div class="empty-state"><div style="font-size:44px;margin-bottom:8px">⭐</div><p>Немає збережених</p></div>`;
+    return;
+  }
+
+  if (filtered.length === 0) {
+    list.innerHTML = `<div class="empty-state"><div style="font-size:44px;margin-bottom:8px">🔍</div><p>Нічого не знайдено</p></div>`;
+    return;
+  }
+
+  list.innerHTML = filtered.map(({ s, idx }) => `
+    <div class="history-item" data-idx="${idx}">
+      <div class="history-meta">
+        <span>${flagSvg(s.srcLang)} → ${flagSvg(s.tgtLang)}</span>
+        <span>${formatFriendlyDate(s.time)}</span>
+      </div>
+      <div class="history-text"><strong>${escapeHtml(s.src)}</strong></div>
+      <div class="history-text" style="color:var(--primary)">${escapeHtml(s.tgt)}</div>
+      <div class="item-actions">
+        <button class="btn btn-secondary" data-act="load" data-idx="${idx}">↩️ Відкрити</button>
+        <button class="btn btn-secondary" data-act="copy" data-idx="${idx}">📋 Копіювати</button>
+        <button class="btn btn-danger" data-act="del" data-idx="${idx}">🗑️</button>
+      </div>
+    </div>
+  `).join('');
+
+  list.querySelectorAll('[data-act]').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const idx = parseInt(btn.dataset.idx);
+      const act = btn.dataset.act;
+      const s = state.saved[idx];
+      if (!s) return;
+      if (act === 'load') {
+        state.srcLang = s.srcLang; state.tgtLang = s.tgtLang;
+        document.getElementById('srcText').value = s.src;
+        document.getElementById('tgtText').value = s.tgt;
+        state.srcText = s.src; state.tgtText = s.tgt;
+        syncLangSelects();
+        switchTab('translate');
+        saveState();
+      } else if (act === 'copy') {
+        copyText(s.tgt);
+      } else if (act === 'del') {
+        state.saved.splice(idx, 1);
+        saveState();
+        renderSaved();
+        showToast('Видалено', 'success');
+      }
+    });
+  });
+}
+
+function saveTranslation() {
+  const src = document.getElementById('srcText').value.trim();
+  const tgt = document.getElementById('tgtText').value.trim();
+  if (!src || !tgt) {
+    showToast('Немає що зберігати', 'warn');
+    return;
+  }
+  // Avoid duplicates
+  const exists = state.saved.some(s => s.src === src && s.tgt === tgt);
+  if (exists) {
+    showToast('Вже збережено', 'warn');
+    return;
+  }
+  state.saved.unshift({
+    src, tgt,
+    srcLang: state.srcLang,
+    tgtLang: state.tgtLang,
+    time: Date.now(),
+  });
+  saveState();
+  const btn = document.getElementById('saveBtn');
+  btn.classList.add('saved');
+  btn.innerHTML = '✅ Збережено';
+  setTimeout(() => {
+    btn.classList.remove('saved');
+    btn.innerHTML = '⭐ Зберегти';
+  }, 1500);
+  showToast('Збережено', 'success');
+}
+
+/* ============ SCANS RENDERING ============ */
+function getFilteredScans() {
+  const q = searchQueries.scan.toLowerCase().trim();
+  if (!q) return scansCache;
+  return scansCache.filter(s =>
+    ((s.ocrText || '') + ' ' + (s.translation || '')).toLowerCase().includes(q)
+  );
+}
+
+async function refreshScansCache() {
+  try {
+    scansCache = await scanGetAll();
+  } catch (e) {
+    console.error('Failed to load scans', e);
+    scansCache = [];
+  }
+}
+
+function renderScans() {
+  const list = document.getElementById('scansList');
+  const filtered = getFilteredScans();
+  const countEl = document.getElementById('scanCount');
+
+  countEl.textContent = searchQueries.scan
+    ? `${filtered.length} / ${scansCache.length}`
+    : `${scansCache.length}`;
+
+  if (scansCache.length === 0) {
+    list.innerHTML = `<div class="empty-state"><div style="font-size:44px;margin-bottom:8px">🗂️</div><p>Немає збережених сканувань</p></div>`;
+    return;
+  }
+
+  if (filtered.length === 0) {
+    list.innerHTML = `<div class="empty-state"><div style="font-size:44px;margin-bottom:8px">🔍</div><p>Нічого не знайдено</p></div>`;
+    return;
+  }
+
+  list.innerHTML = filtered.map(s => `
+    <div class="scan-item" data-id="${s.id}">
+      <img class="scan-thumb" src="${s.thumb || ''}" alt="scan" data-act="view" data-id="${s.id}">
+      <div class="scan-body">
+        <div class="history-meta">
+          <span>${flagSvg(s.srcLang)} → ${flagSvg(s.tgtLang)}</span>
+          <span>${formatFriendlyDate(s.time)}</span>
+        </div>
+        <div class="scan-text-preview">${escapeHtml(s.ocrText || '(порожньо)')}</div>
+        <div class="scan-trans-preview">${escapeHtml(s.translation || '')}</div>
+        <div class="item-actions">
+          <button class="btn btn-secondary" data-act="copy" data-id="${s.id}">📋 Переклад</button>
+          <button class="btn btn-secondary" data-act="reuse" data-id="${s.id}">↩️ Відкрити</button>
+          <button class="btn btn-danger" data-act="del" data-id="${s.id}">🗑️</button>
+        </div>
+      </div>
+    </div>
+  `).join('');
+
+  list.querySelectorAll('[data-act]').forEach(el => {
+    el.addEventListener('click', async (e) => {
+      e.stopPropagation();
+      const id = el.dataset.id;
+      const act = el.dataset.act;
+      const rec = scansCache.find(s => s.id === id);
+      if (!rec) return;
+
+      if (act === 'view') {
+        await viewScanImage(rec);
+      } else if (act === 'copy') {
+        copyText(rec.translation || '');
+      } else if (act === 'reuse') {
+        document.getElementById('ocrResult').value =
+          (rec.ocrText || '') + (rec.translation ? '\n\n--- Переклад ---\n' + rec.translation : '');
+        state.photoSrcLang = rec.srcLang;
+        state.photoTgtLang = rec.tgtLang;
+        document.getElementById('photoSrcLang').value = rec.srcLang;
+        document.getElementById('photoTgtLang').value = rec.tgtLang;
+        switchTab('photo');
+      } else if (act === 'del') {
+        const ok = await confirmModal('Видалити скан?', '<p>Цей запис буде видалено назавжди.</p>', { danger: true, okLabel: 'Видалити' });
+        if (ok) {
+          await scanDelete(id);
+          await refreshScansCache();
+          renderScans();
+          showToast('Видалено', 'success');
+        }
+      }
+    });
+  });
+}
+
+async function viewScanImage(rec) {
+  let fullImg = rec.thumb;
+  try {
+    const stored = await idbGet('scan_full_' + rec.id);
+    if (stored) fullImg = stored;
+  } catch (e) {}
+
+  await showModal({
+    title: 'Скан документа',
+    icon: 'info',
+    body: `
+      <img src="${fullImg}" alt="scan" style="width:100%;border-radius:10px;margin-bottom:10px">
+      <p class="muted">${flagSvg(rec.srcLang)} → ${flagSvg(rec.tgtLang)} • ${formatFullDate(rec.time)}</p>
+      <pre>${escapeHtml(rec.ocrText || '')}</pre>
+      ${rec.translation ? '<pre style="color:var(--primary)">' + escapeHtml(rec.translation) + '</pre>' : ''}
+    `,
+    buttons: [{ label: 'Закрити', type: 'primary', value: true }],
+  });
+}
+
+/* ============ SAVE A SCAN RECORD ============ */
+async function saveScanRecord({ imageBlob, ocrText, translation, srcLang, tgtLang }) {
+  try {
+    const id = 'scan_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8);
+    const thumb = await makeThumbnail(imageBlob, 160);
+
+    const record = {
+      id,
+      time: Date.now(),
+      ocrText: ocrText || '',
+      translation: translation || '',
+      srcLang, tgtLang,
+      thumb: thumb || '',
+    };
+
+    await scanAdd(record);
+
+    // Store full image separately (larger)
+    try {
+      const fullDataUrl = await blobToDataURL(imageBlob);
+      await idbPut('scan_full_' + id, fullDataUrl);
+    } catch (e) {
+      console.warn('Could not store full scan image', e);
+    }
+
+    await scanTrim();
+    await refreshScansCache();
+    if (state.activeTab === 'scans') renderScans();
+  } catch (e) {
+    console.error('saveScanRecord failed', e);
+  }
+}
+
+/* ============ OCR ============ */
+let ocrWorker = null;
+let currentPhotoBlob = null;
+
+async function doOcr() {
+  if (!currentPhotoBlob) {
+    showToast('Спочатку додайте фото', 'warn');
+    return;
+  }
+
+  if (!canUse('scan')) {
+    await limitReachedModal('scan');
+    return;
+  }
+
+  const btn = document.getElementById('ocrBtn');
+  const orig = btn.innerHTML;
+  btn.disabled = true;
+  btn.innerHTML = '<span class="loader"></span> Розпізнавання...';
+  const resultArea = document.getElementById('ocrResult');
+  resultArea.value = 'Розпізнавання тексту...';
+
+  try {
+    const srcLang = state.photoSrcLang;
+    const tgtLang = state.photoTgtLang;
+    const tessLang = TESSERACT_LANGS[srcLang] || 'eng';
+
+    const { data } = await Tesseract.recognize(currentPhotoBlob, tessLang, {
+      logger: (m) => {
+        if (m.status === 'recognizing text') {
+          const pct = Math.round(m.progress * 100);
+          resultArea.value = `Розпізнавання тексту... ${pct}%`;
+        }
+      },
+    });
+
+    const recognized = (data.text || '').trim();
+    if (!recognized) {
+      resultArea.value = '';
+      showToast('Текст не розпізнано', 'warn');
+      return;
+    }
+
+    resultArea.value = recognized + '\n\nПереклад...';
+
+    let translation = '';
+    try {
+      translation = await translateText(recognized, srcLang, tgtLang);
+    } catch (e) {
+      console.warn('Translation after OCR failed', e);
+    }
+
+    resultArea.value = translation
+      ? recognized + '\n\n--- Переклад ---\n' + translation
+      : recognized;
+
+    state.ocrResult = resultArea.value;
+
+    incrementUsage('scan');
+
+    // Save to scan history
+    await saveScanRecord({
+      imageBlob: currentPhotoBlob,
+      ocrText: recognized,
+      translation,
+      srcLang, tgtLang,
+    });
+
+    showToast('Готово', 'success');
+  } catch (e) {
+    console.error(e);
+    resultArea.value = '';
+    showToast('Помилка розпізнавання: ' + e.message, 'error');
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = orig;
+  }
+}
+
+/* ============ PHOTO HANDLING ============ */
+async function handlePhotoFile(file) {
+  if (!file || !file.type.startsWith('image/')) {
+    showToast('Оберіть зображення', 'warn');
+    return;
+  }
+  currentPhotoBlob = file;
+  setPreviewFromBlob(file);
+  document.getElementById('photoPlaceholder').classList.add('hidden');
+  document.getElementById('photoPreview').classList.remove('hidden');
+  document.getElementById('photoArea').classList.add('has-image');
+  document.getElementById('removePhotoBtn').classList.remove('hidden');
+  state.hasPhoto = true;
+
+  // Persist current photo for restore across sessions
+  try {
+    await idbPut(IDB_PHOTO_KEY, file);
+  } catch (e) {
+    console.warn('Could not persist photo', e);
+  }
+}
+
+async function removePhoto() {
+  currentPhotoBlob = null;
+  if (_activeObjectURL) {
+    try { URL.revokeObjectURL(_activeObjectURL); } catch(e) {}
+    _activeObjectURL = null;
+  }
+  document.getElementById('photoPreview').src = '';
+  document.getElementById('photoPreview').classList.add('hidden');
+  document.getElementById('photoPlaceholder').classList.remove('hidden');
+  document.getElementById('photoArea').classList.remove('has-image');
+  document.getElementById('removePhotoBtn').classList.add('hidden');
+  document.getElementById('ocrResult').value = '';
+  state.hasPhoto = false;
+  state.ocrResult = '';
+  try { await idbDelete(IDB_PHOTO_KEY); } catch(e) {}
+}
+
+/* ============ PHRASES RENDERING ============ */
+function renderPhraseCategories() {
+  const container = document.getElementById('phraseCategories');
+  const cats = getAllCategories();
+  container.innerHTML = cats.map(cat => {
+    const isCustom = isCustomCategory(cat.id);
+    const active = cat.id === state.phraseCat ? 'active' : '';
+    if (isCustom) {
+      return `<div class="cat-tag-wrap">
+        <div class="tag ${active}" data-cat="${cat.id}">${escapeHtml(cat.label)}
+          <span class="cat-del" data-catdel="${cat.id}" title="Видалити секцію">✕</span>
+        </div>
+      </div>`;
+    }
+    return `<div class="tag ${active}" data-cat="${cat.id}">${escapeHtml(cat.label)}</div>`;
+  }).join('');
+
+  container.querySelectorAll('[data-cat]').forEach(el => {
+    el.addEventListener('click', (e) => {
+      if (e.target.dataset.catdel) return;
+      state.phraseCat = el.dataset.cat;
+      saveState();
+      renderPhraseCategories();
+      renderPhrases();
+    });
+  });
+
+  container.querySelectorAll('[data-catdel]').forEach(el => {
+    el.addEventListener('click', async (e) => {
+      e.stopPropagation();
+      const catId = el.dataset.catdel;
+      const cat = state.customCategories.find(c => c.id === catId);
+      const ok = await confirmModal(
+        'Видалити секцію?',
+        `<p>Секцію <strong>${escapeHtml(cat?.label || '')}</strong> та всі її фрази буде видалено.</p>`,
+        { danger: true, okLabel: 'Видалити' }
+      );
+      if (ok) {
+        deleteCustomCategory(catId);
+        renderPhraseCategories();
+        renderPhrases();
+        showToast('Секцію видалено', 'success');
+      }
+    });
+  });
+}
+
+function renderPhrases() {
+  const grid = document.getElementById('phraseGrid');
+  const lang = state.phraseLang;
+  const phrases = getPhrasesForCategory(state.phraseCat);
+
+  if (phrases.length === 0) {
+    grid.innerHTML = `<div class="empty-state" style="grid-column:1/-1"><div style="font-size:44px;margin-bottom:8px">💬</div><p>Немає фраз у цій секції</p><p class="muted" style="font-size:12px">Натисніть «Додати фразу»</p></div>`;
+    return;
+  }
+
+  grid.innerHTML = phrases.map((p, i) => {
+    const translation = p[lang] || p.en || '';
+    const delBtn = p.__custom
+      ? `<button class="phrase-del" data-del="${p.__idx}" title="Видалити">✕</button>`
+      : '';
+    const badge = p.__custom ? '<span class="custom-badge">Власна</span>' : '';
+    return `
+      <div class="phrase-card ${p.__custom ? 'custom' : ''}" data-uk="${escapeAttr(p.uk)}" data-tr="${escapeAttr(translation)}" data-lang="${lang}">
+        ${delBtn}
+        <div class="uk">${escapeHtml(p.uk)}</div>
+        <div class="tr">${flagSvg(lang)} ${escapeHtml(translation)}</div>
+        ${badge}
+      </div>
+    `;
+  }).join('');
+
+  grid.querySelectorAll('.phrase-card').forEach(card => {
+    card.addEventListener('click', (e) => {
+      if (e.target.dataset.del !== undefined) return;
+      const tr = card.dataset.tr;
+      const lang = card.dataset.lang;
+      speakText(tr, lang, card);
+    });
+  });
+
+  grid.querySelectorAll('[data-del]').forEach(btn => {
+    btn.addEventListener('click', async (e) => {
+      e.stopPropagation();
+      const idx = parseInt(btn.dataset.del);
+      const ok = await confirmModal('Видалити фразу?', '<p>Цю фразу буде видалено.</p>', { danger: true, okLabel: 'Видалити' });
+      if (ok) {
+        deleteCustomPhrase(state.phraseCat, idx);
+        renderPhrases();
+        showToast('Фразу видалено', 'success');
+      }
+    });
+  });
+}
+
+/* ============ ADD PHRASE / CATEGORY MODALS ============ */
+async function openAddPhraseModal() {
+  const ALL_LANGS = ['uk', 'en', 'pl', 'de', 'cs'];
+  const langNames = { uk: '🇺🇦 Українська', en: '🇬🇧 English', pl: '🇵🇱 Polski', de: '🇩🇪 Deutsch', cs: '🇨🇿 Čeština' };
+
+  const cats = getAllCategories();
+  const catOptions = cats.map(c =>
+    `<option value="${c.id}" ${c.id === state.phraseCat ? 'selected' : ''}>${escapeHtml(c.label)}</option>`
+  ).join('');
+
+  const fields = ALL_LANGS.map(l => `
+    <div class="form-field">
+      <label>${langNames[l]}</label>
+      <input class="form-input small" data-lang="${l}" placeholder="${langNames[l]}...">
+    </div>
+  `).join('');
+
+  const body = `
+    <div class="form-field">
+      <label>Секція</label>
+      <select class="form-input" id="phraseCatSelect">${catOptions}</select>
+    </div>
+    <div class="prefill-bar">
+      <select class="form-input small" id="prefillSrcLang" style="width:auto;flex:0 0 auto">
+        ${ALL_LANGS.map(l => `<option value="${l}" ${l === 'uk' ? 'selected' : ''}>${langNames[l]}</option>`).join('')}
+      </select>
+      <span class="prefill-hint">Введіть текст однією мовою і натисніть, щоб автоматично перекласти на інші</span>
+      <button class="btn btn-prefill" id="prefillBtn" type="button">🔄 Автопереклад</button>
+    </div>
+    ${fields}
+    <p class="muted" style="font-size:11px">Заповніть хоча б українську та одну іншу мову.</p>
+  `;
+
+  await showModal({
+    title: '➕ Нова фраза',
+    icon: 'info',
+    body,
+    buttons: [
+      { label: 'Скасувати', type: 'secondary', value: false },
+      {
+        label: 'Додати',
+        type: 'primary',
+        onClick: (bodyEl) => {
+          const catId = bodyEl.querySelector('#phraseCatSelect').value;
+          const phrase = {};
+          let filledCount = 0;
+          ALL_LANGS.forEach(l => {
+            const val = bodyEl.querySelector(`input[data-lang="${l}"]`).value.trim();
+            phrase[l] = val;
+            if (val) filledCount++;
+          });
+          if (!phrase.uk) {
+            showToast('Введіть текст українською', 'warn');
+            return false;
+          }
+          if (filledCount < 2) {
+            showToast('Заповніть хоча б дві мови', 'warn');
+            return false;
+          }
+          addCustomPhrase(catId, phrase);
+          state.phraseCat = catId;
+          saveState();
+          renderPhraseCategories();
+          renderPhrases();
+          showToast('Фразу додано', 'success');
+          return true;
+        },
+      },
+    ],
+    onRender: (bodyEl) => {
+      const prefillBtn = bodyEl.querySelector('#prefillBtn');
+      if (prefillBtn) {
+        prefillBtn.addEventListener('click', () => prefillPhraseTranslations(bodyEl));
+      }
+    },
+  });
+}
+
+async function openAddCategoryModal() {
+  const body = `
+    <div class="form-field">
+      <label>Назва секції</label>
+      <input class="form-input" id="newCatLabel" placeholder="Напр. 🛒 Покупки" maxlength="40">
+    </div>
+    <p class="muted" style="font-size:11px">Можна використовувати емодзі на початку назви.</p>
+  `;
+
+  await showModal({
+    title: '📁 Нова секція',
+    icon: 'info',
+    body,
+    buttons: [
+      { label: 'Скасувати', type: 'secondary', value: false },
+      {
+        label: 'Створити',
+        type: 'primary',
+        onClick: (bodyEl) => {
+          const label = bodyEl.querySelector('#newCatLabel').value.trim();
+          if (!label) {
+            showToast('Введіть назву секції', 'warn');
+            return false;
+          }
+          const id = addCustomCategory(label);
+          state.phraseCat = id;
+          saveState();
+          renderPhraseCategories();
+          renderPhrases();
+          showToast('Секцію створено', 'success');
+          return true;
+        },
+      },
+    ],
+    onRender: (bodyEl) => {
+      setTimeout(() => bodyEl.querySelector('#newCatLabel')?.focus(), 100);
+    },
+  });
+}
+
+/* ============ SPEECH ============ */
+let currentUtterance = null;
+let speakingElement = null;
+
+function speakText(text, lang, element = null) {
+  if (!text) return;
+  if (!('speechSynthesis' in window)) {
+    showToast('Синтез мовлення не підтримується', 'warn');
+    return;
+  }
+
+  // Toggle off if same element is speaking
+  if (speechSynthesis.speaking) {
+    speechSynthesis.cancel();
+    if (speakingElement === element && element) {
+      clearSpeakingState();
+      return;
+    }
+    clearSpeakingState();
+  }
+
+  const utter = new SpeechSynthesisUtterance(text);
+  utter.lang = SPEECH_LANG_MAP[lang] || 'en-US';
+  utter.rate = 0.9;
+
+  utter.onend = () => clearSpeakingState();
+  utter.onerror = () => clearSpeakingState();
+
+  currentUtterance = utter;
+  speakingElement = element;
+
+  if (element) {
+    element.classList.add('speaking');
+  }
+
+  speechSynthesis.speak(utter);
+}
+
+function clearSpeakingState() {
+  if (speakingElement) {
+    speakingElement.classList.remove('speaking');
+  }
+  speakingElement = null;
+  currentUtterance = null;
+  document.querySelectorAll('.speaking').forEach(el => el.classList.remove('speaking'));
+}
+
+/* ============ CLIPBOARD ============ */
+async function copyText(text) {
+  if (!text) {
+    showToast('Немає що копіювати', 'warn');
+    return;
+  }
+  try {
+    await navigator.clipboard.writeText(text);
+    showToast('Скопійовано', 'success');
+  } catch (e) {
+    // Fallback
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    ta.style.position = 'fixed';
+    ta.style.opacity = '0';
+    document.body.appendChild(ta);
+    ta.select();
+    try {
+      document.execCommand('copy');
+      showToast('Скопійовано', 'success');
+    } catch (err) {
+      showToast('Не вдалося скопіювати', 'error');
+    }
+    document.body.removeChild(ta);
+  }
+}
+
+/* ============ VOICE INPUT ============ */
+let recognition = null;
+let isListening = false;
+
+function initSpeechRecognition() {
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SR) return null;
+  const rec = new SR();
+  rec.continuous = false;
+  rec.interimResults = false;
+  return rec;
+}
+
+function toggleVoiceInput() {
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SR) {
+    showToast('Голосовий ввід не підтримується', 'warn');
+    return;
+  }
+
+  const btn = document.getElementById('micBtn');
+
+  if (isListening && recognition) {
+    recognition.stop();
+    return;
+  }
+
+  recognition = initSpeechRecognition();
+  recognition.lang = SPEECH_LANG_MAP[state.srcLang] || 'uk-UA';
+
+  recognition.onstart = () => {
+    isListening = true;
+    btn.classList.add('speaking');
+    btn.innerHTML = '🔴 Слухаю...';
+  };
+
+  recognition.onresult = (e) => {
+    const transcript = e.results[0][0].transcript;
+    const srcArea = document.getElementById('srcText');
+    srcArea.value = srcArea.value ? srcArea.value + ' ' + transcript : transcript;
+    state.srcText = srcArea.value;
+    saveState();
+  };
+
+  recognition.onerror = (e) => {
+    console.warn('Speech recognition error', e.error);
+    if (e.error === 'not-allowed') {
+      showToast('Дозвольте доступ до мікрофона', 'error');
+    } else if (e.error !== 'aborted') {
+      showToast('Помилка розпізнавання голосу', 'error');
+    }
+  };
+
+  recognition.onend = () => {
+    isListening = false;
+    btn.classList.remove('speaking');
+    btn.innerHTML = '🎤 Голос';
+  };
+
+  try {
+    recognition.start();
+  } catch (e) {
+    console.error(e);
+    showToast('Не вдалося запустити мікрофон', 'error');
+  }
+}
+
+/* ============ HTML ESCAPING ============ */
+function escapeHtml(str) {
+  if (str == null) return '';
+  const div = document.createElement('div');
+  div.textContent = String(str);
+  return div.innerHTML;
+}
+
+function escapeAttr(str) {
+  if (str == null) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
+}
+
+/* ============ LANGUAGE SELECTS ============ */
+function syncLangSelects() {
+  document.getElementById('srcLang').value = state.srcLang;
+  document.getElementById('tgtLang').value = state.tgtLang;
+  document.getElementById('photoSrcLang').value = state.photoSrcLang;
+  document.getElementById('photoTgtLang').value = state.photoTgtLang;
+  document.getElementById('phraseLang').value = state.phraseLang;
+}
+
+function initLangSelects() {
+  const langs = ['uk', 'en', 'pl', 'de', 'cs'];
+  buildLangSelect('srcLang', langs, LANG_LABELS.translate);
+  buildLangSelect('tgtLang', langs, LANG_LABELS.translate);
+  buildLangSelect('photoTgtLang', langs, LANG_LABELS.translate);
+  buildLangSelect('phraseLang', langs.filter(l => l !== 'uk'), LANG_LABELS.translate);
+  syncLangSelects();
+}
+
+/* ============ TAB SWITCHING ============ */
+function switchTab(tab) {
+  state.activeTab = tab;
+  document.querySelectorAll('.tab').forEach(t => {
+    t.classList.toggle('active', t.dataset.tab === tab);
+  });
+  document.querySelectorAll('.tab-content').forEach(c => {
+    c.classList.toggle('hidden', c.id !== 'tab-' + tab);
+  });
+  saveState();
+
+  if (tab === 'history') renderHistory();
+  else if (tab === 'saved') renderSaved();
+  else if (tab === 'phrases') { renderPhraseCategories(); renderPhrases(); }
+  else if (tab === 'scans') { refreshScansCache().then(renderScans); }
+}
+
+/* ============ TIPS CAROUSEL ============ */
+const TIPS = [
+  { icon: '💡', label: 'Порада', text: 'Оберіть контекст (юридичний, медичний) для точнішого перекладу документів.' },
+  { icon: '📷', label: 'Фото', text: 'Сфотографуйте документ — застосунок розпізнає текст і перекладе його.' },
+  { icon: '💬', label: 'Фрази', text: 'Готові фрази для екстрених ситуацій працюють навіть без досвіду мови.' },
+  { icon: '⭐', label: 'Збережені', text: 'Зберігайте важливі переклади, щоб швидко знайти їх пізніше.' },
+  { icon: '🔊', label: 'Озвучення', text: 'Натисніть «Озвучити», щоб почути правильну вимову перекладу.' },
+  { icon: '📄', label: 'PDF', text: 'Експортуйте історію, збережені фрази та сканування у PDF для друку.' },
+  { icon: '🎤', label: 'Голос', text: 'Використовуйте голосовий ввід замість набору тексту вручну.' },
+  { icon: '💾', label: 'Архів', text: 'Створюйте резервні копії даних та відновлюйте їх на іншому пристрої.' },
+];
+
+let currentTip = 0;
+let tipInterval = null;
+let tipProgress = null;
+
+function renderTipsNav() {
+  const nav = document.getElementById('tipsNav');
+  nav.innerHTML = TIPS.map((_, i) =>
+    `<button class="tips-dot ${i === currentTip ? 'active' : ''}" data-tip="${i}"></button>`
+  ).join('');
+  nav.querySelectorAll('[data-tip]').forEach(dot => {
+    dot.addEventListener('click', () => {
+      currentTip = parseInt(dot.dataset.tip);
+      showTip(currentTip);
+      restartTipTimer();
+    });
+  });
+}
+
+function showTip(idx) {
+  const tip = TIPS[idx];
+  const textEl = document.getElementById('tipsText');
+  const iconEl = document.getElementById('tipsIcon');
+  const labelEl = document.getElementById('tipsLabel');
+
+  textEl.classList.add('fading');
+  setTimeout(() => {
+    iconEl.textContent = tip.icon;
+    labelEl.textContent = tip.label;
+    textEl.textContent = tip.text;
+    textEl.classList.remove('fading');
+  }, 300);
+
+  document.querySelectorAll('.tips-dot').forEach((d, i) => {
+    d.classList.toggle('active', i === idx);
+  });
+}
+
+function nextTip() {
+  currentTip = (currentTip + 1) % TIPS.length;
+  showTip(currentTip);
+}
+
+function restartTipTimer() {
+  if (tipInterval) clearInterval(tipInterval);
+  startTipTimer();
+}
+
+function startTipTimer() {
+  tipInterval = setInterval(() => {
+    nextTip();
+  }, 7000);
+}
+
+function initTips() {
+  if (localStorage.getItem('tips_hidden') === '1') {
+    document.getElementById('tipsBar').classList.add('hidden');
+    return;
+  }
+  renderTipsNav();
+  showTip(0);
+  startTipTimer();
+
+  document.getElementById('tipsClose').addEventListener('click', () => {
+    document.getElementById('tipsBar').classList.add('hidden');
+    localStorage.setItem('tips_hidden', '1');
+    if (tipInterval) clearInterval(tipInterval);
+  });
+}
+
+/* ============ BACKUP / RESTORE (ZIP) ============ */
+async function createBackup() {
+  if (typeof JSZip === 'undefined') {
+    showToast('Бібліотека архівування недоступна', 'error');
+    return;
+  }
+  const btn = document.getElementById('backupBtn');
+  const orig = btn.innerHTML;
+  btn.innerHTML = '<span class="loader"></span>';
+  try {
+    const zip = new JSZip();
+
+    // Main state
+    const { photoData, ...cleanState } = state;
+    zip.file('state.json', JSON.stringify(cleanState, null, 2));
+    zip.file('usage.json', JSON.stringify(usage, null, 2));
+
+    // Scans metadata + full images
+    await refreshScansCache();
+    zip.file('scans.json', JSON.stringify(scansCache, null, 2));
+
+    const scansFolder = zip.folder('scan_images');
+    for (const scan of scansCache) {
+      try {
+        const fullImg = await idbGet('scan_full_' + scan.id);
+        if (fullImg) {
+          // dataURL -> base64 content
+          const base64 = fullImg.split(',')[1];
+          if (base64) scansFolder.file(scan.id + '.jpg', base64, { base64: true });
+        }
+      } catch (e) {}
+    }
+
+    const blob = await zip.generateAsync({ type: 'blob', compression: 'DEFLATE' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    const d = new Date();
+    const pad = (n) => String(n).padStart(2, '0');
+    a.href = url;
+    a.download = `shvydkoperetlad_backup_${d.getFullYear()}${pad(d.getMonth()+1)}${pad(d.getDate())}.zip`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+
+    showToast('Резервну копію створено', 'success');
+  } catch (e) {
+    console.error(e);
+    showToast('Помилка створення архіву: ' + e.message, 'error');
+  } finally {
+    btn.innerHTML = orig;
+  }
+}
+
+async function restoreBackup(file) {
+  if (typeof JSZip === 'undefined') {
+    showToast('Бібліотека архівування недоступна', 'error');
+    return;
+  }
+
+  const confirmed = await confirmModal(
+    'Відновити з архіву?',
+    '<p>Поточні дані буде <strong>замінено</strong> даними з архіву.</p><p class="muted">Рекомендуємо спочатку створити резервну копію поточних даних.</p>',
+    { danger: true, okLabel: 'Відновити' }
+  );
+  if (!confirmed) return;
+
+  const btn = document.getElementById('restoreBtn');
+  const orig = btn.innerHTML;
+  btn.innerHTML = '<span class="loader"></span>';
+
+  try {
+    const zip = await JSZip.loadAsync(file);
+
+    // Restore state
+    const stateFile = zip.file('state.json');
+    if (stateFile) {
+      const stateJson = await stateFile.async('string');
+      const parsed = JSON.parse(stateJson);
+      state = { ...state, ...parsed };
+      if (!Array.isArray(state.saved)) state.saved = [];
+      if (!Array.isArray(state.history)) state.history = [];
+      if (!Array.isArray(state.customCategories)) state.customCategories = [];
+      if (!state.customPhrases || typeof state.customPhrases !== 'object') state.customPhrases = {};
+      saveState();
+    }
+
+    // Restore usage
+    const usageFile = zip.file('usage.json');
+    if (usageFile) {
+      const usageJson = await usageFile.async('string');
+      const parsedUsage = JSON.parse(usageJson);
+      if (parsedUsage.date === todayStr()) {
+        usage = { ...usage, ...parsedUsage };
+        saveUsage();
+      }
+    }
+
+    // Restore scans
+    const scansFile = zip.file('scans.json');
+    if (scansFile) {
+      await scanClear();
+      // Clear old full images
+      const oldScans = await scanGetAll();
+      for (const s of oldScans) {
+        try { await idbDelete('scan_full_' + s.id); } catch(e) {}
+      }
+
+      const scansJson = await scansFile.async('string');
+      const scans = JSON.parse(scansJson);
+      for (const scan of scans) {
+        await scanAdd(scan);
+        // Restore full image
+        const imgFile = zip.file('scan_images/' + scan.id + '.jpg');
+        if (imgFile) {
+          const base64 = await imgFile.async('base64');
+          await idbPut('scan_full_' + scan.id, 'data:image/jpeg;base64,' + base64);
+        }
+      }
+      await refreshScansCache();
+    }
+
+    showToast('Дані відновлено', 'success');
+    setTimeout(() => location.reload(), 1000);
+  } catch (e) {
+    console.error(e);
+    showToast('Помилка відновлення: ' + e.message, 'error');
+  } finally {
+    btn.innerHTML = orig;
+  }
+}
+
+/* ============ CLEAR ALL DATA ============ */
+async function clearAllData() {
+  const confirmed = await confirmModal(
+    'Видалити всі дані?',
+    '<p>Буде видалено <strong>всю історію, збережені переклади, власні фрази та сканування</strong>.</p><p class="muted">Цю дію неможливо скасувати.</p>',
+    { danger: true, okLabel: 'Видалити все' }
+  );
+  if (!confirmed) return;
+
+  try {
+    localStorage.removeItem(STORE_KEY);
+    localStorage.removeItem(USAGE_KEY);
+    await idbClearStore();
+    await scanClear();
+    showToast('Дані видалено', 'success');
+    setTimeout(() => location.reload(), 800);
+  } catch (e) {
+    console.error(e);
+    showToast('Помилка видалення', 'error');
+  }
+}
+
+/* ============ ABOUT MODAL ============ */
+async function showAbout() {
+  const usedT = usage.translate || 0;
+  const usedS = usage.scan || 0;
+  await showModal({
+    title: 'ШвидкоПереклад',
+    icon: 'info',
+    body: `
+      <p>🌻 Безкоштовний AI-перекладач для українців за кордоном.</p>
+      <p class="muted">Спеціалізація: офіційні документи, медичні та юридичні терміни, розпізнавання тексту з фото.</p>
+      <ul>
+        <li>🔄 Переклад: 🇺🇦 ↔ 🇬🇧 🇵🇱 🇩🇪 🇨🇿</li>
+        <li>📷 OCR розпізнавання (Tesseract.js)</li>
+        <li>💬 Готові фрази + власні</li>
+        <li>📄 Експорт у PDF</li>
+        <li>💾 Резервні копії</li>
+      </ul>
+      <div class="context-note">
+        📊 Сьогодні використано: <strong>${usedT}/${LIMITS.translate}</strong> перекладів,
+        <strong>${usedS}/${LIMITS.scan}</strong> сканувань.<br>
+        Скидання через: <strong>${formatResetTime()}</strong>
+      </div>
+      <p class="muted" style="font-size:11px;margin-top:10px">Усі дані зберігаються локально у вашому браузері.</p>
+    `,
+    buttons: [{ label: 'Закрити', type: 'primary', value: true }],
+  });
+}
+
+/* ============ EVENT BINDINGS ============ */
+function bindEvents() {
+  // Tabs
+  document.querySelectorAll('.tab').forEach(tab => {
+    tab.addEventListener('click', () => switchTab(tab.dataset.tab));
+  });
+
+  // Language selects
+  document.getElementById('srcLang').addEventListener('change', (e) => {
+    state.srcLang = e.target.value; saveState();
+  });
+  document.getElementById('tgtLang').addEventListener('change', (e) => {
+    state.tgtLang = e.target.value; saveState();
+  });
+  document.getElementById('photoSrcLang').addEventListener('change', (e) => {
+    state.photoSrcLang = e.target.value; saveState();
+  });
+  document.getElementById('photoTgtLang').addEventListener('change', (e) => {
+    state.photoTgtLang = e.target.value; saveState();
+  });
+  document.getElementById('phraseLang').addEventListener('change', (e) => {
+    state.phraseLang = e.target.value; saveState(); renderPhrases();
+  });
+
+  // Swap languages
+  document.getElementById('swapBtn').addEventListener('click', () => {
+    const tmp = state.srcLang;
+    state.srcLang = state.tgtLang;
+    state.tgtLang = tmp;
+    const srcVal = document.getElementById('srcText').value;
+    const tgtVal = document.getElementById('tgtText').value;
+    document.getElementById('srcText').value = tgtVal;
+    document.getElementById('tgtText').value = srcVal;
+    state.srcText = tgtVal; state.tgtText = srcVal;
+    syncLangSelects();
+    saveState();
+  });
+
+  // Context tags
+  document.getElementById('contextTags').addEventListener('click', (e) => {
+    const tag = e.target.closest('.tag');
+    if (!tag) return;
+    document.querySelectorAll('#contextTags .tag').forEach(t => t.classList.remove('active'));
+    tag.classList.add('active');
+    state.context = tag.dataset.ctx;
+    saveState();
+  });
+
+  // Translate
+  document.getElementById('translateBtn').addEventListener('click', doTranslate);
+  document.getElementById('srcText').addEventListener('input', (e) => {
+    state.srcText = e.target.value;
+  });
+  document.getElementById('tgtText').addEventListener('input', (e) => {
+    state.tgtText = e.target.value;
+  });
+
+  document.getElementById('clearSrcBtn').addEventListener('click', () => {
+    document.getElementById('srcText').value = '';
+    state.srcText = '';
+    saveState();
+  });
+
+  document.getElementById('micBtn').addEventListener('click', toggleVoiceInput);
+  document.getElementById('copyBtn').addEventListener('click', () => {
+    copyText(document.getElementById('tgtText').value);
+  });
+  document.getElementById('speakBtn').addEventListener('click', () => {
+    const btn = document.getElementById('speakBtn');
+    speakText(document.getElementById('tgtText').value, state.tgtLang, btn);
+  });
+  document.getElementById('saveBtn').addEventListener('click', saveTranslation);
+
+  // Photo
+  document.getElementById('uploadBtn').addEventListener('click', () => {
+    document.getElementById('fileInput').click();
+  });
+  document.getElementById('cameraBtn').addEventListener('click', () => {
+    document.getElementById('cameraInput').click();
+  });
+  document.getElementById('fileInput').addEventListener('change', (e) => {
+    if (e.target.files[0]) handlePhotoFile(e.target.files[0]);
+  });
+  document.getElementById('cameraInput').addEventListener('change', (e) => {
+    if (e.target.files[0]) handlePhotoFile(e.target.files[0]);
+  });
+  document.getElementById('removePhotoBtn').addEventListener('click', removePhoto);
+  document.getElementById('ocrBtn').addEventListener('click', doOcr);
+  document.getElementById('copyOcrBtn').addEventListener('click', () => {
+    copyText(document.getElementById('ocrResult').value);
+  });
+  document.getElementById('speakOcrBtn').addEventListener('click', () => {
+    speakText(document.getElementById('ocrResult').value, state.photoTgtLang, document.getElementById('speakOcrBtn'));
+  });
+
+  // Phrases
+  document.getElementById('addPhraseBtn').addEventListener('click', openAddPhraseModal);
+  document.getElementById('addCategoryBtn').addEventListener('click', openAddCategoryModal);
+
+  // Search inputs
+  document.getElementById('historySearch').addEventListener('input', (e) => {
+    searchQueries.history = e.target.value;
+    renderHistory();
+  });
+  document.getElementById('savedSearch').addEventListener('input', (e) => {
+    searchQueries.saved = e.target.value;
+    renderSaved();
+  });
+  document.getElementById('scanSearch').addEventListener('input', (e) => {
+    searchQueries.scan = e.target.value;
+    renderScans();
+  });
+
+  // History date range filter
+  document.getElementById('histDateFrom').addEventListener('change', (e) => {
+    historyDateRange.from = e.target.value;
+    renderHistory();
+  });
+  document.getElementById('histDateTo').addEventListener('change', (e) => {
+    historyDateRange.to = e.target.value;
+    renderHistory();
+  });
+  document.getElementById('histDateClear').addEventListener('click', () => {
+    historyDateRange.from = '';
+    historyDateRange.to = '';
+    document.getElementById('histDateFrom').value = '';
+    document.getElementById('histDateTo').value = '';
+    renderHistory();
+  });
+
+  // Clear buttons
+  document.getElementById('clearHistBtn').addEventListener('click', async () => {
+    if (state.history.length === 0) { showToast('Історія вже порожня', 'warn'); return; }
+    const ok = await confirmModal('Очистити історію?', '<p>Усю історію перекладів буде видалено.</p>', { danger: true, okLabel: 'Очистити' });
+    if (ok) {
+      state.history = [];
+      saveState();
+      renderHistory();
+      showToast('Історію очищено', 'success');
+    }
+  });
+  document.getElementById('clearSavedBtn').addEventListener('click', async () => {
+    if (state.saved.length === 0) { showToast('Немає збережених', 'warn'); return; }
+    const ok = await confirmModal('Очистити збережені?', '<p>Усі збережені переклади буде видалено.</p>', { danger: true, okLabel: 'Очистити' });
+    if (ok) {
+      state.saved = [];
+      saveState();
+      renderSaved();
+      showToast('Збережені очищено', 'success');
+    }
+  });
+  document.getElementById('clearScansBtn').addEventListener('click', async () => {
+    if (scansCache.length === 0) { showToast('Немає сканувань', 'warn'); return; }
+    const ok = await confirmModal('Очистити сканування?', '<p>Усю історію сканувань та зображення буде видалено.</p>', { danger: true, okLabel: 'Очистити' });
+    if (ok) {
+      // Delete full images too
+      for (const s of scansCache) {
+        try { await idbDelete('scan_full_' + s.id); } catch(e) {}
+      }
+      await scanClear();
+      await refreshScansCache();
+      renderScans();
+      showToast('Сканування очищено', 'success');
+    }
+  });
+
+  // PDF export buttons
+  document.getElementById('pdfHistoryBtn').addEventListener('click', (e) => {
+    withPdfLoading(e.currentTarget, generateHistoryPdf);
+  });
+  document.getElementById('pdfSavedBtn').addEventListener('click', (e) => {
+    withPdfLoading(e.currentTarget, generateSavedPdf);
+  });
+  document.getElementById('pdfPhrasesBtn').addEventListener('click', (e) => {
+    withPdfLoading(e.currentTarget, generatePhrasesPdf);
+  });
+  document.getElementById('pdfScansBtn').addEventListener('click', (e) => {
+    withPdfLoading(e.currentTarget, generateScansPdf);
+  });
+
+  // Header actions
+  document.getElementById('infoBtn').addEventListener('click', showAbout);
+  document.getElementById('clearAllBtn').addEventListener('click', clearAllData);
+  document.getElementById('backupBtn').addEventListener('click', createBackup);
+  document.getElementById('restoreBtn').addEventListener('click', () => {
+    document.getElementById('restoreInput').click();
+  });
+  document.getElementById('restoreInput').addEventListener('change', (e) => {
+    if (e.target.files[0]) restoreBackup(e.target.files[0]);
+  });
+
+  // Photo area click
+  document.getElementById('photoArea').addEventListener('click', (e) => {
+    if (!state.hasPhoto && !e.target.closest('img')) {
+      document.getElementById('fileInput').click();
+    }
+  });
+
+  // Stop speech on tab visibility change
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden && speechSynthesis.speaking) {
+      speechSynthesis.cancel();
+      clearSpeakingState();
+    }
+  });
+}
+
+/* ============ RESTORE PHOTO ON LOAD ============ */
+async function restorePhotoFromIdb() {
+  try {
+    const blob = await idbGet(IDB_PHOTO_KEY);
+    if (blob) {
+      currentPhotoBlob = blob;
+      setPreviewFromBlob(blob);
+      document.getElementById('photoPlaceholder').classList.add('hidden');
+      document.getElementById('photoPreview').classList.remove('hidden');
+      document.getElementById('photoArea').classList.add('has-image');
+      document.getElementById('removePhotoBtn').classList.remove('hidden');
+      state.hasPhoto = true;
+    }
+  } catch (e) {
+    console.warn('Could not restore photo', e);
+  }
+}
+
+/* ============ INIT ============ */
+async function init() {
+  loadState();
+  loadUsage();
+  initLangSelects();
+
+  // Restore text areas
+  document.getElementById('srcText').value = state.srcText || '';
+  document.getElementById('tgtText').value = state.tgtText || '';
+
+  // Restore context tag
+  document.querySelectorAll('#contextTags .tag').forEach(t => {
+    t.classList.toggle('active', t.dataset.ctx === state.context);
+  });
+
+  bindEvents();
+  initTips();
+
+  // Restore active tab
+  switchTab(state.activeTab || 'translate');
+
+  // Restore photo (async, non-blocking)
+  restorePhotoFromIdb();
+
+  // Preload scan cache
+  refreshScansCache();
+}
+
+// Boot when DOM ready
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', init);
+} else {
+  init();
+}
+</script>
+
+</body>
+</html>
