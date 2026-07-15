@@ -321,10 +321,6 @@ header {
 .btn-accent { background: var(--accent); color: var(--primary); }
 .btn-accent.saved { background: var(--success); color: white; }
 
-.btn-pdf { background: #b91c1c; color: white; }
-.btn-pdf:hover { background: #991b1b; }
-.btn-pdf:disabled { opacity: 0.6; cursor: not-allowed; }
-
 .btn-danger { background: var(--danger); color: white; }
 
 .btn-full { width: 100%; justify-content: center; }
@@ -414,39 +410,6 @@ header {
 .search-count {
   font-size: 11px; color: var(--muted);
   white-space: nowrap;
-}
-
-/* Date range filter */
-.date-filter {
-  display: flex; gap: 8px; align-items: center;
-  margin-bottom: 12px; flex-wrap: wrap;
-  padding: 10px 12px;
-  background: #f0f4ff;
-  border: 1px solid #d0dfff;
-  border-radius: 10px;
-}
-
-.date-filter .date-lbl {
-  font-size: 11px; font-weight: 600;
-  color: var(--muted);
-}
-
-.date-input {
-  padding: 7px 9px;
-  border: 2px solid var(--border);
-  border-radius: 8px;
-  font-size: 12px; font-family: inherit;
-  background: white;
-}
-
-.date-input:focus { outline: none; border-color: var(--primary); }
-
-.date-filter .btn { padding: 6px 10px; font-size: 11px; min-height: 32px; }
-
-/* Toolbar for list export */
-.list-toolbar {
-  display: flex; gap: 6px; align-items: center;
-  flex-wrap: wrap;
 }
 
 /* Scan history item with thumbnail */
@@ -816,6 +779,10 @@ header {
 
 .hidden { display: none !important; }
 
+/* PDF button in section headers */
+.btn-pdf { background: #dc2626; color: white; }
+.btn-pdf:hover { background: #b91c1c; }
+
 @media (max-width: 600px) {
   body { padding: 8px; }
   
@@ -1052,7 +1019,7 @@ header {
     <div class="card">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:8px">
         <div class="section-title" style="margin:0">Збережені переклади</div>
-        <div class="list-toolbar">
+        <div style="display:flex;gap:6px;flex-wrap:wrap">
           <button class="btn btn-pdf" id="pdfSavedBtn">📄 PDF</button>
           <button class="btn btn-secondary" id="clearSavedBtn">🗑️ Очистити</button>
         </div>
@@ -1070,17 +1037,10 @@ header {
     <div class="card">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:8px">
         <div class="section-title" style="margin:0">Історія</div>
-        <div class="list-toolbar">
+        <div style="display:flex;gap:6px;flex-wrap:wrap">
           <button class="btn btn-pdf" id="pdfHistoryBtn">📄 PDF</button>
           <button class="btn btn-secondary" id="clearHistBtn">🗑️ Очистити</button>
         </div>
-      </div>
-      <div class="date-filter">
-        <span class="date-lbl">📅 Від:</span>
-        <input type="date" class="date-input" id="histDateFrom">
-        <span class="date-lbl">До:</span>
-        <input type="date" class="date-input" id="histDateTo">
-        <button class="btn btn-secondary" id="histDateClear">✕ Скинути</button>
       </div>
       <div class="search-bar">
         <input type="text" class="search-input" id="historySearch" placeholder="🔍 Пошук в історії...">
@@ -1095,7 +1055,7 @@ header {
     <div class="card">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:8px">
         <div class="section-title" style="margin:0">Історія сканувань <span class="info-badge">до 100</span></div>
-        <div class="list-toolbar">
+        <div style="display:flex;gap:6px;flex-wrap:wrap">
           <button class="btn btn-pdf" id="pdfScansBtn">📄 PDF</button>
           <button class="btn btn-secondary" id="clearScansBtn">🗑️ Очистити</button>
         </div>
@@ -1125,7 +1085,6 @@ header {
 
 <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 
 <script>
 const STORE_KEY = 'shvydkoperetlad_v3';
@@ -1149,9 +1108,11 @@ const LANG_LABELS = {
   },
 };
 
-// Plain language names for PDF headings
-const LANG_PDF = { uk: 'UK', en: 'EN', pl: 'PL', de: 'DE', cs: 'CS' };
+// Emoji flags for PDF (native option flags don't render, but emoji do in print)
+const FLAG_EMOJI = { uk: '🇺🇦', en: '🇬🇧', pl: '🇵🇱', de: '🇩🇪', cs: '🇨🇿' };
 
+// Populate a native select. Native <option> can't render SVG,
+// so we use flag glyph fallback text with the SVG shown alongside via label.
 function buildLangSelect(selectId, langs, labelMap) {
   const sel = document.getElementById(selectId);
   if (!sel) return;
@@ -1161,6 +1122,7 @@ function buildLangSelect(selectId, langs, labelMap) {
   }).join('');
 }
 
+// Render inline SVG flag helper (for lists / previews)
 function flagSvg(langCode) {
   return FLAG_SVGS[langCode] || '';
 }
@@ -1296,8 +1258,9 @@ async function scanClear() {
   });
 }
 
+// Trim scan store to MAX_SCANS newest entries
 async function scanTrim() {
-  const all = await scanGetAll();
+  const all = await scanGetAll(); // sorted newest-first
   if (all.length <= MAX_SCANS) return;
   const toDelete = all.slice(MAX_SCANS);
   for (const rec of toDelete) {
@@ -1314,6 +1277,7 @@ function blobToDataURL(blob) {
   });
 }
 
+// Create a small thumbnail blob from an image blob/dataURL
 function makeThumbnail(source, maxSize = 160) {
   return new Promise((resolve) => {
     const img = new Image();
@@ -1417,12 +1381,14 @@ let state = {
   hasPhoto: false, ocrResult: '',
   photoSrcLang: 'uk', photoTgtLang: 'en',
   phraseCat: 'emergency', phraseLang: 'en',
-  customCategories: [],
-  customPhrases: {},
+  // Custom phrase system:
+  customCategories: [], // [{ id, label }]
+  customPhrases: {},    // { categoryId: [ {uk,en,pl,de,cs}, ... ] }
 };
 
+// Search query state (not persisted)
 let searchQueries = { history: '', saved: '', scan: '' };
-let historyDateRange = { from: '', to: '' };
+// Cached scan list for rendering/search
 let scansCache = [];
 
 let usage = { date: '', translate: 0, scan: 0 };
@@ -1444,41 +1410,46 @@ function formatFriendlyDate(ts) {
 
   const timeStr = d.toLocaleTimeString('uk-UA', { hour: '2-digit', minute: '2-digit' });
 
+  // Just now / minutes / hours (within today)
   if (diffSec < 45) return 'щойно';
   if (diffMin < 60) return `${diffMin} хв тому`;
 
+  // Same calendar day
   const isSameDay = d.toDateString() === now.toDateString();
   if (isSameDay) {
     if (diffHour < 6) return `${diffHour} год тому`;
     return `сьогодні о ${timeStr}`;
   }
 
+  // Yesterday
   const yesterday = new Date(now);
   yesterday.setDate(now.getDate() - 1);
   if (d.toDateString() === yesterday.toDateString()) {
     return `вчора о ${timeStr}`;
   }
 
+  // Within last 7 days -> weekday name
   const days = Math.floor(diffMs / 86400000);
   if (days < 7) {
     const weekday = d.toLocaleDateString('uk-UA', { weekday: 'long' });
     return `${weekday} о ${timeStr}`;
   }
 
+  // Same year -> day month
   if (d.getFullYear() === now.getFullYear()) {
     return d.toLocaleDateString('uk-UA', { day: 'numeric', month: 'long' }) + ` о ${timeStr}`;
   }
 
+  // Otherwise full date
   return d.toLocaleDateString('uk-UA', { day: 'numeric', month: 'long', year: 'numeric' });
 }
 
+// Full date-time for PDF documents
 function formatFullDate(ts) {
   if (!ts) return '';
   const d = new Date(ts);
-  return d.toLocaleString('uk-UA', {
-    day: '2-digit', month: '2-digit', year: 'numeric',
-    hour: '2-digit', minute: '2-digit',
-  });
+  return d.toLocaleDateString('uk-UA', { day: '2-digit', month: '2-digit', year: 'numeric' }) +
+    ' ' + d.toLocaleTimeString('uk-UA', { hour: '2-digit', minute: '2-digit' });
 }
 
 function loadState() {
@@ -1589,10 +1560,11 @@ function showModal({ title, body, icon = 'info', buttons, onRender }) {
       btn.textContent = b.label;
       if (b.id) btn.id = b.id;
       btn.onclick = () => {
+        // Allow a validator to prevent closing and supply a value
         if (typeof b.onClick === 'function') {
           const result = b.onClick(modalBody);
-          if (result === false) return;
-          if (result && typeof result.then === 'function') return;
+          if (result === false) return; // keep modal open
+          if (result && typeof result.then === 'function') return; // async handled internally
           closeModal(result === undefined ? b.value : result);
         } else {
           closeModal(b.value);
@@ -1624,6 +1596,8 @@ function showModal({ title, body, icon = 'info', buttons, onRender }) {
     document.addEventListener('keydown', keyHandler);
     overlay.addEventListener('click', overlayHandler);
     overlay.classList.add('show');
+
+    // Expose a programmatic close for advanced modals
     overlay._forceClose = closeModal;
   });
 }
@@ -1653,399 +1627,410 @@ async function limitReachedModal(type) {
     'Денний ліміт досягнуто',
     `<p>${icon} Ви використали всі <strong>${max} ${label}</strong> на сьогодні.</p>
      <p class="muted">Ліміт скидається опівночі. До скидання: <strong>${formatResetTime()}</strong></p>
-     <p class="muted">Обмеження допомагає зберегти безкоштовні API-сервіси доступними для всіх користувачів.</p>`,
+     <p class="muted">Обмеження допомагає зберегти штовні API-сервіси доступними для всіх користувачів.</p>`,
     'warn'
   );
 }
 
-/* ============================================================
-   PDF GENERATION WITH CYRILLIC SUPPORT (font fetched at runtime)
-   ============================================================
-   jsPDF's built-in fonts don't support Cyrillic. We fetch a real
-   .ttf that has proper CORS headers. The @fontsource npm package
-   ships genuine TTF files under /files/*.ttf on jsDelivr, which
-   are served with Access-Control-Allow-Origin: *.
-   ============================================================ */
+/* ============ PDF GENERATION ============ */
 
-let _pdfFontLoaded = false;
-let _pdfFontPromise = null;
-let _pdfFontData = null;
-const PDF_FONT_NAME = 'CyrFont';
-
-// Fetch a TTF font and convert to base64 (chunked to avoid stack overflow)
-async function fetchFontBase64(url) {
-  const resp = await fetch(url, { mode: 'cors' });
-  if (!resp.ok) throw new Error('HTTP ' + resp.status);
-  const buf = await resp.arrayBuffer();
-  if (buf.byteLength < 1000) throw new Error('Too small, not a font');
-  const bytes = new Uint8Array(buf);
-  let binary = '';
-  const chunk = 0x8000;
-  for (let i = 0; i < bytes.length; i += chunk) {
-    binary += String.fromCharCode.apply(null, bytes.subarray(i, i + chunk));
+// Shared print-document styles for PDF output
+const PDF_STYLES = `
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'Segoe UI', 'DejaVu Sans', Arial, sans-serif;
+    color: #1a2332;
+    padding: 24px;
+    font-size: 12px;
+    line-height: 1.5;
   }
-  return btoa(binary);
+  .pdf-header {
+    border-bottom: 3px solid #0057b7;
+    padding-bottom: 12px;
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .pdf-brand {
+    display: flex; align-items: center; gap: 10px;
+  }
+  .pdf-logo {
+    width: 34px; height: 34px;
+    background: #ffd700;
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px;
+  }
+  .pdf-brand h1 { font-size: 18px; color: #0057b7; }
+  .pdf-brand p { font-size: 10px; color: #6b7280; }
+  .pdf-meta { text-align: right; font-size: 10px; color: #6b7280; }
+  .pdf-title {
+    font-size: 15px; font-weight: 700; color: #0057b7;
+    margin-bottom: 4px;
+  }
+  .pdf-subtitle { font-size: 11px; color: #6b7280; margin-bottom: 16px; }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 12px;
+  }
+  th {
+    background: #0057b7; color: white;
+    text-align: left; padding: 8px 10px;
+    font-size: 11px; font-weight: 600;
+  }
+  td {
+    padding: 8px 10px;
+    border-bottom: 1px solid #e5e7eb;
+    font-size: 11px;
+    vertical-align: top;
+    word-break: break-word;
+  }
+  tr:nth-child(even) td { background: #f5f7fa; }
+  .src-cell { font-weight: 600; }
+  .tgt-cell { color: #0057b7; }
+  .meta-cell { color: #6b7280; font-size: 10px; white-space: nowrap; }
+  .num-cell { color: #6b7280; font-size: 10px; width: 30px; }
+  .cat-heading {
+    background: #f0f4ff; color: #0057b7;
+    padding: 8px 10px; font-weight: 700; font-size: 12px;
+    border-left: 4px solid #0057b7;
+    margin: 14px 0 6px;
+  }
+  .scan-block {
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    padding: 12px;
+    margin-bottom: 12px;
+    page-break-inside: avoid;
+    display: flex; gap: 12px;
+  }
+  .scan-block img {
+    width: 100px; height: 100px;
+    object-fit: cover;
+    border-radius: 6px;
+    border: 1px solid #e5e7eb;
+    flex-shrink: 0;
+  }
+  .scan-block .scan-info { flex: 1; }
+  .scan-block .scan-label { font-size: 9px; color: #6b7280; text-transform: uppercase; margin-top: 6px; }
+  .scan-block .scan-ocr { font-size: 11px; }
+  .scan-block .scan-tr { font-size: 11px; color: #0057b7; }
+  .pdf-footer {
+    margin-top: 20px;
+    padding-top: 10px;
+    border-top: 1px solid #e5e7eb;
+    font-size: 9px; color: #9ca3af;
+    text-align: center;
+  }
+  .empty-note { text-align: center; color: #6b7280; padding: 30px; }
+  @media print {
+    body { padding: 12px; }
+    tr { page-break-inside: avoid; }
+    @page { margin: 12mm; }
+  }
+`;
+
+function pdfHeader(docTitle, subtitle) {
+  const now = new Date();
+  const dateStr = now.toLocaleDateString('uk-UA', { day: '2-digit', month: '2-digit', year: 'numeric' }) +
+    ' ' + now.toLocaleTimeString('uk-UA', { hour: '2-digit', minute: '2-digit' });
+  return `
+    <div class="pdf-header">
+      <div class="pdf-brand">
+        <div class="pdf-logo">🌻</div>
+        <div>
+          <h1>ШвидкоПереклад</h1>
+          <p>Free AI Translator</p>
+        </div>
+      </div>
+      <div class="pdf-meta">
+        Створено:<br>${escapeHtml(dateStr)}
+      </div>
+    </div>
+    <div class="pdf-title">${escapeHtml(docTitle)}</div>
+    ${subtitle ? `<div class="pdf-subtitle">${escapeHtml(subtitle)}</div>` : ''}
+  `;
 }
 
-async function ensurePdfFont(doc) {
-  if (_pdfFontPromise) {
-    await _pdfFontPromise;
-    applyFontToDoc(doc);
+function pdfFooter() {
+  return `<div class="pdf-footer">ШвидкоПереклад — безкоштовний AI-перекладач • Дані згенеровано локально на вашому пристрої</div>`;
+}
+
+// Open print window with given HTML body content and trigger print/save-as-PDF
+function openPdfWindow(title, innerHtml) {
+  const win = window.open('', '_blank');
+  if (!win) {
+    showToast('Дозвольте спливаючі вікна для збереження PDF', 'warn');
     return;
   }
-
-  _pdfFontPromise = (async () => {
-    // @fontsource ships genuine .ttf files with permissive CORS on jsDelivr.
-    // PT Sans has full Cyrillic + Latin Extended coverage and is compact.
-    const REGULAR_SOURCES = [
-      'https://cdn.jsdelivr.net/npm/@fontsource/pt-sans@5.0.13/files/pt-sans-cyrillic-400-normal.ttf',
-      'https://cdn.jsdelivr.net/npm/@fontsource/pt-sans@5.0.13/files/pt-sans-latin-400-normal.ttf',
-      'https://cdn.jsdelivr.net/npm/@fontsource/noto-sans@5.0.22/files/noto-sans-cyrillic-400-normal.ttf',
-      'https://cdn.jsdelivr.net/npm/@fontsource/roboto@5.0.8/files/roboto-cyrillic-400-normal.ttf',
-    ];
-    const BOLD_SOURCES = [
-      'https://cdn.jsdelivr.net/npm/@fontsource/pt-sans@5.0.13/files/pt-sans-cyrillic-700-normal.ttf',
-      'https://cdn.jsdelivr.net/npm/@fontsource/pt-sans@5.0.13/files/pt-sans-latin-700-normal.ttf',
-      'https://cdn.jsdelivr.net/npm/@fontsource/noto-sans@5.0.22/files/noto-sans-cyrillic-700-normal.ttf',
-      'https://cdn.jsdelivr.net/npm/@fontsource/roboto@5.0.8/files/roboto-cyrillic-700-normal.ttf',
-    ];
-
-    async function tryLoad(sources) {
-      for (const url of sources) {
-        try {
-          const b64 = await fetchFontBase64(url);
-          console.log('PDF font loaded from', url);
-          return b64;
-        } catch (e) {
-          console.warn('Font source failed:', url, e.message);
-        }
-      }
-      return null;
-    }
-
-    const regularB64 = await tryLoad(REGULAR_SOURCES);
-    if (!regularB64) throw new Error('All font sources failed');
-
-    let boldB64 = null;
-    try { boldB64 = await tryLoad(BOLD_SOURCES); } catch (e) {}
-
-    _pdfFontData = { regular: regularB64, bold: boldB64 };
-    _pdfFontLoaded = true;
-  })();
-
-  try {
-    await _pdfFontPromise;
-  } catch (e) {
-    _pdfFontPromise = null; // allow retry on next attempt
-    throw e;
-  }
-  applyFontToDoc(doc);
-}
-
-function applyFontToDoc(doc) {
-  if (!_pdfFontData) return;
-  try {
-    doc.addFileToVFS('CyrFont-Regular.ttf', _pdfFontData.regular);
-    doc.addFont('CyrFont-Regular.ttf', PDF_FONT_NAME, 'normal');
-    if (_pdfFontData.bold) {
-      doc.addFileToVFS('CyrFont-Bold.ttf', _pdfFontData.bold);
-      doc.addFont('CyrFont-Bold.ttf', PDF_FONT_NAME, 'bold');
-    } else {
-      doc.addFont('CyrFont-Regular.ttf', PDF_FONT_NAME, 'bold');
-    }
-    doc.setFont(PDF_FONT_NAME, 'normal');
-  } catch (e) {
-    console.warn('applyFontToDoc failed', e);
-  }
-}
-
-async function createPdfDoc() {
-  const { jsPDF } = window.jspdf;
-  const doc = new jsPDF({ unit: 'mm', format: 'a4' });
-  await ensurePdfFont(doc);
-  return doc;
-}
-
-function makePdfWriter(doc) {
-  const pageW = doc.internal.pageSize.getWidth();
-  const pageH = doc.internal.pageSize.getHeight();
-  const margin = 15;
-  const contentW = pageW - margin * 2;
-  let y = margin;
-  let pageNum = 1;
-
-  function footer() {
-    doc.setFont(PDF_FONT_NAME, 'normal');
-    doc.setFontSize(8);
-    doc.setTextColor(150);
-    doc.text('ШвидкоПереклад', margin, pageH - 8);
-    doc.text('Стор. ' + pageNum, pageW - margin, pageH - 8, { align: 'right' });
-    doc.setTextColor(0);
-  }
-
-  function newPage() {
-    footer();
-    doc.addPage();
-    pageNum++;
-    y = margin;
-  }
-
-  function ensureSpace(h) {
-    if (y + h > pageH - 15) newPage();
-  }
-
-  function docTitle(title, subtitle) {
-    doc.setFillColor(0, 87, 183);
-    doc.rect(0, 0, pageW, 26, 'F');
-    doc.setTextColor(255);
-    doc.setFont(PDF_FONT_NAME, 'bold');
-    doc.setFontSize(16);
-    doc.text(title, margin, 13);
-    if (subtitle) {
-      doc.setFont(PDF_FONT_NAME, 'normal');
-      doc.setFontSize(9);
-      doc.text(subtitle, margin, 20);
-    }
-    doc.setTextColor(0);
-    y = 34;
-  }
-
-  function writeText(text, { size = 10, bold = false, color = [26,35,50], indent = 0, gap = 1.5 } = {}) {
-    if (!text) return;
-    doc.setFont(PDF_FONT_NAME, bold ? 'bold' : 'normal');
-    doc.setFontSize(size);
-    doc.setTextColor(...color);
-    const lines = doc.splitTextToSize(String(text), contentW - indent);
-    const lineH = size * 0.42;
-    for (const line of lines) {
-      ensureSpace(lineH + gap);
-      doc.text(line, margin + indent, y);
-      y += lineH + gap;
-    }
-  }
-
-  function spacer(h = 3) { ensureSpace(h); y += h; }
-
-  function divider() {
-    ensureSpace(4);
-    doc.setDrawColor(220);
-    doc.line(margin, y, pageW - margin, y);
-    y += 4;
-  }
-
-  function meta(text) {
-    writeText(text, { size: 8, color: [120,120,120] });
-  }
-
-  function itemNumber(n, langInfo, dateStr) {
-    ensureSpace(6);
-    doc.setFont(PDF_FONT_NAME, 'bold');
-    doc.setFontSize(9);
-    doc.setTextColor(0, 87, 183);
-    doc.text('#' + n + '  ' + (langInfo || ''), margin, y);
-    if (dateStr) {
-      doc.setFont(PDF_FONT_NAME, 'normal');
-      doc.setFontSize(8);
-      doc.setTextColor(120);
-      doc.text(dateStr, pageW - margin, y, { align: 'right' });
-    }
-    doc.setTextColor(0);
-    y += 5;
-  }
-
-  function addImage(dataUrl, maxW = 60, maxH = 45) {
-    if (!dataUrl) return;
-    try {
-      const props = doc.getImageProperties(dataUrl);
-      let w = maxW;
-      let h = (props.height / props.width) * w;
-      if (h > maxH) { h = maxH; w = (props.width / props.height) * h; }
-      ensureSpace(h + 3);
-      doc.addImage(dataUrl, 'JPEG', margin, y, w, h);
-      y += h + 3;
-    } catch (e) {
-      console.warn('addImage failed', e);
-    }
-  }
-
-  function finalize() {
-    footer();
-  }
-
-  return {
-    docTitle, writeText, spacer, divider, meta, itemNumber,
-    addImage, finalize, ensureSpace,
-    get y() { return y; },
+  const html = `<!DOCTYPE html>
+<html lang="uk">
+<head>
+<meta charset="UTF-8">
+<title>${escapeHtml(title)}</title>
+<style>${PDF_STYLES}</style>
+</head>
+<body>
+${innerHtml}
+<script>
+  window.onload = function() {
+    setTimeout(function() {
+      window.focus();
+      window.print();
+    }, 300);
   };
+<\/script>
+</body>
+</html>`;
+  win.document.open();
+  win.document.write(html);
+  win.document.close();
 }
 
-function langPair(srcLang, tgtLang) {
-  return (LANG_PDF[srcLang] || srcLang || '?') + ' -> ' + (LANG_PDF[tgtLang] || tgtLang || '?');
-}
-
-function pdfFileName(prefix) {
-  const d = new Date();
-  const pad = (n) => String(n).padStart(2, '0');
-  return `${prefix}_${d.getFullYear()}${pad(d.getMonth()+1)}${pad(d.getDate())}_${pad(d.getHours())}${pad(d.getMinutes())}.pdf`;
-}
-
-async function withPdfLoading(btn, fn) {
-  if (typeof window.jspdf === 'undefined') {
-    showToast('Бібліотека PDF недоступна', 'error');
-    return;
-  }
-  const orig = btn ? btn.innerHTML : '';
-  if (btn) { btn.disabled = true; btn.innerHTML = '<span class="loader"></span> PDF...'; }
-  try {
-    await fn();
-  } catch (e) {
-    console.error(e);
-    showToast('Помилка створення PDF: ' + e.message, 'error');
-  } finally {
-    if (btn) { btn.disabled = false; btn.innerHTML = orig; }
-  }
-}
-
-async function generateHistoryPdf() {
-  const items = getFilteredHistory().map(({ h }) => h);
-  if (items.length === 0) {
-    showToast('Немає записів для експорту', 'warn');
-    return;
-  }
-
-  const doc = await createPdfDoc();
-  const w = makePdfWriter(doc);
-
-  let subtitle = 'Записів: ' + items.length + '  •  ' + formatFullDate(Date.now());
-  if (historyDateRange.from || historyDateRange.to) {
-    const f = historyDateRange.from || '...';
-    const t = historyDateRange.to || '...';
-    subtitle = `Період: ${f} — ${t}  •  Записів: ${items.length}`;
-  }
-  w.docTitle('Історія перекладів', subtitle);
-
-  items.forEach((h, i) => {
-    w.itemNumber(i + 1, langPair(h.srcLang, h.tgtLang) + (h.context ? '  [' + h.context + ']' : ''), formatFullDate(h.time));
-    w.writeText(h.src, { size: 10, bold: true });
-    w.spacer(1);
-    w.writeText(h.tgt, { size: 10, color: [0, 87, 183] });
-    w.divider();
-  });
-
-  w.finalize();
-  doc.save(pdfFileName('istoriya'));
-  showToast('PDF збережено', 'success');
-}
-
-async function generateSavedPdf() {
-  const items = state.saved;
-  if (!items || items.length === 0) {
-    showToast('Немає збережених для експорту', 'warn');
-    return;
-  }
-
-  const doc = await createPdfDoc();
-  const w = makePdfWriter(doc);
-  w.docTitle('Збережені переклади', 'Записів: ' + items.length + '  •  ' + formatFullDate(Date.now()));
-
-  items.forEach((s, i) => {
-    w.itemNumber(i + 1, langPair(s.srcLang, s.tgtLang), formatFullDate(s.time));
-    w.writeText(s.src, { size: 10, bold: true });
-    w.spacer(1);
-    w.writeText(s.tgt, { size: 10, color: [0, 87, 183] });
-    w.divider();
-  });
-
-  w.finalize();
-  doc.save(pdfFileName('zberezheni'));
-  showToast('PDF збережено', 'success');
-}
-
-async function generatePhrasesPdf() {
+// --- PDF: Phrases ---
+function generatePhrasesPdf() {
+  const langCode = state.phraseLang;
+  const langLabel = LANG_LABELS.translate[langCode] || langCode.toUpperCase();
   const cats = getAllCategories();
-  if (cats.length === 0) {
-    showToast('Немає фраз для експорту', 'warn');
-    return;
-  }
 
-  const doc = await createPdfDoc();
-  const w = makePdfWriter(doc);
-  w.docTitle('Корисні фрази', 'Усі секції  •  ' + formatFullDate(Date.now()));
+  let sections = '';
+  let totalCount = 0;
 
-  const ALL = ['uk', 'en', 'pl', 'de', 'cs'];
-
-  let total = 0;
-  cats.forEach((cat) => {
+  cats.forEach(cat => {
     const list = getPhrasesForCategory(cat.id);
     if (list.length === 0) return;
-
-    w.ensureSpace(8);
-    w.writeText(cat.label, { size: 12, bold: true, color: [0, 87, 183] });
-    w.spacer(1);
-
-    list.forEach((p, idx) => {
-      w.itemNumber(idx + 1, p.__custom ? '[власна]' : '', '');
-      ALL.forEach((l) => {
-        const val = p[l];
-        if (val) {
-          w.writeText(LANG_PDF[l] + ':  ' + val, { size: 9.5, indent: 2 });
-        }
-      });
-      total++;
-      w.divider();
+    let rows = '';
+    list.forEach((p, i) => {
+      const tr = p[langCode] || '';
+      totalCount++;
+      rows += `<tr>
+        <td class="num-cell">${i + 1}</td>
+        <td class="src-cell">${FLAG_EMOJI.uk} ${escapeHtml(p.uk || '')}</td>
+        <td class="tgt-cell">${FLAG_EMOJI[langCode] || ''} ${escapeHtml(tr)}</td>
+      </tr>`;
     });
-    w.spacer(2);
+    sections += `<div class="cat-heading">${escapeHtml(cat.label)}</div>
+      <table>
+        <thead><tr><th style="width:30px">#</th><th>Українська</th><th>${escapeHtml(langLabel)}</th></tr></thead>
+        <tbody>${rows}</tbody>
+      </table>`;
   });
 
-  if (total === 0) {
-    showToast('Немає фраз для експорту', 'warn');
-    return;
+  if (totalCount === 0) {
+    sections = `<div class="empty-note">Немає фраз для експорту</div>`;
   }
 
-  w.finalize();
-  doc.save(pdfFileName('frazy'));
-  showToast('PDF збережено', 'success');
+  const body = pdfHeader('Корисні фрази', `Мова перекладу: ${langLabel} • Всього фраз: ${totalCount}`) +
+    sections + pdfFooter();
+  openPdfWindow('Фрази — ШвидкоПереклад', body);
 }
 
-async function generateScansPdf() {
-  if (!scansCache || scansCache.length === 0) {
-    showToast('Немає сканувань для експорту', 'warn');
+// --- PDF: Saved ---
+function generateSavedPdf() {
+  if (!state.saved.length) {
+    showToast('Немає збережених перекладів', 'warn');
+    return;
+  }
+  let rows = '';
+  state.saved.forEach((s, i) => {
+    rows += `<tr>
+      <td class="num-cell">${i + 1}</td>
+      <td class="src-cell">${FLAG_EMOJI[s.srcLang] || ''} ${escapeHtml(s.src)}</td>
+      <td class="tgt-cell">${FLAG_EMOJI[s.tgtLang] || ''} ${escapeHtml(s.tgt)}</td>
+      <td class="meta-cell">${escapeHtml(formatFullDate(s.time))}</td>
+    </tr>`;
+  });
+  const table = `<table>
+    <thead><tr><th style="width:30px">#</th><th>Оригінал</th><th>Переклад</th><th>Дата</th></tr></thead>
+    <tbody>${rows}</tbody>
+  </table>`;
+  const body = pdfHeader('Збережені переклади', `Всього: ${state.saved.length}`) +
+    table + pdfFooter();
+  openPdfWindow('Збережені — ШвидкоПереклад', body);
+}
+
+// --- PDF: History (with optional date range) ---
+async function openHistoryPdfModal() {
+  if (!state.history.length) {
+    showToast('Історія порожня', 'warn');
     return;
   }
 
-  const doc = await createPdfDoc();
-  const w = makePdfWriter(doc);
-  w.docTitle('Історія сканувань', 'Записів: ' + scansCache.length + '  •  ' + formatFullDate(Date.now()));
+  // Determine min/max dates from history for default range
+  const times = state.history.map(h => h.time).filter(Boolean);
+  const minDate = times.length ? new Date(Math.min(...times)) : new Date();
+  const maxDate = times.length ? new Date(Math.max(...times)) : new Date();
+  const toInputDate = (d) => {
+    const pad = (n) => String(n).padStart(2, '0');
+    return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+  };
 
-  for (let i = 0; i < scansCache.length; i++) {
-    const s = scansCache[i];
-    w.itemNumber(i + 1, langPair(s.srcLang, s.tgtLang), formatFullDate(s.time));
+  const body = `
+    <p class="muted">Оберіть діапазон дат (необовʼязково). Залиште порожнім, щоб експортувати всю історію.</p>
+    <div class="form-field">
+      <label>Від дати</label>
+      <input type="date" class="form-input" id="pdfDateFrom" value="">
+    </div>
+    <div class="form-field">
+      <label>До дати</label>
+      <input type="date" class="form-input" id="pdfDateTo" value="">
+    </div>
+    <p class="muted" id="pdfRangeInfo">Доступно записів: ${state.history.length} (з ${formatFullDate(minDate.getTime())} по ${formatFullDate(maxDate.getTime())})</p>
+  `;
 
-    if (s.thumb) {
-      w.addImage(s.thumb, 55, 45);
-    }
+  await showModal({
+    title: 'PDF історії перекладів',
+    body,
+    icon: 'info',
+    buttons: [
+      { label: 'Скасувати', type: 'secondary', value: false },
+      {
+        label: '📄 Створити PDF',
+        type: 'primary',
+        onClick: (bodyEl) => {
+          const fromStr = bodyEl.querySelector('#pdfDateFrom').value;
+          const toStr = bodyEl.querySelector('#pdfDateTo').value;
 
-    w.writeText('Розпізнаний текст:', { size: 9, bold: true, color: [100,100,100] });
-    w.writeText(s.ocrText || '(порожньо)', { size: 9.5 });
-    w.spacer(1);
-    w.writeText('Переклад:', { size: 9, bold: true, color: [100,100,100] });
-    w.writeText(s.translation || '(порожньо)', { size: 9.5, color: [0, 87, 183] });
-    w.divider();
+          let fromTs = null, toTs = null;
+          if (fromStr) {
+            const d = new Date(fromStr);
+            d.setHours(0, 0, 0, 0);
+            fromTs = d.getTime();
+          }
+          if (toStr) {
+            const d = new Date(toStr);
+            d.setHours(23, 59, 59, 999);
+            toTs = d.getTime();
+          }
+          if (fromTs && toTs && fromTs > toTs) {
+            showToast('«Від» не може бути пізніше «До»', 'warn');
+            return false;
+          }
+
+          generateHistoryPdf(fromTs, toTs);
+          return true;
+        },
+      },
+    ],
+    onRender: (bodyEl) => {
+      const info = bodyEl.querySelector('#pdfRangeInfo');
+      const fromEl = bodyEl.querySelector('#pdfDateFrom');
+      const toEl = bodyEl.querySelector('#pdfDateTo');
+      const update = () => {
+        const fromStr = fromEl.value;
+        const toStr = toEl.value;
+        let fromTs = null, toTs = null;
+        if (fromStr) { const d = new Date(fromStr); d.setHours(0,0,0,0); fromTs = d.getTime(); }
+        if (toStr) { const d = new Date(toStr); d.setHours(23,59,59,999); toTs = d.getTime(); }
+        const count = state.history.filter(h => {
+          if (fromTs && h.time < fromTs) return false;
+          if (toTs && h.time > toTs) return false;
+          return true;
+        }).length;
+        info.textContent = `Буде експортовано записів: ${count} з ${state.history.length}`;
+      };
+      fromEl.addEventListener('change', update);
+      toEl.addEventListener('change', update);
+    },
+  });
+}
+
+function generateHistoryPdf(fromTs, toTs) {
+  let items = state.history.slice();
+  // Sort chronologically (oldest first) for a readable report
+  items.sort((a, b) => (a.time || 0) - (b.time || 0));
+
+  if (fromTs || toTs) {
+    items = items.filter(h => {
+      if (fromTs && h.time < fromTs) return false;
+      if (toTs && h.time > toTs) return false;
+      return true;
+    });
   }
 
-  w.finalize();
-  doc.save(pdfFileName('skanuvannya'));
-  showToast('PDF збережено', 'success');
+  if (items.length === 0) {
+    showToast('Немає записів у вибраному діапазоні', 'warn');
+    return;
+  }
+
+  let rangeLabel = 'Уся історія';
+  if (fromTs && toTs) {
+    rangeLabel = `Період: ${formatFullDate(fromTs)} — ${formatFullDate(toTs)}`;
+  } else if (fromTs) {
+    rangeLabel = `Від: ${formatFullDate(fromTs)}`;
+  } else if (toTs) {
+    rangeLabel = `До: ${formatFullDate(toTs)}`;
+  }
+
+  let rows = '';
+  items.forEach((h, i) => {
+    rows += `<tr>
+      <td class="num-cell">${i + 1}</td>
+      <td class="src-cell">${FLAG_EMOJI[h.srcLang] || ''} ${escapeHtml(h.src)}</td>
+      <td class="tgt-cell">${FLAG_EMOJI[h.tgtLang] || ''} ${escapeHtml(h.tgt)}</td>
+      <td class="meta-cell">${escapeHtml(formatFullDate(h.time))}</td>
+    </tr>`;
+  });
+  const table = `<table>
+    <thead><tr><th style="width:30px">#</th><th>Оригінал</th><th>Переклад</th><th>Дата</th></tr></thead>
+    <tbody>${rows}</tbody>
+  </table>`;
+  const body = pdfHeader('Історія перекладів', `${rangeLabel} • Записів: ${items.length}`) +
+    table + pdfFooter();
+  openPdfWindow('Історія — ШвидкоПереклад', body);
+}
+
+// --- PDF: Scans ---
+async function generateScansPdf() {
+  if (!scansCache || scansCache.length === 0) {
+    showToast('Немає сканувань', 'warn');
+    return;
+  }
+
+  showToast('Готуємо PDF...', '');
+
+  // Chronological (oldest first)
+  const items = scansCache.slice().sort((a, b) => (a.time || 0) - (b.time || 0));
+
+  let blocks = '';
+  for (let i = 0; i < items.length; i++) {
+    const s = items[i];
+    let imgSrc = s.thumb || '';
+    // Prefer thumbnail for smaller PDF; fall back to full image
+    if (!imgSrc && s.image instanceof Blob) {
+      try { imgSrc = await blobToDataURL(s.image); } catch(e) {}
+    }
+    blocks += `<div class="scan-block">
+      ${imgSrc ? `<img src="${imgSrc}" alt="scan">` : ''}
+      <div class="scan-info">
+        <div class="meta-cell">#${i + 1} • ${FLAG_EMOJI[s.srcLang] || ''} → ${FLAG_EMOJI[s.tgtLang] || ''} • ${escapeHtml(formatFullDate(s.time))}</div>
+        <div class="scan-label">Розпізнаний текст</div>
+        <div class="scan-ocr">${escapeHtml(s.ocrText || '')}</div>
+        <div class="scan-label">Переклад</div>
+        <div class="scan-tr">${escapeHtml(s.translation || '')}</div>
+      </div>
+    </div>`;
+  }
+
+  const body = pdfHeader('Історія сканувань', `Всього: ${items.length}`) +
+    blocks + pdfFooter();
+  openPdfWindow('Сканування — ШвидкоПереклад', body);
 }
 
 /* ============ CUSTOM PHRASE / CATEGORY HELPERS ============ */
+
+// Returns full list of categories (built-in + custom)
 function getAllCategories() {
   return [...BUILTIN_CATEGORIES, ...state.customCategories];
 }
 
+// Returns array of phrases for a category (built-in + custom appended)
 function getPhrasesForCategory(catId) {
   const builtin = PHRASES[catId] || [];
   const custom = state.customPhrases[catId] || [];
+  // Mark custom ones so we can render delete buttons & badges
   return [
     ...builtin.map(p => ({ ...p, __custom: false })),
     ...custom.map((p, idx) => ({ ...p, __custom: true, __idx: idx })),
@@ -2056,6 +2041,7 @@ function isCustomCategory(catId) {
   return state.customCategories.some(c => c.id === catId);
 }
 
+// Add a custom category, returns its id
 function addCustomCategory(label) {
   const id = 'cust_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6);
   state.customCategories.push({ id, label });
@@ -2067,6 +2053,7 @@ function addCustomCategory(label) {
 function deleteCustomCategory(catId) {
   state.customCategories = state.customCategories.filter(c => c.id !== catId);
   delete state.customPhrases[catId];
+  // If active category was deleted, fall back to first available
   if (state.phraseCat === catId) {
     const all = getAllCategories();
     state.phraseCat = all.length ? all[0].id : 'emergency';
@@ -2087,6 +2074,8 @@ function deleteCustomPhrase(catId, idx) {
 }
 
 /* ============ PREFILL TRANSLATION FOR ADD-PHRASE MODAL ============ */
+// Given a source language + text, translate into the remaining languages.
+// Only fills fields that are currently empty (won't overwrite user edits).
 async function prefillPhraseTranslations(bodyEl) {
   const ALL_LANGS = ['uk', 'en', 'pl', 'de', 'cs'];
   const srcLang = bodyEl.querySelector('#prefillSrcLang')?.value || 'uk';
@@ -2108,6 +2097,7 @@ async function prefillPhraseTranslations(bodyEl) {
   const origHtml = btn ? btn.innerHTML : '';
   if (btn) { btn.disabled = true; btn.innerHTML = '<span class="loader"></span> Переклад...'; }
 
+  // Target languages: everything except the source that is currently empty
   const targets = ALL_LANGS.filter(l => {
     if (l === srcLang) return false;
     const inp = bodyEl.querySelector(`input[data-lang="${l}"]`);
@@ -2120,87 +2110,216 @@ async function prefillPhraseTranslations(bodyEl) {
     return;
   }
 
-  incrementUsage('translate');
+  let filled = 0;
+  let usedQuota = false;
 
-  let successCount = 0;
   for (const tgt of targets) {
+    if (btn) {
+      btn.innerHTML = `<span class="loader"></span> ${LANG_LABELS.translate[tgt]}...`;
+    }
     try {
-      const translated = await translateText(sourceText, srcLang, tgt);
-      if (translated) {
-        const inp = bodyEl.querySelector(`input[data-lang="${tgt}"]`);
-        if (inp && !inp.value.trim()) {
-          inp.value = translated;
-          inp.classList.add('field-just-filled');
-          setTimeout(() => inp.classList.remove('field-just-filled'), 800);
-          successCount++;
-        }
+      const { translation } = await translate(sourceText, srcLang, tgt);
+      const inp = bodyEl.querySelector(`input[data-lang="${tgt}"]`);
+      if (inp && translation) {
+        inp.value = translation;
+        inp.classList.add('field-just-filled');
+        setTimeout(() => inp.classList.remove('field-just-filled'), 800);
+        filled++;
+        usedQuota = true;
       }
     } catch (e) {
-      console.warn('Prefill translation failed for', tgt, e);
+      console.warn('prefill translate failed for', tgt, e.message);
     }
   }
+
+  // Count as a single translation-quota use if any request happened
+  if (usedQuota) incrementUsage('translate');
 
   if (btn) { btn.disabled = false; btn.innerHTML = origHtml; }
 
-  if (successCount > 0) {
-    showToast(`Заповнено ${successCount} ${successCount === 1 ? 'поле' : 'полів'}`, 'success');
+  if (filled > 0) {
+    showToast(`Заповнено ${filled} ${filled === 1 ? 'переклад' : 'переклади'} ✨`, 'success');
   } else {
-    showToast('Не вдалося перекласти', 'error');
+    showToast('Не вдалося отримати переклади', 'error');
   }
 }
 
-/* ============ TRANSLATION API ============ */
-const TRANSLATE_PROVIDERS = [
-  {
-    name: 'MyMemory',
-    async translate(text, src, tgt) {
-      const url = `https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=${src}|${tgt}`;
-      const resp = await fetch(url);
-      if (!resp.ok) throw new Error('MyMemory HTTP ' + resp.status);
-      const data = await resp.json();
-      if (data.responseStatus !== 200 && !data.responseData?.translatedText) {
-        throw new Error('MyMemory error');
-      }
-      return data.responseData.translatedText;
-    },
-  },
-  {
-    name: 'Lingva',
-    async translate(text, src, tgt) {
-      const url = `https://lingva.ml/api/v1/${src}/${tgt}/${encodeURIComponent(text)}`;
-      const resp = await fetch(url);
-      if (!resp.ok) throw new Error('Lingva HTTP ' + resp.status);
-      const data = await resp.json();
-      if (!data.translation) throw new Error('Lingva empty');
-      return data.translation;
-    },
-  },
-];
+// Modal for adding a custom phrase
+async function openAddPhraseModal() {
+  const cats = getAllCategories();
+  const catOptions = cats.map(c =>
+    `<option value="${c.id}" ${c.id === state.phraseCat ? 'selected' : ''}>${escapeHtml(c.label)}</option>`
+  ).join('');
 
-let lastProvider = '—';
+  const ALL_LANGS = ['uk', 'en', 'pl', 'de', 'cs'];
+  const langInputs = ALL_LANGS.map(l => `
+    <div class="form-field">
+      <label>${FLAG_EMOJI[l]} ${LANG_LABELS.translate[l]}</label>
+      <input type="text" class="form-input small" data-lang="${l}" placeholder="${LANG_LABELS.translate[l]}...">
+    </div>
+  `).join('');
 
-async function translateText(text, src, tgt) {
-  if (src === tgt) return text;
-  let lastErr = null;
-  for (const provider of TRANSLATE_PROVIDERS) {
-    try {
-      const result = await provider.translate(text, src, tgt);
-      if (result && result.trim()) {
-        lastProvider = provider.name;
-        return result.trim();
+  const body = `
+    <div class="form-field">
+      <label>Секція</label>
+      <select class="form-input" id="phraseCatSelect">${catOptions}</select>
+    </div>
+    <div class="prefill-bar">
+      <div class="form-row" style="flex:1;min-width:140px">
+        <span class="phrase-lang-flag">Джерело:</span>
+        <select class="form-input small" id="prefillSrcLang" style="flex:1">
+          ${ALL_LANGS.map(l => `<option value="${l}" ${l === 'uk' ? 'selected' : ''}>${FLAG_EMOJI[l]} ${LANG_LABELS.translate[l]}</option>`).join('')}
+        </select>
+      </div>
+      <button class="btn btn-prefill" id="prefillBtn" type="button">✨ Автопереклад</button>
+      <div class="prefill-hint">Заповніть поле-джерело і натисніть «Автопереклад», щоб перекласти на інші мови.</div>
+    </div>
+    ${langInputs}
+  `;
+
+  await showModal({
+    title: '➕ Нова фраза',
+    body,
+    icon: 'info',
+    buttons: [
+      { label: 'Скасувати', type: 'secondary', value: false },
+      {
+        label: 'Зберегти',
+        type: 'primary',
+        onClick: (bodyEl) => {
+          const catId = bodyEl.querySelector('#phraseCatSelect').value;
+          const phraseObj = {};
+          let hasAny = false;
+          ALL_LANGS.forEach(l => {
+            const val = bodyEl.querySelector(`input[data-lang="${l}"]`).value.trim();
+            phraseObj[l] = val;
+            if (val) hasAny = true;
+          });
+
+          if (!phraseObj.uk) {
+            showToast('Введіть щонайменше українську фразу', 'warn');
+            bodyEl.querySelector('input[data-lang="uk"]').focus();
+            return false;
+          }
+          if (!hasAny) {
+            showToast('Заповніть хоча б одне поле', 'warn');
+            return false;
+          }
+
+          addCustomPhrase(catId, phraseObj);
+          showToast('Фразу додано ⭐', 'success');
+          return true;
+        },
+      },
+    ],
+    onRender: (bodyEl) => {
+      const prefillBtn = bodyEl.querySelector('#prefillBtn');
+      prefillBtn.addEventListener('click', () => prefillPhraseTranslations(bodyEl));
+    },
+  });
+
+  renderPhrases();
+}
+
+// Modal for adding a custom category/section
+async function openAddCategoryModal() {
+  const body = `
+    <div class="form-field">
+      <label>Назва секції</label>
+      <input type="text" class="form-input" id="newCatLabel" placeholder="Напр. 🛒 Покупки" maxlength="40">
+    </div>
+    <p class="muted">Порада: можна почати назву з емодзі для наочності.</p>
+  `;
+
+  await showModal({
+    title: '📁 Нова секція',
+    body,
+    icon: 'info',
+    buttons: [
+      { label: 'Скасувати', type: 'secondary', value: false },
+      {
+        label: 'Створити',
+        type: 'primary',
+        onClick: (bodyEl) => {
+          const label = bodyEl.querySelector('#newCatLabel').value.trim();
+          if (!label) {
+            showToast('Введіть назву секції', 'warn');
+            bodyEl.querySelector('#newCatLabel').focus();
+            return false;
+          }
+          const id = addCustomCategory(label);
+          state.phraseCat = id;
+          showToast('Секцію створено 📁', 'success');
+          return true;
+        },
+      },
+    ],
+    onRender: (bodyEl) => {
+      setTimeout(() => bodyEl.querySelector('#newCatLabel')?.focus(), 100);
+    },
+  });
+
+  renderPhraseCategories();
+  renderPhrases();
+}
+
+/* ============ TRANSLATION ENGINE ============ */
+
+function escapeHtml(str) {
+  if (str == null) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+// Translation via free MyMemory API with LibreTranslate fallback
+async function translate(text, srcLang, tgtLang) {
+  if (!text.trim()) throw new Error('Empty text');
+  if (srcLang === tgtLang) return { translation: text, provider: 'none' };
+
+  // Try MyMemory first (free, no key)
+  try {
+    const url = `https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=${srcLang}|${tgtLang}`;
+    const res = await fetch(url);
+    if (res.ok) {
+      const data = await res.json();
+      if (data.responseStatus === 200 && data.responseData?.translatedText) {
+        return {
+          translation: data.responseData.translatedText,
+          provider: 'MyMemory',
+        };
       }
-    } catch (e) {
-      lastErr = e;
-      console.warn(`Provider ${provider.name} failed:`, e.message);
     }
+  } catch (e) {
+    console.warn('MyMemory failed:', e.message);
   }
-  throw lastErr || new Error('Усі провайдери недоступні');
+
+  // Fallback: LibreTranslate
+  try {
+    const res = await fetch('https://libretranslate.com/translate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ q: text, source: srcLang, target: tgtLang, format: 'text' }),
+    });
+    if (res.ok) {
+      const data = await res.json();
+      if (data.translatedText) {
+        return { translation: data.translatedText, provider: 'LibreTranslate' };
+      }
+    }
+  } catch (e) {
+    console.warn('LibreTranslate failed:', e.message);
+  }
+
+  throw new Error('Усі сервіси перекладу недоступні');
 }
 
-/* ============ MAIN TRANSLATE ACTION ============ */
 async function doTranslate() {
-  const text = document.getElementById('srcText').value.trim();
-  if (!text) {
+  const srcText = document.getElementById('srcText').value.trim();
+  if (!srcText) {
     showToast('Введіть текст для перекладу', 'warn');
     return;
   }
@@ -2211,47 +2330,54 @@ async function doTranslate() {
   }
 
   const btn = document.getElementById('translateBtn');
-  const orig = btn.innerHTML;
+  const origHtml = btn.innerHTML;
   btn.disabled = true;
   btn.innerHTML = '<span class="loader"></span> Переклад...';
 
   try {
-    const result = await translateText(text, state.srcLang, state.tgtLang);
-    document.getElementById('tgtText').value = result;
-    state.srcText = text;
-    state.tgtText = result;
+    const { translation, provider } = await translate(srcText, state.srcLang, state.tgtLang);
+    document.getElementById('tgtText').value = translation;
+    state.srcText = srcText;
+    state.tgtText = translation;
 
     incrementUsage('translate');
 
-    const providerInfo = document.getElementById('providerInfo');
-    providerInfo.classList.remove('hidden');
-    document.getElementById('providerBadge').textContent = lastProvider;
-
-    const note = document.getElementById('contextNote');
-    const hint = CONTEXT_HINTS[state.context];
-    if (hint) {
-      note.textContent = hint;
-      note.classList.remove('hidden');
-    } else {
-      note.classList.add('hidden');
-    }
-
+    // Add to history
     addToHistory({
-      src: text,
-      tgt: result,
+      src: srcText,
+      tgt: translation,
       srcLang: state.srcLang,
       tgtLang: state.tgtLang,
       context: state.context,
       time: Date.now(),
     });
 
+    // Show provider
+    const providerInfo = document.getElementById('providerInfo');
+    const providerBadge = document.getElementById('providerBadge');
+    if (provider && provider !== 'none') {
+      providerBadge.textContent = provider;
+      providerInfo.classList.remove('hidden');
+    } else {
+      providerInfo.classList.add('hidden');
+    }
+
+    // Context note
+    const note = CONTEXT_HINTS[state.context];
+    const noteEl = document.getElementById('contextNote');
+    if (note) {
+      noteEl.textContent = note;
+      noteEl.classList.remove('hidden');
+    } else {
+      noteEl.classList.add('hidden');
+    }
+
     saveState();
   } catch (e) {
-    console.error(e);
-    showToast('Помилка перекладу: ' + e.message, 'error');
+    showToast(e.message || 'Помилка перекладу', 'error');
   } finally {
     btn.disabled = false;
-    btn.innerHTML = orig;
+    btn.innerHTML = origHtml;
   }
 }
 
@@ -2262,338 +2388,107 @@ function addToHistory(entry) {
   if (state.activeTab === 'history') renderHistory();
 }
 
-/* ============ HISTORY FILTERING ============ */
-function getFilteredHistory() {
-  const q = searchQueries.history.toLowerCase().trim();
-  const from = historyDateRange.from ? new Date(historyDateRange.from + 'T00:00:00').getTime() : null;
-  const to = historyDateRange.to ? new Date(historyDateRange.to + 'T23:59:59').getTime() : null;
+/* ============ SPEECH SYNTHESIS ============ */
+let currentUtterance = null;
 
-  return state.history
-    .map((h, idx) => ({ h, idx }))
-    .filter(({ h }) => {
-      if (from !== null && h.time < from) return false;
-      if (to !== null && h.time > to) return false;
-      if (q) {
-        const hay = (h.src + ' ' + h.tgt).toLowerCase();
-        if (!hay.includes(q)) return false;
-      }
-      return true;
-    });
-}
-
-function renderHistory() {
-  const list = document.getElementById('historyList');
-  const filtered = getFilteredHistory();
-  const countEl = document.getElementById('historyCount');
-
-  const totalFilters = searchQueries.history || historyDateRange.from || historyDateRange.to;
-  countEl.textContent = totalFilters
-    ? `${filtered.length} / ${state.history.length}`
-    : `${state.history.length}`;
-
-  if (state.history.length === 0) {
-    list.innerHTML = `<div class="empty-state"><div style="font-size:44px;margin-bottom:8px">📚</div><p>Історія порожня</p></div>`;
+function speak(text, langCode, buttonEl) {
+  if (!('speechSynthesis' in window)) {
+    showToast('Синтез мовлення не підтримується', 'error');
+    return;
+  }
+  if (!text.trim()) {
+    showToast('Немає тексту для озвучення', 'warn');
     return;
   }
 
-  if (filtered.length === 0) {
-    list.innerHTML = `<div class="empty-state"><div style="font-size:44px;margin-bottom:8px">🔍</div><p>Нічого не знайдено</p></div>`;
-    return;
-  }
-
-  list.innerHTML = filtered.map(({ h, idx }) => `
-    <div class="history-item" data-idx="${idx}">
-      <div class="history-meta">
-        <span>${flagSvg(h.srcLang)} → ${flagSvg(h.tgtLang)} ${h.context && h.context !== 'general' ? '• ' + h.context : ''}</span>
-        <span>${formatFriendlyDate(h.time)}</span>
-      </div>
-      <div class="history-text"><strong>${escapeHtml(h.src)}</strong></div>
-      <div class="history-text" style="color:var(--primary)">${escapeHtml(h.tgt)}</div>
-      <div class="item-actions">
-        <button class="btn btn-secondary" data-act="load" data-idx="${idx}">↩️ Відкрити</button>
-        <button class="btn btn-secondary" data-act="copy" data-idx="${idx}">📋 Копіювати</button>
-        <button class="btn btn-danger" data-act="del" data-idx="${idx}">🗑️</button>
-      </div>
-    </div>
-  `).join('');
-
-  list.querySelectorAll('[data-act]').forEach(btn => {
-    btn.addEventListener('click', (e) => {
-      e.stopPropagation();
-      const idx = parseInt(btn.dataset.idx);
-      const act = btn.dataset.act;
-      const h = state.history[idx];
-      if (!h) return;
-      if (act === 'load') {
-        state.srcLang = h.srcLang; state.tgtLang = h.tgtLang;
-        document.getElementById('srcText').value = h.src;
-        document.getElementById('tgtText').value = h.tgt;
-        state.srcText = h.src; state.tgtText = h.tgt;
-        syncLangSelects();
-        switchTab('translate');
-        saveState();
-      } else if (act === 'copy') {
-        copyText(h.tgt);
-      } else if (act === 'del') {
-        state.history.splice(idx, 1);
-        saveState();
-        renderHistory();
-        showToast('Видалено', 'success');
-      }
-    });
-  });
-}
-
-/* ============ SAVED ============ */
-function getFilteredSaved() {
-  const q = searchQueries.saved.toLowerCase().trim();
-  return state.saved
-    .map((s, idx) => ({ s, idx }))
-    .filter(({ s }) => {
-      if (!q) return true;
-      return (s.src + ' ' + s.tgt).toLowerCase().includes(q);
-    });
-}
-
-function renderSaved() {
-  const list = document.getElementById('savedList');
-  const filtered = getFilteredSaved();
-  const countEl = document.getElementById('savedCount');
-
-  countEl.textContent = searchQueries.saved
-    ? `${filtered.length} / ${state.saved.length}`
-    : `${state.saved.length}`;
-
-  if (state.saved.length === 0) {
-    list.innerHTML = `<div class="empty-state"><div style="font-size:44px;margin-bottom:8px">⭐</div><p>Немає збережених</p></div>`;
-    return;
-  }
-
-  if (filtered.length === 0) {
-    list.innerHTML = `<div class="empty-state"><div style="font-size:44px;margin-bottom:8px">🔍</div><p>Нічого не знайдено</p></div>`;
-    return;
-  }
-
-  list.innerHTML = filtered.map(({ s, idx }) => `
-    <div class="history-item" data-idx="${idx}">
-      <div class="history-meta">
-        <span>${flagSvg(s.srcLang)} → ${flagSvg(s.tgtLang)}</span>
-        <span>${formatFriendlyDate(s.time)}</span>
-      </div>
-      <div class="history-text"><strong>${escapeHtml(s.src)}</strong></div>
-      <div class="history-text" style="color:var(--primary)">${escapeHtml(s.tgt)}</div>
-      <div class="item-actions">
-        <button class="btn btn-secondary" data-act="load" data-idx="${idx}">↩️ Відкрити</button>
-        <button class="btn btn-secondary" data-act="copy" data-idx="${idx}">📋 Копіювати</button>
-        <button class="btn btn-danger" data-act="del" data-idx="${idx}">🗑️</button>
-      </div>
-    </div>
-  `).join('');
-
-  list.querySelectorAll('[data-act]').forEach(btn => {
-    btn.addEventListener('click', (e) => {
-      e.stopPropagation();
-      const idx = parseInt(btn.dataset.idx);
-      const act = btn.dataset.act;
-      const s = state.saved[idx];
-      if (!s) return;
-      if (act === 'load') {
-        state.srcLang = s.srcLang; state.tgtLang = s.tgtLang;
-        document.getElementById('srcText').value = s.src;
-        document.getElementById('tgtText').value = s.tgt;
-        state.srcText = s.src; state.tgtText = s.tgt;
-        syncLangSelects();
-        switchTab('translate');
-        saveState();
-      } else if (act === 'copy') {
-        copyText(s.tgt);
-      } else if (act === 'del') {
-        state.saved.splice(idx, 1);
-        saveState();
-        renderSaved();
-        showToast('Видалено', 'success');
-      }
-    });
-  });
-}
-
-function saveTranslation() {
-  const src = document.getElementById('srcText').value.trim();
-  const tgt = document.getElementById('tgtText').value.trim();
-  if (!src || !tgt) {
-    showToast('Немає що зберігати', 'warn');
-    return;
-  }
-  const exists = state.saved.some(s => s.src === src && s.tgt === tgt);
-  if (exists) {
-    showToast('Вже збережено', 'warn');
-    return;
-  }
-  state.saved.unshift({
-    src, tgt,
-    srcLang: state.srcLang,
-    tgtLang: state.tgtLang,
-    time: Date.now(),
-  });
-  saveState();
-  const btn = document.getElementById('saveBtn');
-  btn.classList.add('saved');
-  btn.innerHTML = '✅ Збережено';
-  setTimeout(() => {
-    btn.classList.remove('saved');
-    btn.innerHTML = '⭐ Зберегти';
-  }, 1500);
-  showToast('Збережено', 'success');
-}
-
-/* ============ SCANS RENDERING ============ */
-function getFilteredScans() {
-  const q = searchQueries.scan.toLowerCase().trim();
-  if (!q) return scansCache;
-  return scansCache.filter(s =>
-    ((s.ocrText || '') + ' ' + (s.translation || '')).toLowerCase().includes(q)
-  );
-}
-
-async function refreshScansCache() {
-  try {
-    scansCache = await scanGetAll();
-  } catch (e) {
-    console.error('Failed to load scans', e);
-    scansCache = [];
-  }
-}
-
-function renderScans() {
-  const list = document.getElementById('scansList');
-  const filtered = getFilteredScans();
-  const countEl = document.getElementById('scanCount');
-
-  countEl.textContent = searchQueries.scan
-    ? `${filtered.length} / ${scansCache.length}`
-    : `${scansCache.length}`;
-
-  if (scansCache.length === 0) {
-    list.innerHTML = `<div class="empty-state"><div style="font-size:44px;margin-bottom:8px">🗂️</div><p>Немає збережених сканувань</p></div>`;
-    return;
-  }
-
-  if (filtered.length === 0) {
-    list.innerHTML = `<div class="empty-state"><div style="font-size:44px;margin-bottom:8px">🔍</div><p>Нічого не знайдено</p></div>`;
-    return;
-  }
-
-  list.innerHTML = filtered.map(s => `
-    <div class="scan-item" data-id="${s.id}">
-      <img class="scan-thumb" src="${s.thumb || ''}" alt="scan" data-act="view" data-id="${s.id}">
-      <div class="scan-body">
-        <div class="history-meta">
-          <span>${flagSvg(s.srcLang)} → ${flagSvg(s.tgtLang)}</span>
-          <span>${formatFriendlyDate(s.time)}</span>
-        </div>
-        <div class="scan-text-preview">${escapeHtml(s.ocrText || '(порожньо)')}</div>
-        <div class="scan-trans-preview">${escapeHtml(s.translation || '')}</div>
-        <div class="item-actions">
-          <button class="btn btn-secondary" data-act="copy" data-id="${s.id}">📋 Переклад</button>
-          <button class="btn btn-secondary" data-act="reuse" data-id="${s.id}">↩️ Відкрити</button>
-          <button class="btn btn-danger" data-act="del" data-id="${s.id}">🗑️</button>
-        </div>
-      </div>
-    </div>
-  `).join('');
-
-  list.querySelectorAll('[data-act]').forEach(el => {
-    el.addEventListener('click', async (e) => {
-      e.stopPropagation();
-      const id = el.dataset.id;
-      const act = el.dataset.act;
-      const rec = scansCache.find(s => s.id === id);
-      if (!rec) return;
-
-      if (act === 'view') {
-        await viewScanImage(rec);
-      } else if (act === 'copy') {
-        copyText(rec.translation || '');
-      } else if (act === 'reuse') {
-        document.getElementById('ocrResult').value =
-          (rec.ocrText || '') + (rec.translation ? '\n\n--- Переклад ---\n' + rec.translation : '');
-        state.photoSrcLang = rec.srcLang;
-        state.photoTgtLang = rec.tgtLang;
-        document.getElementById('photoSrcLang').value = rec.srcLang;
-        document.getElementById('photoTgtLang').value = rec.tgtLang;
-        switchTab('photo');
-      } else if (act === 'del') {
-        const ok = await confirmModal('Видалити скан?', '<p>Цей запис буде видалено назавжди.</p>', { danger: true, okLabel: 'Видалити' });
-        if (ok) {
-          await scanDelete(id);
-          try { await idbDelete('scan_full_' + id); } catch(e) {}
-          await refreshScansCache();
-          renderScans();
-          showToast('Видалено', 'success');
-        }
-      }
-    });
-  });
-}
-
-async function viewScanImage(rec) {
-  let fullImg = rec.thumb;
-  try {
-    const stored = await idbGet('scan_full_' + rec.id);
-    if (stored) fullImg = stored;
-  } catch (e) {}
-
-  await showModal({
-    title: 'Скан документа',
-    icon: 'info',
-    body: `
-      <img src="${fullImg}" alt="scan" style="width:100%;border-radius:10px;margin-bottom:10px">
-      <p class="muted">${flagSvg(rec.srcLang)} → ${flagSvg(rec.tgtLang)} • ${formatFullDate(rec.time)}</p>
-      <pre>${escapeHtml(rec.ocrText || '')}</pre>
-      ${rec.translation ? '<pre style="color:var(--primary)">' + escapeHtml(rec.translation) + '</pre>' : ''}
-    `,
-    buttons: [{ label: 'Закрити', type: 'primary', value: true }],
-  });
-}
-
-/* ============ SAVE A SCAN RECORD ============ */
-async function saveScanRecord({ imageBlob, ocrText, translation, srcLang, tgtLang }) {
-  try {
-    const id = 'scan_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8);
-    const thumb = await makeThumbnail(imageBlob, 160);
-
-    const record = {
-      id,
-      time: Date.now(),
-      ocrText: ocrText || '',
-      translation: translation || '',
-      srcLang, tgtLang,
-      thumb: thumb || '',
-    };
-
-    await scanAdd(record);
-
-    try {
-      const fullDataUrl = await blobToDataURL(imageBlob);
-      await idbPut('scan_full_' + id, fullDataUrl);
-    } catch (e) {
-      console.warn('Could not store full scan image', e);
+  // Toggle: if speaking, stop
+  if (speechSynthesis.speaking) {
+    speechSynthesis.cancel();
+    document.querySelectorAll('.speaking').forEach(el => el.classList.remove('speaking'));
+    if (currentUtterance && currentUtterance._btn === buttonEl) {
+      currentUtterance = null;
+      return;
     }
-
-    await scanTrim();
-    await refreshScansCache();
-    if (state.activeTab === 'scans') renderScans();
-  } catch (e) {
-    console.error('saveScanRecord failed', e);
   }
+
+  const utterance = new SpeechSynthesisUtterance(text);
+  utterance.lang = SPEECH_LANG_MAP[langCode] || 'en-US';
+  utterance.rate = 0.9;
+  utterance._btn = buttonEl;
+
+  if (buttonEl) buttonEl.classList.add('speaking');
+
+  utterance.onend = () => {
+    if (buttonEl) buttonEl.classList.remove('speaking');
+    currentUtterance = null;
+  };
+  utterance.onerror = () => {
+    if (buttonEl) buttonEl.classList.remove('speaking');
+    currentUtterance = null;
+  };
+
+  currentUtterance = utterance;
+  speechSynthesis.speak(utterance);
+}
+
+/* ============ SPEECH RECOGNITION ============ */
+let recognition = null;
+let isListening = false;
+
+function initSpeechRecognition() {
+  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SpeechRecognition) return null;
+  const rec = new SpeechRecognition();
+  rec.continuous = false;
+  rec.interimResults = false;
+  return rec;
+}
+
+function toggleMic() {
+  if (!recognition) {
+    recognition = initSpeechRecognition();
+    if (!recognition) {
+      showToast('Розпізнавання мовлення не підтримується', 'error');
+      return;
+    }
+  }
+
+  const micBtn = document.getElementById('micBtn');
+
+  if (isListening) {
+    recognition.stop();
+    return;
+  }
+
+  recognition.lang = SPEECH_LANG_MAP[state.srcLang] || 'uk-UA';
+  recognition.onstart = () => {
+    isListening = true;
+    micBtn.innerHTML = '🔴 Слухаю...';
+    micBtn.classList.add('speaking');
+  };
+  recognition.onresult = (e) => {
+    const transcript = e.results[0][0].transcript;
+    const srcEl = document.getElementById('srcText');
+    srcEl.value = (srcEl.value ? srcEl.value + ' ' : '') + transcript;
+    state.srcText = srcEl.value;
+    saveState();
+  };
+  recognition.onerror = (e) => {
+    showToast('Помилка розпізнавання: ' + e.error, 'error');
+  };
+  recognition.onend = () => {
+    isListening = false;
+    micBtn.innerHTML = '🎤 Голос';
+    micBtn.classList.remove('speaking');
+  };
+
+  recognition.start();
 }
 
 /* ============ OCR ============ */
-let currentPhotoBlob = null;
-
-async function doOcr() {
-  if (!currentPhotoBlob) {
-    showToast('Спочатку додайте фото', 'warn');
+async function runOcr() {
+  if (!state.hasPhoto) {
+    showToast('Спочатку оберіть фото', 'warn');
     return;
   }
 
@@ -2603,65 +2498,80 @@ async function doOcr() {
   }
 
   const btn = document.getElementById('ocrBtn');
-  const orig = btn.innerHTML;
+  const origHtml = btn.innerHTML;
   btn.disabled = true;
   btn.innerHTML = '<span class="loader"></span> Розпізнавання...';
-  const resultArea = document.getElementById('ocrResult');
-  resultArea.value = 'Розпізнавання тексту...';
+
+  const resultEl = document.getElementById('ocrResult');
+  resultEl.value = '';
 
   try {
-    const srcLang = state.photoSrcLang;
-    const tgtLang = state.photoTgtLang;
+    const photoBlob = await idbGet(IDB_PHOTO_KEY);
+    if (!photoBlob) throw new Error('Фото не знайдено');
+
+    const srcLang = document.getElementById('photoSrcLang').value;
+    const tgtLang = document.getElementById('photoTgtLang').value;
     const tessLang = TESSERACT_LANGS[srcLang] || 'eng';
 
-    const { data } = await Tesseract.recognize(currentPhotoBlob, tessLang, {
+    btn.innerHTML = '<span class="loader"></span> OCR...';
+    const { data } = await Tesseract.recognize(photoBlob, tessLang, {
       logger: (m) => {
         if (m.status === 'recognizing text') {
           const pct = Math.round(m.progress * 100);
-          resultArea.value = `Розпізнавання тексту... ${pct}%`;
+          btn.innerHTML = `<span class="loader"></span> OCR ${pct}%`;
         }
       },
     });
 
-    const recognized = (data.text || '').trim();
-    if (!recognized) {
-      resultArea.value = '';
+    const recognizedText = data.text.trim();
+    if (!recognizedText) {
+      resultEl.value = '(текст не розпізнано)';
       showToast('Текст не розпізнано', 'warn');
       return;
     }
 
-    resultArea.value = recognized + '\n\nПереклад...';
-
+    // Translate the recognized text
+    btn.innerHTML = '<span class="loader"></span> Переклад...';
     let translation = '';
     try {
-      translation = await translateText(recognized, srcLang, tgtLang);
+      const result = await translate(recognizedText, srcLang, tgtLang);
+      translation = result.translation;
     } catch (e) {
-      console.warn('Translation after OCR failed', e);
+      translation = '(переклад недоступний)';
     }
 
-    resultArea.value = translation
-      ? recognized + '\n\n--- Переклад ---\n' + translation
-      : recognized;
-
-    state.ocrResult = resultArea.value;
+    resultEl.value = `📄 РОЗПІЗНАНО:\n${recognizedText}\n\n🔄 ПЕРЕКЛАД:\n${translation}`;
+    state.ocrResult = resultEl.value;
 
     incrementUsage('scan');
 
-    await saveScanRecord({
-      imageBlob: currentPhotoBlob,
-      ocrText: recognized,
-      translation,
-      srcLang, tgtLang,
-    });
+    // Save to scan history
+    try {
+      const thumb = await makeThumbnail(photoBlob);
+      const scanRecord = {
+        id: 'scan_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6),
+        time: Date.now(),
+        image: photoBlob,
+        thumb: thumb,
+        ocrText: recognizedText,
+        translation: translation,
+        srcLang: srcLang,
+        tgtLang: tgtLang,
+      };
+      await scanAdd(scanRecord);
+      await scanTrim();
+    } catch (e) {
+      console.warn('Failed to save scan:', e);
+    }
 
-    showToast('Готово', 'success');
+    saveState();
+    showToast('Готово! ✅', 'success');
   } catch (e) {
-    console.error(e);
-    resultArea.value = '';
-    showToast('Помилка розпізнавання: ' + e.message, 'error');
+    showToast(e.message || 'Помилка OCR', 'error');
+    resultEl.value = '';
   } finally {
     btn.disabled = false;
-    btn.innerHTML = orig;
+    btn.innerHTML = origHtml;
   }
 }
 
@@ -2671,934 +2581,846 @@ async function handlePhotoFile(file) {
     showToast('Оберіть зображення', 'warn');
     return;
   }
-  currentPhotoBlob = file;
-  setPreviewFromBlob(file);
-  document.getElementById('photoPlaceholder').classList.add('hidden');
-  document.getElementById('photoPreview').classList.remove('hidden');
-  document.getElementById('photoArea').classList.add('has-image');
-  document.getElementById('removePhotoBtn').classList.remove('hidden');
-  state.hasPhoto = true;
 
   try {
     await idbPut(IDB_PHOTO_KEY, file);
+    setPreviewFromBlob(file);
+    document.getElementById('photoPlaceholder').classList.add('hidden');
+    document.getElementById('photoPreview').classList.remove('hidden');
+    document.getElementById('photoArea').classList.add('has-image');
+    document.getElementById('removePhotoBtn').classList.remove('hidden');
+    state.hasPhoto = true;
+    saveState();
   } catch (e) {
-    console.warn('Could not persist photo', e);
+    showToast('Помилка збереження фото', 'error');
   }
 }
 
 async function removePhoto() {
-  currentPhotoBlob = null;
+  try { await idbDelete(IDB_PHOTO_KEY); } catch(e) {}
   if (_activeObjectURL) {
     try { URL.revokeObjectURL(_activeObjectURL); } catch(e) {}
     _activeObjectURL = null;
   }
-  document.getElementById('photoPreview').src = '';
-  document.getElementById('photoPreview').classList.add('hidden');
   document.getElementById('photoPlaceholder').classList.remove('hidden');
+  document.getElementById('photoPreview').classList.add('hidden');
+  document.getElementById('photoPreview').src = '';
   document.getElementById('photoArea').classList.remove('has-image');
   document.getElementById('removePhotoBtn').classList.add('hidden');
   document.getElementById('ocrResult').value = '';
   state.hasPhoto = false;
   state.ocrResult = '';
-  try { await idbDelete(IDB_PHOTO_KEY); } catch(e) {}
+  saveState();
 }
 
-/* ============ PHRASES RENDERING ============ */
+/* ============ RENDERING ============ */
+
+function renderHistory() {
+  const list = document.getElementById('historyList');
+  const q = searchQueries.history.toLowerCase();
+  let items = state.history;
+
+  if (q) {
+    items = items.filter(h =>
+      (h.src || '').toLowerCase().includes(q) ||
+      (h.tgt || '').toLowerCase().includes(q)
+    );
+  }
+
+  document.getElementById('historyCount').textContent =
+    state.history.length ? `${items.length} / ${state.history.length}` : '';
+
+  if (items.length === 0) {
+    list.innerHTML = `<div class="empty-state">
+      <div style="font-size:40px;margin-bottom:8px">${state.history.length ? '🔍' : '📚'}</div>
+      <p>${state.history.length ? 'Нічого не знайдено' : 'Історія порожня'}</p>
+    </div>`;
+    return;
+  }
+
+  list.innerHTML = items.map((h) => {
+    const realIdx = state.history.indexOf(h);
+    return `
+    <div class="history-item" data-idx="${realIdx}">
+      <div class="history-meta">
+        <span>${flagSvg(h.srcLang)} → ${flagSvg(h.tgtLang)}</span>
+        <span>${escapeHtml(formatFriendlyDate(h.time))}</span>
+      </div>
+      <div class="history-text"><strong>${escapeHtml(h.src)}</strong></div>
+      <div class="history-text" style="color:var(--primary)">${escapeHtml(h.tgt)}</div>
+      <div class="item-actions">
+        <button class="btn btn-secondary" data-act="use" data-idx="${realIdx}">↩️ Відкрити</button>
+        <button class="btn btn-accent" data-act="save" data-idx="${realIdx}">⭐ Зберегти</button>
+        <button class="btn btn-danger" data-act="del" data-idx="${realIdx}">🗑️</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function renderSaved() {
+  const list = document.getElementById('savedList');
+  const q = searchQueries.saved.toLowerCase();
+  let items = state.saved;
+
+  if (q) {
+    items = items.filter(s =>
+      (s.src || '').toLowerCase().includes(q) ||
+      (s.tgt || '').toLowerCase().includes(q)
+    );
+  }
+
+  document.getElementById('savedCount').textContent =
+    state.saved.length ? `${items.length} / ${state.saved.length}` : '';
+
+  if (items.length === 0) {
+    list.innerHTML = `<div class="empty-state">
+      <div style="font-size:40px;margin-bottom:8px">${state.saved.length ? '🔍' : '⭐'}</div>
+      <p>${state.saved.length ? 'Нічого не знайдено' : 'Немає збережених перекладів'}</p>
+    </div>`;
+    return;
+  }
+
+  list.innerHTML = items.map((s) => {
+    const realIdx = state.saved.indexOf(s);
+    return `
+    <div class="history-item" data-idx="${realIdx}">
+      <div class="history-meta">
+        <span>${flagSvg(s.srcLang)} → ${flagSvg(s.tgtLang)}</span>
+        <span>${escapeHtml(formatFriendlyDate(s.time))}</span>
+      </div>
+      <div class="history-text"><strong>${escapeHtml(s.src)}</strong></div>
+      <div class="history-text" style="color:var(--primary)">${escapeHtml(s.tgt)}</div>
+      <div class="item-actions">
+        <button class="btn btn-secondary" data-act="use" data-idx="${realIdx}">↩️ Відкрити</button>
+        <button class="btn btn-secondary" data-act="speak" data-idx="${realIdx}">🔊</button>
+        <button class="btn btn-danger" data-act="del" data-idx="${realIdx}">🗑️</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+async function renderScans() {
+  const list = document.getElementById('scansList');
+  try {
+    scansCache = await scanGetAll();
+  } catch (e) {
+    scansCache = [];
+  }
+
+  const q = searchQueries.scan.toLowerCase();
+  let items = scansCache;
+
+  if (q) {
+    items = items.filter(s =>
+      (s.ocrText || '').toLowerCase().includes(q) ||
+      (s.translation || '').toLowerCase().includes(q)
+    );
+  }
+
+  document.getElementById('scanCount').textContent =
+    scansCache.length ? `${items.length} / ${scansCache.length}` : '';
+
+  if (items.length === 0) {
+    list.innerHTML = `<div class="empty-state">
+      <div style="font-size:40px;margin-bottom:8px">${scansCache.length ? '🔍' : '🗂️'}</div>
+      <p>${scansCache.length ? 'Нічого не знайдено' : 'Немає збережених сканувань'}</p>
+    </div>`;
+    return;
+  }
+
+  list.innerHTML = items.map((s) => `
+    <div class="scan-item" data-id="${s.id}">
+      <img class="scan-thumb" src="${s.thumb || ''}" alt="scan" data-act="view" data-id="${s.id}">
+      <div class="scan-body">
+        <div class="history-meta">
+          <span>${flagSvg(s.srcLang)} → ${flagSvg(s.tgtLang)}</span>
+          <span>${escapeHtml(formatFriendlyDate(s.time))}</span>
+        </div>
+        <div class="scan-text-preview">${escapeHtml(s.ocrText || '')}</div>
+        <div class="scan-trans-preview">${escapeHtml(s.translation || '')}</div>
+        <div class="item-actions">
+          <button class="btn btn-secondary" data-act="copy" data-id="${s.id}">📋 Копіювати</button>
+          <button class="btn btn-danger" data-act="del" data-id="${s.id}">🗑️</button>
+        </div>
+      </div>
+    </div>
+  `).join('');
+}
+
 function renderPhraseCategories() {
   const container = document.getElementById('phraseCategories');
   const cats = getAllCategories();
-  container.innerHTML = cats.map(cat => {
-    const isCustom = isCustomCategory(cat.id);
-    const active = cat.id === state.phraseCat ? 'active' : '';
+  container.innerHTML = cats.map(c => {
+    const isCustom = isCustomCategory(c.id);
+    const activeClass = c.id === state.phraseCat ? 'active' : '';
     if (isCustom) {
       return `<div class="cat-tag-wrap">
-        <div class="tag ${active}" data-cat="${cat.id}">${escapeHtml(cat.label)}
-          <span class="cat-del" data-catdel="${cat.id}" title="Видалити секцію">✕</span>
-        </div>
+        <div class="tag ${activeClass}" data-cat="${c.id}">${escapeHtml(c.label)}</div>
+        <button class="cat-del" data-catdel="${c.id}" title="Видалити секцію">✕</button>
       </div>`;
     }
-    return `<div class="tag ${active}" data-cat="${cat.id}">${escapeHtml(cat.label)}</div>`;
+    return `<div class="tag ${activeClass}" data-cat="${c.id}">${escapeHtml(c.label)}</div>`;
   }).join('');
-
-  container.querySelectorAll('[data-cat]').forEach(el => {
-    el.addEventListener('click', (e) => {
-      if (e.target.dataset.catdel) return;
-      state.phraseCat = el.dataset.cat;
-      saveState();
-      renderPhraseCategories();
-      renderPhrases();
-    });
-  });
-
-  container.querySelectorAll('[data-catdel]').forEach(el => {
-    el.addEventListener('click', async (e) => {
-      e.stopPropagation();
-      const catId = el.dataset.catdel;
-      const cat = state.customCategories.find(c => c.id === catId);
-      const ok = await confirmModal(
-        'Видалити секцію?',
-        `<p>Секцію <strong>${escapeHtml(cat?.label || '')}</strong> та всі її фрази буде видалено.</p>`,
-        { danger: true, okLabel: 'Видалити' }
-      );
-      if (ok) {
-        deleteCustomCategory(catId);
-        renderPhraseCategories();
-        renderPhrases();
-        showToast('Секцію видалено', 'success');
-      }
-    });
-  });
 }
 
 function renderPhrases() {
   const grid = document.getElementById('phraseGrid');
-  const lang = state.phraseLang;
+  const langCode = state.phraseLang;
   const phrases = getPhrasesForCategory(state.phraseCat);
 
   if (phrases.length === 0) {
-    grid.innerHTML = `<div class="empty-state" style="grid-column:1/-1"><div style="font-size:44px;margin-bottom:8px">💬</div><p>Немає фраз у цій секції</p><p class="muted" style="font-size:12px">Натисніть «Додати фразу»</p></div>`;
+    grid.innerHTML = `<div class="empty-state" style="grid-column:1/-1">
+      <div style="font-size:40px;margin-bottom:8px">💬</div>
+      <p>У цій секції ��е немає фраз</p>
+      <button class="btn btn-accent" id="emptyAddPhrase" style="margin-top:12px">➕ Додати фразу</button>
+    </div>`;
+    const addBtn = document.getElementById('emptyAddPhrase');
+    if (addBtn) addBtn.onclick = openAddPhraseModal;
     return;
   }
 
-  grid.innerHTML = phrases.map((p) => {
-    const translation = p[lang] || p.en || '';
+  grid.innerHTML = phrases.map((p, displayIdx) => {
+    const translation = p[langCode] || '(немає перекладу)';
     const delBtn = p.__custom
-      ? `<button class="phrase-del" data-del="${p.__idx}" title="Видалити">✕</button>`
+      ? `<button class="phrase-del" data-delphrase="${p.__idx}" title="Видалити фразу">✕</button>`
       : '';
-    const badge = p.__custom ? '<span class="custom-badge">Власна</span>' : '';
+    const badge = p.__custom ? `<div class="custom-badge">Моя фраза</div>` : '';
     return `
-      <div class="phrase-card ${p.__custom ? 'custom' : ''}" data-uk="${escapeAttr(p.uk)}" data-tr="${escapeAttr(translation)}" data-lang="${lang}">
-        ${delBtn}
-        <div class="uk">${escapeHtml(p.uk)}</div>
-        <div class="tr">${flagSvg(lang)} ${escapeHtml(translation)}</div>
-        ${badge}
-      </div>
-    `;
+    <div class="phrase-card ${p.__custom ? 'custom' : ''}" data-uk="${escapeHtml(p.uk)}" data-tr="${escapeHtml(translation)}" data-lang="${langCode}">
+      ${delBtn}
+      <div class="uk">${escapeHtml(p.uk)}</div>
+      <div class="tr">${flagSvg(langCode)} ${escapeHtml(translation)}</div>
+      ${badge}
+    </div>`;
   }).join('');
-
-  grid.querySelectorAll('.phrase-card').forEach(card => {
-    card.addEventListener('click', (e) => {
-      if (e.target.dataset.del !== undefined) return;
-      const tr = card.dataset.tr;
-      const cardLang = card.dataset.lang;
-      speakText(tr, cardLang, card);
-    });
-  });
-
-  grid.querySelectorAll('[data-del]').forEach(btn => {
-    btn.addEventListener('click', async (e) => {
-      e.stopPropagation();
-      const idx = parseInt(btn.dataset.del);
-      const ok = await confirmModal('Видалити фразу?', '<p>Цю фразу буде видалено.</p>', { danger: true, okLabel: 'Видалити' });
-      if (ok) {
-        deleteCustomPhrase(state.phraseCat, idx);
-        renderPhrases();
-        showToast('Фразу видалено', 'success');
-      }
-    });
-  });
-}
-
-/* ============ ADD PHRASE / CATEGORY MODALS ============ */
-async function openAddPhraseModal() {
-  const ALL_LANGS = ['uk', 'en', 'pl', 'de', 'cs'];
-  const langNames = { uk: '🇺🇦 Українська', en: '🇬🇧 English', pl: '🇵🇱 Polski', de: '🇩🇪 Deutsch', cs: '🇨🇿 Čeština' };
-
-  const cats = getAllCategories();
-  const catOptions = cats.map(c =>
-    `<option value="${c.id}" ${c.id === state.phraseCat ? 'selected' : ''}>${escapeHtml(c.label)}</option>`
-  ).join('');
-
-  const fields = ALL_LANGS.map(l => `
-    <div class="form-field">
-      <label>${langNames[l]}</label>
-      <input class="form-input small" data-lang="${l}" placeholder="${langNames[l]}...">
-    </div>
-  `).join('');
-
-  const body = `
-    <div class="form-field">
-      <label>Секція</label>
-      <select class="form-input" id="phraseCatSelect">${catOptions}</select>
-    </div>
-    <div class="prefill-bar">
-      <select class="form-input small" id="prefillSrcLang" style="width:auto;flex:0 0 auto">
-        ${ALL_LANGS.map(l => `<option value="${l}" ${l === 'uk' ? 'selected' : ''}>${langNames[l]}</option>`).join('')}
-      </select>
-      <span class="prefill-hint">Введіть текст однією мовою і натисніть, щоб автоматично перекласти на інші</span>
-      <button class="btn btn-prefill" id="prefillBtn" type="button">🔄 Автопереклад</button>
-    </div>
-    ${fields}
-    <p class="muted" style="font-size:11px">Заповніть хоча б українську та одну іншу мову.</p>
-  `;
-
-  await showModal({
-    title: '➕ Нова фраза',
-    icon: 'info',
-    body,
-    buttons: [
-      { label: 'Скасувати', type: 'secondary', value: false },
-      {
-        label: 'Додати',
-        type: 'primary',
-        onClick: (bodyEl) => {
-          const catId = bodyEl.querySelector('#phraseCatSelect').value;
-          const phrase = {};
-          let filledCount = 0;
-          ALL_LANGS.forEach(l => {
-            const val = bodyEl.querySelector(`input[data-lang="${l}"]`).value.trim();
-            phrase[l] = val;
-            if (val) filledCount++;
-          });
-          if (!phrase.uk) {
-            showToast('Введіть текст українською', 'warn');
-            return false;
-          }
-          if (filledCount < 2) {
-            showToast('Заповніть хоча б дві мови', 'warn');
-            return false;
-          }
-          addCustomPhrase(catId, phrase);
-          state.phraseCat = catId;
-          saveState();
-          renderPhraseCategories();
-          renderPhrases();
-          showToast('Фразу додано', 'success');
-          return true;
-        },
-      },
-    ],
-    onRender: (bodyEl) => {
-      const prefillBtn = bodyEl.querySelector('#prefillBtn');
-      if (prefillBtn) {
-        prefillBtn.addEventListener('click', () => prefillPhraseTranslations(bodyEl));
-      }
-    },
-  });
-}
-
-async function openAddCategoryModal() {
-  const body = `
-    <div class="form-field">
-      <label>Назва секції</label>
-      <input class="form-input" id="newCatLabel" placeholder="Напр. 🛒 Покупки" maxlength="40">
-    </div>
-    <p class="muted" style="font-size:11px">Можна використовувати емодзі на початку назви.</p>
-  `;
-
-  await showModal({
-    title: '📁 Нова секція',
-    icon: 'info',
-    body,
-    buttons: [
-      { label: 'Скасувати', type: 'secondary', value: false },
-      {
-        label: 'Створити',
-        type: 'primary',
-        onClick: (bodyEl) => {
-          const label = bodyEl.querySelector('#newCatLabel').value.trim();
-          if (!label) {
-            showToast('Введіть назву секції', 'warn');
-            return false;
-          }
-          const id = addCustomCategory(label);
-          state.phraseCat = id;
-          saveState();
-          renderPhraseCategories();
-          renderPhrases();
-          showToast('Секцію створено', 'success');
-          return true;
-        },
-      },
-    ],
-    onRender: (bodyEl) => {
-      setTimeout(() => bodyEl.querySelector('#newCatLabel')?.focus(), 100);
-    },
-  });
-}
-
-/* ============ SPEECH ============ */
-let speakingElement = null;
-
-function speakText(text, lang, element = null) {
-  if (!text) return;
-  if (!('speechSynthesis' in window)) {
-    showToast('Синтез мовлення не підтримується', 'warn');
-    return;
-  }
-
-  if (speechSynthesis.speaking) {
-    speechSynthesis.cancel();
-    if (speakingElement === element && element) {
-      clearSpeakingState();
-      return;
-    }
-    clearSpeakingState();
-  }
-
-  const utter = new SpeechSynthesisUtterance(text);
-  utter.lang = SPEECH_LANG_MAP[lang] || 'en-US';
-  utter.rate = 0.9;
-
-  utter.onend = () => clearSpeakingState();
-  utter.onerror = () => clearSpeakingState();
-
-  speakingElement = element;
-
-  if (element) {
-    element.classList.add('speaking');
-  }
-
-  speechSynthesis.speak(utter);
-}
-
-function clearSpeakingState() {
-  if (speakingElement) {
-    speakingElement.classList.remove('speaking');
-  }
-  speakingElement = null;
-  document.querySelectorAll('.speaking').forEach(el => el.classList.remove('speaking'));
-}
-
-/* ============ CLIPBOARD ============ */
-async function copyText(text) {
-  if (!text) {
-    showToast('Немає що копіювати', 'warn');
-    return;
-  }
-  try {
-    await navigator.clipboard.writeText(text);
-    showToast('Скопійовано', 'success');
-  } catch (e) {
-    const ta = document.createElement('textarea');
-    ta.value = text;
-    ta.style.position = 'fixed';
-    ta.style.opacity = '0';
-    document.body.appendChild(ta);
-    ta.select();
-    try {
-      document.execCommand('copy');
-      showToast('Скопійовано', 'success');
-    } catch (err) {
-      showToast('Не вдалося скопіювати', 'error');
-    }
-    document.body.removeChild(ta);
-  }
-}
-
-/* ============ VOICE INPUT ============ */
-let recognition = null;
-let isListening = false;
-
-function initSpeechRecognition() {
-  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-  if (!SR) return null;
-  const rec = new SR();
-  rec.continuous = false;
-  rec.interimResults = false;
-  return rec;
-}
-
-function toggleVoiceInput() {
-  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-  if (!SR) {
-    showToast('Голосовий ввід не підтримується', 'warn');
-    return;
-  }
-
-  const btn = document.getElementById('micBtn');
-
-  if (isListening && recognition) {
-    recognition.stop();
-    return;
-  }
-
-  recognition = initSpeechRecognition();
-  recognition.lang = SPEECH_LANG_MAP[state.srcLang] || 'uk-UA';
-
-  recognition.onstart = () => {
-    isListening = true;
-    btn.classList.add('speaking');
-    btn.innerHTML = '🔴 Слухаю...';
-  };
-
-  recognition.onresult = (e) => {
-    const transcript = e.results[0][0].transcript;
-    const srcArea = document.getElementById('srcText');
-    srcArea.value = srcArea.value ? srcArea.value + ' ' + transcript : transcript;
-    state.srcText = srcArea.value;
-    saveState();
-  };
-
-  recognition.onerror = (e) => {
-    console.warn('Speech recognition error', e.error);
-    if (e.error === 'not-allowed') {
-      showToast('Дозвольте доступ до мікрофона', 'error');
-    } else if (e.error !== 'aborted') {
-      showToast('Помилка розпізнавання голосу', 'error');
-    }
-  };
-
-  recognition.onend = () => {
-    isListening = false;
-    btn.classList.remove('speaking');
-    btn.innerHTML = '🎤 Голос';
-  };
-
-  try {
-    recognition.start();
-  } catch (e) {
-    console.error(e);
-    showToast('Не вдалося запустити мікрофон', 'error');
-  }
-}
-
-/* ============ HTML ESCAPING ============ */
-function escapeHtml(str) {
-  if (str == null) return '';
-  const div = document.createElement('div');
-  div.textContent = String(str);
-  return div.innerHTML;
-}
-
-function escapeAttr(str) {
-  if (str == null) return '';
-  return String(str)
-    .replace(/&/g, '&amp;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#39;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;');
-}
-
-/* ============ LANGUAGE SELECTS ============ */
-function syncLangSelects() {
-  document.getElementById('srcLang').value = state.srcLang;
-  document.getElementById('tgtLang').value = state.tgtLang;
-  document.getElementById('photoSrcLang').value = state.photoSrcLang;
-  document.getElementById('photoTgtLang').value = state.photoTgtLang;
-  document.getElementById('phraseLang').value = state.phraseLang;
-}
-
-function initLangSelects() {
-  const langs = ['uk', 'en', 'pl', 'de', 'cs'];
-  buildLangSelect('srcLang', langs, LANG_LABELS.translate);
-  buildLangSelect('tgtLang', langs, LANG_LABELS.translate);
-  buildLangSelect('photoTgtLang', langs, LANG_LABELS.translate);
-  buildLangSelect('phraseLang', langs.filter(l => l !== 'uk'), LANG_LABELS.translate);
-  syncLangSelects();
 }
 
 /* ============ TAB SWITCHING ============ */
 function switchTab(tab) {
   state.activeTab = tab;
-  document.querySelectorAll('.tab').forEach(t => {
-    t.classList.toggle('active', t.dataset.tab === tab);
-  });
-  document.querySelectorAll('.tab-content').forEach(c => {
-    c.classList.toggle('hidden', c.id !== 'tab-' + tab);
-  });
-  saveState();
+  document.querySelectorAll('.tab').forEach(t =>
+    t.classList.toggle('active', t.dataset.tab === tab)
+  );
+  document.querySelectorAll('.tab-content').forEach(c =>
+    c.classList.toggle('hidden', c.id !== 'tab-' + tab)
+  );
 
   if (tab === 'history') renderHistory();
-  else if (tab === 'saved') renderSaved();
-  else if (tab === 'phrases') { renderPhraseCategories(); renderPhrases(); }
-  else if (tab === 'scans') { refreshScansCache().then(renderScans); }
-}
-
-/* ============ TIPS CAROUSEL ============ */
-const TIPS = [
-  { icon: '💡', label: 'Порада', text: 'Оберіть контекст (юридичний, медичний) для точнішого перекладу документів.' },
-  { icon: '📷', label: 'Фото', text: 'Сфотографуйте документ — застосунок розпізнає текст і перекладе його.' },
-  { icon: '💬', label: 'Фрази', text: 'Готові фрази для екстрених ситуацій працюють навіть без досвіду мови.' },
-  { icon: '⭐', label: 'Збережені', text: 'Зберігайте важливі переклади, щоб швидко знайти їх пізніше.' },
-  { icon: '🔊', label: 'Озвучення', text: 'Натисніть «Озвучити», щоб почути правильну вимову перекладу.' },
-  { icon: '📄', label: 'PDF', text: 'Експортуйте історію, збережені фрази та сканування у PDF для друку.' },
-  { icon: '🎤', label: 'Голос', text: 'Використовуйте голосовий ввід замість набору тексту вручну.' },
-  { icon: '💾', label: 'Архів', text: 'Створюйте резервні копії даних та відновлюйте їх на іншому пристрої.' },
-];
-
-let currentTip = 0;
-let tipInterval = null;
-
-function renderTipsNav() {
-  const nav = document.getElementById('tipsNav');
-  nav.innerHTML = TIPS.map((_, i) =>
-    `<button class="tips-dot ${i === currentTip ? 'active' : ''}" data-tip="${i}"></button>`
-  ).join('');
-  nav.querySelectorAll('[data-tip]').forEach(dot => {
-    dot.addEventListener('click', () => {
-      currentTip = parseInt(dot.dataset.tip);
-      showTip(currentTip);
-      restartTipTimer();
-    });
-  });
-}
-
-function showTip(idx) {
-  const tip = TIPS[idx];
-  const textEl = document.getElementById('tipsText');
-  const iconEl = document.getElementById('tipsIcon');
-  const labelEl = document.getElementById('tipsLabel');
-
-  textEl.classList.add('fading');
-  setTimeout(() => {
-    iconEl.textContent = tip.icon;
-    labelEl.textContent = tip.label;
-    textEl.textContent = tip.text;
-    textEl.classList.remove('fading');
-  }, 300);
-
-  document.querySelectorAll('.tips-dot').forEach((d, i) => {
-    d.classList.toggle('active', i === idx);
-  });
-}
-
-function nextTip() {
-  currentTip = (currentTip + 1) % TIPS.length;
-  showTip(currentTip);
-}
-
-function restartTipTimer() {
-  if (tipInterval) clearInterval(tipInterval);
-  startTipTimer();
-}
-
-function startTipTimer() {
-  tipInterval = setInterval(() => {
-    nextTip();
-  }, 7000);
-}
-
-function initTips() {
-  if (localStorage.getItem('tips_hidden') === '1') {
-    document.getElementById('tipsBar').classList.add('hidden');
-    return;
-  }
-  renderTipsNav();
-  showTip(0);
-  startTipTimer();
-
-  document.getElementById('tipsClose').addEventListener('click', () => {
-    document.getElementById('tipsBar').classList.add('hidden');
-    localStorage.setItem('tips_hidden', '1');
-    if (tipInterval) clearInterval(tipInterval);
-  });
+  if (tab === 'saved') renderSaved();
+  if (tab === 'scans') renderScans();
+  if (tab === 'phrases') { renderPhraseCategories(); renderPhrases(); }
+  saveState();
 }
 
 /* ============ BACKUP / RESTORE (ZIP) ============ */
 async function createBackup() {
-  if (typeof JSZip === 'undefined') {
-    showToast('Бібліотека архівування недоступна', 'error');
-    return;
-  }
-  const btn = document.getElementById('backupBtn');
-  const orig = btn.innerHTML;
-  btn.innerHTML = '<span class="loader"></span>';
+  showToast('Створення архіву...', '');
   try {
     const zip = new JSZip();
-
     const { photoData, ...cleanState } = state;
     zip.file('state.json', JSON.stringify(cleanState, null, 2));
     zip.file('usage.json', JSON.stringify(usage, null, 2));
 
-    await refreshScansCache();
-    zip.file('scans.json', JSON.stringify(scansCache, null, 2));
-
-    const scansFolder = zip.folder('scan_images');
-    for (const scan of scansCache) {
-      try {
-        const fullImg = await idbGet('scan_full_' + scan.id);
-        if (fullImg) {
-          const base64 = fullImg.split(',')[1];
-          if (base64) scansFolder.file(scan.id + '.jpg', base64, { base64: true });
-        }
-      } catch (e) {}
+    // Include scans with images
+    const scans = await scanGetAll();
+    const scansMeta = [];
+    const imgFolder = zip.folder('scan_images');
+    for (const s of scans) {
+      const meta = { ...s };
+      if (s.image instanceof Blob) {
+        const ext = (s.image.type && s.image.type.split('/')[1]) || 'jpg';
+        const fname = `${s.id}.${ext}`;
+        imgFolder.file(fname, s.image);
+        meta.imageFile = fname;
+        delete meta.image;
+      }
+      scansMeta.push(meta);
     }
+    zip.file('scans.json', JSON.stringify(scansMeta, null, 2));
 
-    const blob = await zip.generateAsync({ type: 'blob', compression: 'DEFLATE' });
+    // Current photo
+    try {
+      const photo = await idbGet(IDB_PHOTO_KEY);
+      if (photo instanceof Blob) {
+        const ext = (photo.type && photo.type.split('/')[1]) || 'jpg';
+        zip.file(`current_photo.${ext}`, photo);
+      }
+    } catch(e) {}
+
+    const blob = await zip.generateAsync({ type: 'blob' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
-    const d = new Date();
-    const pad = (n) => String(n).padStart(2, '0');
     a.href = url;
-    a.download = `shvydkoperetlad_backup_${d.getFullYear()}${pad(d.getMonth()+1)}${pad(d.getDate())}.zip`;
-    document.body.appendChild(a);
+    a.download = `shvydkoperetlad_backup_${todayStr()}.zip`;
     a.click();
-    document.body.removeChild(a);
     setTimeout(() => URL.revokeObjectURL(url), 1000);
-
-    showToast('Резервну копію створено', 'success');
+    showToast('Архів збережено ✅', 'success');
   } catch (e) {
     console.error(e);
-    showToast('Помилка створення архіву: ' + e.message, 'error');
-  } finally {
-    btn.innerHTML = orig;
+    showToast('Помилка створення архіву', 'error');
   }
 }
 
 async function restoreBackup(file) {
-  if (typeof JSZip === 'undefined') {
-    showToast('Бібліотека архівування недоступна', 'error');
-    return;
-  }
-
   const confirmed = await confirmModal(
     'Відновити з архіву?',
-    '<p>Поточні дані буде <strong>замінено</strong> даними з архіву.</p><p class="muted">Рекомендуємо спочатку створити резервну копію поточних даних.</p>',
-    { danger: true, okLabel: 'Відновити' }
+    '<p>Це <strong>замінить</strong> усі поточні дані (історію, збережені, скани, фрази).</p><p class="muted">Рекомендуємо спочатку створити резервну копію поточних даних.</p>',
+    { okLabel: 'Відновити', danger: true, icon: 'warn' }
   );
   if (!confirmed) return;
 
-  const btn = document.getElementById('restoreBtn');
-  const orig = btn.innerHTML;
-  btn.innerHTML = '<span class="loader"></span>';
-
+  showToast('Відновлення...', '');
   try {
     const zip = await JSZip.loadAsync(file);
 
+    // Restore state
     const stateFile = zip.file('state.json');
     if (stateFile) {
       const stateJson = await stateFile.async('string');
       const parsed = JSON.parse(stateJson);
       state = { ...state, ...parsed };
-      if (!Array.isArray(state.saved)) state.saved = [];
-      if (!Array.isArray(state.history)) state.history = [];
-      if (!Array.isArray(state.customCategories)) state.customCategories = [];
-      if (!state.customPhrases || typeof state.customPhrases !== 'object') state.customPhrases = {};
-      saveState();
+      if ('photoData' in state) delete state.photoData;
     }
 
+    // Restore usage
     const usageFile = zip.file('usage.json');
     if (usageFile) {
       const usageJson = await usageFile.async('string');
-      const parsedUsage = JSON.parse(usageJson);
-      if (parsedUsage.date === todayStr()) {
-        usage = { ...usage, ...parsedUsage };
-        saveUsage();
-      }
+      usage = JSON.parse(usageJson);
     }
 
+    // Restore scans
+    await scanClear();
     const scansFile = zip.file('scans.json');
     if (scansFile) {
-      const oldScans = await scanGetAll();
-      for (const s of oldScans) {
-        try { await idbDelete('scan_full_' + s.id); } catch(e) {}
-      }
-      await scanClear();
-
       const scansJson = await scansFile.async('string');
-      const scans = JSON.parse(scansJson);
-      for (const scan of scans) {
-        await scanAdd(scan);
-        const imgFile = zip.file('scan_images/' + scan.id + '.jpg');
-        if (imgFile) {
-          const base64 = await imgFile.async('base64');
-          await idbPut('scan_full_' + scan.id, 'data:image/jpeg;base64,' + base64);
+      const scansMeta = JSON.parse(scansJson);
+      for (const meta of scansMeta) {
+        const record = { ...meta };
+        if (meta.imageFile) {
+          const imgFile = zip.file(`scan_images/${meta.imageFile}`);
+          if (imgFile) {
+            record.image = await imgFile.async('blob');
+          }
+          delete record.imageFile;
         }
+        try { await scanAdd(record); } catch(e) {}
       }
-      await refreshScansCache();
     }
 
-    showToast('Дані відновлено', 'success');
+    // Restore current photo
+    await idbDelete(IDB_PHOTO_KEY);
+    const photoFiles = Object.keys(zip.files).filter(n => n.startsWith('current_photo.'));
+    if (photoFiles.length) {
+      const photoBlob = await zip.file(photoFiles[0]).async('blob');
+      await idbPut(IDB_PHOTO_KEY, photoBlob);
+    }
+
+    saveState();
+    saveUsage();
+    showToast('Дані відновлено ✅', 'success');
     setTimeout(() => location.reload(), 1000);
   } catch (e) {
     console.error(e);
-    showToast('Помилка відновлення: ' + e.message, 'error');
-  } finally {
-    btn.innerHTML = orig;
+    showToast('Помилка відновлення архіву', 'error');
   }
 }
 
-/* ============ CLEAR ALL DATA ============ */
-async function clearAllData() {
-  const confirmed = await confirmModal(
-    'Видалити всі дані?',
-    '<p>Буде видалено <strong>всю історію, збережені переклади, власні фрази та сканування</strong>.</p><p class="muted">Цю дію неможливо скасувати.</p>',
-    { danger: true, okLabel: 'Видалити все' }
+/* ============ TIPS ROTATION ============ */
+const TIPS = [
+  { label: 'Порада', text: 'Оберіть контекст (юридичний, медичний тощо) для точнішого перекладу офіційних документів.' },
+  { label: 'Порада', text: 'Використовуйте вкладку «Фото» для розпізнавання тексту з документів, бланків і форм.' },
+  { label: 'Порада', text: 'Зберігайте важливі переклади в «Збережені», щоб швидко знаходити їх пізніше.' },
+  { label: 'Порада', text: 'У вкладці «Фрази» є готові вирази для екстрених ситуацій, медицини та документів.' },
+  { label: 'Порада', text: 'Додавайте власні фрази й секції — з автоперекладом на всі мови одним кліком.' },
+  { label: 'Порада', text: 'Натисніть 🔊, щоб прослухати правильну вимову перекладу.' },
+  { label: 'Порада', text: 'Створюйте резервні копії (💾) своїх даних і відновлюйте їх на іншому пристрої (📥).' },
+  { label: 'Порада', text: 'Експортуйте фрази, історію та скани у PDF для друку або офлайн-використання.' },
+  { label: 'Приватність', text: 'Усі ваші дані зберігаються лише на цьому пристрої. Нічого не надсилається на сервери, крім тексту для перекладу.' },
+];
+
+let currentTip = 0;
+let tipInterval = null;
+const TIP_DURATION = 8000;
+
+function renderTipDots() {
+  const nav = document.getElementById('tipsNav');
+  nav.innerHTML = TIPS.map((_, i) =>
+    `<button class="tips-dot ${i === currentTip ? 'active' : ''}" data-tip="${i}"></button>`
+  ).join('');
+}
+
+function showTip(idx, animate = true) {
+  currentTip = (idx + TIPS.length) % TIPS.length;
+  const tip = TIPS[currentTip];
+  const textEl = document.getElementById('tipsText');
+  const labelEl = document.getElementById('tipsLabel');
+
+  if (animate) {
+    textEl.classList.add('fading');
+    setTimeout(() => {
+      textEl.textContent = tip.text;
+      labelEl.textContent = tip.label;
+      textEl.classList.remove('fading');
+    }, 400);
+  } else {
+    textEl.textContent = tip.text;
+    labelEl.textContent = tip.label;
+  }
+  renderTipDots();
+}
+
+function nextTip() { showTip(currentTip + 1); }
+
+function startTipRotation() {
+  if (tipInterval) clearInterval(tipInterval);
+  tipInterval = setInterval(nextTip, TIP_DURATION);
+}
+
+function stopTipRotation() {
+  if (tipInterval) { clearInterval(tipInterval); tipInterval = null; }
+}
+
+/* ============ EVENT WIRING ============ */
+function init() {
+  loadState();
+  loadUsage();
+
+  // Build language selects
+  const mainLangs = ['uk', 'en', 'pl', 'de', 'cs'];
+  buildLangSelect('srcLang', mainLangs, LANG_LABELS.translate);
+  buildLangSelect('tgtLang', mainLangs, LANG_LABELS.translate);
+  buildLangSelect('photoTgtLang', mainLangs, LANG_LABELS.translate);
+  buildLangSelect('phraseLang', mainLangs, LANG_LABELS.translate);
+
+  // Restore selects
+  document.getElementById('srcLang').value = state.srcLang;
+  document.getElementById('tgtLang').value = state.tgtLang;
+  document.getElementById('photoSrcLang').value = state.photoSrcLang;
+  document.getElementById('photoTgtLang').value = state.photoTgtLang;
+  document.getElementById('phraseLang').value = state.phraseLang;
+  document.getElementById('srcText').value = state.srcText || '';
+  document.getElementById('tgtText').value = state.tgtText || '';
+
+  // Restore context
+  document.querySelectorAll('#contextTags .tag').forEach(t =>
+    t.classList.toggle('active', t.dataset.ctx === state.context)
   );
-  if (!confirmed) return;
 
-  try {
-    localStorage.removeItem(STORE_KEY);
-    localStorage.removeItem(USAGE_KEY);
-    localStorage.removeItem('tips_hidden');
-    await idbClearStore();
-    await scanClear();
-    showToast('Дані видалено', 'success');
-    setTimeout(() => location.reload(), 800);
-  } catch (e) {
-    console.error(e);
-    showToast('Помилка видалення', 'error');
-  }
-}
+  // Language selects
+  document.getElementById('srcLang').onchange = (e) => { state.srcLang = e.target.value; saveState(); };
+  document.getElementById('tgtLang').onchange = (e) => { state.tgtLang = e.target.value; saveState(); };
+  document.getElementById('photoSrcLang').onchange = (e) => { state.photoSrcLang = e.target.value; saveState(); };
+  document.getElementById('photoTgtLang').onchange = (e) => { state.photoTgtLang = e.target.value; saveState(); };
+  document.getElementById('phraseLang').onchange = (e) => { state.phraseLang = e.target.value; renderPhrases(); saveState(); };
 
-/* ============ ABOUT MODAL ============ */
-async function showAbout() {
-  const usedT = usage.translate || 0;
-  const usedS = usage.scan || 0;
-  await showModal({
-    title: 'ШвидкоПереклад',
-    icon: 'info',
-    body: `
-      <p>🌻 Безкоштовний AI-перекладач для українців за кордоном.</p>
-      <p class="muted">Спеціалізація: офіційні документи, медичні та юридичні терміни, розпізнавання тексту з фото.</p>
-      <ul>
-        <li>🔄 Переклад: 🇺🇦 ↔ 🇬🇧 🇵🇱 🇩🇪 🇨🇿</li>
-        <li>📷 OCR розпізнавання (Tesseract.js)</li>
-        <li>💬 Готові фрази + власні</li>
-        <li>📄 Експорт у PDF</li>
-        <li>💾 Резервні копії</li>
-      </ul>
-      <div class="context-note">
-        📊 Сьогодні використано: <strong>${usedT}/${LIMITS.translate}</strong> перекладів,
-        <strong>${usedS}/${LIMITS.scan}</strong> сканувань.<br>
-        Скидання через: <strong>${formatResetTime()}</strong>
-      </div>
-      <p class="muted" style="font-size:11px;margin-top:10px">Усі дані зберігаються локально у вашому браузері.</p>
-    `,
-    buttons: [{ label: 'Закрити', type: 'primary', value: true }],
-  });
-}
-
-/* ============ EVENT BINDINGS ============ */
-function bindEvents() {
-  document.querySelectorAll('.tab').forEach(tab => {
-    tab.addEventListener('click', () => switchTab(tab.dataset.tab));
-  });
-
-  document.getElementById('srcLang').addEventListener('change', (e) => {
-    state.srcLang = e.target.value; saveState();
-  });
-  document.getElementById('tgtLang').addEventListener('change', (e) => {
-    state.tgtLang = e.target.value; saveState();
-  });
-  document.getElementById('photoSrcLang').addEventListener('change', (e) => {
-    state.photoSrcLang = e.target.value; saveState();
-  });
-  document.getElementById('photoTgtLang').addEventListener('change', (e) => {
-    state.photoTgtLang = e.target.value; saveState();
-  });
-  document.getElementById('phraseLang').addEventListener('change', (e) => {
-    state.phraseLang = e.target.value; saveState(); renderPhrases();
-  });
-
-  document.getElementById('swapBtn').addEventListener('click', () => {
+  // Swap languages
+  document.getElementById('swapBtn').onclick = () => {
     const tmp = state.srcLang;
     state.srcLang = state.tgtLang;
     state.tgtLang = tmp;
-    const srcVal = document.getElementById('srcText').value;
-    const tgtVal = document.getElementById('tgtText').value;
-    document.getElementById('srcText').value = tgtVal;
-    document.getElementById('tgtText').value = srcVal;
-    state.srcText = tgtVal; state.tgtText = srcVal;
-    syncLangSelects();
+    document.getElementById('srcLang').value = state.srcLang;
+    document.getElementById('tgtLang').value = state.tgtLang;
+    // Swap texts too
+    const srcEl = document.getElementById('srcText');
+    const tgtEl = document.getElementById('tgtText');
+    const tmpText = srcEl.value;
+    srcEl.value = tgtEl.value;
+    tgtEl.value = tmpText;
+    state.srcText = srcEl.value;
+    state.tgtText = tgtEl.value;
     saveState();
-  });
+  };
 
-  document.getElementById('contextTags').addEventListener('click', (e) => {
+  // Text inputs
+  document.getElementById('srcText').oninput = (e) => { state.srcText = e.target.value; };
+  document.getElementById('tgtText').oninput = (e) => { state.tgtText = e.target.value; };
+
+  // Translate
+  document.getElementById('translateBtn').onclick = doTranslate;
+  document.getElementById('clearSrcBtn').onclick = () => {
+    document.getElementById('srcText').value = '';
+    document.getElementById('tgtText').value = '';
+    state.srcText = ''; state.tgtText = '';
+    document.getElementById('providerInfo').classList.add('hidden');
+    document.getElementById('contextNote').classList.add('hidden');
+    saveState();
+  };
+
+  document.getElementById('micBtn').onclick = toggleMic;
+
+  // Copy / Speak / Save
+  document.getElementById('copyBtn').onclick = () => {
+    const text = document.getElementById('tgtText').value;
+    if (!text) { showToast('Немає тексту', 'warn'); return; }
+    navigator.clipboard.writeText(text).then(() => showToast('Скопійовано 📋', 'success'));
+  };
+  document.getElementById('speakBtn').onclick = (e) => {
+    speak(document.getElementById('tgtText').value, state.tgtLang, e.currentTarget);
+  };
+  document.getElementById('saveBtn').onclick = () => {
+    const src = document.getElementById('srcText').value.trim();
+    const tgt = document.getElementById('tgtText').value.trim();
+    if (!src || !tgt) { showToast('Немає що зберігати', 'warn'); return; }
+    state.saved.unshift({ src, tgt, srcLang: state.srcLang, tgtLang: state.tgtLang, time: Date.now() });
+    saveState();
+    showToast('Збережено ⭐', 'success');
+  };
+
+  // Context tags
+  document.getElementById('contextTags').onclick = (e) => {
     const tag = e.target.closest('.tag');
     if (!tag) return;
-    document.querySelectorAll('#contextTags .tag').forEach(t => t.classList.remove('active'));
-    tag.classList.add('active');
     state.context = tag.dataset.ctx;
+    document.querySelectorAll('#contextTags .tag').forEach(t =>
+      t.classList.toggle('active', t === tag)
+    );
     saveState();
+  };
+
+  // Tabs
+  document.querySelectorAll('.tab').forEach(t => {
+    t.onclick = () => switchTab(t.dataset.tab);
   });
 
-  document.getElementById('translateBtn').addEventListener('click', doTranslate);
-  document.getElementById('srcText').addEventListener('input', (e) => {
-    state.srcText = e.target.value;
-  });
-  document.getElementById('tgtText').addEventListener('input', (e) => {
-    state.tgtText = e.target.value;
-  });
+  // Photo
+  document.getElementById('uploadBtn').onclick = () => document.getElementById('fileInput').click();
+  document.getElementById('cameraBtn').onclick = () => document.getElementById('cameraInput').click();
+  document.getElementById('fileInput').onchange = (e) => { if (e.target.files[0]) handlePhotoFile(e.target.files[0]); };
+  document.getElementById('cameraInput').onchange = (e) => { if (e.target.files[0]) handlePhotoFile(e.target.files[0]); };
+  document.getElementById('removePhotoBtn').onclick = removePhoto;
+  document.getElementById('ocrBtn').onclick = runOcr;
+  document.getElementById('copyOcrBtn').onclick = () => {
+    const text = document.getElementById('ocrResult').value;
+    if (!text) { showToast('Немає тексту', 'warn'); return; }
+    navigator.clipboard.writeText(text).then(() => showToast('Скопійовано 📋', 'success'));
+  };
+  document.getElementById('speakOcrBtn').onclick = (e) => {
+    speak(document.getElementById('ocrResult').value, state.photoTgtLang, e.currentTarget);
+  };
 
-  document.getElementById('clearSrcBtn').addEventListener('click', () => {
-    document.getElementById('srcText').value = '';
-    state.srcText = '';
+  // Restore photo preview if exists
+  if (state.hasPhoto) {
+    idbGet(IDB_PHOTO_KEY).then(blob => {
+      if (blob) {
+        setPreviewFromBlob(blob);
+        document.getElementById('photoPlaceholder').classList.add('hidden');
+        document.getElementById('photoPreview').classList.remove('hidden');
+        document.getElementById('photoArea').classList.add('has-image');
+        document.getElementById('removePhotoBtn').classList.remove('hidden');
+      } else {
+        state.hasPhoto = false;
+      }
+    });
+  }
+  if (state.ocrResult) document.getElementById('ocrResult').value = state.ocrResult;
+
+  // Phrases
+  document.getElementById('addPhraseBtn').onclick = openAddPhraseModal;
+  document.getElementById('addCategoryBtn').onclick = openAddCategoryModal;
+
+  document.getElementById('phraseCategories').onclick = async (e) => {
+    const delBtn = e.target.closest('[data-catdel]');
+    if (delBtn) {
+      const catId = delBtn.dataset.catdel;
+      const cat = state.customCategories.find(c => c.id === catId);
+      const confirmed = await confirmModal(
+        'Видалити секцію?',
+        `<p>Секцію <strong>${escapeHtml(cat?.label || '')}</strong> та всі її фрази буде видалено.</p>`,
+        { okLabel: 'Видалити', danger: true, icon: 'warn' }
+      );
+      if (confirmed) {
+        deleteCustomCategory(catId);
+        renderPhraseCategories();
+        renderPhrases();
+        showToast('Секцію видалено', 'success');
+      }
+      return;
+    }
+    const tag = e.target.closest('.tag');
+    if (!tag) return;
+    state.phraseCat = tag.dataset.cat;
+    renderPhraseCategories();
+    renderPhrases();
     saveState();
-  });
+  };
 
-  document.getElementById('micBtn').addEventListener('click', toggleVoiceInput);
-  document.getElementById('copyBtn').addEventListener('click', () => {
-    copyText(document.getElementById('tgtText').value);
-  });
-  document.getElementById('speakBtn').addEventListener('click', () => {
-    const btn = document.getElementById('speakBtn');
-    speakText(document.getElementById('tgtText').value, state.tgtLang, btn);
-  });
-  document.getElementById('saveBtn').addEventListener('click', saveTranslation);
+  document.getElementById('phraseGrid').onclick = async (e) => {
+    const delBtn = e.target.closest('[data-delphrase]');
+    if (delBtn) {
+      e.stopPropagation();
+      const idx = parseInt(delBtn.dataset.delphrase, 10);
+      const confirmed = await confirmModal(
+        'Видалити фразу?',
+        '<p>Цю фразу буде видалено.</p>',
+        { okLabel: 'Видалити', danger: true, icon: 'warn' }
+      );
+      if (confirmed) {
+        deleteCustomPhrase(state.phraseCat, idx);
+        renderPhrases();
+        showToast('Фразу видалено', 'success');
+      }
+      return;
+    }
+    const card = e.target.closest('.phrase-card');
+    if (!card) return;
+    speak(card.dataset.tr, card.dataset.lang, card);
+  };
 
-  document.getElementById('uploadBtn').addEventListener('click', () => {
-    document.getElementById('fileInput').click();
-  });
-  document.getElementById('cameraBtn').addEventListener('click', () => {
-    document.getElementById('cameraInput').click();
-  });
-  document.getElementById('fileInput').addEventListener('change', (e) => {
-    if (e.target.files[0]) handlePhotoFile(e.target.files[0]);
-  });
-  document.getElementById('cameraInput').addEventListener('change', (e) => {
-    if (e.target.files[0]) handlePhotoFile(e.target.files[0]);
-  });
-  document.getElementById('removePhotoBtn').addEventListener('click', removePhoto);
-  document.getElementById('ocrBtn').addEventListener('click', doOcr);
-  document.getElementById('copyOcrBtn').addEventListener('click', () => {
-    copyText(document.getElementById('ocrResult').value);
-  });
-  document.getElementById('speakOcrBtn').addEventListener('click', () => {
-    speakText(document.getElementById('ocrResult').value, state.photoTgtLang, document.getElementById('speakOcrBtn'));
-  });
+  // PDF buttons
+  document.getElementById('pdfPhrasesBtn').onclick = generatePhrasesPdf;
+  document.getElementById('pdfSavedBtn').onclick = generateSavedPdf;
+  document.getElementById('pdfHistoryBtn').onclick = openHistoryPdfModal;
+  document.getElementById('pdfScansBtn').onclick = generateScansPdf;
 
-  document.getElementById('addPhraseBtn').addEventListener('click', openAddPhraseModal);
-  document.getElementById('addCategoryBtn').addEventListener('click', openAddCategoryModal);
+  // History interactions
+  document.getElementById('historyList').onclick = async (e) => {
+    const btn = e.target.closest('[data-act]');
+    if (!btn) {
+      const item = e.target.closest('.history-item');
+      if (item) {
+        const idx = parseInt(item.dataset.idx, 10);
+        openHistoryItem(idx);
+      }
+      return;
+    }
+    const idx = parseInt(btn.dataset.idx, 10);
+    const act = btn.dataset.act;
+    const h = state.history[idx];
+    if (!h) return;
 
-  document.getElementById('historySearch').addEventListener('input', (e) => {
+    if (act === 'use') {
+      openHistoryItem(idx);
+    } else if (act === 'save') {
+      state.saved.unshift({ src: h.src, tgt: h.tgt, srcLang: h.srcLang, tgtLang: h.tgtLang, time: Date.now() });
+      saveState();
+      showToast('Збережено ⭐', 'success');
+    } else if (act === 'del') {
+      state.history.splice(idx, 1);
+      saveState();
+      renderHistory();
+    }
+  };
+
+  // Saved interactions
+  document.getElementById('savedList').onclick = (e) => {
+    const btn = e.target.closest('[data-act]');
+    if (!btn) return;
+    const idx = parseInt(btn.dataset.idx, 10);
+    const act = btn.dataset.act;
+    const s = state.saved[idx];
+    if (!s) return;
+
+    if (act === 'use') {
+      state.srcLang = s.srcLang; state.tgtLang = s.tgtLang;
+      state.srcText = s.src; state.tgtText = s.tgt;
+      document.getElementById('srcLang').value = s.srcLang;
+      document.getElementById('tgtLang').value = s.tgtLang;
+      document.getElementById('srcText').value = s.src;
+      document.getElementById('tgtText').value = s.tgt;
+      saveState();
+      switchTab('translate');
+    } else if (act === 'speak') {
+      speak(s.tgt, s.tgtLang, btn);
+    } else if (act === 'del') {
+      state.saved.splice(idx, 1);
+      saveState();
+      renderSaved();
+    }
+  };
+
+  // Scan interactions
+  document.getElementById('scansList').onclick = async (e) => {
+    const btn = e.target.closest('[data-act]');
+    if (!btn) return;
+    const id = btn.dataset.id;
+    const act = btn.dataset.act;
+
+    if (act === 'view') {
+      const rec = await scanGet(id);
+      if (rec && rec.image instanceof Blob) {
+        const dataUrl = await blobToDataURL(rec.image);
+        await alertModal(
+          'Сканований документ',
+          `<img src="${dataUrl}" alt="scan">
+           <p class="muted" style="margin-top:8px">${escapeHtml(formatFullDate(rec.time))}</p>
+           <pre>${escapeHtml(rec.ocrText || '')}\n\n🔄 ${escapeHtml(rec.translation || '')}</pre>`,
+          'info'
+        );
+      }
+    } else if (act === 'copy') {
+      const rec = await scanGet(id);
+      if (rec) {
+        const text = `${rec.ocrText || ''}\n\n${rec.translation || ''}`;
+        navigator.clipboard.writeText(text).then(() => showToast('Скопійовано 📋', 'success'));
+      }
+    } else if (act === 'del') {
+      const confirmed = await confirmModal(
+        'Видалити скан?',
+        '<p>Цей запис сканування буде видалено.</p>',
+        { okLabel: 'Видалити', danger: true, icon: 'warn' }
+      );
+      if (confirmed) {
+        await scanDelete(id);
+        renderScans();
+        showToast('Скан видалено', 'success');
+      }
+    }
+  };
+
+  // Search inputs
+  document.getElementById('historySearch').oninput = (e) => {
     searchQueries.history = e.target.value;
     renderHistory();
-  });
-  document.getElementById('savedSearch').addEventListener('input', (e) => {
+  };
+  document.getElementById('savedSearch').oninput = (e) => {
     searchQueries.saved = e.target.value;
     renderSaved();
-  });
-  document.getElementById('scanSearch').addEventListener('input', (e) => {
+  };
+  document.getElementById('scanSearch').oninput = (e) => {
     searchQueries.scan = e.target.value;
     renderScans();
-  });
+  };
 
-  document.getElementById('histDateFrom').addEventListener('change', (e) => {
-    historyDateRange.from = e.target.value;
-    renderHistory();
-  });
-  document.getElementById('histDateTo').addEventListener('change', (e) => {
-    historyDateRange.to = e.target.value;
-    renderHistory();
-  });
-  document.getElementById('histDateClear').addEventListener('click', () => {
-    historyDateRange.from = '';
-    historyDateRange.to = '';
-    document.getElementById('histDateFrom').value = '';
-    document.getElementById('histDateTo').value = '';
-    renderHistory();
-  });
-
-  document.getElementById('clearHistBtn').addEventListener('click', async () => {
-    if (state.history.length === 0) { showToast('Історія вже порожня', 'warn'); return; }
-    const ok = await confirmModal('Очистити історію?', '<p>Усю історію перекладів буде видалено.</p>', { danger: true, okLabel: 'Очистити' });
-    if (ok) {
+  // Clear buttons
+  document.getElementById('clearHistBtn').onclick = async () => {
+    if (!state.history.length) { showToast('Історія вже порожня', 'warn'); return; }
+    const confirmed = await confirmModal(
+      'Очистити історію?',
+      '<p>Усю історію перекладів буде видалено.</p>',
+      { okLabel: 'Очистити', danger: true, icon: 'warn' }
+    );
+    if (confirmed) {
       state.history = [];
       saveState();
       renderHistory();
       showToast('Історію очищено', 'success');
     }
-  });
-  document.getElementById('clearSavedBtn').addEventListener('click', async () => {
-    if (state.saved.length === 0) { showToast('Немає збережених', 'warn'); return; }
-    const ok = await confirmModal('Очистити збережені?', '<p>Усі збережені переклади буде видалено.</p>', { danger: true, okLabel: 'Очистити' });
-    if (ok) {
+  };
+
+  document.getElementById('clearSavedBtn').onclick = async () => {
+    if (!state.saved.length) { showToast('Немає збережених', 'warn'); return; }
+    const confirmed = await confirmModal(
+      'Очистити збережені?',
+      '<p>Усі збережені переклади буде видалено.</p>',
+      { okLabel: 'Очистити', danger: true, icon: 'warn' }
+    );
+    if (confirmed) {
       state.saved = [];
       saveState();
       renderSaved();
       showToast('Збережені очищено', 'success');
     }
-  });
-  document.getElementById('clearScansBtn').addEventListener('click', async () => {
-    if (scansCache.length === 0) { showToast('Немає сканувань', 'warn'); return; }
-    const ok = await confirmModal('Очистити сканування?', '<p>Усю історію сканувань та зображення буде видалено.</p>', { danger: true, okLabel: 'Очистити' });
-    if (ok) {
-      for (const s of scansCache) {
-        try { await idbDelete('scan_full_' + s.id); } catch(e) {}
-      }
+  };
+
+  document.getElementById('clearScansBtn').onclick = async () => {
+    if (!scansCache.length) { showToast('Немає сканувань', 'warn'); return; }
+    const confirmed = await confirmModal(
+      'Очистити сканування?',
+      '<p>Усю історію сканувань (разом із зображеннями) буде видалено.</p>',
+      { okLabel: 'Очистити', danger: true, icon: 'warn' }
+    );
+    if (confirmed) {
       await scanClear();
-      await refreshScansCache();
       renderScans();
       showToast('Сканування очищено', 'success');
     }
-  });
+  };
 
-  document.getElementById('pdfHistoryBtn').addEventListener('click', (e) => {
-    withPdfLoading(e.currentTarget, generateHistoryPdf);
-  });
-  document.getElementById('pdfSavedBtn').addEventListener('click', (e) => {
-    withPdfLoading(e.currentTarget, generateSavedPdf);
-  });
-  document.getElementById('pdfPhrasesBtn').addEventListener('click', (e) => {
-    withPdfLoading(e.currentTarget, generatePhrasesPdf);
-  });
-  document.getElementById('pdfScansBtn').addEventListener('click', (e) => {
-    withPdfLoading(e.currentTarget, generateScansPdf);
-  });
-
-  document.getElementById('infoBtn').addEventListener('click', showAbout);
-  document.getElementById('clearAllBtn').addEventListener('click', clearAllData);
-  document.getElementById('backupBtn').addEventListener('click', createBackup);
-  document.getElementById('restoreBtn').addEventListener('click', () => {
-    document.getElementById('restoreInput').click();
-  });
-  document.getElementById('restoreInput').addEventListener('change', (e) => {
+  // Backup / Restore
+  document.getElementById('backupBtn').onclick = createBackup;
+  document.getElementById('restoreBtn').onclick = () => document.getElementById('restoreInput').click();
+  document.getElementById('restoreInput').onchange = (e) => {
     if (e.target.files[0]) restoreBackup(e.target.files[0]);
-  });
+  };
 
-  document.getElementById('photoArea').addEventListener('click', (e) => {
-    if (!state.hasPhoto && !e.target.closest('img')) {
-      document.getElementById('fileInput').click();
-    }
-  });
+  // Info button
+  document.getElementById('infoBtn').onclick = () => {
+    alertModal(
+      'Про застосунок',
+      `<p><strong>ШвидкоПереклад</strong> — безкоштовний AI-перекладач для української та європейських мов.</p>
+       <p class="muted">Спеціалізація: офіційні документи, медичні та юридичні терміни.</p>
+       <ul>
+         <li>🔄 Переклад між 5 мовами</li>
+         <li>📷 Розпізнавання тексту з фото (OCR)</li>
+         <li>💬 Готові фрази + власні</li>
+         <li>🔊 Озвучення та голосове введення</li>
+         <li>📄 Експорт у PDF</li>
+         <li>💾 Резервні копії даних</li>
+       </ul>
+       <p class="muted">Ліміти: ${LIMITS.translate} перекладів та ${LIMITS.scan} сканувань на день.</p>
+       <p class="muted">Усі дані зберігаються лише на вашому пристрої.</p>`,
+      'info'
+    );
+  };
 
-  document.addEventListener('visibilitychange', () => {
-    if (document.hidden && speechSynthesis.speaking) {
-      speechSynthesis.cancel();
-      clearSpeakingState();
+  // Clear all
+  document.getElementById('clearAllBtn').onclick = async () => {
+    const confirmed = await confirmModal(
+      'Видалити всі дані?',
+      '<p>Це видалить <strong>усе</strong>: історію, збережені, скани, фрази, налаштування та фото.</p><p class="muted">Дію не можна скасувати. Рекомендуємо спочатку створити резервну копію.</p>',
+      { okLabel: 'Видалити все', danger: true, icon: 'warn' }
+    );
+    if (confirmed) {
+      localStorage.removeItem(STORE_KEY);
+      localStorage.removeItem(USAGE_KEY);
+      try { await scanClear(); } catch(e) {}
+      try { await idbClearStore(); } catch(e) {}
+      showToast('Дані видалено', 'success');
+      setTimeout(() => location.reload(), 800);
     }
-  });
-}
+  };
 
-/* ============ RESTORE PHOTO ON LOAD ============ */
-async function restorePhotoFromIdb() {
-  try {
-    const blob = await idbGet(IDB_PHOTO_KEY);
-    if (blob) {
-      currentPhotoBlob = blob;
-      setPreviewFromBlob(blob);
-      document.getElementById('photoPlaceholder').classList.add('hidden');
-      document.getElementById('photoPreview').classList.remove('hidden');
-      document.getElementById('photoArea').classList.add('has-image');
-      document.getElementById('removePhotoBtn').classList.remove('hidden');
-      state.hasPhoto = true;
+  // Tips
+  const tipsBar = document.getElementById('tipsBar');
+  if (localStorage.getItem('tips_hidden') === '1') {
+    tipsBar.classList.add('hidden');
+  } else {
+    showTip(0, false);
+    startTipRotation();
+  }
+  document.getElementById('tipsClose').onclick = () => {
+    tipsBar.classList.add('hidden');
+    stopTipRotation();
+    localStorage.setItem('tips_hidden', '1');
+  };
+  document.getElementById('tipsNav').onclick = (e) => {
+    const dot = e.target.closest('[data-tip]');
+    if (dot) {
+      showTip(parseInt(dot.dataset.tip, 10));
+      startTipRotation(); // restart timer
     }
-  } catch (e) {
-    console.warn('Could not restore photo', e);
+  };
+  tipsBar.onmouseenter = stopTipRotation;
+  tipsBar.onmouseleave = () => {
+    if (localStorage.getItem('tips_hidden') !== '1') startTipRotation();
+  };
+
+  // Restore active tab
+  if (state.activeTab && state.activeTab !== 'translate') {
+    switchTab(state.activeTab);
   }
 }
 
-/* ============ INIT ============ */
-async function init() {
-  loadState();
-  loadUsage();
-  initLangSelects();
-
-  document.getElementById('srcText').value = state.srcText || '';
-  document.getElementById('tgtText').value = state.tgtText || '';
-
-  document.querySelectorAll('#contextTags .tag').forEach(t => {
-    t.classList.toggle('active', t.dataset.ctx === state.context);
-  });
-
-  bindEvents();
-  initTips();
-
-  switchTab(state.activeTab || 'translate');
-
-  restorePhotoFromIdb();
-  refreshScansCache();
+function openHistoryItem(idx) {
+  const h = state.history[idx];
+  if (!h) return;
+  state.srcLang = h.srcLang; state.tgtLang = h.tgtLang;
+  state.srcText = h.src; state.tgtText = h.tgt;
+  if (h.context) state.context = h.context;
+  document.getElementById('srcLang').value = h.srcLang;
+  document.getElementById('tgtLang').value = h.tgtLang;
+  document.getElementById('srcText').value = h.src;
+  document.getElementById('tgtText').value = h.tgt;
+  document.querySelectorAll('#contextTags .tag').forEach(t =>
+    t.classList.toggle('active', t.dataset.ctx === state.context)
+  );
+  saveState();
+  switchTab('translate');
 }
 
-if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', init);
-} else {
-  init();
-}
+// Kick off
+document.addEventListener('DOMContentLoaded', init);
 </script>
-
 </body>
 </html>
