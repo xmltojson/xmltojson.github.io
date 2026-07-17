@@ -1,0 +1,1254 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Markdown Переглядач — Живий редактор Markdown з експортом</title>
+<meta name="description" content="Безкоштовний онлайн Markdown редактор з живим попереднім переглядом, підсвіткою синтаксису, українською мовою та експортом у PDF, HTML і MD формати. Автозбереження та підтримка вертикальної/горизонтальної орієнтації.">
+<meta name="keywords" content="markdown, редактор, previewer, українська, export, PDF, HTML, syntax highlighting, живий перегляд">
+<meta name="author" content="Markdown Previewer">
+<meta property="og:title" content="Markdown Переглядач — Живий редактор">
+<meta property="og:description" content="Пишіть Markdown з живим попереднім переглядом, підсвіткою коду та експортом у різні формати.">
+<meta property="og:type" content="website">
+<meta name="theme-color" content="#7c3aed">
+
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0%25' y1='0%25' x2='100%25' y2='100%25'%3E%3Cstop offset='0%25' style='stop-color:%237c3aed'/%3E%3Cstop offset='100%25' style='stop-color:%23ec4899'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='100' height='100' rx='20' fill='url(%23g)'/%3E%3Ctext x='50' y='68' font-size='55' text-anchor='middle' fill='white' font-family='Arial,sans-serif' font-weight='bold'%3EM%E2%86%93%3C/text%3E%3C/svg%3E">
+
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+<!-- pdfmake for PDF generation with vector text and custom Cyrillic fonts -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.10/pdfmake.min.js"></script>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+:root {
+  --bg-primary: #0f0f1e;
+  --bg-secondary: #1a1a2e;
+  --bg-tertiary: #252540;
+  --accent: #7c3aed;
+  --accent-hover: #9333ea;
+  --accent-light: #a78bfa;
+  --text-primary: #e4e4e7;
+  --text-secondary: #a1a1aa;
+  --border: #3f3f5f;
+  --success: #10b981;
+  --danger: #ef4444;
+  --gradient: linear-gradient(135deg, #7c3aed 0%, #ec4899 100%);
+  --code-bg: #282c34;
+  --code-text: #f472b6;
+  --shadow: rgba(0,0,0,0.3);
+}
+
+[data-theme="light"] {
+  --bg-primary: #f5f5fa;
+  --bg-secondary: #ffffff;
+  --bg-tertiary: #f0f0f5;
+  --accent: #7c3aed;
+  --accent-hover: #6d28d9;
+  --accent-light: #6d28d9;
+  --text-primary: #1a1a2e;
+  --text-secondary: #64748b;
+  --border: #e2e8f0;
+  --success: #10b981;
+  --danger: #ef4444;
+  --gradient: linear-gradient(135deg, #7c3aed 0%, #ec4899 100%);
+  --code-bg: #f6f8fa;
+  --code-text: #d81b60;
+  --shadow: rgba(0,0,0,0.08);
+}
+
+body {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  min-height: 100vh;
+  overflow: hidden;
+  transition: background 0.3s, color 0.3s;
+  background-image: 
+    radial-gradient(circle at 20% 30%, rgba(124, 58, 237, 0.15) 0%, transparent 50%),
+    radial-gradient(circle at 80% 70%, rgba(236, 72, 153, 0.1) 0%, transparent 50%);
+}
+
+[data-theme="light"] body {
+  background-image: 
+    radial-gradient(circle at 20% 30%, rgba(124, 58, 237, 0.08) 0%, transparent 50%),
+    radial-gradient(circle at 80% 70%, rgba(236, 72, 153, 0.06) 0%, transparent 50%);
+}
+
+.app {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+}
+
+header {
+  background: var(--bg-secondary);
+  border-bottom: 1px solid var(--border);
+  padding: 12px 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  box-shadow: 0 2px 20px var(--shadow);
+}
+
+.logo {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 1.4rem;
+  font-weight: 700;
+}
+
+.logo-icon {
+  width: 38px;
+  height: 38px;
+  background: var(--gradient);
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  box-shadow: 0 4px 12px rgba(124, 58, 237, 0.4);
+}
+
+.logo-text {
+  background: var(--gradient);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.toolbar {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.btn {
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+  border: 1px solid var(--border);
+  padding: 8px 14px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 0.875rem;
+  transition: all 0.2s;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 500;
+  font-family: inherit;
+}
+
+.btn:hover {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: white;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(124, 58, 237, 0.3);
+}
+
+.btn.primary {
+  background: var(--gradient);
+  border: none;
+  color: white;
+}
+
+.btn.primary:hover {
+  filter: brightness(1.1);
+}
+
+.btn.lang-toggle,
+.btn.theme-toggle {
+  min-width: 44px;
+  justify-content: center;
+  font-weight: 700;
+}
+
+.btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.main {
+  flex: 1;
+  display: flex;
+  overflow: hidden;
+  padding: 16px;
+  gap: 16px;
+}
+
+.main.vertical {
+  flex-direction: column;
+}
+
+.panel {
+  flex: 1;
+  background: var(--bg-secondary);
+  border-radius: 12px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 4px 20px var(--shadow);
+  border: 1px solid var(--border);
+  min-height: 0;
+  min-width: 0;
+}
+
+.panel-header {
+  background: var(--bg-tertiary);
+  padding: 10px 16px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.panel-header .badge {
+  background: var(--accent);
+  color: white;
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-size: 0.7rem;
+}
+
+.editor {
+  flex: 1;
+  width: 100%;
+  background: transparent;
+  color: var(--text-primary);
+  border: none;
+  outline: none;
+  padding: 20px;
+  font-family: 'Fira Code', 'Consolas', monospace;
+  font-size: 14px;
+  line-height: 1.6;
+  resize: none;
+}
+
+.preview {
+  flex: 1;
+  padding: 24px;
+  overflow-y: auto;
+  line-height: 1.7;
+}
+
+.preview h1, .preview h2, .preview h3, .preview h4 {
+  margin-top: 1em;
+  margin-bottom: 0.5em;
+  color: var(--accent-light);
+}
+
+.preview h1 { font-size: 2em; border-bottom: 2px solid var(--border); padding-bottom: 0.3em; }
+.preview h2 { font-size: 1.5em; border-bottom: 1px solid var(--border); padding-bottom: 0.3em; }
+.preview h3 { font-size: 1.25em; }
+
+.preview p { margin: 0.8em 0; }
+.preview a { color: var(--accent-light); text-decoration: none; }
+.preview a:hover { text-decoration: underline; }
+
+.preview ul, .preview ol { margin: 0.8em 0; padding-left: 2em; }
+.preview li { margin: 0.3em 0; }
+
+.preview blockquote {
+  border-left: 4px solid var(--accent);
+  padding: 0.5em 1em;
+  margin: 1em 0;
+  background: rgba(124, 58, 237, 0.1);
+  border-radius: 0 8px 8px 0;
+  color: var(--text-secondary);
+}
+
+.preview code {
+  background: var(--bg-tertiary);
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-family: 'Fira Code', monospace;
+  font-size: 0.9em;
+  color: var(--code-text);
+}
+
+.preview pre {
+  background: var(--code-bg);
+  padding: 16px;
+  border-radius: 8px;
+  overflow-x: auto;
+  margin: 1em 0;
+  border: 1px solid var(--border);
+}
+
+.preview pre code {
+  background: transparent;
+  padding: 0;
+  color: inherit;
+  font-size: 0.9em;
+}
+
+.preview table {
+  border-collapse: collapse;
+  margin: 1em 0;
+  width: 100%;
+}
+
+.preview th, .preview td {
+  border: 1px solid var(--border);
+  padding: 8px 12px;
+  text-align: left;
+}
+
+.preview th {
+  background: var(--bg-tertiary);
+  color: var(--accent-light);
+}
+
+.preview img {
+  max-width: 100%;
+  border-radius: 8px;
+  margin: 1em 0;
+}
+
+.preview hr {
+  border: none;
+  border-top: 1px solid var(--border);
+  margin: 2em 0;
+}
+
+.status-bar {
+  background: var(--bg-secondary);
+  border-top: 1px solid var(--border);
+  padding: 6px 20px;
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  display: flex;
+  justify-content: space-between;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+
+.status-bar span {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.status-dot {
+  width: 8px;
+  height: 8px;
+  background: var(--success);
+  border-radius: 50%;
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+
+.preview::-webkit-scrollbar,
+.editor::-webkit-scrollbar {
+  width: 10px;
+}
+
+.preview::-webkit-scrollbar-track,
+.editor::-webkit-scrollbar-track {
+  background: var(--bg-tertiary);
+}
+
+.preview::-webkit-scrollbar-thumb,
+.editor::-webkit-scrollbar-thumb {
+  background: var(--accent);
+  border-radius: 5px;
+}
+
+.toast {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  background: var(--gradient);
+  color: white;
+  padding: 12px 20px;
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(124, 58, 237, 0.4);
+  transform: translateY(100px);
+  opacity: 0;
+  transition: all 0.3s;
+  z-index: 1000;
+  max-width: 90vw;
+}
+
+.toast.show {
+  transform: translateY(0);
+  opacity: 1;
+}
+
+.toast.error {
+  background: linear-gradient(135deg, #ef4444 0%, #f97316 100%);
+}
+
+/* Modal */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.7);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 2000;
+  backdrop-filter: blur(4px);
+}
+
+.modal-overlay.show {
+  display: flex;
+}
+
+.modal {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 24px;
+  min-width: 320px;
+  max-width: 500px;
+  width: 90%;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+}
+
+.modal h3 {
+  margin-bottom: 16px;
+  color: var(--accent-light);
+}
+
+.modal input[type="url"] {
+  width: 100%;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border);
+  color: var(--text-primary);
+  padding: 10px 14px;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  outline: none;
+  font-family: inherit;
+}
+
+.modal input[type="url"]:focus {
+  border-color: var(--accent);
+}
+
+.modal-buttons {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+  margin-top: 16px;
+}
+
+@media (max-width: 768px) {
+  header { padding: 10px; }
+  .logo { font-size: 1.1rem; }
+  .btn { padding: 6px 10px; font-size: 0.8rem; }
+  .main { padding: 8px; gap: 8px; }
+}
+</style>
+<link id="hljs-dark" rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
+<link id="hljs-light" rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-light.min.css" disabled>
+</head>
+<body>
+<div class="app">
+  <header>
+    <div class="logo">
+      <div class="logo-icon">📝</div>
+      <div class="logo-text" data-i18n="title">Markdown Переглядач</div>
+    </div>
+    <div class="toolbar">
+      <button class="btn lang-toggle" id="langToggle" title="Switch language">UA</button>
+      <button class="btn theme-toggle" id="themeToggle" title="Toggle theme">🌙</button>
+      <button class="btn" id="toggleOrientation" title="Toggle layout">
+        <span id="orientIcon">⬌</span>
+        <span data-i18n="layout">Розташування</span>
+      </button>
+      <button class="btn" id="loadFileBtn">
+        📂 <span data-i18n="loadFile">Файл</span>
+      </button>
+      <button class="btn" id="loadUrlBtn">
+        🔗 <span data-i18n="loadUrl">URL</span>
+      </button>
+      <button class="btn" id="clearBtn">
+        🗑 <span data-i18n="clear">Очистити</span>
+      </button>
+      <button class="btn" id="sampleBtn">
+        ✨ <span data-i18n="sample">Приклад</span>
+      </button>
+      <button class="btn" id="copyBtn">
+        📋 <span data-i18n="copy">Копіювати HTML</span>
+      </button>
+      <button class="btn" id="exportMd">
+        💾 <span data-i18n="exportMd">MD</span>
+      </button>
+      <button class="btn" id="exportHtml">
+        🌐 <span data-i18n="exportHtml">HTML</span>
+      </button>
+      <button class="btn primary" id="exportPdf">
+        📄 <span data-i18n="exportPdf">PDF</span>
+      </button>
+      <input type="file" id="fileInput" accept=".md,.markdown,.txt" style="display:none">
+    </div>
+  </header>
+
+  <div class="main" id="mainContainer">
+    <div class="panel">
+      <div class="panel-header">
+        <span data-i18n="editor">✍️ Редактор</span>
+        <span class="badge" id="charCount">0</span>
+      </div>
+      <textarea class="editor" id="editor" spellcheck="false"></textarea>
+    </div>
+    <div class="panel">
+      <div class="panel-header">
+        <span data-i18n="preview">👁 Попередній перегляд</span>
+        <span class="badge" data-i18n="live">Наживо</span>
+      </div>
+      <div class="preview" id="preview"></div>
+    </div>
+  </div>
+
+  <div class="status-bar">
+    <span><span class="status-dot"></span> <span data-i18n="autosave">Автозбереження увімкнено</span></span>
+    <span id="stats"></span>
+    <span data-i18n="footer">Markdown Previewer v1.0</span>
+  </div>
+</div>
+
+<!-- URL Load Modal -->
+<div class="modal-overlay" id="urlModal">
+  <div class="modal">
+    <h3 data-i18n="urlModalTitle">Завантажити з URL</h3>
+    <input type="url" id="urlInput" placeholder="https://example.com/file.md">
+    <div class="modal-buttons">
+      <button class="btn" id="urlCancel" data-i18n="cancel">Скасувати</button>
+      <button class="btn primary" id="urlLoad" data-i18n="load">Завантажити</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const translations = {
+  uk: {
+    title: "Markdown Переглядач",
+    layout: "Розташування",
+    clear: "Очистити",
+    sample: "Приклад",
+    copy: "Копіювати HTML",
+    exportMd: "MD",
+    exportHtml: "HTML",
+    exportPdf: "PDF",
+    loadFile: "Файл",
+    loadUrl: "URL",
+    editor: "✍️ Редактор",
+    preview: "👁 Попередній перегляд",
+    live: "Наживо",
+    autosave: "Автозбереження увімкнено",
+    footer: "Markdown Previewer v1.0",
+    copied: "HTML скопійовано в буфер обміну!",
+    cleared: "Редактор очищено",
+    exported: "Файл експортовано",
+    loaded: "Файл завантажено",
+    loadError: "Помилка завантаження",
+    generatingPdf: "Генерація PDF...",
+    loadingFonts: "Завантаження шрифтів...",
+    words: "слів",
+    chars: "символів",
+    lines: "рядків",
+    confirmClear: "Ви впевнені, що хочете очистити текст?",
+    urlModalTitle: "Завантажити з URL",
+    cancel: "Скасувати",
+    load: "Завантажити",
+    invalidUrl: "Невірний URL"
+  },
+  en: {
+    title: "Markdown Previewer",
+    layout: "Layout",
+    clear: "Clear",
+    sample: "Sample",
+    copy: "Copy HTML",
+    exportMd: "MD",
+    exportHtml: "HTML",
+    exportPdf: "PDF",
+    loadFile: "File",
+    loadUrl: "URL",
+    editor: "✍️ Editor",
+    preview: "👁 Preview",
+    live: "Live",
+    autosave: "Autosave enabled",
+    footer: "Markdown Previewer v1.0",
+    copied: "HTML copied to clipboard!",
+    cleared: "Editor cleared",
+    exported: "File exported",
+    loaded: "File loaded",
+    loadError: "Load failed",
+    generatingPdf: "Generating PDF...",
+    loadingFonts: "Loading fonts...",
+    words: "words",
+    chars: "chars",
+    lines: "lines",
+    confirmClear: "Are you sure you want to clear the text?",
+    urlModalTitle: "Load from URL",
+    cancel: "Cancel",
+    load: "Load",
+    invalidUrl: "Invalid URL"
+  }
+};
+
+const sampleText = {
+  uk: `# Ласкаво просимо до Markdown Переглядача! 🎉
+
+## Основні можливості
+
+- **Живий попередній перегляд** з підсвіткою синтаксису
+- 🌍 Підтримка **української** та англійської мов
+- 🌗 Світла та темна теми
+- 📱 Вертикальна та горизонтальна орієнтація
+- 💾 Автоматичне збереження в локальному сховищі
+- 📄 Експорт у форматах MD, HTML та PDF (з підтримкою кирилиці!)
+- 📂 Завантаження з файлу або URL
+
+## Приклад коду
+
+\`\`\`javascript
+function привіт(імʼя) {
+  console.log(\`Привіт, \${імʼя}!\`);
+  return true;
+}
+
+привіт('Світ');
+\`\`\`
+
+## Список завдань
+
+1. Написати markdown
+2. Побачити результат
+3. Експортувати файл
+
+> **Порада:** Використовуйте панель інструментів для швидких дій!
+
+### Таблиця
+
+| Функція | Опис | Статус |
+|---------|------|--------|
+| Редактор | Написання тексту | OK |
+| Перегляд | Живий рендер | OK |
+| Експорт | PDF/HTML/MD | OK |
+| Імпорт | Файл/URL | OK |
+
+---
+
+**Створено з любов'ю в Україні**`,
+  en: `# Welcome to Markdown Previewer! 🎉
+
+## Key Features
+
+- **Live preview** with syntax highlighting
+- 🌍 **Ukrainian** and English language support
+- 🌗 Light and dark themes
+- 📱 Vertical and horizontal orientation
+- 💾 Automatic local storage
+- 📄 Export as MD, HTML, and PDF (with Cyrillic support!)
+- 📂 Load from file or URL
+
+## Code Example
+
+\`\`\`javascript
+function hello(name) {
+  console.log(\`Hello, \${name}!\`);
+  return true;
+}
+
+hello('World');
+\`\`\`
+
+## Todo List
+
+1. Write markdown
+2. See the result
+3. Export the file
+
+> **Tip:** Use the toolbar for quick actions!
+
+### Table
+
+| Feature | Description | Status |
+|---------|-------------|--------|
+| Editor | Text writing | OK |
+| Preview | Live render | OK |
+| Export | PDF/HTML/MD | OK |
+| Import | File/URL | OK |
+
+---
+
+**Made with love**`
+};
+
+// Restore settings
+let currentLang = localStorage.getItem('md_lang') || 'uk';
+let orientation = localStorage.getItem('md_orientation') || 'horizontal';
+let theme = localStorage.getItem('md_theme') || 'dark';
+let lastUrl = localStorage.getItem('md_last_url') || '';
+
+marked.setOptions({
+  highlight: function(code, lang) {
+    if (lang && hljs.getLanguage(lang)) {
+      return hljs.highlight(code, { language: lang }).value;
+    }
+    return hljs.highlightAuto(code).value;
+  },
+  breaks: true,
+  gfm: true
+});
+
+const editor = document.getElementById('editor');
+const preview = document.getElementById('preview');
+const mainContainer = document.getElementById('mainContainer');
+const langToggle = document.getElementById('langToggle');
+const themeToggle = document.getElementById('themeToggle');
+const charCount = document.getElementById('charCount');
+const stats = document.getElementById('stats');
+const orientIcon = document.getElementById('orientIcon');
+const fileInput = document.getElementById('fileInput');
+const urlModal = document.getElementById('urlModal');
+const urlInput = document.getElementById('urlInput');
+const exportPdfBtn = document.getElementById('exportPdf');
+
+function t(key) {
+  return translations[currentLang][key] || key;
+}
+
+function applyTranslations() {
+  document.documentElement.lang = currentLang;
+  document.querySelectorAll('[data-i18n]').forEach(el => {
+    const key = el.getAttribute('data-i18n');
+    el.textContent = t(key);
+  });
+  document.title = t('title');
+  langToggle.textContent = currentLang === 'uk' ? 'UA' : 'EN';
+  updateStats();
+}
+
+function toggleLanguage() {
+  currentLang = currentLang === 'uk' ? 'en' : 'uk';
+  localStorage.setItem('md_lang', currentLang);
+  applyTranslations();
+}
+
+function applyTheme(newTheme) {
+  theme = newTheme;
+  document.documentElement.setAttribute('data-theme', newTheme);
+  themeToggle.textContent = newTheme === 'dark' ? '🌙' : '☀️';
+  const darkSheet = document.getElementById('hljs-dark');
+  const lightSheet = document.getElementById('hljs-light');
+  if (newTheme === 'dark') {
+    darkSheet.disabled = false;
+    lightSheet.disabled = true;
+  } else {
+    darkSheet.disabled = true;
+    lightSheet.disabled = false;
+  }
+  localStorage.setItem('md_theme', newTheme);
+  const metaTheme = document.querySelector('meta[name="theme-color"]');
+  if (metaTheme) metaTheme.content = newTheme === 'dark' ? '#0f0f1e' : '#f5f5fa';
+}
+
+function toggleTheme() {
+  applyTheme(theme === 'dark' ? 'light' : 'dark');
+}
+
+function updatePreview() {
+  const md = editor.value;
+  preview.innerHTML = marked.parse(md);
+  preview.querySelectorAll('pre code').forEach(block => {
+    hljs.highlightElement(block);
+  });
+  updateStats();
+  localStorage.setItem('md_content', md);
+}
+
+function updateStats() {
+  const text = editor.value;
+  const chars = text.length;
+  const words = text.trim() ? text.trim().split(/\s+/).length : 0;
+  const lines = text.split('\n').length;
+  charCount.textContent = chars;
+  stats.textContent = `${words} ${t('words')} · ${chars} ${t('chars')} · ${lines} ${t('lines')}`;
+}
+
+function setOrientation(orient) {
+  orientation = orient;
+  if (orient === 'vertical') {
+    mainContainer.classList.add('vertical');
+    orientIcon.textContent = '⬍';
+  } else {
+    mainContainer.classList.remove('vertical');
+    orientIcon.textContent = '⬌';
+  }
+  localStorage.setItem('md_orientation', orient);
+}
+
+function showToast(msg, isError = false) {
+  const toast = document.getElementById('toast');
+  toast.textContent = msg;
+  toast.classList.toggle('error', isError);
+  toast.classList.add('show');
+  setTimeout(() => toast.classList.remove('show'), 2800);
+}
+
+function downloadFile(content, filename, type) {
+  const blob = new Blob([content], { type });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+function loadFromFile(file) {
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    editor.value = e.target.result;
+    updatePreview();
+    showToast(`${t('loaded')}: ${file.name}`);
+  };
+  reader.onerror = () => showToast(t('loadError'), true);
+  reader.readAsText(file);
+}
+
+async function loadFromUrl(url) {
+  try {
+    new URL(url);
+  } catch {
+    showToast(t('invalidUrl'), true);
+    return;
+  }
+  try {
+    const response = await fetch(url);
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    const text = await response.text();
+    editor.value = text;
+    updatePreview();
+    localStorage.setItem('md_last_url', url);
+    lastUrl = url;
+    showToast(t('loaded'));
+    closeUrlModal();
+  } catch (err) {
+    showToast(`${t('loadError')}: ${err.message}`, true);
+  }
+}
+
+function openUrlModal() {
+  urlInput.value = lastUrl;
+  urlModal.classList.add('show');
+  setTimeout(() => urlInput.focus(), 100);
+}
+
+function closeUrlModal() {
+  urlModal.classList.remove('show');
+}
+
+function exportHtml() {
+  const html = `<!DOCTYPE html>
+<html lang="${currentLang}">
+<head>
+<meta charset="UTF-8">
+<title>Markdown Export</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
+<style>
+body { font-family: -apple-system, sans-serif; max-width: 800px; margin: 40px auto; padding: 20px; line-height: 1.7; color: #333; }
+h1, h2, h3 { color: #7c3aed; }
+code { background: #f4f4f4; padding: 2px 6px; border-radius: 4px; }
+pre { background: #282c34; color: #eee; padding: 16px; border-radius: 8px; overflow-x: auto; }
+pre code { background: transparent; color: inherit; }
+blockquote { border-left: 4px solid #7c3aed; padding-left: 16px; color: #666; }
+table { border-collapse: collapse; width: 100%; }
+th, td { border: 1px solid #ddd; padding: 8px; }
+th { background: #f4f4f4; }
+</style>
+</head>
+<body>
+${preview.innerHTML}
+</body>
+</html>`;
+  downloadFile(html, 'markdown-export.html', 'text/html');
+  showToast(t('exported'));
+}
+
+// ==================== PDF Generation with pdfmake ====================
+// Uses Noto Sans - Google Font with full Cyrillic support
+// Fonts are fetched from Google Fonts CDN and embedded into pdfmake VFS
+
+const FONTS = {
+  regular: 'https://fonts.gstatic.com/s/notosans/v27/o-0IIpQlx3QUlC5A4PNr5TRA.ttf',
+  bold: 'https://fonts.gstatic.com/s/notosans/v27/o-0NIpQlx3QUlC5A4PNjXhFVZNyBx2pqPIif.ttf',
+  italic: 'https://fonts.gstatic.com/s/notosans/v27/o-0OIpQlx3QUlC5A4PNr4Az5ZuyN.ttf',
+  bolditalic: 'https://fonts.gstatic.com/s/notosans/v27/o-0TIpQlx3QUlC5A4PNjXhFlY9aA5Wl6PQ.ttf',
+  mono: 'https://fonts.gstatic.com/s/notosansmono/v30/BngrUXNETWXI6LwhGYvaxZikqZqK6fBq6kPvUce2oAZcdthSBUsYck4-_FNIQ7ktzg.ttf'
+};
+
+let fontsReady = false;
+
+function arrayBufferToBase64(buffer) {
+  let binary = '';
+  const bytes = new Uint8Array(buffer);
+  const chunkSize = 0x8000;
+  for (let i = 0; i < bytes.length; i += chunkSize) {
+    binary += String.fromCharCode.apply(null, bytes.subarray(i, i + chunkSize));
+  }
+  return btoa(binary);
+}
+
+async function fetchFontBase64(url) {
+  const res = await fetch(url);
+  if (!res.ok) throw new Error(`Failed to load font: ${url}`);
+  const buffer = await res.arrayBuffer();
+  return arrayBufferToBase64(buffer);
+}
+
+async function ensureFonts() {
+  if (fontsReady) return;
+  showToast(t('loadingFonts'));
+  
+  const [regular, bold, italic, bolditalic, mono] = await Promise.all([
+    fetchFontBase64(FONTS.regular),
+    fetchFontBase64(FONTS.bold),
+    fetchFontBase64(FONTS.italic),
+    fetchFontBase64(FONTS.bolditalic),
+    fetchFontBase64(FONTS.mono)
+  ]);
+  
+  pdfMake.vfs = {
+    'NotoSans-Regular.ttf': regular,
+    'NotoSans-Bold.ttf': bold,
+    'NotoSans-Italic.ttf': italic,
+    'NotoSans-BoldItalic.ttf': bolditalic,
+    'NotoSansMono-Regular.ttf': mono
+  };
+  
+  pdfMake.fonts = {
+    NotoSans: {
+      normal: 'NotoSans-Regular.ttf',
+      bold: 'NotoSans-Bold.ttf',
+      italics: 'NotoSans-Italic.ttf',
+      bolditalics: 'NotoSans-BoldItalic.ttf'
+    },
+    NotoMono: {
+      normal: 'NotoSansMono-Regular.ttf',
+      bold: 'NotoSansMono-Regular.ttf',
+      italics: 'NotoSansMono-Regular.ttf',
+      bolditalics: 'NotoSansMono-Regular.ttf'
+    }
+  };
+  
+  fontsReady = true;
+}
+
+// Convert marked tokens to pdfmake content
+function getInlineText(tokens) {
+  const result = [];
+  if (!tokens) return result;
+  
+  for (const token of tokens) {
+    if (token.type === 'text') {
+      if (token.tokens) {
+        result.push(...getInlineText(token.tokens));
+      } else {
+        result.push({ text: token.text });
+      }
+    } else if (token.type === 'strong') {
+      const inner = getInlineText(token.tokens);
+      inner.forEach(t => t.bold = true);
+      result.push(...inner);
+    } else if (token.type === 'em') {
+      const inner = getInlineText(token.tokens);
+      inner.forEach(t => t.italics = true);
+      result.push(...inner);
+    } else if (token.type === 'codespan') {
+      result.push({ text: token.text, font: 'NotoMono', background: '#f4f4f4', color: '#d81b60' });
+    } else if (token.type === 'link') {
+      const inner = getInlineText(token.tokens);
+      inner.forEach(t => { t.color = '#7c3aed'; t.decoration = 'underline'; t.link = token.href; });
+      result.push(...inner);
+    } else if (token.type === 'del') {
+      const inner = getInlineText(token.tokens);
+      inner.forEach(t => t.decoration = 'lineThrough');
+      result.push(...inner);
+    } else if (token.type === 'br') {
+      result.push({ text: '\n' });
+    } else if (token.type === 'image') {
+      result.push({ text: `[${token.text || 'image'}]`, italics: true, color: '#888' });
+    } else if (token.text) {
+      result.push({ text: token.text });
+    }
+  }
+  return result;
+}
+
+function tokensToPdfContent(tokens) {
+  const content = [];
+  
+  for (const token of tokens) {
+    switch (token.type) {
+      case 'heading': {
+        content.push({
+          text: getInlineText(token.tokens),
+          style: `h${token.depth}`,
+          margin: [0, 12, 0, 6]
+        });
+        break;
+      }
+      case 'paragraph': {
+        content.push({
+          text: getInlineText(token.tokens),
+          margin: [0, 4, 0, 4]
+        });
+        break;
+      }
+      case 'blockquote': {
+        const inner = tokensToPdfContent(token.tokens);
+        content.push({
+          table: {
+            widths: [3, '*'],
+            body: [[
+              { text: '', fillColor: '#7c3aed', border: [false, false, false, false] },
+              { stack: inner, border: [false, false, false, false], margin: [8, 4, 4, 4], fillColor: '#f9f5ff' }
+            ]]
+          },
+          layout: 'noBorders',
+          margin: [0, 6, 0, 6]
+        });
+        break;
+      }
+      case 'code': {
+        content.push({
+          table: {
+            widths: ['*'],
+            body: [[{
+              text: token.text,
+              font: 'NotoMono',
+              color: '#e4e4e7',
+              fontSize: 10,
+              preserveLeadingSpaces: true
+            }]]
+          },
+          layout: {
+            fillColor: () => '#282c34',
+            hLineWidth: () => 0,
+            vLineWidth: () => 0,
+            paddingLeft: () => 10,
+            paddingRight: () => 10,
+            paddingTop: () => 8,
+            paddingBottom: () => 8
+          },
+          margin: [0, 6, 0, 6]
+        });
+        break;
+      }
+      case 'list': {
+        const items = token.items.map(item => {
+          const itemContent = tokensToPdfContent(item.tokens);
+          return itemContent.length === 1 ? itemContent[0] : { stack: itemContent };
+        });
+        if (token.ordered) {
+          content.push({ ol: items, margin: [0, 4, 0, 4] });
+        } else {
+          content.push({ ul: items, margin: [0, 4, 0, 4] });
+        }
+        break;
+      }
+      case 'table': {
+        const header = token.header.map(cell => ({
+          text: getInlineText(cell.tokens),
+          fillColor: '#f0e9ff',
+          bold: true,
+          color: '#7c3aed',
+          margin: [4, 4, 4, 4]
+        }));
+        const rows = token.rows.map(row =>
+          row.map(cell => ({
+            text: getInlineText(cell.tokens),
+            margin: [4, 4, 4, 4]
+          }))
+        );
+        content.push({
+          table: {
+            headerRows: 1,
+            widths: token.header.map(() => '*'),
+            body: [header, ...rows]
+          },
+          layout: {
+            hLineColor: () => '#dddddd',
+            vLineColor: () => '#dddddd'
+          },
+          margin: [0, 6, 0, 6]
+        });
+        break;
+      }
+      case 'hr': {
+        content.push({
+          canvas: [{ type: 'line', x1: 0, y1: 5, x2: 515, y2: 5, lineWidth: 1, lineColor: '#dddddd' }],
+          margin: [0, 8, 0, 8]
+        });
+        break;
+      }
+      case 'space':
+        break;
+      case 'text': {
+        if (token.tokens) {
+          content.push({ text: getInlineText(token.tokens), margin: [0, 2, 0, 2] });
+        } else {
+          content.push({ text: token.text, margin: [0, 2, 0, 2] });
+        }
+        break;
+      }
+      case 'html':
+        break;
+      default:
+        if (token.text) content.push({ text: token.text });
+    }
+  }
+  
+  return content;
+}
+
+async function exportPdf() {
+  try {
+    exportPdfBtn.disabled = true;
+    
+    await ensureFonts();
+    
+    showToast(t('generatingPdf'));
+    
+    const tokens = marked.lexer(editor.value);
+    const content = tokensToPdfContent(tokens);
+    
+    const docDefinition = {
+      content: content,
+      defaultStyle: {
+        font: 'NotoSans',
+        fontSize: 11,
+        lineHeight: 1.4,
+        color: '#1a1a2e'
+      },
+      styles: {
+        h1: { fontSize: 24, bold: true, color: '#7c3aed' },
+        h2: { fontSize: 20, bold: true, color: '#7c3aed' },
+        h3: { fontSize: 16, bold: true, color: '#7c3aed' },
+        h4: { fontSize: 14, bold: true, color: '#7c3aed' },
+        h5: { fontSize: 12, bold: true, color: '#7c3aed' },
+        h6: { fontSize: 11, bold: true, color: '#7c3aed' }
+      },
+      pageSize: 'A4',
+      pageMargins: [40, 50, 40, 50],
+      info: {
+        title: t('title'),
+        author: 'Markdown Previewer',
+        creator: 'Markdown Previewer'
+      }
+    };
+    
+    pdfMake.createPdf(docDefinition).download('markdown-export.pdf', () => {
+      showToast(t('exported'));
+      exportPdfBtn.disabled = false;
+    });
+  } catch (err) {
+    console.error(err);
+    showToast(`${t('loadError')}: ${err.message}`, true);
+    exportPdfBtn.disabled = false;
+  }
+}
+
+// Event listeners
+editor.addEventListener('input', updatePreview);
+langToggle.addEventListener('click', toggleLanguage);
+themeToggle.addEventListener('click', toggleTheme);
+
+document.getElementById('toggleOrientation').addEventListener('click', () => {
+  setOrientation(orientation === 'horizontal' ? 'vertical' : 'horizontal');
+});
+
+document.getElementById('clearBtn').addEventListener('click', () => {
+  if (confirm(t('confirmClear'))) {
+    editor.value = '';
+    updatePreview();
+    showToast(t('cleared'));
+  }
+});
+
+document.getElementById('sampleBtn').addEventListener('click', () => {
+  editor.value = sampleText[currentLang];
+  updatePreview();
+});
+
+document.getElementById('copyBtn').addEventListener('click', async () => {
+  await navigator.clipboard.writeText(preview.innerHTML);
+  showToast(t('copied'));
+});
+
+document.getElementById('exportMd').addEventListener('click', () => {
+  downloadFile(editor.value, 'document.md', 'text/markdown');
+  showToast(t('exported'));
+});
+
+document.getElementById('exportHtml').addEventListener('click', exportHtml);
+exportPdfBtn.addEventListener('click', exportPdf);
+
+document.getElementById('loadFileBtn').addEventListener('click', () => fileInput.click());
+fileInput.addEventListener('change', (e) => {
+  loadFromFile(e.target.files[0]);
+  e.target.value = '';
+});
+
+document.getElementById('loadUrlBtn').addEventListener('click', openUrlModal);
+document.getElementById('urlCancel').addEventListener('click', closeUrlModal);
+document.getElementById('urlLoad').addEventListener('click', () => loadFromUrl(urlInput.value.trim()));
+urlInput.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') loadFromUrl(urlInput.value.trim());
+  if (e.key === 'Escape') closeUrlModal();
+});
+urlModal.addEventListener('click', (e) => {
+  if (e.target === urlModal) closeUrlModal();
+});
+
+document.addEventListener('dragover', (e) => e.preventDefault());
+document.addEventListener('drop', (e) => {
+  e.preventDefault();
+  const file = e.dataTransfer.files[0];
+  if (file) loadFromFile(file);
+});
+
+editor.addEventListener('keydown', (e) => {
+  if (e.key === 'Tab') {
+    e.preventDefault();
+    const start = editor.selectionStart;
+    const end = editor.selectionEnd;
+    editor.value = editor.value.substring(0, start) + '  ' + editor.value.substring(end);
+    editor.selectionStart = editor.selectionEnd = start + 2;
+    updatePreview();
+  }
+});
+
+// Init
+applyTheme(theme);
+setOrientation(orientation);
+applyTranslations();
+
+const savedContent = localStorage.getItem('md_content');
+editor.value = savedContent !== null ? savedContent : sampleText[currentLang];
+updatePreview();
+</script>
+</body>
+</html>
