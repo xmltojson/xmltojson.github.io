@@ -2044,6 +2044,18 @@ function abortableWait(ms, controller) {
   });
 }
 
+// Unescape common sequences in step text: \n, \r, \t, \\, \", \'
+function unescapeStepText(str) {
+  if (str == null) return '';
+  return String(str)
+    .replace(/\\n/g, '\n')
+    .replace(/\\r/g, '\r')
+    .replace(/\\t/g, '\t')
+    .replace(/\\"/g, '"')
+    .replace(/\\'/g, "'")
+    .replace(/\\\\/g, '\\');
+}
+
 class TestDriver {
   constructor(iframeId, controller) {
     this.iframe = document.getElementById(iframeId);
@@ -2449,19 +2461,43 @@ class TestDriver {
 
   async assertVisibleText(text) {
     const doc = this.getDoc();
-    const walker = doc.createTreeWalker(doc.body, NodeFilter.SHOW_TEXT, {
-      acceptNode: n => n.nodeValue && n.nodeValue.includes(text)
-        ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_REJECT
+    const win = this.getWin();
+
+    // Normalize both search text and DOM text: 
+    // collapse whitespace-only OR keep exact newlines depending on mode
+    const searchText = text;
+    const hasNewlines = /[\n\r]/.test(searchText);
+
+    // Helper: normalize whitespace but preserve line breaks
+    const normalize = (s) => hasNewlines 
+      ? s.replace(/\r\n/g, '\n').replace(/[ \t]+/g, ' ')
+      : s.replace(/\s+/g, ' ').trim();
+
+    const needle = normalize(searchText);
+
+    // Walk all visible elements and check their combined text
+    const walker = doc.createTreeWalker(doc.body, NodeFilter.SHOW_ELEMENT, {
+      acceptNode: (el) => {
+        if (!this.isVisible(el)) return NodeFilter.FILTER_REJECT;
+        return NodeFilter.FILTER_ACCEPT;
+      }
     });
-    let node;
-    while ((node = walker.nextNode())) {
-      const parent = node.parentElement;
-      if (parent && this.isVisible(parent)) {
-        log(`✓ Visible text "${text}" found`, 'success');
+
+    let el;
+    while ((el = walker.nextNode())) {
+      // For multi-line search, use innerText (respects <br>, block boundaries)
+      // For single-line, use textContent
+      const raw = hasNewlines 
+        ? (el.innerText || el.textContent || '')
+        : (el.textContent || '');
+      const haystack = normalize(raw);
+      if (haystack.includes(needle)) {
+        log(`✓ Visible text found${hasNewlines ? ' (multi-line)' : ''}`, 'success');
         return;
       }
     }
-    throw new Error(`Visible text "${text}" not found (may exist in DOM but hidden)`);
+
+    throw new Error(`Visible text "${searchText.slice(0,60)}${searchText.length>60?'...':''}" not found`);
   }
 
   async assertTextInField(selector, text) {
@@ -2473,22 +2509,22 @@ class TestDriver {
     if (tag === 'TEXTAREA' || tag === 'INPUT') {
       actualValue = el.value;
     } else if (tag === 'SELECT') {
-      // For select, prefer visible text of selected option
       const idx = el.selectedIndex;
       actualValue = idx >= 0 ? (el.options[idx].text || '') : '';
     } else if (el.isContentEditable) {
-      actualValue = el.textContent || el.innerText || '';
+      actualValue = el.innerText || el.textContent || '';
     } else {
-      actualValue = el.textContent || el.innerText || '';
+      actualValue = el.innerText || el.textContent || '';
     }
     
-    actualValue = String(actualValue);
+    actualValue = String(actualValue).replace(/\r\n/g, '\n');
     
     if (!actualValue.includes(text)) {
       const preview = actualValue.length > 80 
-        ? actualValue.slice(0, 80) + '...' 
-        : actualValue;
-      throw new Error(`Text "${text}" not found in ${selector}. Actual value: "${preview}"`);
+        ? actualValue.slice(0, 80).replace(/\n/g, '\\n') + '...' 
+        : actualValue.replace(/\n/g, '\\n');
+      const expected = text.replace(/\n/g, '\\n');
+      throw new Error(`Text "${expected}" not found in ${selector}. Actual: "${preview}"`);
     }
     
     log(`✓ Text "${text}" found in ${selector}`, 'success');
@@ -2624,20 +2660,20 @@ const STEP_PATTERNS = [
     re: /^(?:I )?(?:type|enter|fill|ввести|заповнити|вводжу)\s+["'](.+?)["']\s+(?:in|into|у|в)\s+["']?(.+?)["']?$/i,
     fn: async (m, d) => await d.type(m[2], m[1]) },
 
-  { name: 'See text in textarea/field',
-    example: 'I see "Hello" in "#comment"  |  бачу "Привіт" у "textarea[name=note]"',
+  { name: 'See text in textarea/field (supports \\n)',
+    example: 'I see "Line1\\nLine2" in "#comment"',
     re: /^(?:I )?(?:see|should see|бачу|повинен бачити)\s+["'](.+?)["']\s+(?:in|inside|у|в)\s+["']?(.+?)["']?$/i,
-    fn: async (m, d) => await d.assertTextInField(m[2], m[1]) },
+    fn: async (m, d) => await d.assertTextInField(m[2], unescapeStepText(m[1])) },
 
   { name: 'Field value equals',
     example: 'field "#email" has value "test@test.com"  |  поле "#email" містить значення "test@test.com"',
     re: /^(?:field|поле)\s+["']?(.+?)["']?\s+(?:has value|equals|містить значення|дорівнює)\s+["'](.+?)["']$/i,
     fn: async (m, d) => await d.assertFieldValue(m[1], m[2]) },
 
-  { name: 'See visible text',
-    example: 'I see "Welcome"  |  бачу "Ласкаво просимо"',
+  { name: 'See visible text (supports \\n, \\t escapes)',
+    example: 'I see "Welcome"  |  I see "Line1\\nLine2"  |  бачу "Рядок1\\nРядок2"',
     re: /^(?:I )?(?:see|should see|бачу|повинен бачити)\s+["'](.+?)["']$/i,
-    fn: async (m, d) => await d.assertVisibleText(m[1]) },
+    fn: async (m, d) => await d.assertVisibleText(unescapeStepText(m[1])) },
 
   { name: 'Element is visible',
     example: 'element "#modal" is visible  |  елемент "#modal" видимий',
