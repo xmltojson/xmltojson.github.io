@@ -1872,62 +1872,77 @@ document.getElementById('micBtn').onclick = () => {
   showToast('🎤 Говоріть...');
 };
 
-// ============ PHOTO INPUT HANDLING ============
+// ============ PHOTO ============
 
-// Shared handler for both file and camera inputs
-function handlePhotoSelection(file) {
+async function handlePhotoSelection(file) {
   if (!file) return;
-  if (!file.type.startsWith('image/')) {
+  if (!file.type || !file.type.startsWith('image/')) {
     showToast('❌ Оберіть файл зображення', 'error');
     return;
   }
-  const reader = new FileReader();
-  reader.onload = () => {
-    state.photoData = reader.result;
+  try {
+    // Store the file blob in IndexedDB
+    await idbPut(IDB_PHOTO_KEY, file);
+    state.hasPhoto = true;
     state.ocrResult = '';
     document.getElementById('ocrResult').value = '';
-    showPhoto(reader.result);
+    setPreviewFromBlob(file);
+    showPhoto();
     saveState();
     showToast('✓ Фото завантажено', 'success');
-  };
-  reader.onerror = () => showToast('❌ Помилка читання файлу', 'error');
-  reader.readAsDataURL(file);
+  } catch (e) {
+    console.error('Photo save error:', e);
+    // Fallback: if IndexedDB fails, still show preview from the file
+    try {
+      setPreviewFromBlob(file);
+      showPhoto();
+      state.hasPhoto = true;
+      saveState();
+      showToast('✓ Фото завантажено', 'success');
+    } catch (e2) {
+      showToast('❌ Не вдалося зберегти фото', 'error');
+    }
+  }
 }
 
-// Photo area: click on placeholder triggers file picker (gallery)
-document.getElementById('photoArea').onclick = (e) => {
-  // Only trigger if no image is currently shown (placeholder visible)
-  if (!state.photoData) {
-    document.getElementById('fileInput').click();
+// Clicking the drop area opens file picker (only when no photo yet)
+document.getElementById('photoArea').onclick = () => {
+  if (!state.hasPhoto) {
+    const input = document.getElementById('fileInput');
+    input.value = '';
+    input.click();
   }
 };
 
-// "Обрати файл" button — opens gallery/file browser (no capture)
-document.getElementById('uploadBtn').onclick = e => {
+document.getElementById('uploadBtn').onclick = (e) => {
   e.stopPropagation();
-  // Reset value so same file can be re-selected
+  e.preventDefault();
   const input = document.getElementById('fileInput');
-  input.value = '';
+  input.value = '';        // reset so selecting the same file fires onchange
   input.click();
 };
 
-// "Камера" button — directly opens camera (with capture attribute)
-document.getElementById('cameraBtn').onclick = e => {
+document.getElementById('cameraBtn').onclick = (e) => {
   e.stopPropagation();
+  e.preventDefault();
   const input = document.getElementById('cameraInput');
   input.value = '';
   input.click();
 };
 
-// File input (gallery)
-document.getElementById('fileInput').onchange = e => {
-  handlePhotoSelection(e.target.files[0]);
-};
+// Use addEventListener + read file BEFORE resetting input
+document.getElementById('fileInput').addEventListener('change', function (e) {
+  const file = e.target.files && e.target.files[0];
+  handlePhotoSelection(file);
+});
 
-// Camera input
-document.getElementById('cameraInput').onchange = e => {
-  handlePhotoSelection(e.target.files[0]);
-};
+document.getElementById('cameraInput').addEventListener('change', function (e) {
+  const file = e.target.files && e.target.files[0];
+  handlePhotoSelection(file);
+});
+
+document.getElementById('fileInput').onchange = e => handlePhotoSelection(e.target.files[0]);
+document.getElementById('cameraInput').onchange = e => handlePhotoSelection(e.target.files[0]);
 
 document.getElementById('removePhotoBtn').onclick = async e => {
   e.stopPropagation();
@@ -1937,16 +1952,19 @@ document.getElementById('removePhotoBtn').onclick = async e => {
     { danger: true, okLabel: 'Видалити', icon: 'warn' }
   );
   if (!ok) return;
-  state.photoData = null; state.ocrResult = '';
+  TTS.stop();
+  try { await idbDelete(IDB_PHOTO_KEY); } catch(err) {}
+  state.hasPhoto = false;
+  state.ocrResult = '';
   document.getElementById('ocrResult').value = '';
-  // Clear file inputs
   document.getElementById('fileInput').value = '';
   document.getElementById('cameraInput').value = '';
-  hidePhoto(); saveState();
+  hidePhoto();
+  saveState();
 };
 
 document.getElementById('ocrBtn').onclick = async () => {
-  if (!state.photoData) { showToast('Спочатку додайте фото', 'error'); return; }
+  if (!state.hasPhoto) { showToast('Спочатку додайте фото', 'error'); return; }
   
   if (!canUse('scan')) {
     await limitReachedModal('scan');
@@ -1957,7 +1975,11 @@ document.getElementById('ocrBtn').onclick = async () => {
   btn.innerHTML = '<span class="loader"></span> Ініціалізація...';
   btn.disabled = true;
   try {
-    const ocrText = await performOCR(state.photoData, state.photoSrcLang);
+    const blob = await idbGet(IDB_PHOTO_KEY);
+    if (!(blob instanceof Blob)) throw new Error('Зображення не знайдено');
+    const imageSource = await blobToDataURL(blob);
+    
+    const ocrText = await performOCR(imageSource, state.photoSrcLang);
     if (!ocrText.trim()) throw new Error('Текст не знайдено на зображенні');
     
     incrementUsage('scan');
