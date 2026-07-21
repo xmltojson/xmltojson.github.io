@@ -601,9 +601,12 @@ input:checked + .toggle-slider:before {
 }
 
 .form-group textarea {
-  min-height: 100px;
+  min-height: 140px;
   resize: vertical;
   font-family: 'Consolas', monospace;
+  white-space: pre;
+  overflow-wrap: normal;
+  overflow-x: auto;
 }
 
 .checkbox-row {
@@ -898,6 +901,24 @@ input:checked + .toggle-slider:before {
   background: rgba(239, 68, 68, 0.15);
   border-radius: 4px;
 }
+
+.format-example {
+  background: var(--bg-primary);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 10px;
+  margin-bottom: 12px;
+  font-size: 11px;
+  color: var(--text-secondary);
+}
+
+.format-example pre {
+  font-family: 'Consolas', monospace;
+  white-space: pre-wrap;
+  word-break: break-word;
+  margin-top: 6px;
+  color: var(--accent);
+}
 </style>
 </head>
 <body>
@@ -983,19 +1004,20 @@ input:checked + .toggle-slider:before {
     </div>
     <div class="form-group">
       <label data-i18n="importFormat">Формат</label>
-      <select id="importFormat">
+      <select id="importFormat" onchange="updateImportPlaceholder()">
         <option value="json">JSON</option>
         <option value="yaml">YAML</option>
         <option value="gherkin">Gherkin (.feature)</option>
       </select>
     </div>
+    <div class="format-example" id="formatExample"></div>
     <div class="form-group">
       <label data-i18n="importFile">Файл</label>
       <input type="file" id="importFile" accept=".json,.yaml,.yml,.feature,.txt">
     </div>
     <div class="form-group">
       <label data-i18n="orPaste">Або вставити текст</label>
-      <textarea id="importText" placeholder="Feature: Login&#10;  Scenario: Successful login&#10;    Given I open the homepage&#10;    When I click login&#10;    Then I see dashboard"></textarea>
+      <textarea id="importText"></textarea>
     </div>
     <div class="checkbox-row">
       <input type="checkbox" id="autoRunAfterImport" class="checkbox">
@@ -1144,6 +1166,8 @@ const translations = {
     stepIsDisabled: "Крок вимкнено",
     providFileOrText: "Оберіть файл або вставте текст",
     importError: "Помилка імпорту",
+    importEmpty: "Немає сценаріїв для імпорту",
+    importInvalidStructure: "Некоректна структура: очікується масив груп з полями name та steps",
     filesTitle: "Управління файлами",
     filesHint: "Завантажені файли зберігаються в браузері та доступні у кроках \"upload file\" за іменем.",
     dropFilesHere: "Перетягніть файли сюди",
@@ -1155,7 +1179,10 @@ const translations = {
     storageUsed: "Використано: {used}",
     attachFile: "Прикріпити файл",
     fileMissing: "Файл відсутній",
-    chooseFile: "Оберіть файл"
+    chooseFile: "Оберіть файл",
+    formatHintJson: "Масив груп. Кожна група має name та масив steps з полями type (given/when/then/and) і text.",
+    formatHintYaml: "Список груп у форматі YAML. Кожна група — name та steps (type, text).",
+    formatHintGherkin: "Стандартний Gherkin: Feature, Scenario, та кроки Given/When/Then/And."
   },
   en: {
     appTitle: "Application Verifier",
@@ -1240,6 +1267,8 @@ const translations = {
     stepIsDisabled: "Step is disabled",
     providFileOrText: "Provide a file or paste text",
     importError: "Import error",
+    importEmpty: "No scenarios to import",
+    importInvalidStructure: "Invalid structure: expected an array of groups with name and steps fields",
     filesTitle: "Files Manager",
     filesHint: "Uploaded files are stored in the browser and accessible in \"upload file\" steps by name.",
     dropFilesHere: "Drop files here",
@@ -1251,8 +1280,40 @@ const translations = {
     storageUsed: "Used: {used}",
     attachFile: "Attach file",
     fileMissing: "File missing",
-    chooseFile: "Choose file"
+    chooseFile: "Choose file",
+    formatHintJson: "Array of groups. Each group has name and a steps array with type (given/when/then/and) and text.",
+    formatHintYaml: "List of groups in YAML. Each group has name and steps (type, text).",
+    formatHintGherkin: "Standard Gherkin: Feature, Scenario, and Given/When/Then/And steps."
   }
+};
+
+// ============ Import format examples ============
+const IMPORT_EXAMPLES = {
+  json: `[
+  {
+    "name": "Login scenario",
+    "disabled": false,
+    "steps": [
+      { "type": "given", "text": "I open https://example.com" },
+      { "type": "when", "text": "I click on \\"#login\\"" },
+      { "type": "then", "text": "I see \\"Dashboard\\"" }
+    ]
+  }
+]`,
+  yaml: `- name: Login scenario
+  disabled: false
+  steps:
+    - type: given
+      text: I open https://example.com
+    - type: when
+      text: I click on "#login"
+    - type: then
+      text: I see "Dashboard"`,
+  gherkin: `Feature: Login
+  Scenario: Successful login
+    Given I open https://example.com
+    When I click on "#login"
+    Then I see "Dashboard"`
 };
 
 // ============ Custom Dialog System ============
@@ -2339,8 +2400,6 @@ class TestDriver {
     await this.wait(200);
   }
 
-  // ============ NEW: Verify selected option in <select> ============
-  // Matches by value OR by visible text (with case-insensitive fallback and contains)
   async assertSelectedOption(selector, expected) {
     log(`🔍 Check selected option in ${selector} equals "${expected}"`, 'info');
     const el = await this.findElement(selector);
@@ -2349,7 +2408,6 @@ class TestDriver {
       throw new Error(`Element "${selector}" is not a <select> (got <${el.tagName.toLowerCase()}>)`);
     }
     
-    // Handle multi-select
     if (el.multiple) {
       const selectedOptions = Array.from(el.selectedOptions);
       if (selectedOptions.length === 0) {
@@ -2371,7 +2429,6 @@ class TestDriver {
       return;
     }
     
-    // Single-select
     const idx = el.selectedIndex;
     if (idx < 0) {
       throw new Error(`No option selected in ${selector}`);
@@ -2404,7 +2461,6 @@ class TestDriver {
     log(`✓ Selected in ${selector}: "${currentText}" (value="${currentValue}")`, 'success');
   }
 
-  // Assert exact selected value (strict value comparison)
   async assertSelectedValue(selector, expectedValue) {
     log(`🔍 Check ${selector} selected value equals "${expectedValue}"`, 'info');
     const el = await this.findElement(selector);
@@ -2426,7 +2482,6 @@ class TestDriver {
     log(`✓ Selected value in ${selector} = "${expectedValue}"`, 'success');
   }
 
-  // Assert selected option's visible text (strict text comparison)
   async assertSelectedText(selector, expectedText) {
     log(`🔍 Check ${selector} selected text equals "${expectedText}"`, 'info');
     const el = await this.findElement(selector);
@@ -2461,21 +2516,15 @@ class TestDriver {
 
   async assertVisibleText(text) {
     const doc = this.getDoc();
-    const win = this.getWin();
-
-    // Normalize both search text and DOM text: 
-    // collapse whitespace-only OR keep exact newlines depending on mode
     const searchText = text;
     const hasNewlines = /[\n\r]/.test(searchText);
 
-    // Helper: normalize whitespace but preserve line breaks
     const normalize = (s) => hasNewlines 
       ? s.replace(/\r\n/g, '\n').replace(/[ \t]+/g, ' ')
       : s.replace(/\s+/g, ' ').trim();
 
     const needle = normalize(searchText);
 
-    // Walk all visible elements and check their combined text
     const walker = doc.createTreeWalker(doc.body, NodeFilter.SHOW_ELEMENT, {
       acceptNode: (el) => {
         if (!this.isVisible(el)) return NodeFilter.FILTER_REJECT;
@@ -2485,8 +2534,6 @@ class TestDriver {
 
     let el;
     while ((el = walker.nextNode())) {
-      // For multi-line search, use innerText (respects <br>, block boundaries)
-      // For single-line, use textContent
       const raw = hasNewlines 
         ? (el.innerText || el.textContent || '')
         : (el.textContent || '');
@@ -2604,7 +2651,6 @@ const STEP_PATTERNS = [
     re: /^(?:I )?(?:upload|attach|завантажити|прикріпити)\s+file\s+["']([^"']+)["']$/i,
     fn: async (m, d) => await d.uploadFile(m[1], null) },
 
-  // ============ NEW: Verify selected option ============
   { name: 'Verify selected option in select (strict value match)',
     example: 'select "#country" has value "UA"  |  select "#country" selected value "UA"',
     re: /^(?:select|dropdown|випадаючий список)\s+["']?([^"']+?)["']?\s+(?:has value|selected value|обране значення|має значення)\s+["'](.+?)["']$/i,
@@ -2877,10 +2923,64 @@ function stopRun() {
 // ============ Import/Export ============
 function openImport() {
   document.getElementById('importModal').classList.add('active');
+  updateImportPlaceholder();
+}
+
+// FIXED: keep placeholder + example in sync with selected format
+function updateImportPlaceholder() {
+  const format = document.getElementById('importFormat').value;
+  const textarea = document.getElementById('importText');
+  const exampleBox = document.getElementById('formatExample');
+
+  const example = IMPORT_EXAMPLES[format] || '';
+  textarea.placeholder = example;
+
+  let hintKey = 'formatHintJson';
+  if (format === 'yaml') hintKey = 'formatHintYaml';
+  else if (format === 'gherkin') hintKey = 'formatHintGherkin';
+
+  exampleBox.innerHTML = `<strong>${escapeHtml(t(hintKey))}</strong><pre>${escapeHtml(example)}</pre>`;
 }
 
 function closeModal(id) {
   document.getElementById(id).classList.remove('active');
+}
+
+// FIXED: normalize + validate imported group structure
+function normalizeImportedGroups(raw) {
+  if (!Array.isArray(raw)) {
+    throw new Error(t('importInvalidStructure'));
+  }
+  if (raw.length === 0) {
+    throw new Error(t('importEmpty'));
+  }
+
+  const validTypes = ['given', 'when', 'then', 'and'];
+
+  return raw.map((g, gi) => {
+    if (!g || typeof g !== 'object') {
+      throw new Error(`${t('importInvalidStructure')} (#${gi + 1})`);
+    }
+    const rawSteps = Array.isArray(g.steps) ? g.steps : [];
+    return {
+      id: Date.now() + Math.random(),
+      name: (typeof g.name === 'string' && g.name.trim()) ? g.name.trim() : `Imported ${gi + 1}`,
+      collapsed: false,
+      selected: false,
+      disabled: g.disabled === true,
+      steps: rawSteps.map(s => {
+        const type = (s && typeof s.type === 'string') ? s.type.trim().toLowerCase() : 'given';
+        return {
+          id: Date.now() + Math.random(),
+          type: validTypes.includes(type) ? type : 'given',
+          text: (s && typeof s.text === 'string') ? s.text : '',
+          status: null,
+          selected: false,
+          disabled: s && s.disabled === true
+        };
+      })
+    };
+  });
 }
 
 async function performImport() {
@@ -2892,40 +2992,34 @@ async function performImport() {
   
   const doImport = async (content) => {
     try {
-      let groups = [];
-      if (format === 'json') groups = JSON.parse(content);
-      else if (format === 'yaml') groups = jsyaml.load(content);
-      else if (format === 'gherkin') groups = parseGherkin(content);
+      let raw = [];
+      if (format === 'json') {
+        raw = JSON.parse(content);
+      } else if (format === 'yaml') {
+        raw = jsyaml.load(content);
+      } else if (format === 'gherkin') {
+        raw = parseGherkin(content);
+      }
       
-      if (!Array.isArray(groups)) throw new Error('Expected array of groups');
+      const normalized = normalizeImportedGroups(raw);
       
       if (replace) state.groups = [];
       
       const importedIndices = [];
-      groups.forEach(g => {
+      normalized.forEach(g => {
         importedIndices.push(state.groups.length);
-        state.groups.push({
-          id: Date.now() + Math.random(),
-          name: g.name || 'Imported',
-          collapsed: false,
-          selected: false,
-          disabled: g.disabled || false,
-          steps: (g.steps||[]).map(s => ({
-            id: Date.now()+Math.random(),
-            type: s.type || 'given',
-            text: s.text || '',
-            status: null,
-            selected: false,
-            disabled: s.disabled || false
-          }))
-        });
+        state.groups.push(g);
       });
       
       saveState();
       render();
       closeModal('importModal');
       toast(t('imported'), 'success');
-      log(`📥 ${t('imported')}: ${groups.length} scenarios`, 'success');
+      log(`📥 ${t('imported')}: ${normalized.length} scenarios`, 'success');
+      
+      // clear inputs after successful import
+      document.getElementById('importText').value = '';
+      document.getElementById('importFile').value = '';
       
       if (autoRun) {
         log(`🚀 Auto-run after import`, 'info');
@@ -2966,9 +3060,9 @@ function parseGherkin(text) {
     if (!line || line.startsWith('#')) return;
     
     if (/^(Feature|Функція):/i.test(line)) {
-      // Skip
+      // Feature line — no group yet, skip
     } else if (/^(Scenario|Сценарій):/i.test(line)) {
-      currentGroup = { name: line.replace(/^(Scenario|Сценарій):\s*/i,''), steps: [] };
+      currentGroup = { name: line.replace(/^(Scenario|Сценарій):\s*/i,'').trim(), steps: [] };
       groups.push(currentGroup);
     } else {
       const m = line.match(/^(Given|When|Then|And|But|Дано|Коли|Тоді|І|Але)\s+(.+)$/i);
@@ -2978,7 +3072,7 @@ function parseGherkin(text) {
         if (/given|дано/i.test(kw)) type = 'given';
         else if (/when|коли/i.test(kw)) type = 'when';
         else if (/then|тоді/i.test(kw)) type = 'then';
-        currentGroup.steps.push({ type, text: m[2] });
+        currentGroup.steps.push({ type, text: m[2].trim() });
       }
     }
   });
@@ -3069,11 +3163,11 @@ function loadTarget() {
 }
 
 function toast(msg, type='info') {
-  const t = document.createElement('div');
-  t.className = 'toast ' + type;
-  t.textContent = msg;
-  document.body.appendChild(t);
-  setTimeout(() => t.remove(), 3000);
+  const el = document.createElement('div');
+  el.className = 'toast ' + type;
+  el.textContent = msg;
+  document.body.appendChild(el);
+  setTimeout(() => el.remove(), 3000);
 }
 
 // ============ Init ============
@@ -3128,6 +3222,7 @@ window.addEventListener('DOMContentLoaded', () => {
   loadDefaultScenarios();
   applyLang();
   render();
+  updateImportPlaceholder();
 });
 
 window.addEventListener('beforeunload', () => {
