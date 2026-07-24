@@ -2,7 +2,7 @@ Dear Community,
 
 Let's light up the sky! 🎆
 
-We're thrilled to present our **Interactive Fireworks Show Deluxe** —
+We're thrilled to present our **Interactive Fireworks Show** —
 a mesmerizing canvas-based fireworks simulation that brings the magic of a real pyrotechnic display right to your screen. Click anywhere and watch the night sky come alive!
 
 🎁 WHAT'S INSIDE:
