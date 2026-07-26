@@ -1,0 +1,626 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Конвертер Валют — Live Currency Converter</title>
+
+<meta name="description" content="Конвертер валют з живими курсами обміну та реальними історичними графіками до 10 років. Підтримка 20 валют, українська та англійська мови. | Live currency converter with real-time exchange rates and 10-year historical charts.">
+<meta name="keywords" content="конвертер валют, курс валют, обмін валют, currency converter, exchange rates, UAH, USD, EUR, історичний графік, historical data">
+<meta name="author" content="Currency Converter">
+<meta name="theme-color" content="#667eea">
+<meta name="robots" content="index, follow">
+<meta property="og:type" content="website">
+<meta property="og:title" content="Конвертер Валют — Live Currency Converter">
+<meta property="og:description" content="Конвертуйте валюти за живими курсами з реальними історичними графіками до 10 років.">
+<meta property="og:locale" content="uk_UA">
+<meta property="og:locale:alternate" content="en_US">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Конвертер Валют — Live Currency Converter">
+<meta name="twitter:description" content="Живі курси валют з реальними історичними графіками.">
+
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0' stop-color='%23667eea'/%3E%3Cstop offset='1' stop-color='%23764ba2'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='100' height='100' rx='22' fill='url(%23g)'/%3E%3Ctext x='50' y='52' font-size='58' text-anchor='middle' dominant-baseline='central' fill='white' font-family='Arial,sans-serif' font-weight='bold'%3E%E2%82%B4%3C/text%3E%3C/svg%3E">
+<link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0' stop-color='%23667eea'/%3E%3Cstop offset='1' stop-color='%23764ba2'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='100' height='100' rx='22' fill='url(%23g)'/%3E%3Ctext x='50' y='52' font-size='58' text-anchor='middle' dominant-baseline='central' fill='white' font-family='Arial,sans-serif' font-weight='bold'%3E%E2%82%B4%3C/text%3E%3C/svg%3E">
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<style>
+  *{margin:0;padding:0;box-sizing:border-box;font-family:'Segoe UI',Tahoma,sans-serif;-webkit-tap-highlight-color:transparent}
+  :root{
+    --bg1:#667eea;--bg2:#764ba2;--card:rgba(255,255,255,.97);
+    --accent:#667eea;--accent2:#5568d3;--text:#2d3748;--muted:#718096;
+    --border:#e2e8f0;--soft:#f6f8ff;--green:#38a169;--red:#e53e3e;
+  }
+  html,body{width:100%;overflow-x:hidden}
+  body{
+    background:linear-gradient(135deg,var(--bg1),var(--bg2));
+    min-height:100vh;min-height:100dvh;display:flex;align-items:center;
+    justify-content:center;padding:16px;color:var(--text)
+  }
+  .app{
+    background:var(--card);border-radius:26px;
+    box-shadow:0 24px 70px rgba(0,0,0,.32);
+    padding:32px;width:100%;max-width:1000px;backdrop-filter:blur(12px)
+  }
+
+  .header{display:flex;align-items:center;justify-content:space-between;
+    margin-bottom:26px;flex-wrap:wrap;gap:14px}
+  .title{display:flex;align-items:center;gap:12px;font-size:27px;
+    font-weight:700;color:var(--accent2)}
+  .title .icon{font-size:34px;animation:spin 8s linear infinite;
+    filter:drop-shadow(0 3px 6px rgba(102,126,234,.4))}
+  @keyframes spin{from{transform:rotate(0)}to{transform:rotate(360deg)}}
+  .lang-switch{display:flex;background:#edf2f7;border-radius:12px;padding:4px;gap:4px}
+  .lang-switch button{border:none;background:transparent;padding:9px 18px;
+    border-radius:9px;cursor:pointer;font-weight:600;color:var(--muted);transition:all .2s}
+  .lang-switch button.active{background:var(--accent);color:#fff;
+    box-shadow:0 4px 12px rgba(102,126,234,.4)}
+
+  .panel{background:linear-gradient(135deg,#f8faff,#f1f4ff);
+    border:1px solid #e9edff;border-radius:20px;padding:24px;margin-bottom:22px}
+  .converter{display:grid;grid-template-columns:1fr auto 1fr;gap:18px;align-items:end}
+  .field{min-width:0}
+  .field label{display:block;font-size:12px;letter-spacing:.03em;
+    text-transform:uppercase;color:var(--muted);margin-bottom:8px;font-weight:700}
+  .field .input-row{display:flex;gap:8px}
+  .field input{flex:1 1 auto;width:100%;min-width:0;padding:15px;font-size:19px;
+    border:2px solid var(--border);border-radius:13px;outline:none;
+    transition:border .2s,box-shadow .2s;font-weight:700;background:#fff}
+  .field input:focus{border-color:var(--accent);box-shadow:0 0 0 4px rgba(102,126,234,.12)}
+  .field select{flex:0 0 auto;padding:15px 8px;font-size:15px;border:2px solid var(--border);
+    border-radius:13px;outline:none;cursor:pointer;background:#fff;font-weight:600;max-width:145px}
+  .field select:focus{border-color:var(--accent)}
+  .swap-btn{width:54px;height:54px;border-radius:50%;border:none;background:var(--accent);
+    color:#fff;font-size:24px;cursor:pointer;transition:all .3s;
+    box-shadow:0 6px 18px rgba(102,126,234,.45);margin-bottom:2px;flex-shrink:0}
+  .swap-btn:hover{background:var(--accent2);transform:rotate(180deg) scale(1.12)}
+
+  .rate-info{text-align:center;background:linear-gradient(135deg,#eef2ff,#e6ecff);
+    border:1px solid #dfe6ff;padding:20px;border-radius:16px;margin-bottom:24px}
+  .rate-info .result{font-size:26px;font-weight:800;color:var(--accent2);
+    margin-bottom:6px;word-break:break-word;letter-spacing:-.01em}
+  .rate-info .rate{color:var(--muted);font-size:14px;font-weight:600}
+
+  .chart-section{background:#fff;border:1px solid #eef0f5;border-radius:20px;
+    padding:22px;box-shadow:0 4px 16px rgba(0,0,0,.03)}
+  .chart-header{display:flex;justify-content:space-between;align-items:center;
+    margin-bottom:18px;flex-wrap:wrap;gap:12px}
+  .chart-title-wrap{display:flex;flex-direction:column;gap:6px}
+  .chart-title{font-weight:800;font-size:17px}
+  .chart-stats{display:flex;gap:8px;flex-wrap:wrap}
+  .chart-stats .stat{background:#f4f6fb;border-radius:9px;padding:5px 10px;
+    font-size:12px;color:var(--muted);font-weight:600;display:flex;gap:5px;align-items:center}
+  .chart-stats .stat b{color:var(--text);font-weight:700}
+  .chart-stats .stat b.up{color:var(--green)}
+  .chart-stats .stat b.down{color:var(--red)}
+
+  .period-btns{display:flex;flex-wrap:wrap;gap:6px;justify-content:flex-end}
+  .period-btns button{border:1px solid var(--border);background:#fff;padding:7px 12px;
+    border-radius:9px;cursor:pointer;font-size:12.5px;font-weight:700;color:var(--muted);
+    transition:all .18s;white-space:nowrap}
+  .period-btns button:hover{border-color:var(--accent);color:var(--accent)}
+  .period-btns button.active{background:var(--accent);color:#fff;border-color:var(--accent);
+    box-shadow:0 3px 10px rgba(102,126,234,.35)}
+
+  .chart-container{position:relative;height:300px;width:100%}
+  .status{text-align:center;color:var(--muted);font-size:13px;margin-top:16px}
+  .status.error{color:var(--red)}
+  .loader{display:inline-block;width:14px;height:14px;border:2px solid var(--border);
+    border-top-color:var(--accent);border-radius:50%;animation:spin .7s linear infinite;
+    vertical-align:middle}
+  .note{text-align:center;font-size:11px;color:#a0aec0;margin-top:8px}
+
+  @media (orientation:landscape) and (max-height:520px){
+    body{align-items:flex-start}
+    .app{max-width:1200px;padding:20px}
+    .chart-container{height:180px}
+    .header{margin-bottom:16px}.panel{padding:16px;margin-bottom:14px}
+    .rate-info{margin-bottom:14px;padding:12px}
+    .converter{gap:14px}
+  }
+  @media (max-width:760px){.period-btns{justify-content:center}}
+  @media (max-width:640px){
+    body{padding:10px}
+    .app{padding:18px;border-radius:20px}
+    .panel{padding:16px}
+    .converter{grid-template-columns:1fr;gap:14px}
+    .swap-btn{justify-self:center;transform:rotate(90deg);margin:0;width:46px;height:46px}
+    .swap-btn:hover{transform:rotate(270deg) scale(1.08)}
+    .title{font-size:21px}.title .icon{font-size:27px}
+    .field input{font-size:17px;padding:13px}
+    .field select{font-size:14px;max-width:135px}
+    .rate-info .result{font-size:21px}
+    .chart-section{padding:16px}
+    .chart-container{height:240px}
+    .lang-switch button{padding:8px 14px;font-size:13px}
+    .chart-header{justify-content:center}
+    .chart-title-wrap{align-items:center;text-align:center}
+    .chart-stats{justify-content:center}
+    .period-btns button{padding:6px 10px;font-size:11.5px}
+  }
+  @media (max-width:380px){
+    .field select{max-width:118px;font-size:13px}
+    .title{font-size:19px}
+    .period-btns button{padding:5px 8px;font-size:11px}
+    .chart-stats .stat{font-size:11px;padding:4px 8px}
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="header">
+    <div class="title"><span class="icon">💱</span><span id="appTitle">Конвертер Валют</span></div>
+    <div class="lang-switch">
+      <button data-lang="uk">УКР</button>
+      <button data-lang="en">ENG</button>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="converter">
+      <div class="field">
+        <label id="lblFrom">З валюти</label>
+        <div class="input-row">
+          <input type="number" id="fromAmount" value="1" min="0" step="any" inputmode="decimal">
+          <select id="fromCurrency"></select>
+        </div>
+      </div>
+      <button class="swap-btn" id="swapBtn" title="Поміняти">⇄</button>
+      <div class="field">
+        <label id="lblTo">У валюту</label>
+        <div class="input-row">
+          <input type="number" id="toAmount" value="0" min="0" step="any" inputmode="decimal">
+          <select id="toCurrency"></select>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="rate-info">
+    <div class="result" id="resultText">—</div>
+    <div class="rate" id="rateText">—</div>
+  </div>
+
+  <div class="chart-section">
+    <div class="chart-header">
+      <div class="chart-title-wrap">
+        <div class="chart-title" id="chartTitle">Історичний курс</div>
+        <div class="chart-stats" id="chartStats"></div>
+      </div>
+      <div class="period-btns" id="periodBtns">
+        <button data-days="7">7Д</button>
+        <button data-days="30">30Д</button>
+        <button data-days="90">90Д</button>
+        <button data-days="180">180Д</button>
+        <button data-days="270">270Д</button>
+        <button data-days="365">1Р</button>
+        <button data-days="1095">3Р</button>
+        <button data-days="1825">5Р</button>
+        <button data-days="3650">10Р</button>
+      </div>
+    </div>
+    <div class="chart-container"><canvas id="chart"></canvas></div>
+    <div class="note" id="chartNote"></div>
+  </div>
+
+  <div class="status" id="status"></div>
+</div>
+
+<script>
+// ============ Translations ============
+const I18N = {
+  uk: {
+    title:"Конвертер Валют", from:"З валюти", to:"У валюту",
+    chartTitle:"Історичний курс", swap:"Поміняти",
+    loading:"Завантаження курсів...", loadingHist:"Завантаження історії...",
+    updated:"Оновлено:", error:"Помилка завантаження даних",
+    rate:(a,b,r)=>`1 ${a} = ${r} ${b}`,
+    result:(amt,a,res,b)=>`${amt} ${a} = ${res} ${b}`,
+    noteReal:"* Реальні історичні дані (ЄЦБ / Frankfurter API)",
+    noteMixed:"* Історичні дані: реальні курси ЄЦБ + опорні точки НБУ",
+    noteModel:"* Дані змодельовано (історія недоступна)",
+    min:"Мін", max:"Макс", change:"Зміна",
+    days:{7:"7Д",30:"30Д",90:"90Д",180:"180Д",270:"270Д",365:"1Р",1095:"3Р",1825:"5Р",3650:"10Р"}
+  },
+  en: {
+    title:"Currency Converter", from:"From currency", to:"To currency",
+    chartTitle:"Historical Rate", swap:"Swap",
+    loading:"Loading rates...", loadingHist:"Loading history...",
+    updated:"Updated:", error:"Failed to load data",
+    rate:(a,b,r)=>`1 ${a} = ${r} ${b}`,
+    result:(amt,a,res,b)=>`${amt} ${a} = ${res} ${b}`,
+    noteReal:"* Real historical data (ECB / Frankfurter API)",
+    noteMixed:"* Historical data: real ECB rates + NBU reference points",
+    noteModel:"* Data modeled (history unavailable)",
+    min:"Min", max:"Max", change:"Change",
+    days:{7:"7D",30:"30D",90:"90D",180:"180D",270:"270D",365:"1Y",1095:"3Y",1825:"5Y",3650:"10Y"}
+  }
+};
+
+// ============ 20 Currencies ============
+const CURRENCY_NAMES = {
+  UAH:{uk:"Гривня UA",en:"Hryvnia UA"}, USD:{uk:"Долар США US",en:"US Dollar US"},
+  EUR:{uk:"Євро EU",en:"Euro EU"}, GBP:{uk:"Фунт GB",en:"Pound GB"},
+  PLN:{uk:"Злотий PL",en:"Zloty PL"}, JPY:{uk:"Єна JP",en:"Yen JP"},
+  CHF:{uk:"Франк CH",en:"Franc CH"}, CAD:{uk:"Канад. долар CA",en:"Canadian Dollar CA"},
+  CNY:{uk:"Юань CN",en:"Yuan CN"}, TRY:{uk:"Ліра TR",en:"Lira TR"},
+  AUD:{uk:"Австрал. долар AU",en:"Australian Dollar AU"}, NZD:{uk:"Новозел. долар NZ",en:"NZ Dollar NZ"},
+  SEK:{uk:"Крона SEK",en:"Swedish Krona SEK"}, NOK:{uk:"Крона NOK",en:"Norwegian Krone NOK"},
+  DKK:{uk:"Крона DKK",en:"Danish Krone DKK"}, CZK:{uk:"Чеська крона CZ",en:"Czech Koruna CZ"},
+  HUF:{uk:"Форинт HU",en:"Forint HU"}, INR:{uk:"Рупія IN",en:"Indian Rupee IN"},
+  KRW:{uk:"Вона KR",en:"Won KR"}, MXN:{uk:"Песо MX",en:"Mexican Peso MX"}
+};
+const CURRENCIES = Object.keys(CURRENCY_NAMES);
+
+const FLAGS = {
+  UAH:"🇺🇦",USD:"🇺🇸",EUR:"🇪🇺",GBP:"🇬🇧",PLN:"🇵🇱",JPY:"🇯🇵",CHF:"🇨🇭",
+  CAD:"🇨🇦",CNY:"🇨🇳",TRY:"🇹🇷",AUD:"🇦🇺",NZD:"🇳🇿",SEK:"🇸🇪",NOK:"🇳🇴",
+  DKK:"🇩🇰",CZK:"🇨🇿",HUF:"🇭🇺",INR:"🇮🇳",KRW:"🇰🇷",MXN:"🇲🇽"
+};
+
+const FRANKFURTER_SUPPORTED = new Set([
+  "USD","EUR","GBP","PLN","JPY","CHF","CAD","CNY",
+  "AUD","NZD","SEK","NOK","DKK","CZK","HUF","INR","MXN","TRY"
+]);
+
+// ============ IMPROVED: Monthly UAH/USD reference points ============
+// Keys are "YYYY-MM" -> UAH per 1 USD (NBU official month-end/avg reference).
+// Captures the 2014-15 devaluation, 2020 COVID dip, 2022 war-time fixed
+// peg jump (24.98 -> 36.57 in July 2022), and 2023-2025 managed float.
+const UAH_MONTHLY = {
+  "2013-01":8.14,"2013-06":8.13,"2013-12":8.24,
+  "2014-01":8.24,"2014-03":10.95,"2014-06":11.83,"2014-09":13.05,"2014-12":15.77,
+  "2015-01":15.77,"2015-02":27.98,"2015-03":23.44,"2015-06":21.02,"2015-09":21.35,"2015-12":24.00,
+  "2016-01":24.42,"2016-04":25.42,"2016-08":24.85,"2016-12":27.19,
+  "2017-01":27.15,"2017-04":26.68,"2017-07":25.91,"2017-10":26.55,"2017-12":28.07,
+  "2018-01":28.11,"2018-05":26.18,"2018-09":28.24,"2018-12":27.69,
+  "2019-01":27.79,"2019-04":26.94,"2019-07":25.61,"2019-10":24.87,"2019-12":23.69,
+  "2020-01":24.30,"2020-03":27.68,"2020-06":26.69,"2020-09":28.30,"2020-12":28.27,
+  "2021-01":28.18,"2021-04":27.86,"2021-07":27.30,"2021-10":26.24,"2021-12":27.28,
+  "2022-01":28.40,"2022-02":29.25,"2022-06":29.25,"2022-07":36.57,"2022-10":36.57,"2022-12":36.57,
+  "2023-01":36.57,"2023-04":36.57,"2023-07":36.90,"2023-10":36.53,"2023-12":37.98,
+  "2024-01":37.90,"2024-04":39.55,"2024-07":41.16,"2024-10":41.20,"2024-12":42.03,
+  "2025-01":42.05,"2025-04":41.60,"2025-07":41.60,"2025-10":41.30
+};
+
+const KRW_MONTHLY = {
+  "2013-01":1064,"2013-06":1142,"2013-12":1055,
+  "2014-06":1012,"2014-12":1099,
+  "2015-06":1114,"2015-12":1172,
+  "2016-06":1152,"2016-12":1208,
+  "2017-06":1144,"2017-12":1071,
+  "2018-06":1114,"2018-12":1116,
+  "2019-06":1155,"2019-12":1157,
+  "2020-03":1217,"2020-06":1201,"2020-12":1086,
+  "2021-06":1130,"2021-12":1189,
+  "2022-06":1298,"2022-10":1426,"2022-12":1267,
+  "2023-06":1317,"2023-12":1289,
+  "2024-06":1376,"2024-12":1470,
+  "2025-06":1370,"2025-10":1420
+};
+
+// Build sorted numeric timeline [{t:ms, v:rate}, ...] from a monthly map.
+function buildTimeline(monthly){
+  return Object.keys(monthly).sort().map(k=>{
+    const [y,m]=k.split("-").map(Number);
+    return { t:new Date(y, m-1, 15).getTime(), v:monthly[k] };
+  });
+}
+const UAH_TL = buildTimeline(UAH_MONTHLY);
+const KRW_TL = buildTimeline(KRW_MONTHLY);
+const ANCHORED = { UAH:UAH_TL, KRW:KRW_TL };
+
+// Linear interpolation across the monthly timeline for any date.
+function interpTimeline(tl, date){
+  const t = date.getTime();
+  if (t <= tl[0].t) return tl[0].v;
+  if (t >= tl[tl.length-1].t) return tl[tl.length-1].v;
+  // binary search
+  let lo=0, hi=tl.length-1;
+  while (hi-lo>1){
+    const mid=(lo+hi)>>1;
+    if (tl[mid].t <= t) lo=mid; else hi=mid;
+  }
+  const a=tl[lo], b=tl[hi];
+  const frac=(t-a.t)/(b.t-a.t);
+  return a.v + (b.v-a.v)*frac;
+}
+
+// ============ State ============
+const DEFAULT_STATE = { lang:"uk", from:"USD", to:"UAH", amount:1, days:30 };
+let state = loadState(), chart=null, latestRate=null;
+const histCache = {};
+function loadState(){ try{return {...DEFAULT_STATE,...(JSON.parse(localStorage.getItem("ccState"))||{})}}catch{return {...DEFAULT_STATE}} }
+function saveState(){ localStorage.setItem("ccState", JSON.stringify(state)); }
+
+// ============ DOM ============
+const $=id=>document.getElementById(id);
+const els={
+  fromAmount:$("fromAmount"),toAmount:$("toAmount"),fromCurrency:$("fromCurrency"),
+  toCurrency:$("toCurrency"),swapBtn:$("swapBtn"),resultText:$("resultText"),
+  rateText:$("rateText"),status:$("status"),appTitle:$("appTitle"),lblFrom:$("lblFrom"),
+  lblTo:$("lblTo"),chartTitle:$("chartTitle"),chartNote:$("chartNote"),chartStats:$("chartStats")
+};
+
+// ============ UI ============
+function populateSelects(){
+  [els.fromCurrency,els.toCurrency].forEach(sel=>{
+    sel.innerHTML="";
+    CURRENCIES.forEach(c=>{
+      const o=document.createElement("option");
+      o.value=c;
+      o.textContent=`${FLAGS[c]} ${c} — ${CURRENCY_NAMES[c][state.lang]}`;
+      sel.appendChild(o);
+    });
+  });
+  els.fromCurrency.value=state.from; els.toCurrency.value=state.to;
+}
+function applyLanguage(){
+  const t=I18N[state.lang];
+  els.appTitle.textContent=t.title; els.lblFrom.textContent=t.from;
+  els.lblTo.textContent=t.to; els.chartTitle.textContent=t.chartTitle;
+  els.swapBtn.title=t.swap; document.documentElement.lang=state.lang;
+  document.title=state.lang==="uk"?"Конвертер Валют — Live Currency Converter":"Currency Converter — Live Exchange Rates";
+  document.querySelectorAll(".lang-switch button").forEach(b=>b.classList.toggle("active",b.dataset.lang===state.lang));
+  document.querySelectorAll("#periodBtns button").forEach(b=>b.textContent=t.days[b.dataset.days]);
+  populateSelects(); updateDisplay();
+}
+function applyPeriodActive(){
+  document.querySelectorAll("#periodBtns button").forEach(b=>b.classList.toggle("active",+b.dataset.days===state.days));
+}
+
+// ============ APIs ============
+const LIVE_API="https://open.er-api.com/v6/latest/";
+const FRANK_API="https://api.frankfurter.app";
+
+async function fetchLatest(from,to){
+  const res=await fetch(LIVE_API+from);
+  if(!res.ok) throw new Error("HTTP "+res.status);
+  const data=await res.json();
+  if(data.result!=="success"||!data.rates||data.rates[to]==null) throw new Error("no rate");
+  return data.rates[to];
+}
+
+async function fetchUsdHistory(symbols,days){
+  const end=new Date(),start=new Date(); start.setDate(end.getDate()-days);
+  const fmt=d=>d.toISOString().slice(0,10);
+  const list=[...symbols].filter(s=>s!=="USD");
+  if(!list.length) list.push("EUR");
+  const url=`${FRANK_API}/${fmt(start)}..${fmt(end)}?from=USD&to=${list.join(",")}`;
+  const res=await fetch(url);
+  if(!res.ok) throw new Error("hist HTTP "+res.status);
+  const data=await res.json();
+  const rates=data.rates||{};
+  const dates=Object.keys(rates).sort();
+  if(!dates.length) throw new Error("no dates");
+  return {dates,rates};
+}
+
+function perUsd(cur,date,ecbForDate){
+  if(cur==="USD") return 1;
+  if(ANCHORED[cur]) return interpTimeline(ANCHORED[cur],date);
+  if(FRANKFURTER_SUPPORTED.has(cur)){
+    const v=ecbForDate?ecbForDate[cur]:null;
+    return (v!=null&&isFinite(v))?v:null;
+  }
+  return null;
+}
+
+async function buildHistory(from,to,days){
+  const key=`${from}|${to}|${days}`;
+  if(histCache[key]) return histCache[key];
+
+  let result;
+  try{
+    const fromAnchored=!!ANCHORED[from], toAnchored=!!ANCHORED[to];
+    const needECB=new Set();
+    if(FRANKFURTER_SUPPORTED.has(from)) needECB.add(from);
+    if(FRANKFURTER_SUPPORTED.has(to)) needECB.add(to);
+
+    let ecb=null,dates=null;
+    if(needECB.size){
+      ecb=await fetchUsdHistory(needECB,days);
+      dates=ecb.dates;
+    }
+    if(!dates){
+      dates=[];
+      const end=new Date(),start=new Date(); start.setDate(end.getDate()-days);
+      const stepD=Math.max(1,Math.round(days/170));
+      for(let d=new Date(start);d<=end;d.setDate(d.getDate()+stepD))
+        dates.push(new Date(d).toISOString().slice(0,10));
+    }
+
+    let maxPoints = days<=90 ? dates.length : (days<=365 ? 130 : 200);
+    if(dates.length>maxPoints){
+      const step=dates.length/maxPoints, sampled=[];
+      for(let i=0;i<dates.length;i+=step) sampled.push(dates[Math.floor(i)]);
+      const last=dates[dates.length-1];
+      if(sampled[sampled.length-1]!==last) sampled.push(last);
+      dates=sampled;
+    }
+
+    const anchorUsed = fromAnchored || toAnchored;
+
+    const series=[];
+    for(const dStr of dates){
+      const date=new Date(dStr);
+      const ecbForDate=ecb?ecb.rates[dStr]:null;
+      const fromPU=perUsd(from,date,ecbForDate);
+      const toPU  =perUsd(to,date,ecbForDate);
+      if(fromPU==null||toPU==null||fromPU===0) continue;
+      const v=toPU/fromPU;
+      if(isFinite(v)) series.push({d:dStr,v});
+    }
+    if(!series.length) throw new Error("empty");
+
+    // Calibrate to live rate ONLY for pure-ECB pairs (no anchored currency)
+    if(latestRate!=null && series.length>1 && !anchorUsed){
+      const lastV=series[series.length-1].v;
+      const ratio=latestRate/lastV;
+      if(isFinite(ratio)&&ratio>0&&Math.abs(ratio-1)<0.1){
+        series.forEach(p=>p.v*=ratio);
+      }
+    }
+
+    // For anchored pairs, gently align ONLY the most recent point to the live
+    // rate (last 30 days weighted), keeping all history intact.
+    if(latestRate!=null && series.length>1 && anchorUsed){
+      const lastV=series[series.length-1].v;
+      const diff=latestRate - lastV;
+      if(Math.abs(diff/lastV) < 0.08){
+        const n=series.length, span=Math.min(n, Math.max(2, Math.round(n*0.06)));
+        for(let i=n-span;i<n;i++){
+          const w=(i-(n-span))/(span-1||1); // 0..1 over recent window only
+          series[i].v = series[i].v + diff*w;
+        }
+      }
+    }
+
+    const loc=state.lang==="uk"?"uk-UA":"en-US";
+    const longRange=days>365;
+    const opts=longRange?{year:'2-digit',month:'short'}:{day:'2-digit',month:'2-digit'};
+    const labels=[],values=[];
+    for(const p of series){
+      labels.push(new Date(p.d).toLocaleDateString(loc,opts));
+      values.push(Number(p.v.toFixed(4)));
+    }
+    result={labels,values,real:!anchorUsed,mixed:anchorUsed};
+  }catch(e){
+    console.warn("history fallback:",e);
+    result=buildModeled(from,to,days);
+  }
+  histCache[key]=result;
+  return result;
+}
+
+function buildModeled(from,to,days){
+  let points,stepDays;
+  if(days<=90){points=days;stepDays=1}
+  else if(days<=365){points=60;stepDays=days/60}
+  else{points=90;stepDays=days/90}
+  let seed=0; const k=from+to+days;
+  for(let i=0;i<k.length;i++) seed+=k.charCodeAt(i);
+  const rand=n=>{const x=Math.sin(seed+n*1.37)*10000;return x-Math.floor(x)};
+  const base=latestRate||1, vol=Math.min(.35,.015*Math.sqrt(days/30));
+  const arr=[]; let val=base;
+  for(let i=0;i<points;i++){val=Math.max(base*.4,val+(rand(i)-.5)*base*vol);arr.push(val)}
+  arr[arr.length-1]=base;
+  const today=new Date(),labels=[],values=[];
+  const opts=days>365?{year:'2-digit',month:'short'}:{day:'2-digit',month:'2-digit'};
+  const loc=state.lang==="uk"?"uk-UA":"en-US";
+  for(let i=points-1;i>=0;i--){
+    const d=new Date(today); d.setDate(today.getDate()-Math.round((points-1-i)*stepDays));
+    labels.push(d.toLocaleDateString(loc,opts)); values.push(Number(arr[i].toFixed(4)));
+  }
+  return {labels,values,real:false,mixed:false};
+}
+
+// ============ Logic ============
+function setStatus(m,err=false){els.status.innerHTML=m;els.status.classList.toggle("error",err)}
+function round(n,d=2){return Number(n.toFixed(d))}
+function formatNum(n){return new Intl.NumberFormat(state.lang==="uk"?"uk-UA":"en-US",{maximumFractionDigits:4}).format(n)}
+
+function updateDisplay(){
+  const t=I18N[state.lang];
+  els.fromCurrency.value=state.from; els.toCurrency.value=state.to; els.fromAmount.value=state.amount;
+  applyPeriodActive();
+  if(latestRate!=null){
+    const res=state.amount*latestRate;
+    els.toAmount.value=round(res);
+    els.resultText.textContent=t.result(formatNum(state.amount),state.from,formatNum(res),state.to);
+    els.rateText.textContent=t.rate(state.from,state.to,round(latestRate,4));
+  }
+}
+function renderStats(values){
+  if(!values||!values.length){els.chartStats.innerHTML="";return}
+  const t=I18N[state.lang];
+  const min=Math.min(...values),max=Math.max(...values);
+  const first=values[0],last=values[values.length-1];
+  const chg=first?((last-first)/first*100):0;
+  const cls=chg>=0?"up":"down", sign=chg>=0?"▲":"▼";
+  els.chartStats.innerHTML=
+    `<div class="stat">${t.min} <b>${round(min,4)}</b></div>`+
+    `<div class="stat">${t.max} <b>${round(max,4)}</b></div>`+
+    `<div class="stat">${t.change} <b class="${cls}">${sign} ${Math.abs(chg).toFixed(2)}%</b></div>`;
+}
+async function loadHistoryAndRender(){
+  const t=I18N[state.lang];
+  setStatus(`<span class="loader"></span> ${t.loadingHist}`);
+  try{
+    const hist=await buildHistory(state.from,state.to,state.days);
+    renderChart(hist); renderStats(hist.values);
+    els.chartNote.textContent=hist.real?t.noteReal:(hist.mixed?t.noteMixed:t.noteModel);
+    setStatus(`${t.updated} ${new Date().toLocaleString(state.lang==="uk"?"uk-UA":"en-US")}`);
+  }catch(e){console.error(e);setStatus(t.error,true)}
+}
+async function refreshAll(){
+  const t=I18N[state.lang];
+  if(state.from===state.to){
+    latestRate=1; updateDisplay(); renderChart({labels:["—"],values:[1]});
+    els.chartStats.innerHTML=""; els.chartNote.textContent=""; setStatus(""); return;
+  }
+  setStatus(`<span class="loader"></span> ${t.loading}`);
+  try{
+    latestRate=await fetchLatest(state.from,state.to);
+    updateDisplay(); await loadHistoryAndRender();
+  }catch(e){console.error(e);setStatus(t.error,true)}
+}
+
+// ============ Chart ============
+function baseChartConfig(labels,values){
+  const ctx=$("chart").getContext("2d");
+  const grad=ctx.createLinearGradient(0,0,0,300);
+  grad.addColorStop(0,"rgba(102,126,234,0.35)");
+  grad.addColorStop(1,"rgba(102,126,234,0.02)");
+  return {
+    type:"line",
+    data:{labels,datasets:[{
+      label:`${state.from}/${state.to}`,data:values,borderColor:"#667eea",
+      backgroundColor:grad,fill:true,tension:.25,pointRadius:0,pointHoverRadius:5,borderWidth:2.5
+    }]},
+    options:{
+      responsive:true,maintainAspectRatio:false,
+      interaction:{mode:"index",intersect:false},
+      plugins:{legend:{display:false},
+        tooltip:{callbacks:{label:c=>`${round(c.parsed.y,4)} ${state.to}`}}},
+      scales:{
+        x:{grid:{display:false},ticks:{maxTicksLimit:8,font:{size:10},autoSkip:true}},
+        y:{grid:{color:"#eef"},ticks:{font:{size:10}}}
+      }
+    }
+  };
+}
+function renderChart({labels,values}){ if(chart)chart.destroy(); chart=new Chart($("chart"),baseChartConfig(labels,values)); }
+
+// ============ Events ============
+els.fromAmount.addEventListener("input",()=>{
+  state.amount=parseFloat(els.fromAmount.value)||0; saveState();
+  if(latestRate!=null){
+    const res=state.amount*latestRate; els.toAmount.value=round(res);
+    const t=I18N[state.lang];
+    els.resultText.textContent=t.result(formatNum(state.amount),state.from,formatNum(res),state.to);
+  }
+});
+els.toAmount.addEventListener("input",()=>{
+  const val=parseFloat(els.toAmount.value)||0;
+  if(latestRate){
+    state.amount=round(val/latestRate,4); els.fromAmount.value=state.amount; saveState();
+    const t=I18N[state.lang];
+    els.resultText.textContent=t.result(formatNum(state.amount),state.from,formatNum(val),state.to);
+  }
+});
+els.fromCurrency.addEventListener("change",()=>{state.from=els.fromCurrency.value;saveState();refreshAll()});
+els.toCurrency.addEventListener("change",()=>{state.to=els.toCurrency.value;saveState();refreshAll()});
+els.swapBtn.addEventListener("click",()=>{[state.from,state.to]=[state.to,state.from];saveState();refreshAll()});
+document.querySelectorAll(".lang-switch button").forEach(b=>
+  b.addEventListener("click",()=>{state.lang=b.dataset.lang;saveState();applyLanguage();refreshAll()}));
+document.querySelectorAll("#periodBtns button").forEach(b=>
+  b.addEventListener("click",()=>{state.days=+b.dataset.days;saveState();applyPeriodActive();
+    if(latestRate!=null&&state.from!==state.to) loadHistoryAndRender()}));
+window.addEventListener("resize",()=>{if(chart)chart.resize()});
+window.addEventListener("orientationchange",()=>setTimeout(()=>{if(chart)chart.resize()},300));
+
+// ============ Start ============
+applyLanguage(); refreshAll();
+</script>
+</body>
+</html>
