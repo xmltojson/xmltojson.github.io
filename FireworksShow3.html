@@ -1,1 +1,1713 @@
+<!DOCTYPE html>
+<!-- MIT License
+Copyright (c) 2025-2027 Yuliya Kolesnikova <0009-0000-6151-7415@orcid.org>
+-->
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <link rel="icon" type="image/x-icon" href="favicon.ico">
+    <meta name="theme-color" content="#0c0c1e">
+    <meta name="description" content="Fireworks Show">
+    <title>🎆 Fireworks Show</title>
 
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html,
+        body {
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+        }
+
+        body {
+            color: #ffffff;
+            background: #080818;
+            background: linear-gradient(to bottom, #050510 0%, #0a0a24 35%, #17173f 72%, #29295c 100%);
+            font-family: Arial, Helvetica, sans-serif;
+            -webkit-text-size-adjust: 100%;
+        }
+
+        #canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            z-index: 1;
+            display: block;
+            width: 100%;
+            height: 100%;
+            background: transparent;
+            cursor: crosshair;
+        }
+
+        .cityscape {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            z-index: 2;
+            width: 100%;
+            height: 145px;
+            pointer-events: none;
+        }
+
+        .title {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            z-index: 20;
+            width: 95%;
+            text-align: center;
+            pointer-events: none;
+            transform: translate(-50%, -50%);
+            opacity: 1;
+            transition: opacity 0.6s ease;
+        }
+
+        .title.hidden {
+            opacity: 0;
+        }
+
+        .title h1 {
+            margin-bottom: 10px;
+            font-size: 50px;
+            text-shadow: 0 0 18px rgba(255, 107, 107, 0.9);
+        }
+
+        .title p {
+            font-size: 17px;
+            opacity: 0.78;
+        }
+
+        .compat-message {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            z-index: 10000;
+            display: none;
+            width: 90%;
+            max-width: 420px;
+            padding: 22px;
+            border: 1px solid rgba(255,255,255,0.25);
+            border-radius: 16px;
+            background: #17172d;
+            box-shadow: 0 12px 35px rgba(0,0,0,0.55);
+            text-align: center;
+            line-height: 1.5;
+            transform: translate(-50%, -50%);
+        }
+
+        .controls {
+            position: fixed;
+            bottom: 15px;
+            left: 50%;
+            z-index: 100;
+            width: 95%;
+            max-width: 830px;
+            padding: 9px;
+            border: 1px solid rgba(255,255,255,0.15);
+            border-radius: 22px;
+            background: rgba(12, 12, 30, 0.88);
+            text-align: center;
+            transform: translateX(-50%);
+        }
+
+        .btn {
+            display: inline-block;
+            margin: 3px;
+            padding: 10px 15px;
+            border: 1px solid rgba(255,255,255,0.22);
+            border-radius: 20px;
+            color: #ffffff;
+            background: rgba(255,255,255,0.1);
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: bold;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .btn:active {
+            opacity: 0.75;
+        }
+
+        .btn-primary {
+            border-color: #ff765d;
+            background: #ec665f;
+        }
+
+        .btn-secondary.active {
+            border-color: #31d2e2;
+            background: #1488b5;
+        }
+
+        .settings-backdrop {
+            position: fixed;
+            top: 0;
+            left: 0;
+            z-index: 9998;
+            display: none;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.58);
+        }
+
+        .settings-backdrop.open {
+            display: block;
+        }
+
+        .settings-panel {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            z-index: 9999;
+            display: none;
+            width: 340px;
+            max-width: 92%;
+            max-height: 86vh;
+            padding: 20px;
+            overflow-y: auto;
+            border: 1px solid rgba(255,255,255,0.24);
+            border-radius: 18px;
+            background: #181832;
+            box-shadow: 0 18px 55px rgba(0,0,0,0.72);
+            transform: translate(-50%, -50%);
+        }
+
+        .settings-panel.open {
+            display: block;
+        }
+
+        .settings-header {
+            position: relative;
+            padding-bottom: 13px;
+            margin-bottom: 16px;
+            border-bottom: 1px solid rgba(255,255,255,0.16);
+        }
+
+        .settings-header h3 {
+            font-size: 19px;
+        }
+
+        .close-btn {
+            position: absolute;
+            top: -4px;
+            right: 0;
+            width: 31px;
+            height: 31px;
+            border: 1px solid rgba(255,255,255,0.25);
+            border-radius: 50%;
+            color: #ffffff;
+            background: #38384d;
+            cursor: pointer;
+            font-size: 18px;
+        }
+
+        .setting-group {
+            padding: 13px;
+            margin-bottom: 13px;
+            border: 1px solid rgba(255,255,255,0.09);
+            border-radius: 11px;
+            background: rgba(255,255,255,0.05);
+        }
+
+        .setting-group > label {
+            display: block;
+            margin-bottom: 9px;
+            font-size: 13px;
+            font-weight: bold;
+        }
+
+        .setting-group label span {
+            color: #67c6ff;
+        }
+
+        .setting-group input[type="range"] {
+            width: 100%;
+            cursor: pointer;
+        }
+
+        .toggle-row {
+            position: relative;
+            min-height: 30px;
+            margin-bottom: 11px;
+            padding-right: 55px;
+            font-size: 13px;
+            line-height: 30px;
+            font-weight: bold;
+        }
+
+        .toggle-row:last-child {
+            margin-bottom: 0;
+        }
+
+        .switch {
+            position: absolute;
+            top: 1px;
+            right: 0;
+            width: 46px;
+            height: 26px;
+        }
+
+        .switch input {
+            width: 46px;
+            height: 26px;
+            cursor: pointer;
+        }
+
+        .sound-note {
+            display: block;
+            margin-top: 7px;
+            color: #ffcf75;
+            font-size: 11px;
+            font-weight: normal;
+            line-height: 1.3;
+        }
+
+        .color-options,
+        .pattern-select {
+            text-align: left;
+        }
+
+        .color-btn {
+            display: inline-block;
+            width: 29px;
+            height: 29px;
+            margin: 3px;
+            border: 2px solid rgba(255,255,255,0.32);
+            border-radius: 50%;
+            cursor: pointer;
+            vertical-align: middle;
+        }
+
+        .color-btn.active {
+            border-color: #ffffff;
+            box-shadow: 0 0 8px rgba(255,255,255,0.8);
+        }
+
+        .pattern-btn {
+            display: inline-block;
+            margin: 3px;
+            padding: 7px 9px;
+            border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 7px;
+            color: #ffffff;
+            background: #313149;
+            cursor: pointer;
+            font-size: 11px;
+        }
+
+        .pattern-btn.active {
+            border-color: #31d2e2;
+            background: #1689b4;
+        }
+
+        @media screen and (max-width: 768px) {
+            .title h1 {
+                font-size: 31px;
+            }
+
+            .title p {
+                font-size: 13px;
+            }
+
+            .cityscape {
+                height: 100px;
+            }
+
+            .controls {
+                bottom: 7px;
+                padding: 6px;
+            }
+
+            .btn {
+                margin: 2px;
+                padding: 9px 10px;
+                font-size: 11px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <canvas id="canvas">Your browser does not support the Canvas API.</canvas>
+
+    <svg class="cityscape" viewBox="0 0 1920 150" preserveAspectRatio="xMidYMax slice" aria-hidden="true">
+        <defs>
+            <linearGradient id="buildingGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+                <stop offset="0%" stop-color="#1b1b37"/>
+                <stop offset="100%" stop-color="#070710"/>
+            </linearGradient>
+        </defs>
+
+        <path fill="url(#buildingGrad)" d="M0,150 L0,105 L50,105 L50,82 L80,82 L80,62 L102,62 L102,82 L148,82 L148,52 L170,52 L170,31 L192,31 L192,52 L222,52 L222,72 L280,72 L280,42 L302,42 L302,21 L324,21 L324,42 L352,42 L352,63 L404,63 L404,92 L454,92 L454,52 L484,52 L484,72 L522,72 L522,46 L543,46 L543,26 L565,26 L565,46 L604,46 L604,81 L654,81 L654,56 L683,56 L683,36 L705,36 L705,56 L754,56 L754,77 L804,77 L804,42 L834,42 L834,62 L884,62 L884,32 L904,32 L904,16 L926,16 L926,32 L965,32 L965,66 L1006,66 L1006,46 L1046,46 L1046,72 L1105,72 L1105,37 L1135,37 L1135,57 L1185,57 L1185,27 L1205,27 L1205,11 L1227,11 L1227,27 L1267,27 L1267,62 L1307,62 L1307,82 L1356,82 L1356,52 L1404,52 L1404,72 L1455,72 L1455,42 L1485,42 L1485,62 L1525,62 L1525,86 L1584,86 L1584,56 L1625,56 L1625,76 L1685,76 L1685,46 L1725,46 L1725,66 L1785,66 L1785,51 L1825,51 L1825,82 L1882,82 L1882,62 L1920,62 L1920,150 Z"/>
+
+        <g fill="#ffe86d" opacity="0.28">
+            <rect x="55" y="87" width="4" height="5"/>
+            <rect x="66" y="87" width="4" height="5"/>
+            <rect x="155" y="57" width="4" height="5"/>
+            <rect x="176" y="37" width="4" height="5"/>
+            <rect x="286" y="47" width="4" height="5"/>
+            <rect x="307" y="27" width="4" height="5"/>
+            <rect x="458" y="57" width="4" height="5"/>
+            <rect x="548" y="31" width="4" height="5"/>
+            <rect x="908" y="22" width="4" height="5"/>
+            <rect x="1208" y="17" width="4" height="5"/>
+        </g>
+    </svg>
+
+    <div class="title" id="title">
+        <h1>🎆 Fireworks Show</h1>
+        <p>Tap anywhere to launch • Press Space, M, A, F</p>
+    </div>
+
+    <div class="compat-message" id="compatMessage">
+        <strong>Canvas is unavailable.</strong><br>
+        Opera Mini Extreme mode can disable Canvas and Web Audio.<br><br>
+        Try opening this page in Opera Mini Android mode, Opera Mobile, or another modern browser.
+    </div>
+
+    <div class="settings-backdrop" id="settingsBackdrop"></div>
+
+    <div class="settings-panel" id="settingsPanel">
+        <div class="settings-header">
+            <h3>⚙️ Settings</h3>
+            <button class="close-btn" id="closeSettingsBtn" type="button" aria-label="Close settings">✕</button>
+        </div>
+
+        <div class="setting-group">
+            <label for="particleSize">Particle Count: <span id="particleSizeLabel">100</span></label>
+            <input type="range" id="particleSize" min="20" max="250" value="100">
+        </div>
+
+        <div class="setting-group">
+            <label for="explosionSize">Explosion Size: <span id="explosionSizeLabel">1.0</span></label>
+            <input type="range" id="explosionSize" min="0.5" max="2.5" step="0.1" value="1">
+        </div>
+
+        <div class="setting-group">
+            <label for="trailLength">Trail Length: <span id="trailLengthLabel">0.15</span></label>
+            <input type="range" id="trailLength" min="0.03" max="0.5" step="0.01" value="0.15">
+        </div>
+
+        <div class="setting-group">
+            <label for="autoSpeed">Auto Launch Speed: <span id="autoSpeedLabel">1000</span>ms</label>
+            <input type="range" id="autoSpeed" min="300" max="3000" step="100" value="1000">
+        </div>
+
+        <div class="setting-group">
+            <label for="gravity">Gravity: <span id="gravityLabel">0.05</span></label>
+            <input type="range" id="gravity" min="0.01" max="0.15" step="0.01" value="0.05">
+        </div>
+
+        <div class="setting-group">
+            <div class="toggle-row">
+                ✨ Glitter Trails
+                <label class="switch">
+                    <input type="checkbox" id="glitterToggle" checked>
+                </label>
+            </div>
+
+            <div class="toggle-row">
+                🌈 Screen Flash
+                <label class="switch">
+                    <input type="checkbox" id="flashToggle" checked>
+                </label>
+            </div>
+
+            <div class="toggle-row">
+                🔊 Sound FX
+                <label class="switch">
+                    <input type="checkbox" id="soundToggle">
+                </label>
+            </div>
+
+            <span class="sound-note" id="soundStatus"></span>
+        </div>
+
+        <div class="setting-group">
+            <label>Colors</label>
+
+            <div class="color-options" id="colorOptions">
+                <button class="color-btn active" type="button" data-color="rainbow" aria-label="Rainbow" style="background:#ff4a5f;"></button>
+                <button class="color-btn" type="button" data-color="red" aria-label="Red" style="background:#ef4444;"></button>
+                <button class="color-btn" type="button" data-color="blue" aria-label="Blue" style="background:#4e7dff;"></button>
+                <button class="color-btn" type="button" data-color="green" aria-label="Green" style="background:#45d86a;"></button>
+                <button class="color-btn" type="button" data-color="gold" aria-label="Gold" style="background:#ffd33d;"></button>
+                <button class="color-btn" type="button" data-color="purple" aria-label="Purple" style="background:#b456df;"></button>
+                <button class="color-btn" type="button" data-color="pastel" aria-label="Pastel" style="background:#f7acc8;"></button>
+                <button class="color-btn" type="button" data-color="fire" aria-label="Fire" style="background:#ff781d;"></button>
+                <button class="color-btn" type="button" data-color="ice" aria-label="Ice" style="background:#5ae7ff;"></button>
+                <button class="color-btn" type="button" data-color="white" aria-label="White" style="background:#ffffff;"></button>
+            </div>
+        </div>
+
+        <div class="setting-group">
+            <label>Explosion Pattern</label>
+
+            <div class="pattern-select" id="patternSelect">
+                <button class="pattern-btn active" type="button" data-pattern="circle">Circle</button>
+                <button class="pattern-btn" type="button" data-pattern="heart">Heart</button>
+                <button class="pattern-btn" type="button" data-pattern="star">Star</button>
+                <button class="pattern-btn" type="button" data-pattern="ring">Ring</button>
+                <button class="pattern-btn" type="button" data-pattern="double">Double</button>
+                <button class="pattern-btn" type="button" data-pattern="willow">Willow</button>
+                <button class="pattern-btn" type="button" data-pattern="chrysanthemum">Chrysanth</button>
+                <button class="pattern-btn" type="button" data-pattern="palm">Palm</button>
+                <button class="pattern-btn" type="button" data-pattern="spiral">Spiral</button>
+                <button class="pattern-btn" type="button" data-pattern="random">Random</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="controls">
+        <button class="btn btn-primary" id="launchBtn" type="button">🚀 Launch</button>
+        <button class="btn btn-secondary" id="autoBtn" type="button">🔄 Auto</button>
+        <button class="btn btn-secondary" id="multiBtn" type="button">💥 Multi</button>
+        <button class="btn btn-secondary" id="finaleBtn" type="button">🎇 Finale</button>
+        <button class="btn btn-secondary" id="settingsBtn" type="button">⚙️ Settings</button>
+        <button class="btn btn-secondary" id="clearBtn" type="button">🗑️ Clear</button>
+    </div>
+
+    <noscript>
+        <div class="compat-message" style="display:block;">
+            JavaScript is required to run the fireworks.
+        </div>
+    </noscript>
+
+    <script>
+        (function () {
+            "use strict";
+
+            const canvas = document.getElementById("canvas");
+            const compatibilityMessage = document.getElementById("compatMessage");
+
+            let ctx = null;
+
+            try {
+                ctx = canvas.getContext("2d");
+            } catch (error) {
+                ctx = null;
+            }
+
+            if (!ctx) {
+                canvas.style.display = "none";
+                compatibilityMessage.style.display = "block";
+                return;
+            }
+
+            const TWO_PI = Math.PI * 2;
+            const FRAME_TIME = 1000 / 60;
+            const MAX_FIREWORKS = 14;
+            const MAX_PARTICLES = 900;
+            const MAX_POOL_SIZE = 1200;
+
+            const FLAG_GLITTER = 1;
+            const FLAG_WILLOW = 2;
+            const FLAG_FLICKER = 4;
+
+            let viewW = 320;
+            let viewH = 480;
+            let lastTime = getNow();
+            let animationRunning = true;
+            let frameAverage = 16;
+            let frameCounter = 0;
+            let quality = 1;
+
+            let fireworks = [];
+            let particlePool = [];
+            let activeParticles = 0;
+
+            let flashAlpha = 0;
+
+            let autoMode = false;
+            let autoTimer = 0;
+            let finaleTimer = 0;
+            let delayedTimers = [];
+
+            let audioContext = null;
+            let soundAvailable = true;
+            let lastSoundTime = 0;
+
+            const defaultState = {
+                launchCount: 0,
+                settings: {
+                    particleCount: 100,
+                    explosionSize: 1,
+                    trailLength: 0.15,
+                    autoSpeed: 1000,
+                    gravity: 0.05,
+                    colorScheme: "rainbow",
+                    pattern: "circle",
+                    glitter: true,
+                    flash: true,
+                    sound: false
+                }
+            };
+
+            const state = loadState();
+
+            function getNow() {
+                if (window.performance && window.performance.now) {
+                    return window.performance.now();
+                }
+
+                return new Date().getTime();
+            }
+
+            function requestFrame(callback) {
+                const raf = window.requestAnimationFrame || window.webkitRequestAnimationFrame;
+
+                if (raf) {
+                    return raf.call(window, callback);
+                }
+
+                return window.setTimeout(function () {
+                    callback(getNow());
+                }, 16);
+            }
+
+            function addEvent(element, eventName, callback) {
+                if (element.addEventListener) {
+                    element.addEventListener(eventName, callback, false);
+                } else if (element.attachEvent) {
+                    element.attachEvent("on" + eventName, callback);
+                }
+            }
+
+            function hasClass(element, className) {
+                return (" " + element.className + " ").indexOf(" " + className + " ") !== -1;
+            }
+
+            function addClass(element, className) {
+                if (!hasClass(element, className)) {
+                    element.className += " " + className;
+                }
+            }
+
+            function removeClass(element, className) {
+                const pattern = new RegExp("(^|\\s)" + className + "(?=\\s|$)", "g");
+                element.className = element.className.replace(pattern, " ").replace(/^\s+|\s+$/g, "");
+            }
+
+            function setClass(element, className, enabled) {
+                if (enabled) {
+                    addClass(element, className);
+                } else {
+                    removeClass(element, className);
+                }
+            }
+
+            function setText(element, value) {
+                if ("textContent" in element) {
+                    element.textContent = value;
+                } else {
+                    element.innerHTML = value;
+                }
+            }
+
+            function makeDefaultState() {
+                return {
+                    launchCount: 0,
+                    settings: {
+                        particleCount: 100,
+                        explosionSize: 1,
+                        trailLength: 0.15,
+                        autoSpeed: 1000,
+                        gravity: 0.05,
+                        colorScheme: "rainbow",
+                        pattern: "circle",
+                        glitter: true,
+                        flash: true,
+                        sound: false
+                    }
+                };
+            }
+
+            function loadState() {
+                let stored = null;
+
+                try {
+                    stored = localStorage.getItem("fireworksState");
+                } catch (error) {
+                    stored = null;
+                }
+
+                if (!stored) {
+                    return makeDefaultState();
+                }
+
+                try {
+                    const parsed = JSON.parse(stored);
+                    const fresh = makeDefaultState();
+
+                    if (parsed.launchCount !== undefined) {
+                        fresh.launchCount = parsed.launchCount;
+                    }
+
+                    if (parsed.settings) {
+                        const settingNames = [
+                            "particleCount",
+                            "explosionSize",
+                            "trailLength",
+                            "autoSpeed",
+                            "gravity",
+                            "colorScheme",
+                            "pattern",
+                            "glitter",
+                            "flash",
+                            "sound"
+                        ];
+
+                        for (let i = 0; i < settingNames.length; i++) {
+                            const name = settingNames[i];
+
+                            if (parsed.settings[name] !== undefined) {
+                                fresh.settings[name] = parsed.settings[name];
+                            }
+                        }
+                    }
+
+                    return fresh;
+                } catch (error) {
+                    return makeDefaultState();
+                }
+            }
+
+            let saveTimer = 0;
+
+            function saveState() {
+                if (saveTimer) {
+                    return;
+                }
+
+                saveTimer = window.setTimeout(function () {
+                    try {
+                        localStorage.setItem("fireworksState", JSON.stringify(state));
+                    } catch (error) {
+                        /* Local storage is optional. */
+                    }
+
+                    saveTimer = 0;
+                }, 450);
+            }
+
+            function resizeCanvas() {
+                viewW = window.innerWidth || document.documentElement.clientWidth || 320;
+                viewH = window.innerHeight || document.documentElement.clientHeight || 480;
+
+                canvas.width = viewW;
+                canvas.height = viewH;
+                canvas.style.width = viewW + "px";
+                canvas.style.height = viewH + "px";
+
+                ctx.globalAlpha = 1;
+                ctx.globalCompositeOperation = "source-over";
+                ctx.clearRect(0, 0, viewW, viewH);
+            }
+
+            function updateQuality(frameTime) {
+                frameAverage = frameAverage * 0.92 + frameTime * 0.08;
+                frameCounter++;
+
+                if (frameCounter % 45 !== 0) {
+                    return;
+                }
+
+                if (frameAverage > 35) {
+                    quality = 0.45;
+                } else if (frameAverage > 27) {
+                    quality = 0.65;
+                } else if (frameAverage > 21) {
+                    quality = 0.82;
+                } else {
+                    quality = 1;
+                }
+            }
+
+            function getParticleLimit() {
+                let limit = Math.floor(MAX_PARTICLES * quality);
+
+                if (limit < 300) {
+                    limit = 300;
+                }
+
+                return limit;
+            }
+
+            function getColor() {
+                const random = Math.random();
+                const scheme = state.settings.colorScheme;
+
+                if (scheme === "red") {
+                    return "hsl(" + Math.floor(random * 20) + ",100%,60%)";
+                }
+
+                if (scheme === "blue") {
+                    return "hsl(" + Math.floor(200 + random * 40) + ",100%,62%)";
+                }
+
+                if (scheme === "green") {
+                    return "hsl(" + Math.floor(100 + random * 40) + ",100%,55%)";
+                }
+
+                if (scheme === "gold") {
+                    return "hsl(" + Math.floor(40 + random * 20) + ",100%,58%)";
+                }
+
+                if (scheme === "purple") {
+                    return "hsl(" + Math.floor(280 + random * 40) + ",100%,65%)";
+                }
+
+                if (scheme === "pastel") {
+                    return "hsl(" + Math.floor(random * 360) + ",70%,80%)";
+                }
+
+                if (scheme === "fire") {
+                    return "hsl(" + Math.floor(random * 45) + ",100%,60%)";
+                }
+
+                if (scheme === "ice") {
+                    return "hsl(" + Math.floor(180 + random * 40) + ",100%,78%)";
+                }
+
+                if (scheme === "white") {
+                    return "hsl(0,0%," + Math.floor(82 + random * 18) + "%)";
+                }
+
+                return "hsl(" + Math.floor(random * 360) + ",100%,64%)";
+            }
+
+            function getParticle(x, y, color, vx, vy, size, flags) {
+                let particle = null;
+
+                if (particlePool.length > 0) {
+                    particle = particlePool.pop();
+                } else {
+                    particle = {};
+                }
+
+                particle.x = x;
+                particle.y = y;
+                particle.oldX = x;
+                particle.oldY = y;
+                particle.vx = vx;
+                particle.vy = vy;
+                particle.color = color;
+                particle.size = size;
+                particle.drawSize = size;
+                particle.alpha = 1;
+                particle.age = 0;
+                particle.flags = flags;
+
+                if (flags & FLAG_WILLOW) {
+                    particle.gravity = state.settings.gravity * 0.55;
+                    particle.friction = 0.986;
+                    particle.decay = 0.007;
+                } else {
+                    particle.gravity = state.settings.gravity;
+                    particle.friction = 0.982;
+                    particle.decay = Math.random() * 0.011 + 0.005;
+                }
+
+                return particle;
+            }
+
+            function releaseParticle(particle) {
+                if (particlePool.length < MAX_POOL_SIZE) {
+                    particlePool.push(particle);
+                }
+            }
+
+            function createFirework(startX, startY, targetX, targetY) {
+                const angle = Math.atan2(targetY - startY, targetX - startX);
+                const speed = 12 + Math.random() * 4;
+
+                return {
+                    x: startX,
+                    y: startY,
+                    oldX: startX,
+                    oldY: startY,
+                    targetX: targetX,
+                    targetY: targetY,
+                    vx: Math.cos(angle) * speed,
+                    vy: Math.sin(angle) * speed,
+                    color: getColor(),
+                    exploded: false,
+                    particles: []
+                };
+            }
+
+            function addParticle(firework, color, vx, vy, size, flags) {
+                if (activeParticles >= getParticleLimit()) {
+                    return false;
+                }
+
+                firework.particles.push(
+                    getParticle(firework.x, firework.y, color, vx, vy, size, flags)
+                );
+
+                activeParticles++;
+                return true;
+            }
+
+            function createExplosion(firework, count, size, pattern) {
+                const halfCount = count * 0.5;
+                const ringOuterCount = count * 0.6;
+
+                for (let i = 0; i < count; i++) {
+                    let angle = (i / count) * TWO_PI;
+                    let speed = (Math.random() * 4 + 4) * size;
+                    let vx = Math.cos(angle) * speed;
+                    let vy = Math.sin(angle) * speed;
+                    let color = getColor();
+                    let flags = 0;
+
+                    if (pattern === "heart") {
+                        const hx = 16 * Math.pow(Math.sin(angle), 3);
+                        const hy = -(
+                            13 * Math.cos(angle) -
+                            5 * Math.cos(2 * angle) -
+                            2 * Math.cos(3 * angle) -
+                            Math.cos(4 * angle)
+                        );
+
+                        vx = hx * size * 0.08;
+                        vy = hy * size * 0.08;
+                    } else if (pattern === "star") {
+                        speed = (Math.random() * 2 + 4) * size;
+
+                        if (i % 2 !== 0) {
+                            speed *= 0.5;
+                        }
+
+                        vx = Math.cos(angle) * speed;
+                        vy = Math.sin(angle) * speed;
+                    } else if (pattern === "ring") {
+                        speed = (i < ringOuterCount ? 6 : 3) * size;
+                        vx = Math.cos(angle) * speed;
+                        vy = Math.sin(angle) * speed;
+                    } else if (pattern === "double") {
+                        if (i < halfCount) {
+                            color = firework.color;
+                            speed = (Math.random() * 2 + 5) * size;
+                        } else {
+                            angle += 0.1;
+                            speed = (Math.random() * 2 + 3) * size;
+                        }
+
+                        vx = Math.cos(angle) * speed;
+                        vy = Math.sin(angle) * speed;
+                    } else if (pattern === "willow") {
+                        flags = FLAG_WILLOW;
+                        speed = (Math.random() * 3 + 3) * size;
+                        vx = Math.cos(angle) * speed;
+                        vy = Math.sin(angle) * speed - 2;
+                    } else if (pattern === "chrysanthemum") {
+                        const layer = i % 3;
+                        const layerCount = Math.ceil(count / 3);
+
+                        flags = FLAG_WILLOW;
+                        angle = (Math.floor(i / 3) / layerCount) * TWO_PI + layer * 0.15;
+                        speed = (3 + layer * 2) * size;
+                        vx = Math.cos(angle) * speed;
+                        vy = Math.sin(angle) * speed;
+                    } else if (pattern === "palm") {
+                        const frond = i % 8;
+
+                        flags = FLAG_WILLOW;
+                        color = firework.color;
+                        angle = -Math.PI / 2 + (frond - 4) * 0.28 + (Math.random() - 0.5) * 0.1;
+                        speed = (5 + Math.random() * 3) * size;
+                        vx = Math.cos(angle) * speed;
+                        vy = Math.sin(angle) * speed;
+                    } else if (pattern === "spiral") {
+                        const ratio = i / count;
+
+                        angle = ratio * TWO_PI * 4;
+                        speed = (1 + ratio * 6) * size;
+                        vx = Math.cos(angle) * speed;
+                        vy = Math.sin(angle) * speed;
+                    }
+
+                    addParticle(
+                        firework,
+                        color,
+                        vx,
+                        vy,
+                        Math.random() * 2 + 1.8,
+                        flags
+                    );
+                }
+            }
+
+            function explodeFirework(firework) {
+                if (firework.exploded) {
+                    return;
+                }
+
+                firework.exploded = true;
+                state.launchCount++;
+                saveState();
+
+                playBoomSound();
+
+                if (state.settings.flash) {
+                    flashAlpha = Math.max(flashAlpha, 0.16 * state.settings.explosionSize);
+                }
+
+                let pattern = state.settings.pattern;
+
+                if (pattern === "random") {
+                    const patterns = [
+                        "circle",
+                        "heart",
+                        "star",
+                        "ring",
+                        "double",
+                        "willow",
+                        "chrysanthemum",
+                        "palm",
+                        "spiral"
+                    ];
+
+                    pattern = patterns[Math.floor(Math.random() * patterns.length)];
+                }
+
+                const available = getParticleLimit() - activeParticles;
+
+                if (available <= 0) {
+                    return;
+                }
+
+                let count = Math.floor(state.settings.particleCount * quality);
+
+                if (count < 12) {
+                    count = 12;
+                }
+
+                const glitterCount = state.settings.glitter ? Math.floor(count * 0.32) : 0;
+                const wanted = count + glitterCount;
+
+                if (wanted > available) {
+                    count = Math.max(8, Math.floor(count * available / wanted));
+                }
+
+                createExplosion(
+                    firework,
+                    count,
+                    state.settings.explosionSize,
+                    pattern
+                );
+
+                if (state.settings.glitter && quality >= 0.65) {
+                    const visibleGlitter = Math.floor(count * 0.32);
+
+                    for (let i = 0; i < visibleGlitter; i++) {
+                        const glitterAngle = Math.random() * TWO_PI;
+                        const glitterSpeed = Math.random() * 3 * state.settings.explosionSize;
+
+                        addParticle(
+                            firework,
+                            "#ffffff",
+                            Math.cos(glitterAngle) * glitterSpeed,
+                            Math.sin(glitterAngle) * glitterSpeed,
+                            Math.random() * 1.1 + 0.45,
+                            FLAG_GLITTER | FLAG_FLICKER
+                        );
+                    }
+                }
+            }
+
+            function updateParticle(particle, dt) {
+                particle.oldX = particle.x;
+                particle.oldY = particle.y;
+
+                const friction = Math.pow(particle.friction, dt);
+
+                particle.vx *= friction;
+                particle.vy = particle.vy * friction + particle.gravity * dt;
+                particle.x += particle.vx * dt;
+                particle.y += particle.vy * dt;
+                particle.alpha -= particle.decay * dt;
+                particle.age += dt;
+
+                if (particle.flags & FLAG_FLICKER) {
+                    particle.drawSize = particle.size * (0.68 + Math.random() * 0.35);
+                }
+            }
+
+            function drawParticle(particle, drawLines) {
+                if (particle.alpha <= 0) {
+                    return;
+                }
+
+                if (drawLines && !(particle.flags & FLAG_GLITTER)) {
+                    ctx.globalAlpha = particle.alpha * 0.22;
+                    ctx.strokeStyle = particle.color;
+                    ctx.lineWidth = 1;
+
+                    ctx.beginPath();
+                    ctx.moveTo(particle.oldX, particle.oldY);
+                    ctx.lineTo(particle.x, particle.y);
+                    ctx.stroke();
+                }
+
+                ctx.globalAlpha = particle.alpha;
+                ctx.fillStyle = particle.color;
+
+                const size = Math.max(1, particle.drawSize);
+
+                ctx.fillRect(
+                    Math.floor(particle.x - size * 0.5),
+                    Math.floor(particle.y - size * 0.5),
+                    Math.ceil(size),
+                    Math.ceil(size)
+                );
+            }
+
+            function updateFirework(firework, dt) {
+                if (!firework.exploded) {
+                    firework.oldX = firework.x;
+                    firework.oldY = firework.y;
+
+                    firework.vy += 0.03 * dt;
+                    firework.x += firework.vx * dt;
+                    firework.y += firework.vy * dt;
+
+                    const dx = firework.targetX - firework.x;
+                    const dy = firework.targetY - firework.y;
+
+                    if (dx * dx + dy * dy < 2500 || firework.vy >= 0) {
+                        explodeFirework(firework);
+                    }
+                }
+
+                for (let i = firework.particles.length - 1; i >= 0; i--) {
+                    const particle = firework.particles[i];
+
+                    updateParticle(particle, dt);
+
+                    if (particle.alpha <= 0 || particle.y > viewH + 60) {
+                        firework.particles[i] = firework.particles[firework.particles.length - 1];
+                        firework.particles.pop();
+
+                        activeParticles--;
+                        releaseParticle(particle);
+                    }
+                }
+            }
+
+            function drawFirework(firework, drawLines) {
+                if (!firework.exploded) {
+                    ctx.globalAlpha = 0.8;
+                    ctx.strokeStyle = "#ffd28a";
+                    ctx.lineWidth = 2;
+
+                    ctx.beginPath();
+                    ctx.moveTo(firework.oldX, firework.oldY);
+                    ctx.lineTo(firework.x, firework.y);
+                    ctx.stroke();
+
+                    ctx.globalAlpha = 1;
+                    ctx.fillStyle = "#ffffff";
+                    ctx.fillRect(
+                        Math.floor(firework.x - 2),
+                        Math.floor(firework.y - 2),
+                        4,
+                        4
+                    );
+                }
+
+                for (let i = 0; i < firework.particles.length; i++) {
+                    const particle = firework.particles[i];
+
+                    if (quality < 0.65 && (particle.flags & FLAG_GLITTER)) {
+                        continue;
+                    }
+
+                    drawParticle(particle, drawLines);
+                }
+            }
+
+            function isFireworkDead(firework) {
+                return firework.exploded && firework.particles.length === 0;
+            }
+
+            function animate(now) {
+                let frameTime = now - lastTime;
+                lastTime = now;
+
+                if (frameTime > 100) {
+                    frameTime = 100;
+                }
+
+                updateQuality(frameTime);
+
+                const dt = frameTime / FRAME_TIME;
+                const fadeAmount = 1 - Math.pow(1 - state.settings.trailLength, dt);
+
+                ctx.globalCompositeOperation = "destination-out";
+                ctx.globalAlpha = fadeAmount;
+                ctx.fillStyle = "#000000";
+                ctx.fillRect(0, 0, viewW, viewH);
+
+                ctx.globalCompositeOperation = "source-over";
+                ctx.globalAlpha = 1;
+
+                const drawLines = quality >= 0.75 && activeParticles < 500;
+
+                for (let i = fireworks.length - 1; i >= 0; i--) {
+                    const firework = fireworks[i];
+
+                    updateFirework(firework, dt);
+                    drawFirework(firework, drawLines);
+
+                    if (isFireworkDead(firework)) {
+                        fireworks[i] = fireworks[fireworks.length - 1];
+                        fireworks.pop();
+                    }
+                }
+
+                if (flashAlpha > 0.002) {
+                    ctx.globalCompositeOperation = "source-over";
+                    ctx.globalAlpha = flashAlpha;
+                    ctx.fillStyle = "#ffffff";
+                    ctx.fillRect(0, 0, viewW, viewH);
+
+                    flashAlpha *= Math.pow(0.84, dt);
+                }
+
+                ctx.globalCompositeOperation = "source-over";
+                ctx.globalAlpha = 1;
+
+                if (animationRunning) {
+                    requestFrame(animate);
+                }
+            }
+
+            function clearFireworks() {
+                for (let i = 0; i < fireworks.length; i++) {
+                    const firework = fireworks[i];
+
+                    for (let p = 0; p < firework.particles.length; p++) {
+                        releaseParticle(firework.particles[p]);
+                    }
+                }
+
+                fireworks = [];
+                activeParticles = 0;
+                flashAlpha = 0;
+
+                for (let i = 0; i < delayedTimers.length; i++) {
+                    window.clearTimeout(delayedTimers[i]);
+                }
+
+                delayedTimers = [];
+
+                if (finaleTimer) {
+                    window.clearInterval(finaleTimer);
+                    finaleTimer = 0;
+                }
+
+                ctx.globalAlpha = 1;
+                ctx.globalCompositeOperation = "source-over";
+                ctx.clearRect(0, 0, viewW, viewH);
+            }
+
+            function launchFirework(x, y) {
+                if (fireworks.length >= MAX_FIREWORKS) {
+                    return;
+                }
+
+                let targetX = x;
+                let targetY = y;
+
+                if (targetX === null || targetX === undefined) {
+                    targetX = Math.random() * viewW;
+                }
+
+                if (targetY === null || targetY === undefined) {
+                    targetY = Math.random() * (viewH * 0.5) + 45;
+                }
+
+                if (targetX < 10) {
+                    targetX = 10;
+                }
+
+                if (targetX > viewW - 10) {
+                    targetX = viewW - 10;
+                }
+
+                if (targetY < 25) {
+                    targetY = 25;
+                }
+
+                if (targetY > viewH - 90) {
+                    targetY = viewH - 90;
+                }
+
+                const startX = targetX + (Math.random() - 0.5) * 100;
+                const firework = createFirework(startX, viewH + 8, targetX, targetY);
+
+                fireworks.push(firework);
+                playLaunchSound();
+
+                addClass(document.getElementById("title"), "hidden");
+            }
+
+            function scheduleLaunch(callback, delay) {
+                const timer = window.setTimeout(function () {
+                    for (let i = delayedTimers.length - 1; i >= 0; i--) {
+                        if (delayedTimers[i] === timer) {
+                            delayedTimers.splice(i, 1);
+                            break;
+                        }
+                    }
+
+                    callback();
+                }, delay);
+
+                delayedTimers.push(timer);
+            }
+
+            function launchMultiple() {
+                const count = Math.floor(Math.random() * 4) + 3;
+
+                for (let i = 0; i < count; i++) {
+                    scheduleLaunch(function () {
+                        launchFirework(null, null);
+                    }, i * 100);
+                }
+            }
+
+            function launchFinale() {
+                if (finaleTimer) {
+                    return;
+                }
+
+                addClass(document.getElementById("title"), "hidden");
+
+                let bursts = 0;
+
+                finaleTimer = window.setInterval(function () {
+                    const count = Math.floor(Math.random() * 3) + 2;
+
+                    for (let i = 0; i < count; i++) {
+                        scheduleLaunch(function () {
+                            launchFirework(
+                                Math.random() * viewW,
+                                Math.random() * (viewH * 0.5) + 40
+                            );
+                        }, i * 70);
+                    }
+
+                    bursts++;
+
+                    if (bursts >= 14) {
+                        window.clearInterval(finaleTimer);
+                        finaleTimer = 0;
+                    }
+                }, 280);
+            }
+
+            function initSound() {
+                if (audioContext) {
+                    if (audioContext.state === "suspended" && audioContext.resume) {
+                        try {
+                            audioContext.resume();
+                        } catch (error) {
+                            /* Resume can fail silently on unsupported browsers. */
+                        }
+                    }
+
+                    return true;
+                }
+
+                const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+
+                if (!AudioContextClass) {
+                    soundAvailable = false;
+                    setText(
+                        document.getElementById("soundStatus"),
+                        "Web Audio is unavailable in this browser mode."
+                    );
+                    return false;
+                }
+
+                try {
+                    audioContext = new AudioContextClass();
+
+                    if (audioContext.state === "suspended" && audioContext.resume) {
+                        audioContext.resume();
+                    }
+
+                    soundAvailable = true;
+                    setText(document.getElementById("soundStatus"), "");
+                    return true;
+                } catch (error) {
+                    soundAvailable = false;
+                    setText(
+                        document.getElementById("soundStatus"),
+                        "Web Audio could not be started."
+                    );
+                    return false;
+                }
+            }
+
+            function playLaunchSound() {
+                if (!state.settings.sound || !audioContext) {
+                    return;
+                }
+
+                try {
+                    const now = audioContext.currentTime;
+                    const oscillator = audioContext.createOscillator();
+                    const gain = audioContext.createGain();
+
+                    oscillator.type = "sine";
+                    oscillator.frequency.setValueAtTime(180, now);
+                    oscillator.frequency.linearRampToValueAtTime(650, now + 0.38);
+
+                    gain.gain.setValueAtTime(0.06, now);
+                    gain.gain.linearRampToValueAtTime(0.001, now + 0.4);
+
+                    oscillator.connect(gain);
+                    gain.connect(audioContext.destination);
+
+                    oscillator.start(now);
+                    oscillator.stop(now + 0.42);
+                } catch (error) {
+                    soundAvailable = false;
+                }
+            }
+
+            function playBoomSound() {
+                if (!state.settings.sound || !audioContext) {
+                    return;
+                }
+
+                const now = audioContext.currentTime;
+
+                if (now - lastSoundTime < 0.08) {
+                    return;
+                }
+
+                lastSoundTime = now;
+
+                try {
+                    const oscillator = audioContext.createOscillator();
+                    const gain = audioContext.createGain();
+
+                    oscillator.type = "square";
+                    oscillator.frequency.setValueAtTime(115, now);
+                    oscillator.frequency.linearRampToValueAtTime(38, now + 0.3);
+
+                    gain.gain.setValueAtTime(0.11, now);
+                    gain.gain.linearRampToValueAtTime(0.001, now + 0.32);
+
+                    oscillator.connect(gain);
+                    gain.connect(audioContext.destination);
+
+                    oscillator.start(now);
+                    oscillator.stop(now + 0.34);
+                } catch (error) {
+                    soundAvailable = false;
+                }
+            }
+
+            function startAutoMode() {
+                if (autoTimer) {
+                    window.clearInterval(autoTimer);
+                }
+
+                autoTimer = window.setInterval(function () {
+                    if (Math.random() > 0.3) {
+                        launchFirework(null, null);
+                    }
+
+                    if (Math.random() > 0.85) {
+                        launchMultiple();
+                    }
+                }, state.settings.autoSpeed);
+            }
+
+            function openSettings() {
+                addClass(document.getElementById("settingsPanel"), "open");
+                addClass(document.getElementById("settingsBackdrop"), "open");
+            }
+
+            function closeSettings() {
+                removeClass(document.getElementById("settingsPanel"), "open");
+                removeClass(document.getElementById("settingsBackdrop"), "open");
+            }
+
+            function updateSettingsUI() {
+                const settings = state.settings;
+
+                document.getElementById("particleSize").value = settings.particleCount;
+                setText(document.getElementById("particleSizeLabel"), settings.particleCount);
+
+                document.getElementById("explosionSize").value = settings.explosionSize;
+                setText(document.getElementById("explosionSizeLabel"), settings.explosionSize);
+
+                document.getElementById("trailLength").value = settings.trailLength;
+                setText(document.getElementById("trailLengthLabel"), settings.trailLength);
+
+                document.getElementById("autoSpeed").value = settings.autoSpeed;
+                setText(document.getElementById("autoSpeedLabel"), settings.autoSpeed);
+
+                document.getElementById("gravity").value = settings.gravity;
+                setText(document.getElementById("gravityLabel"), settings.gravity);
+
+                document.getElementById("glitterToggle").checked = settings.glitter;
+                document.getElementById("flashToggle").checked = settings.flash;
+                document.getElementById("soundToggle").checked = settings.sound;
+
+                const colorButtons = document
+                    .getElementById("colorOptions")
+                    .getElementsByTagName("button");
+
+                for (let i = 0; i < colorButtons.length; i++) {
+                    setClass(
+                        colorButtons[i],
+                        "active",
+                        colorButtons[i].getAttribute("data-color") === settings.colorScheme
+                    );
+                }
+
+                const patternButtons = document
+                    .getElementById("patternSelect")
+                    .getElementsByTagName("button");
+
+                for (let i = 0; i < patternButtons.length; i++) {
+                    setClass(
+                        patternButtons[i],
+                        "active",
+                        patternButtons[i].getAttribute("data-pattern") === settings.pattern
+                    );
+                }
+            }
+
+            function bindRange(id, stateName, labelId, numberType) {
+                const input = document.getElementById(id);
+
+                function updateRange() {
+                    let value = input.value;
+
+                    if (numberType === "float") {
+                        value = parseFloat(value);
+                    } else {
+                        value = parseInt(value, 10);
+                    }
+
+                    state.settings[stateName] = value;
+                    setText(document.getElementById(labelId), value);
+                    saveState();
+
+                    if (stateName === "autoSpeed" && autoMode) {
+                        startAutoMode();
+                    }
+                }
+
+                addEvent(input, "input", updateRange);
+                addEvent(input, "change", updateRange);
+            }
+
+            resizeCanvas();
+            updateSettingsUI();
+
+            bindRange("particleSize", "particleCount", "particleSizeLabel", "int");
+            bindRange("explosionSize", "explosionSize", "explosionSizeLabel", "float");
+            bindRange("trailLength", "trailLength", "trailLengthLabel", "float");
+            bindRange("autoSpeed", "autoSpeed", "autoSpeedLabel", "int");
+            bindRange("gravity", "gravity", "gravityLabel", "float");
+
+            addEvent(window, "resize", resizeCanvas);
+
+            addEvent(canvas, "click", function (event) {
+                initSound();
+                launchFirework(event.clientX, event.clientY);
+            });
+
+            addEvent(canvas, "touchend", function (event) {
+                if (!event.changedTouches || !event.changedTouches.length) {
+                    return;
+                }
+
+                const touch = event.changedTouches[0];
+
+                initSound();
+                launchFirework(touch.clientX, touch.clientY);
+
+                if (event.preventDefault) {
+                    event.preventDefault();
+                }
+            });
+
+            addEvent(document.getElementById("launchBtn"), "click", function () {
+                initSound();
+                launchFirework(null, null);
+            });
+
+            addEvent(document.getElementById("multiBtn"), "click", function () {
+                initSound();
+                launchMultiple();
+            });
+
+            addEvent(document.getElementById("finaleBtn"), "click", function () {
+                initSound();
+                launchFinale();
+            });
+
+            addEvent(document.getElementById("autoBtn"), "click", function () {
+                initSound();
+
+                autoMode = !autoMode;
+                setClass(this, "active", autoMode);
+
+                if (autoMode) {
+                    startAutoMode();
+                } else {
+                    window.clearInterval(autoTimer);
+                    autoTimer = 0;
+                }
+            });
+
+            addEvent(document.getElementById("settingsBtn"), "click", function () {
+                const panel = document.getElementById("settingsPanel");
+
+                if (hasClass(panel, "open")) {
+                    closeSettings();
+                } else {
+                    openSettings();
+                }
+            });
+
+            addEvent(document.getElementById("closeSettingsBtn"), "click", closeSettings);
+            addEvent(document.getElementById("settingsBackdrop"), "click", closeSettings);
+
+            addEvent(document.getElementById("clearBtn"), "click", function () {
+                clearFireworks();
+            });
+
+            addEvent(document.getElementById("glitterToggle"), "change", function () {
+                state.settings.glitter = this.checked;
+                saveState();
+            });
+
+            addEvent(document.getElementById("flashToggle"), "change", function () {
+                state.settings.flash = this.checked;
+                saveState();
+            });
+
+            addEvent(document.getElementById("soundToggle"), "change", function () {
+                state.settings.sound = this.checked;
+
+                if (this.checked) {
+                    initSound();
+
+                    if (!soundAvailable) {
+                        this.checked = false;
+                        state.settings.sound = false;
+                    }
+                }
+
+                saveState();
+            });
+
+            const colorButtons = document
+                .getElementById("colorOptions")
+                .getElementsByTagName("button");
+
+            for (let i = 0; i < colorButtons.length; i++) {
+                addEvent(colorButtons[i], "click", function () {
+                    const buttons = document
+                        .getElementById("colorOptions")
+                        .getElementsByTagName("button");
+
+                    for (let n = 0; n < buttons.length; n++) {
+                        removeClass(buttons[n], "active");
+                    }
+
+                    addClass(this, "active");
+                    state.settings.colorScheme = this.getAttribute("data-color");
+                    saveState();
+                });
+            }
+
+            const patternButtons = document
+                .getElementById("patternSelect")
+                .getElementsByTagName("button");
+
+            for (let i = 0; i < patternButtons.length; i++) {
+                addEvent(patternButtons[i], "click", function () {
+                    const buttons = document
+                        .getElementById("patternSelect")
+                        .getElementsByTagName("button");
+
+                    for (let n = 0; n < buttons.length; n++) {
+                        removeClass(buttons[n], "active");
+                    }
+
+                    addClass(this, "active");
+                    state.settings.pattern = this.getAttribute("data-pattern");
+                    saveState();
+                });
+            }
+
+            addEvent(document, "keydown", function (event) {
+                const code = event.code || event.keyCode;
+
+                if (code === "Escape" || code === 27) {
+                    closeSettings();
+                    return;
+                }
+
+                if (code === "Space" || code === 32) {
+                    if (event.preventDefault) {
+                        event.preventDefault();
+                    }
+
+                    initSound();
+                    launchFirework(null, null);
+                } else if (code === "KeyM" || code === 77) {
+                    initSound();
+                    launchMultiple();
+                } else if (code === "KeyA" || code === 65) {
+                    document.getElementById("autoBtn").click();
+                } else if (code === "KeyF" || code === 70) {
+                    initSound();
+                    launchFinale();
+                }
+            });
+
+            addEvent(document, "visibilitychange", function () {
+                if (document.hidden) {
+                    animationRunning = false;
+                } else if (!animationRunning) {
+                    animationRunning = true;
+                    lastTime = getNow();
+                    requestFrame(animate);
+                }
+            });
+
+            requestFrame(animate);
+
+            scheduleLaunch(function () {
+                launchFirework(viewW * 0.28, viewH * 0.3);
+            }, 550);
+
+            scheduleLaunch(function () {
+                launchFirework(viewW * 0.72, viewH * 0.38);
+            }, 900);
+
+            scheduleLaunch(function () {
+                launchFirework(viewW * 0.5, viewH * 0.23);
+            }, 1250);
+        }());
+    </script>
+</body>
+</html>
