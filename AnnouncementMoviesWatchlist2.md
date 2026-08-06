@@ -42,6 +42,6 @@ We're thrilled to introduce our **Movie Watchlist Web Application** — a stunni
 Wishing you endless nights of perfectly organized movie magic!
 
 Warm regards,
-Yuliiya Kolesnikova
+Yuliya Kolesnikova
 
 P.S. Press **Ctrl+N** anytime to quickly add a new movie! 🎬✨
