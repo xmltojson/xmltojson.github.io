@@ -40,9 +40,7 @@ We're excited to present our Habit Tracker Web Application — a beautifully des
 • Tracking meditation, journaling & mindfulness
 • Long-term goal setting & accountability
 
-🔗 Experience it here: [Hosted on Base44]
-
-📜 Open source under the MIT License — feel free to explore, learn, and share!
+🔗 Experience it here: habittrackerj.base44.app
 
 Wishing you consistency, growth, and many streaks worth celebrating ahead!
 
