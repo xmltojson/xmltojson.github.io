@@ -42,8 +42,6 @@ We're excited to present our **Kanban Board Web Application** — a beautiful, i
 
 🔗 **Experience it here:** kanbanboard.base44.app
 
-📜 Open source under the MIT License — feel free to explore, learn, and share!
-
 Wishing you a well-organized, productive, and stress-free journey ahead!
 
 Warm regards,
