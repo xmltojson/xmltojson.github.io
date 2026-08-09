@@ -2662,6 +2662,7 @@ function renderPhraseCategories() {
   }).join('');
 }
 
+/* ============ RENDER PHRASES (FIXED) ============ */
 function renderPhrases() {
   renderPhraseCategories();
 
@@ -2673,10 +2674,12 @@ function renderPhrases() {
       💬 У цій секції ще немає фраз<br><br>
       <small>Натисніть «➕ Додати фразу», щоб створити першу</small>
     </div>`;
+    // Still bind category handlers even when the grid is empty
+    bindPhraseCategoryHandlers();
     return;
   }
 
-  grid.innerHTML = list.map((p, gridIdx) => {
+  grid.innerHTML = list.map((p) => {
     const trText = p[state.phraseLang] || '';
     const customCls = p.__custom ? ' custom' : '';
     const delBtn = p.__custom
@@ -2684,7 +2687,7 @@ function renderPhrases() {
       : '';
     const badge = p.__custom ? `<div class="custom-badge">Власна</div>` : '';
     return `
-      <div class="phrase-card${customCls}" data-tr="${trText.replace(/"/g,'&quot;')}">
+      <div class="phrase-card${customCls}" data-tr="${escapeHtml(trText)}">
         ${delBtn}
         <div class="uk">${flagSvg('uk')} ${escapeHtml(p.uk || '')}</div>
         <div class="tr">${flagSvg(state.phraseLang)} ${escapeHtml(trText)}</div>
@@ -2692,6 +2695,25 @@ function renderPhrases() {
       </div>
     `;
   }).join('');
+
+  // Bind delete-phrase buttons FIRST (so stopPropagation works reliably)
+  grid.querySelectorAll('.phrase-del').forEach(btn => {
+    btn.onclick = async (e) => {
+      e.stopPropagation();
+      e.preventDefault();
+      const idx = parseInt(btn.dataset.delIdx, 10);
+      const ok = await confirmModal(
+        'Видалити фразу?',
+        '<p>Цю власну фразу буде видалено.</p>',
+        { danger: true, okLabel: 'Видалити', icon: 'warn' }
+      );
+      if (ok) {
+        deleteCustomPhrase(state.phraseCat, idx);
+        renderPhrases();
+        showToast('Фразу видалено', 'success');
+      }
+    };
+  });
 
   // Card click => copy + speak
   grid.querySelectorAll('.phrase-card').forEach(c => {
@@ -2710,20 +2732,11 @@ function renderPhrases() {
     };
   });
 
-  // Delete custom phrase buttons
-  grid.querySelectorAll('.phrase-del').forEach(btn => {
-    btn.onclick = async (e) => {
-      e.stopPropagation();
-      const idx = parseInt(btn.dataset.delIdx, 10);
-      const ok = await confirmModal('Видалити фразу?', '<p>Цю власну фразу буде видалено.</p>', { danger: true, okLabel: 'Видалити', icon: 'warn' });
-      if (ok) {
-        deleteCustomPhrase(state.phraseCat, idx);
-        renderPhrases();
-        showToast('Фразу видалено', 'success');
-      }
-    };
-  });
+  bindPhraseCategoryHandlers();
+}
 
+/* ============ CATEGORY TAG / DELETE HANDLERS (SEPARATED) ============ */
+function bindPhraseCategoryHandlers() {
   // Category tag click
   document.querySelectorAll('#phraseCategories .tag[data-cat]').forEach(t => {
     t.onclick = () => {
@@ -2737,6 +2750,7 @@ function renderPhrases() {
   document.querySelectorAll('#phraseCategories [data-delcat]').forEach(btn => {
     btn.onclick = async (e) => {
       e.stopPropagation();
+      e.preventDefault();
       const catId = btn.dataset.delcat;
       const cat = state.customCategories.find(c => c.id === catId);
       const phraseCount = (state.customPhrases[catId] || []).length;
