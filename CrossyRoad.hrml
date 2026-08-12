@@ -1,0 +1,730 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Crossy Road</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; user-select: none; }
+  body {
+    font-family: 'Segoe UI', Arial, sans-serif;
+    background: #1a1a2e;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    overflow: hidden;
+  }
+  #gameContainer {
+    position: relative;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.6);
+    border-radius: 12px;
+    overflow: hidden;
+  }
+  canvas { display: block; background: #7ec850; }
+
+  .hud {
+    position: absolute;
+    top: 12px;
+    left: 12px;
+    right: 12px;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    pointer-events: none;
+    z-index: 10;
+  }
+  .score-box {
+    background: rgba(0,0,0,0.45);
+    color: #fff;
+    padding: 8px 16px;
+    border-radius: 20px;
+    font-size: 22px;
+    font-weight: bold;
+    backdrop-filter: blur(4px);
+  }
+  .score-box small { font-size: 12px; opacity: 0.7; display: block; }
+
+  .btn {
+    pointer-events: all;
+    background: rgba(0,0,0,0.45);
+    color: #fff;
+    border: none;
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    font-size: 20px;
+    cursor: pointer;
+    backdrop-filter: blur(4px);
+    transition: transform 0.15s, background 0.2s;
+  }
+  .btn:hover { background: rgba(0,0,0,0.65); transform: scale(1.08); }
+
+  .overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(20,20,40,0.85);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    z-index: 20;
+    color: #fff;
+    text-align: center;
+    backdrop-filter: blur(6px);
+  }
+  .overlay.hidden { display: none; }
+  .overlay h1 { font-size: 42px; margin-bottom: 8px; text-shadow: 2px 2px 6px rgba(0,0,0,0.5); }
+  .overlay h2 { font-size: 24px; margin-bottom: 20px; font-weight: normal; }
+  .overlay p { font-size: 16px; opacity: 0.85; margin-bottom: 16px; }
+
+  .big-btn {
+    background: linear-gradient(135deg,#ff6b6b,#ee5a6f);
+    border: none;
+    color: #fff;
+    padding: 14px 38px;
+    font-size: 20px;
+    font-weight: bold;
+    border-radius: 30px;
+    cursor: pointer;
+    margin: 6px;
+    box-shadow: 0 6px 16px rgba(238,90,111,0.4);
+    transition: transform 0.15s;
+  }
+  .big-btn:hover { transform: scale(1.05); }
+  .big-btn.green { background: linear-gradient(135deg,#43e97b,#38f9d7); box-shadow:0 6px 16px rgba(67,233,123,0.4); }
+
+  .theme-grid {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 10px;
+    margin: 16px 0;
+    max-width: 400px;
+  }
+  .theme-swatch {
+    width: 60px;
+    height: 60px;
+    border-radius: 12px;
+    cursor: pointer;
+    border: 3px solid transparent;
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    padding-bottom: 4px;
+    font-size: 10px;
+    color: #fff;
+    text-shadow: 1px 1px 2px #000;
+    transition: transform 0.15s;
+    overflow: hidden;
+  }
+  .theme-swatch:hover { transform: scale(1.1); }
+  .theme-swatch.active { border-color: #ffd700; box-shadow: 0 0 12px #ffd700; }
+
+  .controls-hint {
+    position: absolute;
+    bottom: 12px;
+    left: 50%;
+    transform: translateX(-50%);
+    color: rgba(255,255,255,0.6);
+    font-size: 12px;
+    background: rgba(0,0,0,0.3);
+    padding: 6px 14px;
+    border-radius: 12px;
+    z-index: 10;
+    pointer-events: none;
+  }
+</style>
+</head>
+<body>
+<div id="gameContainer">
+  <canvas id="game" width="440" height="600"></canvas>
+
+  <div class="hud">
+    <div class="score-box">
+      <small>SCORE</small>
+      <span id="score">0</span>
+    </div>
+    <div style="display:flex;gap:8px;">
+      <button class="btn" id="themeBtn" title="Themes">🎨</button>
+      <button class="btn" id="pauseBtn" title="Pause">⏸</button>
+    </div>
+  </div>
+
+  <div class="controls-hint">↑ ↓ ← → or WASD / Swipe to move</div>
+
+  <!-- Start / Menu overlay -->
+  <div class="overlay" id="startOverlay">
+    <h1>🐔 Crossy Road</h1>
+    <h2 id="startSub">Hop across the endless world!</h2>
+    <div class="theme-grid" id="themeGrid"></div>
+    <button class="big-btn green" id="startBtn">PLAY</button>
+  </div>
+
+  <!-- Pause overlay -->
+  <div class="overlay hidden" id="pauseOverlay">
+    <h1>⏸ Paused</h1>
+    <button class="big-btn green" id="resumeBtn">RESUME</button>
+    <button class="big-btn" id="restartFromPause">RESTART</button>
+  </div>
+
+  <!-- Game over overlay -->
+  <div class="overlay hidden" id="gameOverOverlay">
+    <h1>💀 Game Over</h1>
+    <h2 id="finalScore">Score: 0</h2>
+    <p id="bestScore">Best: 0</p>
+    <button class="big-btn" id="restartBtn">TRY AGAIN</button>
+  </div>
+</div>
+
+<script>
+// ============ THEMES ============
+const THEMES = [
+  { name:"Meadow", grass:["#8ee053","#7ed043"], road:"#4a4a5a", roadLine:"#f0d020", water:"#3a8fd0", log:"#8b5a2b", rail:"#8a8a9a", player:"#f8d030", trees:["#2e8b2e","#3aa03a"], sky:"#87ceeb" },
+  { name:"Desert", grass:["#e8d090","#dcc080"], road:"#6a5a4a", roadLine:"#f0e0a0", water:"#5ab0c0", log:"#a06830", rail:"#9a8a7a", player:"#e07030", trees:["#c0a050","#b09040"], sky:"#f0c080" },
+  { name:"Night", grass:["#2a3a4a","#243444"], road:"#181820", roadLine:"#f0d020", water:"#1a3a5a", log:"#4a3520", rail:"#4a4a5a", player:"#f0f040", trees:["#1a3a1a","#204020"], sky:"#0a0a2a" },
+  { name:"Snow", grass:["#e8f0f8","#dce8f4"], road:"#8a9aaa", roadLine:"#ffe040", water:"#a0d0e0", log:"#7a6a5a", rail:"#c0c8d0", player:"#e04040", trees:["#a0c0d0","#b0d0e0"], sky:"#c8e0f0" },
+  { name:"Candy", grass:["#ffb6d9","#ffa0cc"], road:"#a06090", roadLine:"#fff040", water:"#a0d8f0", log:"#c08050", rail:"#e0a0d0", player:"#ffe030", trees:["#ff70b0","#ff90c0"], sky:"#ffd0e8" },
+  { name:"Lava", grass:["#3a2a2a","#332222"], road:"#2a1a1a", roadLine:"#ff8000", water:"#ff5010", log:"#4a2010", rail:"#5a3030", player:"#ffe040", trees:["#5a2020","#6a2828"], sky:"#401010" },
+  { name:"Ocean", grass:["#40c0a0","#38b090"], road:"#206070", roadLine:"#f0f080", water:"#2080b0", log:"#8b6a3b", rail:"#3a8a9a", player:"#ffd040", trees:["#20a080","#30b090"], sky:"#60d0e0" },
+  { name:"Forest", grass:["#5a8a3a","#4e7e32"], road:"#3a3a2a", roadLine:"#d0d060", water:"#3a7a6a", log:"#6a4a2a", rail:"#5a5a4a", player:"#f08030", trees:["#1a5a1a","#256025"], sky:"#a0c890" },
+  { name:"Neon", grass:["#1a1a3a","#141434"], road:"#0a0a1a", roadLine:"#ff00ff", water:"#00c0ff", log:"#5a2080", rail:"#00ffcc", player:"#ffff00", trees:["#ff0080","#8000ff"], sky:"#100030" },
+  { name:"Autumn", grass:["#c09040","#b88038"], road:"#5a4a3a", roadLine:"#f0c040", water:"#4a80a0", log:"#8a5a2a", rail:"#8a7a5a", player:"#e05020", trees:["#d06020","#e07030"], sky:"#f0c070" }
+];
+
+// ============ CONFIG ============
+const TILE = 55;                 // pixel size of a lane/tile
+const COLS = 8;                  // grid columns
+const W = TILE * COLS;           // 440
+const canvas = document.getElementById('game');
+const ctx = canvas.getContext('2d');
+const H = canvas.height;         // 600
+const VISIBLE_ROWS = Math.ceil(H / TILE) + 1;
+const STORAGE_KEY = 'crossyRoadSave_v1';
+
+// ============ STATE ============
+let state = null;
+let running = false;
+let paused = false;
+let animId = null;
+let currentTheme = 0;
+let bestScore = 0;
+
+// player render offset for smooth movement
+let renderX = 0, renderY = 0;
+
+// ============ LANE GENERATION ============
+function makeLane(row) {
+  // row 0 is starting safe grass area; increasing row = further ahead
+  let rng = mulberry32(row * 2654435761 >>> 0);
+  let type;
+  if (row < 3) type = 'grass';
+  else {
+    const r = rng();
+    if (r < 0.35) type = 'grass';
+    else if (r < 0.68) type = 'road';
+    else if (r < 0.85) type = 'water';
+    else type = 'railroad';
+  }
+  const lane = { row, type, obstacles: [] };
+
+  if (type === 'grass') {
+    // trees at random columns
+    for (let c=0;c<COLS;c++){
+      if (rng() < 0.22) lane.obstacles.push({ col:c, tree:true });
+    }
+  } else if (type === 'road') {
+    const speed = (0.6 + rng()*1.4) * (rng()<0.5?1:-1);
+    lane.speed = speed;
+    lane.dir = speed>0?1:-1;
+    const count = 1 + Math.floor(rng()*2);
+    const gap = W / count;
+    lane.cars = [];
+    for (let i=0;i<count;i++){
+      lane.cars.push({ x: i*gap + rng()*gap*0.5, w: TILE*0.9 });
+    }
+    lane.color = `hsl(${Math.floor(rng()*360)},70%,55%)`;
+  } else if (type === 'railroad') {
+    lane.speed = 0;
+    lane.trainTimer = rng()*4 + 2;
+    lane.train = null;
+    lane.warning = 0;
+    lane.dir = rng()<0.5?1:-1;
+    lane.seed = row;
+  } else if (type === 'water') {
+    const speed = (0.5 + rng()*1.1) * (rng()<0.5?1:-1);
+    lane.speed = speed;
+    lane.logs = [];
+    const count = 2 + Math.floor(rng()*2);
+    const gap = W / count;
+    for (let i=0;i<count;i++){
+      lane.logs.push({ x: i*gap + rng()*gap*0.3, w: TILE*(1.5+rng()*1.2) });
+    }
+  }
+  return lane;
+}
+
+// seeded RNG
+function mulberry32(a){
+  return function(){
+    a |= 0; a = a + 0x6D2B79F5 | 0;
+    let t = Math.imul(a ^ a >>> 15, 1 | a);
+    t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+    return ((t ^ t >>> 14) >>> 0) / 4294967296;
+  };
+}
+
+// ============ GAME INIT ============
+function newGame() {
+  state = {
+    playerRow: 0,
+    playerCol: Math.floor(COLS/2),
+    playerFrac: 0,      // sub-pixel on moving platform
+    score: 0,
+    maxRow: 0,
+    lanes: {},
+    onLog: null,
+    theme: currentTheme,
+    time: 0
+  };
+  for (let r=0;r<VISIBLE_ROWS+5;r++) ensureLane(r);
+  renderX = state.playerCol * TILE + TILE/2;
+  renderY = 0;
+}
+
+function ensureLane(row){
+  if (!state.lanes[row]) state.lanes[row] = makeLane(row);
+  return state.lanes[row];
+}
+
+// ============ MOVEMENT ============
+function movePlayer(dc, dr) {
+  if (!running || paused) return;
+  let nc = state.playerCol + dc;
+  let nr = state.playerRow + dr;
+  if (nc < 0 || nc >= COLS) return;
+  if (nr < 0) return;
+
+  const lane = ensureLane(nr);
+  // block if tree at destination on grass
+  if (lane.type === 'grass' && lane.obstacles.some(o=>o.tree && o.col===nc)) return;
+
+  state.playerCol = nc;
+  state.playerRow = nr;
+  state.playerFrac = 0;
+  state.onLog = null;
+
+  if (nr > state.maxRow) {
+    state.maxRow = nr;
+    state.score = nr;
+    updateScore();
+  }
+  // ensure future lanes
+  for (let r=nr; r<nr+VISIBLE_ROWS+3; r++) ensureLane(r);
+  // cleanup old lanes
+  for (const k in state.lanes){ if (+k < nr - 5) delete state.lanes[k]; }
+
+  saveGame();
+}
+
+// ============ UPDATE ============
+function update(dt) {
+  state.time += dt;
+  const startRow = state.playerRow - 4;
+  const endRow = state.playerRow + VISIBLE_ROWS;
+
+  for (let r = Math.max(0,startRow); r <= endRow; r++) {
+    const lane = state.lanes[r];
+    if (!lane) continue;
+
+    if (lane.type === 'road') {
+      for (const car of lane.cars) {
+        car.x += lane.speed * TILE * dt;
+        if (lane.speed > 0 && car.x > W + TILE) car.x = -TILE*2;
+        if (lane.speed < 0 && car.x < -TILE*2) car.x = W + TILE;
+      }
+    } else if (lane.type === 'water') {
+      for (const log of lane.logs) {
+        log.x += lane.speed * TILE * dt;
+        if (lane.speed > 0 && log.x > W + TILE) log.x = -log.w - TILE;
+        if (lane.speed < 0 && log.x < -log.w - TILE) log.x = W + TILE;
+      }
+    } else if (lane.type === 'railroad') {
+      lane.trainTimer -= dt;
+      if (lane.train) {
+        lane.train.x += lane.dir * TILE * 9 * dt;
+        if ((lane.dir>0 && lane.train.x > W + TILE*3) || (lane.dir<0 && lane.train.x < -TILE*6)) {
+          lane.train = null;
+          lane.trainTimer = 3 + Math.random()*3;
+        }
+      } else {
+        lane.warning = lane.trainTimer < 1.2 ? lane.trainTimer : 0;
+        if (lane.trainTimer <= 0) {
+          lane.train = { x: lane.dir>0 ? -TILE*5 : W + TILE*2, w: TILE*5 };
+        }
+      }
+    }
+  }
+
+  // player on water: ride the log
+  const pLane = state.lanes[state.playerRow];
+  if (pLane) {
+    if (pLane.type === 'water') {
+      let riding = null;
+      const px = state.playerCol * TILE + TILE/2 + state.playerFrac;
+      for (const log of pLane.logs) {
+        if (px > log.x && px < log.x + log.w) { riding = log; break; }
+      }
+      if (riding) {
+        state.playerFrac += pLane.speed * TILE * dt;
+        const newX = state.playerCol*TILE + TILE/2 + state.playerFrac;
+        if (newX < 0 || newX > W) { return gameOver(); } // fell off edge
+      } else {
+        return gameOver(); // drowned
+      }
+    } else {
+      state.playerFrac = 0;
+    }
+
+    // collisions
+    if (pLane.type === 'road') {
+      const px = state.playerCol*TILE + TILE/2;
+      for (const car of pLane.cars) {
+        if (Math.abs((car.x + car.w/2) - px) < (car.w/2 + TILE*0.35)) return gameOver();
+      }
+    }
+    if (pLane.type === 'railroad' && pLane.train) {
+      const px = state.playerCol*TILE + TILE/2;
+      if (px > pLane.train.x && px < pLane.train.x + pLane.train.w) return gameOver();
+    }
+  }
+
+  // smooth render lerp
+  const targetX = state.playerCol*TILE + TILE/2 + state.playerFrac;
+  const targetY = state.playerRow;
+  renderX += (targetX - renderX) * Math.min(1, dt*18);
+  renderY += (targetY - renderY) * Math.min(1, dt*18);
+}
+
+// ============ RENDER ============
+function draw() {
+  const th = THEMES[state.theme];
+  ctx.fillStyle = th.sky;
+  ctx.fillRect(0,0,W,H);
+
+  // camera: playerRow near bottom third
+  const camRow = renderY - (VISIBLE_ROWS - 4);
+  const bottomRow = Math.floor(camRow) - 1;
+  const topRow = bottomRow + VISIBLE_ROWS + 2;
+
+  for (let r = bottomRow; r <= topRow; r++) {
+    if (r < 0) continue;
+    const lane = ensureLane(r);
+    const y = H - (r - camRow + 1) * TILE;
+    drawLane(lane, y, th);
+  }
+  // trees/obstacles drawn on top of player for grass? draw after player for depth
+  drawPlayer(th, camRow);
+  // draw trees on player's-or-above rows over player
+  for (let r = bottomRow; r <= topRow; r++) {
+    if (r < 0) continue;
+    const lane = state.lanes[r];
+    if (lane && lane.type==='grass') {
+      const y = H - (r - camRow + 1)*TILE;
+      for (const o of lane.obstacles){
+        if (o.tree) drawTree(o.col*TILE, y, th);
+      }
+    }
+  }
+}
+
+function drawLane(lane, y, th) {
+  if (lane.type === 'grass') {
+    ctx.fillStyle = th.grass[lane.row % 2];
+    ctx.fillRect(0, y, W, TILE);
+  } else if (lane.type === 'road') {
+    ctx.fillStyle = th.road;
+    ctx.fillRect(0, y, W, TILE);
+    ctx.strokeStyle = th.roadLine;
+    ctx.setLineDash([12,12]);
+    ctx.lineWidth = 3;
+    ctx.beginPath(); ctx.moveTo(0, y+TILE/2); ctx.lineTo(W, y+TILE/2); ctx.stroke();
+    ctx.setLineDash([]);
+    for (const car of lane.cars) drawCar(car, y, lane, th);
+  } else if (lane.type === 'railroad') {
+    ctx.fillStyle = th.grass[lane.row % 2];
+    ctx.fillRect(0, y, W, TILE);
+    ctx.fillStyle = 'rgba(0,0,0,0.15)';
+    for (let i=0;i<COLS*2;i++) ctx.fillRect(i*(TILE/2)+6, y+8, 10, TILE-16);
+    ctx.strokeStyle = th.rail; ctx.lineWidth=4;
+    ctx.beginPath(); ctx.moveTo(0,y+TILE*0.35); ctx.lineTo(W,y+TILE*0.35); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(0,y+TILE*0.65); ctx.lineTo(W,y+TILE*0.65); ctx.stroke();
+    if (lane.warning>0 && Math.floor(lane.warning*8)%2===0) {
+      ctx.fillStyle='#ff3030';
+      ctx.beginPath(); ctx.arc(W-16,y+16,7,0,7); ctx.fill();
+      ctx.beginPath(); ctx.arc(16,y+16,7,0,7); ctx.fill();
+    }
+    if (lane.train) drawTrain(lane.train, y);
+  } else if (lane.type === 'water') {
+    ctx.fillStyle = th.water;
+    ctx.fillRect(0, y, W, TILE);
+    // ripples
+    ctx.fillStyle='rgba(255,255,255,0.12)';
+    for(let i=0;i<4;i++){
+      const rx=(i*130 + state.time*20)%W;
+      ctx.fillRect(rx,y+TILE*0.3,30,3);
+    }
+    for (const log of lane.logs) drawLog(log, y, th);
+  }
+}
+
+function roundRect(x,y,w,h,r){
+  ctx.beginPath();
+  ctx.moveTo(x+r,y);
+  ctx.arcTo(x+w,y,x+w,y+h,r);
+  ctx.arcTo(x+w,y+h,x,y+h,r);
+  ctx.arcTo(x,y+h,x,y,r);
+  ctx.arcTo(x,y,x+w,y,r);
+  ctx.closePath();
+}
+
+function drawCar(car, y, lane, th) {
+  const h = TILE*0.6, cy = y + TILE*0.2;
+  // shadow
+  ctx.fillStyle='rgba(0,0,0,0.2)';
+  roundRect(car.x+3, cy+4, car.w, h, 8); ctx.fill();
+  ctx.fillStyle = lane.color;
+  roundRect(car.x, cy, car.w, h, 8); ctx.fill();
+  // windows
+  ctx.fillStyle='rgba(180,220,255,0.85)';
+  roundRect(car.x+car.w*0.2, cy+4, car.w*0.6, h*0.4, 4); ctx.fill();
+  // headlights direction
+  ctx.fillStyle='#ffe080';
+  const hx = lane.dir>0 ? car.x+car.w-5 : car.x+1;
+  ctx.fillRect(hx, cy+h-8, 4, 5);
+}
+
+function drawTrain(train, y) {
+  const h = TILE*0.72, cy = y + TILE*0.14;
+  ctx.fillStyle='rgba(0,0,0,0.25)';
+  roundRect(train.x+4, cy+5, train.w, h, 6); ctx.fill();
+  ctx.fillStyle='#c02030';
+  roundRect(train.x, cy, train.w, h, 6); ctx.fill();
+  ctx.fillStyle='#202030';
+  for(let i=0;i<5;i++) roundRect(train.x+18+i*TILE, cy+8, TILE*0.6, h*0.4,3), ctx.fill();
+  ctx.fillStyle='#ffd020';
+  ctx.fillRect(train.x, cy+h*0.4, train.w, 4);
+}
+
+function drawLog(log, y, th) {
+  const h = TILE*0.6, cy = y + TILE*0.2;
+  ctx.fillStyle = th.log;
+  roundRect(log.x, cy, log.w, h, h/2); ctx.fill();
+  ctx.fillStyle='rgba(0,0,0,0.2)';
+  for(let i=0;i<log.w;i+=18) ctx.fillRect(log.x+8+i, cy+4, 3, h-8);
+  // ends
+  ctx.fillStyle='rgba(0,0,0,0.15)';
+  ctx.beginPath(); ctx.arc(log.x+6,cy+h/2,h*0.28,0,7); ctx.fill();
+  ctx.beginPath(); ctx.arc(log.x+log.w-6,cy+h/2,h*0.28,0,7); ctx.fill();
+}
+
+function drawTree(x, y, th) {
+  ctx.fillStyle='rgba(0,0,0,0.15)';
+  ctx.beginPath(); ctx.ellipse(x+TILE/2, y+TILE*0.85, TILE*0.3, TILE*0.12,0,0,7); ctx.fill();
+  ctx.fillStyle='#6b4020';
+  ctx.fillRect(x+TILE/2-6, y+TILE*0.4, 12, TILE*0.45);
+  ctx.fillStyle=th.trees[0];
+  ctx.beginPath(); ctx.arc(x+TILE/2, y+TILE*0.35, TILE*0.34,0,7); ctx.fill();
+  ctx.fillStyle=th.trees[1];
+  ctx.beginPath(); ctx.arc(x+TILE/2-8, y+TILE*0.28, TILE*0.22,0,7); ctx.fill();
+}
+
+function drawPlayer(th, camRow) {
+  const x = renderX;
+  const y = H - (renderY - camRow + 1)*TILE + TILE/2;
+  const s = TILE*0.34;
+  // shadow
+  ctx.fillStyle='rgba(0,0,0,0.2)';
+  ctx.beginPath(); ctx.ellipse(x, y+s*0.9, s, s*0.4,0,0,7); ctx.fill();
+  // body
+  ctx.fillStyle=th.player;
+  roundRect(x-s, y-s, s*2, s*2, 8); ctx.fill();
+  // head bump
+  ctx.fillStyle=th.player;
+  roundRect(x-s*0.6, y-s*1.5, s*1.2, s*0.8, 6); ctx.fill();
+  // eyes
+  ctx.fillStyle='#fff';
+  ctx.beginPath(); ctx.arc(x-s*0.3,y-s*1.1,s*0.22,0,7); ctx.fill();
+  ctx.beginPath(); ctx.arc(x+s*0.3,y-s*1.1,s*0.22,0,7); ctx.fill();
+  ctx.fillStyle='#000';
+  ctx.beginPath(); ctx.arc(x-s*0.3,y-s*1.1,s*0.1,0,7); ctx.fill();
+  ctx.beginPath(); ctx.arc(x+s*0.3,y-s*1.1,s*0.1,0,7); ctx.fill();
+  // beak
+  ctx.fillStyle='#ff8020';
+  ctx.beginPath();
+  ctx.moveTo(x-4,y-s*0.7); ctx.lineTo(x+4,y-s*0.7); ctx.lineTo(x,y-s*0.4); ctx.closePath(); ctx.fill();
+}
+
+// ============ LOOP ============
+let lastTime = 0;
+function loop(t) {
+  if (!running) return;
+  const dt = Math.min(0.05, (t - lastTime)/1000 || 0);
+  lastTime = t;
+  if (!paused) { update(dt); }
+  draw();
+  animId = requestAnimationFrame(loop);
+}
+
+// ============ GAME OVER ============
+function gameOver() {
+  running = false;
+  cancelAnimationFrame(animId);
+  if (state.score > bestScore) { bestScore = state.score; }
+  localStorage.setItem('crossyBest', bestScore);
+  clearSave();
+  document.getElementById('finalScore').textContent = 'Score: ' + state.score;
+  document.getElementById('bestScore').textContent = 'Best: ' + bestScore;
+  document.getElementById('gameOverOverlay').classList.remove('hidden');
+}
+
+// ============ SAVE / LOAD ============
+function saveGame() {
+  if (!state || !running) return;
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({
+      playerRow: state.playerRow,
+      playerCol: state.playerCol,
+      score: state.score,
+      maxRow: state.maxRow,
+      theme: state.theme
+    }));
+  } catch(e){}
+}
+function clearSave(){ localStorage.removeItem(STORAGE_KEY); }
+
+function loadGame() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return false;
+    const d = JSON.parse(raw);
+    currentTheme = d.theme || 0;
+    newGame();
+    // regenerate deterministic lanes then restore player pos
+    state.theme = currentTheme;
+    state.playerRow = d.playerRow;
+    state.playerCol = d.playerCol;
+    state.score = d.score;
+    state.maxRow = d.maxRow;
+    for (let r=state.playerRow; r<state.playerRow+VISIBLE_ROWS+3; r++) ensureLane(r);
+    // don't restore on water/hazard-in-progress: snap to nearest grass behind if unsafe
+    let ln = ensureLane(state.playerRow);
+    if (ln.type==='water'||ln.type==='road'||ln.type==='railroad'){
+      // move back to a grass lane for safety
+      let r=state.playerRow;
+      while(r>0 && ensureLane(r).type!=='grass') r--;
+      state.playerRow=r;
+    }
+    renderX = state.playerCol*TILE + TILE/2;
+    renderY = state.playerRow;
+    return true;
+  } catch(e){ return false; }
+}
+
+// ============ UI ============
+function updateScore(){ document.getElementById('score').textContent = state.score; }
+
+function startGame() {
+  document.getElementById('startOverlay').classList.add('hidden');
+  document.getElementById('gameOverOverlay').classList.add('hidden');
+  document.getElementById('pauseOverlay').classList.add('hidden');
+  running = true; paused = false;
+  updateScore();
+  saveGame();
+  lastTime = performance.now();
+  animId = requestAnimationFrame(loop);
+}
+
+function togglePause(){
+  if (!running) return;
+  paused = !paused;
+  document.getElementById('pauseOverlay').classList.toggle('hidden', !paused);
+  document.getElementById('pauseBtn').textContent = paused ? '▶' : '⏸';
+}
+
+function buildThemeGrid(){
+  const grid = document.getElementById('themeGrid');
+  grid.innerHTML='';
+  THEMES.forEach((th,i)=>{
+    const d=document.createElement('div');
+    d.className='theme-swatch'+(i===currentTheme?' active':'');
+    d.style.background=`linear-gradient(135deg,${th.grass[0]},${th.water})`;
+    d.textContent=th.name;
+    d.onclick=()=>{
+      currentTheme=i;
+      if(state) state.theme=i;
+      buildThemeGrid();
+    };
+    grid.appendChild(d);
+  });
+}
+
+// ============ INPUT ============
+document.addEventListener('keydown', e=>{
+  if (['ArrowUp','ArrowDown','ArrowLeft','ArrowRight',' '].includes(e.key)) e.preventDefault();
+  if (e.key==='Escape' || e.key===' ') { togglePause(); return; }
+  if (!running || paused) return;
+  switch(e.key){
+    case 'ArrowUp': case 'w': case 'W': movePlayer(0,1); break;
+    case 'ArrowDown': case 's': case 'S': movePlayer(0,-1); break;
+    case 'ArrowLeft': case 'a': case 'A': movePlayer(-1,0); break;
+    case 'ArrowRight': case 'd': case 'D': movePlayer(1,0); break;
+  }
+});
+
+// touch swipe
+let tsx=0,tsy=0;
+canvas.addEventListener('touchstart',e=>{const t=e.touches[0];tsx=t.clientX;tsy=t.clientY;},{passive:true});
+canvas.addEventListener('touchend',e=>{
+  const t=e.changedTouches[0];
+  const dx=t.clientX-tsx, dy=t.clientY-tsy;
+  if(Math.abs(dx)<20&&Math.abs(dy)<20){ movePlayer(0,1); return; } // tap = forward
+  if(Math.abs(dx)>Math.abs(dy)) movePlayer(dx>0?1:-1,0);
+  else movePlayer(0, dy<0?1:-1);
+},{passive:true});
+
+// buttons
+document.getElementById('startBtn').onclick = ()=>{ newGame(); startGame(); };
+document.getElementById('restartBtn').onclick = ()=>{ newGame(); startGame(); };
+document.getElementById('restartFromPause').onclick = ()=>{ newGame(); startGame(); };
+document.getElementById('resumeBtn').onclick = togglePause;
+document.getElementById('pauseBtn').onclick = togglePause;
+document.getElementById('themeBtn').onclick = ()=>{
+  paused = true;
+  document.getElementById('startOverlay').classList.remove('hidden');
+  document.getElementById('startSub').textContent = running ? 'Pick a theme & continue' : 'Hop across the endless world!';
+  document.getElementById('startBtn').textContent = running ? 'CONTINUE' : 'PLAY';
+  buildThemeGrid();
+};
+
+// pause when tab hidden
+document.addEventListener('visibilitychange', ()=>{
+  if (document.hidden && running && !paused) togglePause();
+});
+
+// ============ BOOT ============
+bestScore = parseInt(localStorage.getItem('crossyBest')||'0',10);
+buildThemeGrid();
+
+// try restore
+if (loadGame()) {
+  document.getElementById('startSub').textContent = 'Continue your run — Score: ' + state.score;
+  document.getElementById('startBtn').textContent = 'CONTINUE';
+  // draw a preview frame
+  draw();
+} else {
+  newGame();
+  draw();
+}
+</script>
+</body>
+</html>
