@@ -1,0 +1,991 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ДомашкаAI — Помічник з домашніх завдань</title>
+
+<!-- Metadata -->
+<meta name="description" content="ДомашкаAI — розумний AI-помічник з домашніх завдань для українських школярів. Пояснює розв'язання крок за кроком з математики, української літератури, історії та фізики за шкільною програмою.">
+<meta name="keywords" content="домашка, домашнє завдання, AI помічник, математика, українська література, історія України, фізика, школярі, навчання">
+<meta name="author" content="ДомашкаAI">
+<meta property="og:title" content="ДомашкаAI — Помічник з домашніх завдань">
+<meta property="og:description" content="AI-помічник для українських школярів. Пояснення крок за кроком українською мовою.">
+<meta property="og:type" content="website">
+<meta name="theme-color" content="#0057B7">
+
+<!-- Favicon (inline SVG graduation cap) -->
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%230057B7'/%3E%3Ctext x='50' y='68' font-size='58' text-anchor='middle'%3E%F0%9F%8E%93%3C/text%3E%3C/svg%3E">
+
+<style>
+  * {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: 'Segoe UI', 'Roboto', sans-serif;
+  }
+
+  :root {
+    --blue: #0057B7;
+    --yellow: #FFD700;
+    --bg: #f0f4f8;
+    --card: #ffffff;
+    --text: #1a2634;
+    --muted: #64748b;
+    --accent: #0057B7;
+    --shadow: 0 4px 20px rgba(0,0,0,0.08);
+  }
+
+  body {
+    background: linear-gradient(135deg, #e0eafc 0%, #cfdef3 100%);
+    color: var(--text);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+
+  header {
+    background: linear-gradient(90deg, var(--blue) 0%, #0074E0 100%);
+    color: white;
+    padding: 16px 24px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    box-shadow: 0 2px 12px rgba(0,87,183,0.3);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+
+  .logo {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-size: 1.5rem;
+    font-weight: 700;
+  }
+
+  .logo-icon {
+    width: 44px;
+    height: 44px;
+    background: var(--yellow);
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.6rem;
+  }
+
+  .logo span.ai { color: var(--yellow); }
+
+  .header-actions { display: flex; gap: 10px; align-items: center; }
+
+  .header-btn {
+    background: rgba(255,255,255,0.15);
+    border: none;
+    color: white;
+    padding: 8px 16px;
+    border-radius: 10px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    transition: 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .header-btn:hover { background: rgba(255,255,255,0.3); }
+
+  .icon-btn {
+    width: 42px; height: 42px; padding: 0;
+    justify-content: center; font-size: 1.2rem;
+    border-radius: 12px;
+  }
+  .icon-btn.gear { transition: transform 0.4s; }
+  .icon-btn.gear:hover { transform: rotate(90deg); }
+
+  .api-status {
+    width: 10px; height: 10px; border-radius: 50%;
+    background: #ff5252; flex-shrink: 0;
+    box-shadow: 0 0 8px rgba(255,82,82,0.6);
+  }
+  .api-status.connected { background: #4caf50; box-shadow: 0 0 8px rgba(76,175,80,0.6); }
+
+  .container {
+    flex: 1;
+    display: flex;
+    gap: 20px;
+    padding: 20px;
+    max-width: 1400px;
+    margin: 0 auto;
+    width: 100%;
+  }
+
+  .sidebar {
+    width: 260px;
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .card {
+    background: var(--card);
+    border-radius: 18px;
+    padding: 20px;
+    box-shadow: var(--shadow);
+  }
+
+  .card h3 {
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--muted);
+    margin-bottom: 14px;
+  }
+
+  .subjects {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .subject-btn {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 14px;
+    border-radius: 12px;
+    border: 2px solid transparent;
+    background: #f5f7fa;
+    cursor: pointer;
+    transition: 0.2s;
+    font-size: 0.95rem;
+    text-align: left;
+    color: var(--text);
+  }
+  .subject-btn:hover { background: #e8eef5; transform: translateX(4px); }
+  .subject-btn.active {
+    background: linear-gradient(135deg, #e3f0ff, #f0f7ff);
+    border-color: var(--blue);
+    font-weight: 600;
+    color: var(--blue);
+  }
+  .subject-icon { font-size: 1.3rem; }
+
+  .main {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    min-width: 0;
+  }
+
+  .chat-area {
+    flex: 1;
+    background: var(--card);
+    border-radius: 18px;
+    box-shadow: var(--shadow);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    min-height: 400px;
+  }
+
+  .chat-header {
+    padding: 16px 20px;
+    border-bottom: 1px solid #eef2f7;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-weight: 600;
+  }
+  .model-badge {
+    margin-left: auto;
+    font-size: 0.72rem;
+    background: #eef4fc;
+    color: var(--blue);
+    padding: 4px 10px;
+    border-radius: 12px;
+    font-weight: 500;
+  }
+
+  .chat-messages {
+    flex: 1;
+    overflow-y: auto;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .msg {
+    max-width: 85%;
+    padding: 14px 18px;
+    border-radius: 16px;
+    line-height: 1.6;
+    animation: fadeIn 0.3s ease;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+  }
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .msg.user {
+    align-self: flex-end;
+    background: linear-gradient(135deg, var(--blue), #0074E0);
+    color: white;
+    border-bottom-right-radius: 4px;
+  }
+
+  .msg.bot {
+    align-self: flex-start;
+    background: #f5f7fa;
+    color: var(--text);
+    border-bottom-left-radius: 4px;
+  }
+
+  .msg.error {
+    align-self: flex-start;
+    background: #fff0f0;
+    border-left: 3px solid #ff5252;
+    color: #b71c1c;
+  }
+
+  .msg.bot strong { color: var(--blue); }
+  .msg .step {
+    background: white;
+    border-left: 3px solid var(--yellow);
+    padding: 8px 12px;
+    margin: 8px 0;
+    border-radius: 6px;
+  }
+  .msg code {
+    background: rgba(0,87,183,0.08);
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-family: 'Consolas', monospace;
+    font-size: 0.9em;
+  }
+
+  .welcome {
+    text-align: center;
+    color: var(--muted);
+    margin: auto;
+    padding: 40px;
+  }
+  .welcome h2 { color: var(--blue); margin-bottom: 10px; }
+  .welcome .big-icon { font-size: 4rem; margin-bottom: 16px; }
+
+  .input-area {
+    padding: 16px;
+    border-top: 1px solid #eef2f7;
+    display: flex;
+    gap: 10px;
+    align-items: flex-end;
+  }
+
+  textarea {
+    flex: 1;
+    border: 2px solid #e2e8f0;
+    border-radius: 14px;
+    padding: 12px 16px;
+    font-size: 1rem;
+    resize: none;
+    outline: none;
+    max-height: 120px;
+    font-family: inherit;
+    transition: 0.2s;
+  }
+  textarea:focus { border-color: var(--blue); }
+
+  .send-btn {
+    background: linear-gradient(135deg, var(--blue), #0074E0);
+    color: white;
+    border: none;
+    width: 50px;
+    height: 50px;
+    border-radius: 14px;
+    cursor: pointer;
+    font-size: 1.3rem;
+    flex-shrink: 0;
+    transition: 0.2s;
+  }
+  .send-btn:hover { transform: scale(1.05); }
+  .send-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+  .quick-prompts {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    padding: 0 16px 12px;
+  }
+  .quick-prompt {
+    background: #eef4fc;
+    border: 1px solid #d6e4f5;
+    border-radius: 20px;
+    padding: 6px 14px;
+    font-size: 0.82rem;
+    cursor: pointer;
+    color: var(--blue);
+    transition: 0.2s;
+  }
+  .quick-prompt:hover { background: var(--blue); color: white; }
+
+  .typing { display: flex; gap: 4px; padding: 8px 0; }
+  .typing span {
+    width: 8px; height: 8px; background: var(--blue);
+    border-radius: 50%; animation: bounce 1.4s infinite;
+  }
+  .typing span:nth-child(2){ animation-delay:0.2s; }
+  .typing span:nth-child(3){ animation-delay:0.4s; }
+  @keyframes bounce {
+    0%,60%,100%{ transform: translateY(0); opacity:0.4;}
+    30%{ transform: translateY(-8px); opacity:1;}
+  }
+
+  footer {
+    text-align: center;
+    padding: 12px;
+    color: var(--muted);
+    font-size: 0.8rem;
+  }
+
+  /* ---------- MODAL ---------- */
+  .modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(15,25,45,0.55);
+    backdrop-filter: blur(4px);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    padding: 20px;
+    animation: fadeIn 0.2s ease;
+  }
+  .modal-overlay.open { display: flex; }
+
+  .modal {
+    background: var(--card);
+    border-radius: 20px;
+    padding: 28px;
+    width: 100%;
+    max-width: 480px;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+    animation: slideUp 0.3s ease;
+    max-height: 90vh;
+    overflow-y: auto;
+  }
+  @keyframes slideUp {
+    from { transform: translateY(30px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+  }
+
+  .modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 20px;
+  }
+  .modal-header h2 {
+    font-size: 1.3rem;
+    color: var(--blue);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .close-btn {
+    background: #f0f4f8;
+    border: none;
+    width: 34px; height: 34px;
+    border-radius: 10px;
+    cursor: pointer;
+    font-size: 1.1rem;
+    color: var(--muted);
+    transition: 0.2s;
+  }
+  .close-btn:hover { background: #e2e8f0; }
+
+  .field-label {
+    display: block;
+    font-size: 0.9rem;
+    font-weight: 600;
+    margin-bottom: 8px;
+    color: var(--text);
+  }
+  .field-hint {
+    font-size: 0.82rem;
+    color: var(--muted);
+    margin-bottom: 12px;
+    line-height: 1.5;
+  }
+  .field-hint a { color: var(--blue); }
+
+  .input-with-btn { display: flex; gap: 8px; margin-bottom: 6px; }
+  .modal input[type=text], .modal input[type=password], .modal select {
+    flex: 1;
+    width: 100%;
+    border: 2px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 12px 14px;
+    font-size: 0.95rem;
+    outline: none;
+    transition: 0.2s;
+    font-family: inherit;
+  }
+  .modal input:focus, .modal select:focus { border-color: var(--blue); }
+
+  .toggle-vis {
+    background: #f0f4f8;
+    border: none;
+    padding: 0 14px;
+    border-radius: 12px;
+    cursor: pointer;
+    font-size: 1.1rem;
+  }
+
+  .modal-section { margin-bottom: 22px; }
+
+  .test-result {
+    font-size: 0.85rem;
+    margin-top: 8px;
+    min-height: 18px;
+  }
+  .test-result.ok { color: #2e7d32; }
+  .test-result.err { color: #c62828; }
+
+  .btn-primary {
+    background: linear-gradient(135deg, var(--blue), #0074E0);
+    color: white;
+    border: none;
+    padding: 12px 22px;
+    border-radius: 12px;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    width: 100%;
+    transition: 0.2s;
+  }
+  .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 6px 16px rgba(0,87,183,0.3); }
+
+  .btn-secondary {
+    background: #f0f4f8;
+    color: var(--text);
+    border: none;
+    padding: 10px 18px;
+    border-radius: 12px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    margin-top: 8px;
+    width: 100%;
+  }
+  .btn-secondary:hover { background: #e2e8f0; }
+
+  .info-box {
+    background: #fffbe6;
+    border: 1px solid #ffe58f;
+    border-radius: 12px;
+    padding: 12px 14px;
+    font-size: 0.83rem;
+    color: #7a6100;
+    line-height: 1.5;
+    margin-bottom: 20px;
+  }
+
+  /* Vertical / mobile orientation */
+  @media (max-width: 860px) {
+    .container { flex-direction: column; padding: 12px; }
+    .sidebar { width: 100%; flex-direction: row; overflow-x: auto; }
+    .sidebar .card { flex: 1; min-width: 200px; }
+    .subjects { flex-direction: row; }
+    .subject-btn { flex-direction: column; text-align: center; min-width: 80px; padding: 10px 8px; gap: 4px; font-size: 0.8rem; }
+    .subject-btn:hover { transform: none; }
+    .stats-card { display: none; }
+    .msg { max-width: 92%; }
+    .logo { font-size: 1.2rem; }
+    .logo-icon { width: 38px; height: 38px; }
+    .header-btn span.txt { display: none; }
+  }
+
+  @media (orientation: landscape) and (max-height: 500px) {
+    header { padding: 8px 16px; }
+    .container { padding: 8px; }
+  }
+
+  ::-webkit-scrollbar { width: 8px; }
+  ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+</style>
+</head>
+<body>
+  <header>
+    <div class="logo">
+      <div class="logo-icon">🎓</div>
+      <div>Домашка<span class="ai">AI</span></div>
+    </div>
+    <div class="header-actions">
+      <span class="api-status" id="apiStatus" title="Статус Gemini API"></span>
+      <button class="header-btn" onclick="clearHistory()">🗑 <span class="txt">Очистити</span></button>
+      <button class="header-btn icon-btn gear" onclick="openSettings()" title="Налаштування">⚙️</button>
+    </div>
+  </header>
+
+  <div class="container">
+    <aside class="sidebar">
+      <div class="card">
+        <h3>Предмети</h3>
+        <div class="subjects" id="subjects"></div>
+      </div>
+      <div class="card stats-card">
+        <h3>Статистика</h3>
+        <div style="font-size:0.9rem; line-height:2; color:var(--muted)">
+          <div>📝 Запитань: <strong id="statQuestions" style="color:var(--blue)">0</strong></div>
+          <div>📚 Активний предмет:<br><strong id="statSubject" style="color:var(--blue)">Математика</strong></div>
+        </div>
+      </div>
+    </aside>
+
+    <main class="main">
+      <div class="chat-area">
+        <div class="chat-header">
+          <span id="chatIcon">🔢</span>
+          <span id="chatTitle">Математика</span>
+          <span class="model-badge" id="modelBadge">Демо-режим</span>
+        </div>
+        <div class="chat-messages" id="messages"></div>
+        <div class="quick-prompts" id="quickPrompts"></div>
+        <div class="input-area">
+          <textarea id="input" rows="1" placeholder="Постав своє запитання українською..."></textarea>
+          <button class="send-btn" id="sendBtn" onclick="sendMessage()">➤</button>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <footer>ДомашкаAI — навчаємось разом за українською програмою 🇺🇦</footer>
+
+  <!-- SETTINGS MODAL -->
+  <div class="modal-overlay" id="settingsModal">
+    <div class="modal">
+      <div class="modal-header">
+        <h2>⚙️ Налаштування</h2>
+        <button class="close-btn" onclick="closeSettings()">✕</button>
+      </div>
+
+      <div class="info-box">
+        🔑 Для роботи AI потрібен безкоштовний ключ Google Gemini. Ключ зберігається лише у вашому браузері (local storage) і нікуди не передається, окрім Google.
+      </div>
+
+      <div class="modal-section">
+        <label class="field-label">Gemini API ключ</label>
+        <div class="field-hint">
+          Отримати безкоштовний ключ: <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener">aistudio.google.com/app/apikey</a>
+        </div>
+        <div class="input-with-btn">
+          <input type="password" id="apiKeyInput" placeholder="AIza...">
+          <button class="toggle-vis" onclick="toggleKeyVisibility()" id="toggleVisBtn">👁</button>
+        </div>
+        <div class="test-result" id="testResult"></div>
+      </div>
+
+      <div class="modal-section">
+        <label class="field-label">Модель</label>
+        <select id="modelSelect">
+          <option value="gemini-3.6-flash">Gemini 3.6 Flash (швидка, рекомендовано)</option>
+          <option value="gemini-3.5-flash-lite">Gemini 3.5 Flash Lite (найшвидша)</option>
+          <option value="gemini-3.5-flash">Gemini 3.5 Flash</option>
+          <option value="gemini-2.5-pro">Gemini 2.5 Pro (найрозумніша)</option>
+        </select>
+      </div>
+
+      <button class="btn-primary" onclick="saveSettings()">💾 Зберегти</button>
+      <button class="btn-secondary" onclick="testConnection()">🔌 Перевірити з'єднання</button>
+    </div>
+  </div>
+
+<script>
+const SUBJECTS = {
+  math: { name: "Математика", icon: "🔢", prompts: ["Розв'яжи рівняння 2x+5=15", "Що таке теорема Піфагора?", "Знайди площу трикутника"] },
+  literature: { name: "Українська література", icon: "📖", prompts: ["Аналіз вірша Шевченка «Заповіт»", "Хто написав «Кайдашева сім'я»?", "Що таке метафора?"] },
+  history: { name: "Історія України", icon: "🏛", prompts: ["Коли була Козацька доба?", "Хто такий Богдан Хмельницький?", "Розкажи про Київську Русь"] },
+  physics: { name: "Фізика", icon: "⚡", prompts: ["Що таке закон Ома?", "Обчисли швидкість руху", "Поясни закон Ньютона"] }
+};
+
+const SUBJECT_CONTEXT = {
+  math: "математики",
+  literature: "української літератури",
+  history: "історії України",
+  physics: "фізики"
+};
+
+let state = {
+  currentSubject: "math",
+  questionCount: 0,
+  chats: { math: [], literature: [], history: [], physics: [] }
+};
+
+let settings = {
+  apiKey: "",
+  model: "gemini-2.0-flash"
+};
+
+// ---------- LOCAL STORAGE ----------
+function saveState() {
+  localStorage.setItem("homeworkAI_state", JSON.stringify(state));
+}
+function loadState() {
+  const saved = localStorage.getItem("homeworkAI_state");
+  if (saved) { try { state = JSON.parse(saved); } catch(e){} }
+}
+function saveSettingsToStorage() {
+  localStorage.setItem("homeworkAI_settings", JSON.stringify(settings));
+}
+function loadSettings() {
+  const saved = localStorage.getItem("homeworkAI_settings");
+  if (saved) { try { settings = JSON.parse(saved); } catch(e){} }
+}
+
+// ---------- SETTINGS MODAL ----------
+function openSettings() {
+  document.getElementById("apiKeyInput").value = settings.apiKey || "";
+  document.getElementById("modelSelect").value = settings.model || "gemini-2.0-flash";
+  document.getElementById("testResult").textContent = "";
+  document.getElementById("testResult").className = "test-result";
+  document.getElementById("settingsModal").classList.add("open");
+}
+function closeSettings() {
+  document.getElementById("settingsModal").classList.remove("open");
+}
+function toggleKeyVisibility() {
+  const inp = document.getElementById("apiKeyInput");
+  inp.type = inp.type === "password" ? "text" : "password";
+  document.getElementById("toggleVisBtn").textContent = inp.type === "password" ? "👁" : "🙈";
+}
+function saveSettings() {
+  settings.apiKey = document.getElementById("apiKeyInput").value.trim();
+  settings.model = document.getElementById("modelSelect").value;
+  saveSettingsToStorage();
+  updateApiStatus();
+  closeSettings();
+}
+
+document.getElementById("settingsModal").addEventListener("click", (e) => {
+  if (e.target.id === "settingsModal") closeSettings();
+});
+
+function updateApiStatus() {
+  const dot = document.getElementById("apiStatus");
+  const badge = document.getElementById("modelBadge");
+  if (settings.apiKey) {
+    dot.classList.add("connected");
+    dot.title = "Gemini підключено";
+    badge.textContent = settings.model.replace("gemini-", "Gemini ");
+  } else {
+    dot.classList.remove("connected");
+    dot.title = "API ключ не встановлено (демо-режим)";
+    badge.textContent = "Демо-режим";
+  }
+}
+
+// ---------- TEST CONNECTION ----------
+async function testConnection() {
+  const key = document.getElementById("apiKeyInput").value.trim();
+  const model = document.getElementById("modelSelect").value;
+  const res = document.getElementById("testResult");
+  if (!key) {
+    res.className = "test-result err";
+    res.textContent = "⚠️ Введіть API ключ спочатку.";
+    return;
+  }
+  res.className = "test-result";
+  res.textContent = "⏳ Перевіряємо...";
+  try {
+    const reply = await callGemini("Скажи одне слово: Привіт", key, model, "Ти помічник.");
+    if (reply) {
+      res.className = "test-result ok";
+      res.textContent = "✅ З'єднання успішне! Ключ працює.";
+    }
+  } catch (err) {
+    res.className = "test-result err";
+    res.textContent = "❌ Помилка: " + err.message;
+  }
+}
+
+// ---------- GEMINI API ----------
+async function callGemini(userText, apiKey, model, systemPrompt, history=[]) {
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(apiKey)}`;
+
+  const contents = [];
+  history.forEach(m => {
+    contents.push({ role: m.role === "bot" ? "model" : "user", parts: [{ text: m.text }] });
+  });
+  contents.push({ role: "user", parts: [{ text: userText }] });
+
+  const body = {
+    system_instruction: { parts: [{ text: systemPrompt }] },
+    contents: contents,
+    generationConfig: { temperature: 0.7, maxOutputTokens: 2048 }
+  };
+
+  const resp = await fetch(url, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body)
+  });
+
+  if (!resp.ok) {
+    let msg = `HTTP ${resp.status}`;
+    try {
+      const errData = await resp.json();
+      if (errData.error && errData.error.message) msg = errData.error.message;
+    } catch(e){}
+    if (resp.status === 400) msg = "Невірний запит або ключ. " + msg;
+    if (resp.status === 403) msg = "Доступ заборонено. Перевірте ключ API.";
+    if (resp.status === 429) msg = "Перевищено ліміт запитів. Спробуйте пізніше.";
+    throw new Error(msg);
+  }
+
+  const data = await resp.json();
+  const text = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+  if (!text) {
+    if (data?.candidates?.[0]?.finishReason === "SAFETY")
+      throw new Error("Відповідь заблоковано фільтром безпеки.");
+    throw new Error("Порожня відповідь від моделі.");
+  }
+  return text.trim();
+}
+
+function buildSystemPrompt(subject) {
+  return `Ти — ДомашкаAI, доброзичливий AI-помічник з домашніх завдань для українських школярів. 
+Ти спеціалізуєшся на предметі: ${SUBJECT_CONTEXT[subject]}.
+ПРАВИЛА:
+1. Відповідай ВИКЛЮЧНО українською мовою.
+2. Дотримуйся української шкільної програми.
+3. Пояснюй розв'язання КРОК ЗА КРОКОМ, використовуючи формат "Крок 1:", "Крок 2:" тощо.
+4. Виділяй важливі терміни та відповіді жирним шрифтом за допомогою **подвійних зірочок**.
+5. Будь підбадьорливим і зрозумілим для дитини.
+6. Для математики та фізики завжди показуй обчислення й перевірку.
+7. Для літератури давай аналіз (тема, ідея, художні засоби).
+8. Для історії вказуй причини, перебіг і наслідки подій та дати.
+9. Наприкінці за потреби додай коротку пораду або підсумок.`;
+}
+
+// ---------- UI SETUP ----------
+function renderSubjects() {
+  const el = document.getElementById("subjects");
+  el.innerHTML = "";
+  for (const key in SUBJECTS) {
+    const s = SUBJECTS[key];
+    const btn = document.createElement("button");
+    btn.className = "subject-btn" + (key === state.currentSubject ? " active" : "");
+    btn.innerHTML = `<span class="subject-icon">${s.icon}</span><span>${s.name}</span>`;
+    btn.onclick = () => switchSubject(key);
+    el.appendChild(btn);
+  }
+}
+
+function switchSubject(key) {
+  state.currentSubject = key;
+  renderSubjects();
+  updateHeader();
+  renderMessages();
+  renderQuickPrompts();
+  updateStats();
+  saveState();
+}
+
+function updateHeader() {
+  const s = SUBJECTS[state.currentSubject];
+  document.getElementById("chatIcon").textContent = s.icon;
+  document.getElementById("chatTitle").textContent = s.name;
+}
+
+function renderQuickPrompts() {
+  const el = document.getElementById("quickPrompts");
+  el.innerHTML = "";
+  SUBJECTS[state.currentSubject].prompts.forEach(p => {
+    const b = document.createElement("div");
+    b.className = "quick-prompt";
+    b.textContent = p;
+    b.onclick = () => { document.getElementById("input").value = p; sendMessage(); };
+    el.appendChild(b);
+  });
+}
+
+function renderMessages() {
+  const el = document.getElementById("messages");
+  el.innerHTML = "";
+  const chat = state.chats[state.currentSubject];
+  if (chat.length === 0) {
+    const s = SUBJECTS[state.currentSubject];
+    el.innerHTML = `<div class="welcome">
+      <div class="big-icon">${s.icon}</div>
+      <h2>${s.name}</h2>
+      <p>Постав своє запитання, і я поясню розв'язання крок за кроком українською мовою! 🇺🇦</p>
+    </div>`;
+    return;
+  }
+  chat.forEach(m => addMessageToDOM(m.role, m.text, false));
+  el.scrollTop = el.scrollHeight;
+}
+
+function addMessageToDOM(role, text, animate=true) {
+  const el = document.getElementById("messages");
+  const welcome = el.querySelector(".welcome");
+  if (welcome) welcome.remove();
+  const div = document.createElement("div");
+  div.className = "msg " + role;
+  div.innerHTML = formatText(text);
+  if (!animate) div.style.animation = "none";
+  el.appendChild(div);
+  el.scrollTop = el.scrollHeight;
+}
+
+function formatText(t) {
+  t = t.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+  t = t.replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>");
+  t = t.replace(/`(.+?)`/g, "<code>$1</code>");
+  t = t.replace(/^\s*(Крок\s*\d+[:.].*)$/gmi, '<div class="step">$1</div>');
+  return t;
+}
+
+function updateStats() {
+  document.getElementById("statQuestions").textContent = state.questionCount;
+  document.getElementById("statSubject").textContent = SUBJECTS[state.currentSubject].name;
+}
+
+// ---------- MESSAGE HANDLING ----------
+async function sendMessage() {
+  const input = document.getElementById("input");
+  const text = input.value.trim();
+  if (!text) return;
+  input.value = "";
+  input.style.height = "auto";
+
+  const subject = state.currentSubject;
+  state.chats[subject].push({ role: "user", text });
+  addMessageToDOM("user", text);
+  state.questionCount++;
+  updateStats();
+  saveState();
+
+  const sendBtn = document.getElementById("sendBtn");
+  sendBtn.disabled = true;
+  showTyping();
+
+  try {
+    let answer;
+    if (settings.apiKey) {
+      // Use last 8 messages as context (excluding the one we just added)
+      const history = state.chats[subject].slice(-9, -1);
+      answer = await callGemini(text, settings.apiKey, settings.model, buildSystemPrompt(subject), history);
+    } else {
+      await new Promise(r => setTimeout(r, 700));
+      answer = generateAnswer(text, subject);
+    }
+    removeTyping();
+    state.chats[subject].push({ role: "bot", text: answer });
+    addMessageToDOM("bot", answer);
+    saveState();
+  } catch (err) {
+    removeTyping();
+    const errMsg = "⚠️ Не вдалося отримати відповідь від Gemini.\n\n" + err.message + "\n\nПеревірте API ключ у ⚙️ Налаштуваннях або скористайтесь демо-режимом.";
+    addMessageToDOM("error", errMsg);
+  } finally {
+    sendBtn.disabled = false;
+    document.getElementById("input").focus();
+  }
+}
+
+function showTyping() {
+  const el = document.getElementById("messages");
+  const div = document.createElement("div");
+  div.className = "msg bot";
+  div.id = "typingIndicator";
+  div.innerHTML = `<div class="typing"><span></span><span></span><span></span></div>`;
+  el.appendChild(div);
+  el.scrollTop = el.scrollHeight;
+}
+function removeTyping() {
+  const t = document.getElementById("typingIndicator");
+  if (t) t.remove();
+}
+
+// ---------- DEMO ANSWER GENERATOR (fallback без API) ----------
+function generateAnswer(q, subject) {
+  const lower = q.toLowerCase();
+  const eq = q.replace(/\s/g,"").match(/(-?\d*)x([+\-]\d+)?=(-?\d+)/);
+  if (subject === "math" && eq) {
+    let a = eq[1] === "" || eq[1] === "+" ? 1 : (eq[1] === "-" ? -1 : parseFloat(eq[1]));
+    let b = eq[2] ? parseFloat(eq[2]) : 0;
+    let c = parseFloat(eq[3]);
+    let x = (c - b) / a;
+    return `**Розв'язання рівняння ${eq[0]}:**\n\nКрок 1: Переносимо ${b} у праву частину: ${a}x = ${c-b}\nКрок 2: Ділимо обидві частини на ${a}: x = ${c-b} / ${a}\nКрок 3: **Відповідь: x = ${Number(x.toFixed(4))}**\n\n✅ Перевірка: ${a}·(${Number(x.toFixed(4))}) ${b>=0?"+":"−"} ${Math.abs(b)} = ${c}`;
+  }
+  const KB = {
+    math: {
+      "піфагор": "**Теорема Піфагора:**\n\nУ прямокутному трикутнику квадрат гіпотенузи дорівнює сумі квадратів катетів.\n\nКрок 1: Формула: c² = a² + b²\nКрок 2: де c — гіпотенуза, a і b — катети.\nКрок 3: Наприклад, якщо a=3, b=4, то c=√(9+16)=√25=**5**.",
+      "площ": "**Площа трикутника:**\n\nКрок 1: Основна формула: S = ½ · a · h.\nКрок 2: Через дві сторони й кут: S = ½ · a · b · sin(γ).\nКрок 3: Формула Герона: S = √(p(p−a)(p−b)(p−c))."
+    },
+    literature: {
+      "заповіт": "**«Заповіт» Тараса Шевченка (1845):**\n\nКрок 1: Жанр — громадянська лірика.\nКрок 2: Тема — заповіт поета народу.\nКрок 3: Ідея — заклик до боротьби за волю.",
+      "кайдаш": "**«Кайдашева сім'я» — Іван Нечуй-Левицький (1878):**\n\nСоціально-побутова повість про життя української селянської родини.",
+      "метафор": "**Метафора** — прихований художній засіб, перенесення значення за подібністю. Наприклад: «золоте серце»."
+    },
+    history: {
+      "козац": "**Козацька доба (кінець XV–XVIII ст.):**\n\nКрок 1: Виникнення козацтва.\nКрок 2: Заснування Запорізької Січі.\nКрок 3: Розквіт за Богдана Хмельницького.",
+      "хмельницьк": "**Богдан Хмельницький (1595–1657):**\n\nГетьман, керівник Національно-визвольної війни 1648–1657 рр.",
+      "київськ": "**Київська Русь (IX–XIII ст.):**\n\nДержава зі столицею в Києві. Розквіт за Володимира Великого та Ярослава Мудрого."
+    },
+    physics: {
+      "ом": "**Закон Ома:**\n\nКрок 1: I = U / R.\nКрок 2: I — струм (А), U — напруга (В), R — опір (Ом).",
+      "ньютон": "**Закони Ньютона:**\n\nКрок 1: I — закон інерції.\nКрок 2: II — F = m·a.\nКрок 3: III — дія дорівнює протидії.",
+      "швидк": "**Швидкість руху:**\n\nКрок 1: v = s / t.\nКрок 2: s — шлях, t — час.\nКрок 3: Наприклад, s=100 м, t=20 с → v = **5 м/с**."
+    }
+  };
+  const kb = KB[subject] || {};
+  for (const key in kb) { if (lower.includes(key)) return kb[key]; }
+  const generic = {
+    math: "Це цікаве математичне запитання! 🔢\n\n💡 Порада: додайте API ключ Gemini у ⚙️ Налаштуваннях, щоб отримувати повні розв'язання будь-яких задач крок за кроком!",
+    literature: "Гарне запитання з української літератури! 📖\n\n💡 Додайте API ключ Gemini у ⚙️ Налаштуваннях для детального аналізу творів.",
+    history: "Цікаве історичне запитання! 🏛\n\n💡 Додайте API ключ Gemini у ⚙️ Налаштуваннях для повних історичних відповідей.",
+    physics: "Фізичне запитання! ⚡\n\n💡 Додайте API ключ Gemini у ⚙️ Налаштуваннях, щоб розв'язувати будь-які задачі."
+  };
+  return generic[subject];
+}
+
+// ---------- CLEAR ----------
+function clearHistory() {
+  if (confirm("Очистити всю історію запитань?")) {
+    state = { currentSubject: state.currentSubject, questionCount: 0,
+      chats: { math: [], literature: [], history: [], physics: [] } };
+    saveState();
+    renderMessages();
+    updateStats();
+  }
+}
+
+// ---------- INPUT ----------
+const input = document.getElementById("input");
+input.addEventListener("input", () => {
+  input.style.height = "auto";
+  input.style.height = Math.min(input.scrollHeight, 120) + "px";
+});
+input.addEventListener("keydown", e => {
+  if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(); }
+});
+
+// ---------- INIT ----------
+loadState();
+loadSettings();
+renderSubjects();
+updateHeader();
+renderMessages();
+renderQuickPrompts();
+updateStats();
+updateApiStatus();
+</script>
+</body>
+</html>
