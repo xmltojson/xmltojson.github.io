@@ -1,0 +1,1904 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ДомашкаAI — Помічник з домашніх завдань</title>
+
+<meta name="description" content="ДомашкаAI — розумний AI-помічник з домашніх завдань для українських школярів. Пояснює розв'язання крок за кроком з математики, української літератури, історії та фізики за шкільною програмою.">
+<meta name="keywords" content="домашка, домашнє завдання, AI помічник, математика, українська література, історія України, фізика, школярі, навчання">
+<meta name="author" content="ДомашкаAI">
+<meta property="og:title" content="ДомашкаAI — Помічник з домашніх завдань">
+<meta property="og:description" content="AI-помічник для українських школярів. Пояснення крок за кроком українською мовою.">
+<meta property="og:type" content="website">
+<meta name="theme-color" content="#0057B7">
+
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%230057B7'/%3E%3Ctext x='50' y='68' font-size='58' text-anchor='middle'%3E%F0%9F%8E%93%3C/text%3E%3C/svg%3E">
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+
+<style>
+  * {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: 'Segoe UI', 'Roboto', sans-serif;
+  }
+
+  :root {
+    --blue: #0057B7;
+    --yellow: #FFD700;
+    --bg: #f0f4f8;
+    --card: #ffffff;
+    --text: #1a2634;
+    --muted: #64748b;
+    --accent: #0057B7;
+    --shadow: 0 4px 20px rgba(0,0,0,0.08);
+  }
+
+  body {
+    background: linear-gradient(135deg, #e0eafc 0%, #cfdef3 100%);
+    color: var(--text);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+
+  header {
+    background: linear-gradient(90deg, var(--blue) 0%, #0074E0 100%);
+    color: white;
+    padding: 16px 24px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    box-shadow: 0 2px 12px rgba(0,87,183,0.3);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+
+  .logo {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-size: 1.5rem;
+    font-weight: 700;
+  }
+
+  .logo-icon {
+    width: 44px;
+    height: 44px;
+    background: var(--yellow);
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.6rem;
+  }
+
+  .logo span.ai { color: var(--yellow); }
+
+  .header-actions { display: flex; gap: 10px; align-items: center; }
+
+  .header-btn {
+    background: rgba(255,255,255,0.15);
+    border: none;
+    color: white;
+    padding: 8px 16px;
+    border-radius: 10px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    transition: 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .header-btn:hover { background: rgba(255,255,255,0.3); }
+
+  .icon-btn {
+    width: 42px; height: 42px; padding: 0;
+    justify-content: center; font-size: 1.2rem;
+    border-radius: 12px;
+  }
+  .icon-btn.gear { transition: transform 0.4s; }
+  .icon-btn.gear:hover { transform: rotate(90deg); }
+  .icon-btn.info:hover { transform: scale(1.1); }
+
+  .api-status {
+    width: 10px; height: 10px; border-radius: 50%;
+    background: #ff5252; flex-shrink: 0;
+    box-shadow: 0 0 8px rgba(255,82,82,0.6);
+    transition: background 0.3s, box-shadow 0.3s;
+  }
+  .api-status.connected { background: #4caf50; box-shadow: 0 0 8px rgba(76,175,80,0.6); }
+
+  .container {
+    flex: 1;
+    display: flex;
+    gap: 20px;
+    padding: 20px;
+    max-width: 1400px;
+    margin: 0 auto;
+    width: 100%;
+  }
+
+  .sidebar {
+    width: 260px;
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .card {
+    background: var(--card);
+    border-radius: 18px;
+    padding: 20px;
+    box-shadow: var(--shadow);
+  }
+
+  .card h3 {
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--muted);
+    margin-bottom: 14px;
+  }
+
+  .subjects {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .subject-btn {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 14px;
+    border-radius: 12px;
+    border: 2px solid transparent;
+    background: #f5f7fa;
+    cursor: pointer;
+    transition: 0.2s;
+    font-size: 0.95rem;
+    text-align: left;
+    color: var(--text);
+    width: 100%;
+    position: relative;
+  }
+  .subject-btn:hover { background: #e8eef5; transform: translateX(4px); }
+  .subject-btn.active {
+    background: linear-gradient(135deg, #e3f0ff, #f0f7ff);
+    border-color: var(--blue);
+    font-weight: 600;
+    color: var(--blue);
+  }
+  .subject-icon { font-size: 1.3rem; }
+  .subject-count {
+    margin-left: auto;
+    background: var(--blue);
+    color: white;
+    font-size: 0.7rem;
+    font-weight: 700;
+    min-width: 20px;
+    height: 20px;
+    padding: 0 6px;
+    border-radius: 10px;
+    display: none;
+    align-items: center;
+    justify-content: center;
+  }
+  .subject-count.show { display: inline-flex; }
+
+  .main {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    min-width: 0;
+  }
+
+  .chat-area {
+    flex: 1;
+    background: var(--card);
+    border-radius: 18px;
+    box-shadow: var(--shadow);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    min-height: 400px;
+    position: relative;
+  }
+
+  .chat-header {
+    padding: 16px 20px;
+    border-bottom: 1px solid #eef2f7;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-weight: 600;
+  }
+  .model-badge {
+    margin-left: auto;
+    font-size: 0.72rem;
+    background: #eef4fc;
+    color: var(--blue);
+    padding: 4px 10px;
+    border-radius: 12px;
+    font-weight: 500;
+  }
+
+  .chat-messages {
+    flex: 1;
+    overflow-y: auto;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+    scroll-behavior: smooth;
+  }
+
+  .msg {
+    max-width: 88%;
+    padding: 16px 20px;
+    border-radius: 18px;
+    line-height: 1.7;
+    animation: fadeIn 0.35s ease;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+  }
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .msg.user {
+    align-self: flex-end;
+    background: linear-gradient(135deg, var(--blue), #0074E0);
+    color: white;
+    border-bottom-right-radius: 4px;
+    white-space: pre-wrap;
+    box-shadow: 0 4px 14px rgba(0,87,183,0.25);
+  }
+
+  .msg.bot {
+    align-self: flex-start;
+    background: #ffffff;
+    color: var(--text);
+    border-bottom-left-radius: 4px;
+    border: 1px solid #e8eef5;
+    box-shadow: 0 4px 18px rgba(0,0,0,0.05);
+  }
+
+  .msg-role {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 10px;
+    color: var(--blue);
+  }
+  .msg-role .avatar {
+    width: 24px; height: 24px;
+    border-radius: 8px;
+    background: linear-gradient(135deg, var(--blue), #0074E0);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 0.9rem;
+  }
+
+  .msg.error {
+    align-self: flex-start;
+    background: #fff0f0;
+    border-left: 3px solid #ff5252;
+    color: #b71c1c;
+    white-space: pre-wrap;
+  }
+
+  .msg-images {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 8px;
+  }
+  .msg-images img {
+    max-width: 200px;
+    max-height: 200px;
+    border-radius: 10px;
+    cursor: pointer;
+    border: 2px solid rgba(255,255,255,0.4);
+    object-fit: cover;
+  }
+  .msg.bot .msg-images img { border-color: #e2e8f0; }
+
+  .msg.bot h1, .msg.bot h2, .msg.bot h3 {
+    color: var(--blue);
+    margin: 16px 0 10px;
+    line-height: 1.3;
+    padding-bottom: 6px;
+  }
+  .msg.bot h1 { font-size: 1.3rem; border-bottom: 2px solid #eef4fc; }
+  .msg.bot h2 { font-size: 1.18rem; border-bottom: 1px solid #eef4fc; }
+  .msg.bot h3 { font-size: 1.05rem; }
+  .msg.bot h1:first-child, .msg.bot h2:first-child, .msg.bot h3:first-child { margin-top: 0; }
+  .msg.bot p { margin: 10px 0; }
+  .msg.bot strong { color: var(--blue); font-weight: 700; }
+  .msg.bot em { color: #6b46c1; font-style: italic; }
+  .msg.bot ul, .msg.bot ol { margin: 10px 0 10px 4px; padding-left: 24px; }
+  .msg.bot li { margin: 7px 0; padding-left: 4px; }
+  .msg.bot ul li::marker { color: var(--blue); }
+  .msg.bot ol li::marker { color: var(--blue); font-weight: 700; }
+  .msg.bot a { color: var(--blue); }
+  .msg.bot hr { border: none; border-top: 1px solid #e2e8f0; margin: 16px 0; }
+
+  .msg.bot .step {
+    background: linear-gradient(135deg, #fffdf5, #fffbe9);
+    border-left: 4px solid var(--yellow);
+    padding: 12px 16px;
+    margin: 12px 0;
+    border-radius: 10px;
+    box-shadow: 0 2px 10px rgba(255,215,0,0.12);
+  }
+  .msg.bot .step .step-badge {
+    display: inline-block;
+    background: var(--yellow);
+    color: #7a5c00;
+    font-weight: 700;
+    font-size: 0.78rem;
+    padding: 3px 12px;
+    border-radius: 12px;
+    margin-right: 8px;
+  }
+
+  .msg.bot code {
+    background: rgba(0,87,183,0.08);
+    padding: 2px 7px;
+    border-radius: 5px;
+    font-family: 'Consolas', 'Courier New', monospace;
+    font-size: 0.9em;
+    color: #0057B7;
+  }
+  .msg.bot pre {
+    background: #1e293b;
+    color: #e2e8f0;
+    padding: 16px 18px;
+    border-radius: 12px;
+    overflow-x: auto;
+    margin: 12px 0;
+    font-size: 0.88rem;
+    line-height: 1.5;
+  }
+  .msg.bot pre code { background: none; color: inherit; padding: 0; }
+
+  .msg.bot blockquote {
+    border-left: 4px solid var(--blue);
+    background: #eef4fc;
+    padding: 10px 16px;
+    margin: 12px 0;
+    border-radius: 0 10px 10px 0;
+    color: #334155;
+    font-style: italic;
+  }
+
+  .msg.bot table {
+    border-collapse: collapse;
+    width: 100%;
+    margin: 12px 0;
+    font-size: 0.9rem;
+    border-radius: 10px;
+    overflow: hidden;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+  }
+  .msg.bot th, .msg.bot td {
+    border: 1px solid #d6e4f5;
+    padding: 9px 12px;
+    text-align: left;
+  }
+  .msg.bot th { background: var(--blue); color: white; font-weight: 600; border-color: var(--blue); }
+  .msg.bot tr:nth-child(even) td { background: #f8fafc; }
+
+  .msg.bot .katex-display {
+    margin: 14px 0;
+    padding: 10px 4px;
+    overflow-x: auto;
+    overflow-y: hidden;
+    background: #f8fbff;
+    border-radius: 10px;
+  }
+  .msg.bot .katex { font-size: 1.08em; }
+
+  .msg-actions {
+    display: flex;
+    gap: 8px;
+    margin-top: 14px;
+    padding-top: 10px;
+    border-top: 1px dashed #e2e8f0;
+  }
+  .msg-action-btn {
+    background: none;
+    border: none;
+    color: var(--muted);
+    cursor: pointer;
+    font-size: 0.8rem;
+    padding: 4px 10px;
+    border-radius: 8px;
+    transition: 0.2s;
+  }
+  .msg-action-btn:hover { background: #eef4fc; color: var(--blue); }
+
+  .welcome {
+    text-align: center;
+    color: var(--muted);
+    margin: auto;
+    padding: 40px;
+  }
+  .welcome h2 { color: var(--blue); margin-bottom: 10px; }
+  .welcome .big-icon { font-size: 4rem; margin-bottom: 16px; }
+
+  .scroll-top-btn {
+    position: absolute;
+    right: 24px;
+    bottom: 100px;
+    width: 44px; height: 44px;
+    border-radius: 50%;
+    background: var(--blue);
+    color: white;
+    border: none;
+    cursor: pointer;
+    font-size: 1.2rem;
+    box-shadow: 0 4px 14px rgba(0,87,183,0.35);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.25s, transform 0.25s;
+    z-index: 20;
+  }
+  .scroll-top-btn.visible { opacity: 1; pointer-events: auto; }
+  .scroll-top-btn:hover { transform: translateY(-3px); }
+
+  .attach-preview {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    padding: 0 16px;
+  }
+  .attach-preview:not(:empty) { padding-top: 12px; }
+  .attach-thumb {
+    position: relative;
+    width: 64px; height: 64px;
+    border-radius: 10px;
+    overflow: hidden;
+    border: 2px solid #e2e8f0;
+  }
+  .attach-thumb img { width: 100%; height: 100%; object-fit: cover; }
+  .attach-thumb .remove {
+    position: absolute;
+    top: 2px; right: 2px;
+    background: rgba(0,0,0,0.6);
+    color: white;
+    border: none;
+    width: 18px; height: 18px;
+    border-radius: 50%;
+    cursor: pointer;
+    font-size: 0.7rem;
+    line-height: 1;
+    display: flex; align-items: center; justify-content: center;
+  }
+
+  .input-area {
+    padding: 16px;
+    border-top: 1px solid #eef2f7;
+    display: flex;
+    gap: 10px;
+    align-items: flex-end;
+    position: relative;
+  }
+
+  .attach-btn {
+    background: #f0f4f8;
+    color: var(--blue);
+    border: none;
+    width: 50px; height: 50px;
+    border-radius: 14px;
+    cursor: pointer;
+    font-size: 1.3rem;
+    flex-shrink: 0;
+    transition: 0.2s;
+  }
+  .attach-btn:hover { background: #e2e8f0; transform: scale(1.05); }
+
+  textarea {
+    flex: 1;
+    border: 2px solid #e2e8f0;
+    border-radius: 14px;
+    padding: 12px 16px;
+    font-size: 1rem;
+    resize: none;
+    outline: none;
+    max-height: 120px;
+    font-family: inherit;
+    transition: 0.2s;
+  }
+  textarea:focus { border-color: var(--blue); }
+
+  .send-btn {
+    background: linear-gradient(135deg, var(--blue), #0074E0);
+    color: white;
+    border: none;
+    width: 50px;
+    height: 50px;
+    border-radius: 14px;
+    cursor: pointer;
+    font-size: 1.3rem;
+    flex-shrink: 0;
+    transition: 0.2s;
+  }
+  .send-btn:hover { transform: scale(1.05); }
+  .send-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+  .quick-prompts {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    padding: 12px 16px 0;
+  }
+  .quick-prompt {
+    background: #eef4fc;
+    border: 1px solid #d6e4f5;
+    border-radius: 20px;
+    padding: 6px 14px;
+    font-size: 0.82rem;
+    cursor: pointer;
+    color: var(--blue);
+    transition: 0.2s;
+  }
+  .quick-prompt:hover { background: var(--blue); color: white; }
+
+  .typing { display: flex; gap: 4px; padding: 8px 0; }
+  .typing span {
+    width: 8px; height: 8px; background: var(--blue);
+    border-radius: 50%; animation: bounce 1.4s infinite;
+  }
+  .typing span:nth-child(2){ animation-delay:0.2s; }
+  .typing span:nth-child(3){ animation-delay:0.4s; }
+  @keyframes bounce {
+    0%,60%,100%{ transform: translateY(0); opacity:0.4;}
+    30%{ transform: translateY(-8px); opacity:1;}
+  }
+
+  footer {
+    text-align: center;
+    padding: 12px;
+    color: var(--muted);
+    font-size: 0.8rem;
+  }
+
+  .modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(15,25,45,0.55);
+    backdrop-filter: blur(4px);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    padding: 20px;
+    animation: fadeIn 0.2s ease;
+  }
+  .modal-overlay.open { display: flex; }
+
+  .modal {
+    background: var(--card);
+    border-radius: 20px;
+    padding: 28px;
+    width: 100%;
+    max-width: 480px;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+    animation: slideUp 0.3s ease;
+    max-height: 90vh;
+    overflow-y: auto;
+  }
+  @keyframes slideUp {
+    from { transform: translateY(30px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+  }
+
+  .modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 20px;
+  }
+  .modal-header h2 {
+    font-size: 1.3rem;
+    color: var(--blue);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .close-btn {
+    background: #f0f4f8;
+    border: none;
+    width: 34px; height: 34px;
+    border-radius: 10px;
+    cursor: pointer;
+    font-size: 1.1rem;
+    color: var(--muted);
+    transition: 0.2s;
+  }
+  .close-btn:hover { background: #e2e8f0; }
+
+  .field-label {
+    display: block;
+    font-size: 0.9rem;
+    font-weight: 600;
+    margin-bottom: 8px;
+    color: var(--text);
+  }
+  .field-hint {
+    font-size: 0.82rem;
+    color: var(--muted);
+    margin-bottom: 12px;
+    line-height: 1.5;
+  }
+  .field-hint a { color: var(--blue); }
+
+  .input-with-btn { display: flex; gap: 8px; margin-bottom: 6px; }
+  .modal input[type=text], .modal input[type=password], .modal select {
+    flex: 1;
+    width: 100%;
+    border: 2px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 12px 14px;
+    font-size: 0.95rem;
+    outline: none;
+    transition: 0.2s;
+    font-family: inherit;
+  }
+  .modal input:focus, .modal select:focus { border-color: var(--blue); }
+
+  .toggle-vis {
+    background: #f0f4f8;
+    border: none;
+    padding: 0 14px;
+    border-radius: 12px;
+    cursor: pointer;
+    font-size: 1.1rem;
+  }
+
+  .modal-section { margin-bottom: 22px; }
+
+  .test-result {
+    font-size: 0.85rem;
+    margin-top: 8px;
+    min-height: 18px;
+  }
+  .test-result.ok { color: #2e7d32; }
+  .test-result.err { color: #c62828; }
+
+  .btn-primary {
+    background: linear-gradient(135deg, var(--blue), #0074E0);
+    color: white;
+    border: none;
+    padding: 12px 22px;
+    border-radius: 12px;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    width: 100%;
+    transition: 0.2s;
+  }
+  .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 6px 16px rgba(0,87,183,0.3); }
+
+  .btn-secondary {
+    background: #f0f4f8;
+    color: var(--text);
+    border: none;
+    padding: 10px 18px;
+    border-radius: 12px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    margin-top: 8px;
+    width: 100%;
+  }
+  .btn-secondary:hover { background: #e2e8f0; }
+
+  .info-box {
+    background: #fffbe6;
+    border: 1px solid #ffe58f;
+    border-radius: 12px;
+    padding: 12px 14px;
+    font-size: 0.83rem;
+    color: #7a6100;
+    line-height: 1.5;
+    margin-bottom: 20px;
+  }
+
+  .info-content { font-size: 0.92rem; line-height: 1.6; color: var(--text); }
+  .info-content h3 { color: var(--blue); margin: 18px 0 8px; font-size: 1rem; }
+  .info-feature {
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+    padding: 10px 0;
+    border-bottom: 1px solid #f0f4f8;
+  }
+  .info-feature .fi { font-size: 1.4rem; flex-shrink: 0; }
+  .info-feature .ft strong { display: block; margin-bottom: 2px; }
+  .info-feature .ft span { color: var(--muted); font-size: 0.85rem; }
+  .info-subjects {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    margin: 12px 0;
+  }
+  .info-subj {
+    background: #eef4fc;
+    border-radius: 10px;
+    padding: 8px 12px;
+    font-size: 0.85rem;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .info-badge-row {
+    display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px;
+  }
+  .info-badge {
+    background: #f0f4f8; border-radius: 20px; padding: 5px 12px;
+    font-size: 0.78rem; color: var(--muted);
+  }
+
+  .confirm-modal { max-width: 400px; text-align: center; }
+  .confirm-icon { font-size: 3rem; margin-bottom: 12px; }
+  .confirm-modal h2 {
+    color: var(--text);
+    font-size: 1.2rem;
+    margin-bottom: 10px;
+    justify-content: center;
+  }
+  .confirm-modal p {
+    color: var(--muted);
+    font-size: 0.92rem;
+    line-height: 1.5;
+    margin-bottom: 22px;
+  }
+  .confirm-actions { display: flex; gap: 10px; }
+  .confirm-actions button { flex: 1; margin-top: 0; }
+  .btn-danger {
+    background: linear-gradient(135deg, #ef4444, #dc2626);
+    color: white;
+    border: none;
+    padding: 12px 22px;
+    border-radius: 12px;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: 0.2s;
+  }
+  .btn-danger:hover { transform: translateY(-2px); box-shadow: 0 6px 16px rgba(239,68,68,0.3); }
+
+  .lightbox {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.85);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 2000;
+    padding: 20px;
+    cursor: zoom-out;
+  }
+  .lightbox.open { display: flex; }
+  .lightbox img { max-width: 95%; max-height: 95%; border-radius: 12px; }
+
+  @media (max-width: 860px) {
+    .container { flex-direction: column; padding: 12px; }
+    .sidebar { width: 100%; flex-direction: row; overflow-x: auto; }
+    .sidebar .card { flex: 1; min-width: 200px; }
+    .subjects { flex-direction: row; }
+    .subject-btn { flex-direction: column; text-align: center; min-width: 80px; padding: 10px 8px; gap: 4px; font-size: 0.8rem; width: auto; }
+    .subject-btn:hover { transform: none; }
+    .subject-count { position: absolute; top: 4px; right: 4px; margin-left: 0; }
+    .stats-card { display: none; }
+    .msg { max-width: 94%; }
+    .logo { font-size: 1.2rem; }
+    .logo-icon { width: 38px; height: 38px; }
+    .header-btn span.txt { display: none; }
+    .info-subjects { grid-template-columns: 1fr; }
+    .msg-images img { max-width: 140px; max-height: 140px; }
+    .scroll-top-btn { right: 16px; bottom: 90px; }
+  }
+
+  @media (orientation: landscape) and (max-height: 500px) {
+    header { padding: 8px 16px; }
+    .container { padding: 8px; }
+  }
+
+  ::-webkit-scrollbar { width: 8px; }
+  ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+</style>
+</head>
+<body>
+  <header>
+    <div class="logo">
+      <div class="logo-icon">🎓</div>
+      <div>Домашка<span class="ai">AI</span></div>
+    </div>
+    <div class="header-actions">
+      <span class="api-status" id="apiStatus" title="Статус Gemini API"></span>
+      <button class="header-btn icon-btn info" onclick="openInfo()" title="Про застосунок">ℹ️</button>
+      <button class="header-btn" onclick="clearHistory()">🗑 <span class="txt">Очистити</span></button>
+      <button class="header-btn icon-btn gear" onclick="openSettings()" title="Налаштування">⚙️</button>
+    </div>
+  </header>
+
+  <div class="container">
+    <aside class="sidebar">
+      <div class="card">
+        <h3>Предмети</h3>
+        <div class="subjects" id="subjects"></div>
+      </div>
+      <div class="card stats-card">
+        <h3>Статистика</h3>
+        <div style="font-size:0.9rem; line-height:2; color:var(--muted)">
+          <div>📝 Запитань: <strong id="statQuestions" style="color:var(--blue)">0</strong></div>
+          <div>📚 Активний предмет:<br><strong id="statSubject" style="color:var(--blue)">Математика</strong></div>
+          <div>💾 Збережено: <strong id="statSaved" style="color:var(--blue)">IndexedDB</strong></div>
+        </div>
+      </div>
+    </aside>
+
+    <main class="main">
+      <div class="chat-area">
+        <div class="chat-header">
+          <span id="chatIcon">🔢</span>
+          <span id="chatTitle">Математика</span>
+          <span class="model-badge" id="modelBadge">Демо-режим</span>
+        </div>
+        <div class="chat-messages" id="messages"></div>
+        <button class="scroll-top-btn" id="scrollTopBtn" title="Вгору" onclick="scrollChatToTop()">↑</button>
+        <div class="quick-prompts" id="quickPrompts"></div>
+        <div class="attach-preview" id="attachPreview"></div>
+        <div class="input-area">
+          <input type="file" id="fileInput" accept="image/*" multiple style="display:none">
+          <button class="attach-btn" id="attachBtn" onclick="document.getElementById('fileInput').click()" title="Прикріпити зображення">📎</button>
+          <textarea id="input" rows="1" placeholder="Постав своє запитання українською..."></textarea>
+          <button class="send-btn" id="sendBtn" onclick="sendMessage()">➤</button>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <footer>ДомашкаAI — навчаємось разом за українською програмою 🇺🇦</footer>
+
+  <!-- SETTINGS MODAL -->
+  <div class="modal-overlay" id="settingsModal">
+    <div class="modal">
+      <div class="modal-header">
+        <h2>⚙️ Налаштування</h2>
+        <button class="close-btn" onclick="closeSettings()">✕</button>
+      </div>
+      <div class="info-box">
+        🔑 Для роботи AI потрібен безкоштовний ключ Google Gemini. Ключ зберігається лише у вашому браузері і нікуди не передається, окрім Google.
+      </div>
+      <div class="modal-section">
+        <label class="field-label">Gemini API ключ</label>
+        <div class="field-hint">
+          Отримати безкоштовний ключ: <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener">aistudio.google.com/app/apikey</a>
+        </div>
+        <div class="input-with-btn">
+          <input type="password" id="apiKeyInput" placeholder="AIza...">
+          <button class="toggle-vis" onclick="toggleKeyVisibility()" id="toggleVisBtn">👁</button>
+        </div>
+        <div class="test-result" id="testResult"></div>
+      </div>
+      <div class="modal-section">
+        <label class="field-label">Модель</label>
+        <select id="modelSelect">
+          <option value="gemini-3.5-flash-lite">Gemini 3.5 Flash Lite (найшвидша)</option>
+          <option value="gemini-3.5-flash">Gemini 3.5 Flash</option>
+          <option value="gemini-2.5-pro">Gemini 2.5 Pro (найрозумніша)</option>
+        </select>
+      </div>
+      <button class="btn-primary" onclick="saveSettings()">💾 Зберегти</button>
+      <button class="btn-secondary" onclick="testConnection()">🔌 Перевірити з'єднання</button>
+    </div>
+  </div>
+
+  <!-- INFO MODAL -->
+  <div class="modal-overlay" id="infoModal">
+    <div class="modal">
+      <div class="modal-header">
+        <h2>🎓 Про ДомашкаAI</h2>
+        <button class="close-btn" onclick="closeInfo()">✕</button>
+      </div>
+      <div class="info-content">
+        <p><strong>ДомашкаAI</strong> — це розумний помічник з домашніх завдань для українських школярів. Він пояснює розв'язання <strong>крок за кроком</strong> українською мовою за шкільною програмою.</p>
+        <h3>📚 Предмети</h3>
+        <div class="info-subjects">
+          <div class="info-subj">🔢 Математика</div>
+          <div class="info-subj">📖 Укр. література</div>
+          <div class="info-subj">🏛 Історія України</div>
+          <div class="info-subj">⚡ Фізика</div>
+        </div>
+        <h3>✨ Можливості</h3>
+        <div class="info-feature">
+          <span class="fi">🧮</span>
+          <div class="ft"><strong>Математичні формули</strong><span>Гарне відображення формул та рівнянь (LaTeX)</span></div>
+        </div>
+        <div class="info-feature">
+          <span class="fi">📸</span>
+          <div class="ft"><strong>Розпізнавання зображень</strong><span>Прикріпіть фото завдання — AI його прочитає</span></div>
+        </div>
+        <div class="info-feature">
+          <span class="fi">📝</span>
+          <div class="ft"><strong>Покрокові пояснення</strong><span>Розв'язання розбиті на зрозумілі кроки</span></div>
+        </div>
+        <div class="info-feature">
+          <span class="fi">💾</span>
+          <div class="ft"><strong>Збереження діалогів</strong><span>Усі розмови та зображення в IndexedDB</span></div>
+        </div>
+        <div class="info-feature">
+          <span class="fi">📱</span>
+          <div class="ft"><strong>Будь-який пристрій</strong><span>Вертикальна та горизонтальна орієнтації</span></div>
+        </div>
+        <h3>🚀 Як почати</h3>
+        <p>1. Відкрийте ⚙️ <strong>Налаштування</strong><br>
+        2. Вставте безкоштовний ключ Gemini API<br>
+        3. Оберіть предмет і ставте запитання!</p>
+        <div class="info-badge-row">
+          <span class="info-badge">🇺🇦 Українською</span>
+          <span class="info-badge">📗 Шкільна програма</span>
+          <span class="info-badge">🔒 Приватно</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- CONFIRM MODAL -->
+  <div class="modal-overlay" id="confirmModal">
+    <div class="modal confirm-modal">
+      <div class="confirm-icon" id="confirmIcon">🗑️</div>
+      <h2 id="confirmTitle">Підтвердження</h2>
+      <p id="confirmText">Ви впевнені?</p>
+      <div class="confirm-actions">
+        <button class="btn-secondary" style="margin-top:0" id="confirmCancel">Скасувати</button>
+        <button class="btn-danger" id="confirmOk">Так</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- LIGHTBOX -->
+  <div class="lightbox" id="lightbox" onclick="this.classList.remove('open')">
+    <img id="lightboxImg" src="" alt="">
+  </div>
+
+<script>
+const SUBJECTS = {
+  math: { name: "Математика", icon: "🔢", prompts: ["Розв'яжи рівняння 2x+5=15", "Що таке теорема Піфагора?", "Знайди площу трикутника"] },
+  literature: { name: "Українська література", icon: "📖", prompts: ["Аналіз вірша Шевченка «Заповіт»", "Хто написав «Кайдашева сім'я»?", "Що таке метафора?"] },
+  history: { name: "Історія України", icon: "🏛", prompts: ["Коли була Козацька доба?", "Хто такий Богдан Хмельницький?", "Розкажи про Київську Русь"] },
+  physics: { name: "Фізика", icon: "⚡", prompts: ["Що таке закон Ома?", "Обчисли швидкість руху", "Поясни закон Ньютона"] }
+};
+
+const SUBJECT_CONTEXT = {
+  math: "математики",
+  literature: "української літератури",
+  history: "історії України",
+  physics: "фізики"
+};
+
+function emptyChats() {
+  return { math: [], literature: [], history: [], physics: [] };
+}
+
+let state = {
+  currentSubject: "math",
+  questionCount: 0,
+  chats: emptyChats()
+};
+
+let settings = { apiKey: "", model: "gemini-3.5-flash" };
+let pendingImages = [];
+
+/* ============================================================
+   INDEXEDDB STORAGE
+   ============================================================ */
+const DB_NAME = "HomeworkAI_DB";
+const DB_VERSION = 3;
+const STORE_MSG = "messages";
+const STORE_META = "meta";
+let db = null;
+
+function openDB() {
+  return new Promise((resolve, reject) => {
+    let req;
+    try {
+      req = indexedDB.open(DB_NAME, DB_VERSION);
+    } catch (e) {
+      return reject(e);
+    }
+    req.onupgradeneeded = (e) => {
+      const database = e.target.result;
+      // Ensure BOTH stores exist regardless of previous version
+      if (!database.objectStoreNames.contains(STORE_MSG)) {
+        const store = database.createObjectStore(STORE_MSG, { keyPath: "id", autoIncrement: true });
+        store.createIndex("subject", "subject", { unique: false });
+      }
+      if (!database.objectStoreNames.contains(STORE_META)) {
+        database.createObjectStore(STORE_META, { keyPath: "key" });
+      }
+    };
+    req.onsuccess = (e) => {
+      db = e.target.result;
+      // Safety: if a store is somehow missing, we cannot use it
+      if (!db.objectStoreNames.contains(STORE_MSG)) {
+        console.warn("Store messages відсутній!");
+      }
+      resolve(db);
+    };
+    req.onerror = (e) => reject(e.target.error || new Error("Не вдалося відкрити IndexedDB"));
+    req.onblocked = () => console.warn("IndexedDB заблоковано іншою вкладкою.");
+  });
+}
+
+function dbAddMessage(subject, role, text, images=[]) {
+  return new Promise((resolve, reject) => {
+    if (!db || !db.objectStoreNames.contains(STORE_MSG)) return resolve();
+    try {
+      const tx = db.transaction(STORE_MSG, "readwrite");
+      tx.objectStore(STORE_MSG).add({ subject, role, text, images, ts: Date.now() });
+      tx.oncomplete = () => resolve();
+      tx.onerror = (e) => { console.warn("dbAddMessage error", e); resolve(); };
+    } catch (e) { console.warn(e); resolve(); }
+  });
+}
+
+function dbLoadAllMessages() {
+  return new Promise((resolve) => {
+    if (!db || !db.objectStoreNames.contains(STORE_MSG)) return resolve([]);
+    try {
+      const tx = db.transaction(STORE_MSG, "readonly");
+      const req = tx.objectStore(STORE_MSG).getAll();
+      req.onsuccess = () => resolve(req.result || []);
+      req.onerror = (e) => { console.warn("dbLoadAllMessages error", e); resolve([]); };
+    } catch (e) { console.warn(e); resolve([]); }
+  });
+}
+
+function dbClearMessages() {
+  return new Promise((resolve) => {
+    if (!db || !db.objectStoreNames.contains(STORE_MSG)) return resolve();
+    try {
+      const tx = db.transaction(STORE_MSG, "readwrite");
+      tx.objectStore(STORE_MSG).clear();
+      tx.oncomplete = () => resolve();
+      tx.onerror = () => resolve();
+    } catch (e) { resolve(); }
+  });
+}
+
+function dbSetMeta(key, value) {
+  return new Promise((resolve) => {
+    if (!db || !db.objectStoreNames.contains(STORE_META)) return resolve();
+    try {
+      const tx = db.transaction(STORE_META, "readwrite");
+      tx.objectStore(STORE_META).put({ key, value });
+      tx.oncomplete = () => resolve();
+      tx.onerror = () => resolve();
+    } catch (e) { resolve(); }
+  });
+}
+
+function dbGetMeta(key) {
+  return new Promise((resolve) => {
+    if (!db || !db.objectStoreNames.contains(STORE_META)) return resolve(null);
+    try {
+      const tx = db.transaction(STORE_META, "readonly");
+      const req = tx.objectStore(STORE_META).get(key);
+      req.onsuccess = () => resolve(req.result ? req.result.value : null);
+      req.onerror = () => resolve(null);
+    } catch (e) { resolve(null); }
+  });
+}
+
+/* Restore ALL dialogs (every subject) from IndexedDB */
+async function loadFromDB() {
+  const msgs = await dbLoadAllMessages();
+  const chats = emptyChats();
+
+  msgs.sort((a, b) => {
+    const ai = (a.id != null) ? a.id : (a.ts || 0);
+    const bi = (b.id != null) ? b.id : (b.ts || 0);
+    return ai - bi;
+  });
+
+  let restored = 0;
+  msgs.forEach(m => {
+    const subj = m.subject;
+    if (chats[subj]) {
+      chats[subj].push({
+        role: m.role,
+        text: (m.text != null) ? m.text : "",
+        images: Array.isArray(m.images) ? m.images : []
+      });
+      restored++;
+    }
+  });
+
+  state.chats = chats;
+
+  const meta = await dbGetMeta("appState");
+  if (meta) {
+    if (meta.currentSubject && SUBJECTS[meta.currentSubject]) {
+      state.currentSubject = meta.currentSubject;
+    }
+    state.questionCount = meta.questionCount || 0;
+  }
+
+  console.log(`Відновлено ${restored} повідомлень з IndexedDB.`);
+  return restored;
+}
+
+async function saveMeta() {
+  await dbSetMeta("appState", {
+    currentSubject: state.currentSubject,
+    questionCount: state.questionCount
+  });
+}
+
+function saveSettingsToStorage() { localStorage.setItem("homeworkAI_settings", JSON.stringify(settings)); }
+function loadSettings() {
+  const saved = localStorage.getItem("homeworkAI_settings");
+  if (saved) {
+    try {
+      const parsed = JSON.parse(saved);
+      settings.apiKey = parsed.apiKey || "";
+      settings.model = parsed.model || "gemini-3.5-flash";
+    } catch(e){ console.warn("Не вдалося прочитати налаштування", e); }
+  }
+}
+
+/* ============================================================
+   CUSTOM CONFIRM POPUP
+   ============================================================ */
+let confirmResolve = null;
+function customConfirm({ title = "Підтвердження", text = "Ви впевнені?", icon = "❓", okText = "Так", cancelText = "Скасувати" } = {}) {
+  return new Promise((resolve) => {
+    confirmResolve = resolve;
+    document.getElementById("confirmIcon").textContent = icon;
+    document.getElementById("confirmTitle").textContent = title;
+    document.getElementById("confirmText").textContent = text;
+    document.getElementById("confirmOk").textContent = okText;
+    document.getElementById("confirmCancel").textContent = cancelText;
+    document.getElementById("confirmModal").classList.add("open");
+  });
+}
+function closeConfirm(result) {
+  document.getElementById("confirmModal").classList.remove("open");
+  if (confirmResolve) { confirmResolve(result); confirmResolve = null; }
+}
+
+/* ============================================================
+   SETTINGS / INFO MODALS
+   ============================================================ */
+function openSettings() {
+  document.getElementById("apiKeyInput").value = settings.apiKey || "";
+  document.getElementById("modelSelect").value = settings.model || "gemini-3.5-flash";
+  document.getElementById("testResult").textContent = "";
+  document.getElementById("testResult").className = "test-result";
+  document.getElementById("settingsModal").classList.add("open");
+}
+function closeSettings() { document.getElementById("settingsModal").classList.remove("open"); }
+function toggleKeyVisibility() {
+  const inp = document.getElementById("apiKeyInput");
+  inp.type = inp.type === "password" ? "text" : "password";
+  document.getElementById("toggleVisBtn").textContent = inp.type === "password" ? "👁" : "🙈";
+}
+function saveSettings() {
+  settings.apiKey = document.getElementById("apiKeyInput").value.trim();
+  settings.model = document.getElementById("modelSelect").value;
+  saveSettingsToStorage();
+  updateApiStatus();
+  closeSettings();
+}
+function openInfo() { document.getElementById("infoModal").classList.add("open"); }
+function closeInfo() { document.getElementById("infoModal").classList.remove("open"); }
+
+function updateApiStatus() {
+  const dot = document.getElementById("apiStatus");
+  const badge = document.getElementById("modelBadge");
+  if (!dot || !badge) return;
+  const modelNames = {
+    "gemini-3.5-flash-lite": "Gemini 3.5 Flash Lite",
+    "gemini-3.5-flash": "Gemini 3.5 Flash",
+    "gemini-2.5-pro": "Gemini 2.5 Pro"
+  };
+  if (settings.apiKey) {
+    dot.classList.add("connected");
+    dot.title = "Gemini підключено";
+    badge.textContent = modelNames[settings.model] || settings.model;
+  } else {
+    dot.classList.remove("connected");
+    dot.title = "API ключ не встановлено (демо-режим)";
+    badge.textContent = "Демо-режим";
+  }
+}
+
+/* ============================================================
+   TEST CONNECTION
+   ============================================================ */
+async function testConnection() {
+  const key = document.getElementById("apiKeyInput").value.trim();
+  const model = document.getElementById("modelSelect").value;
+  const res = document.getElementById("testResult");
+  if (!key) {
+    res.className = "test-result err";
+    res.textContent = "⚠️ Введіть API ключ спочатку.";
+    return;
+  }
+  res.className = "test-result";
+  res.textContent = "⏳ Перевіряємо...";
+  try {
+    const reply = await callGemini("Скажи одне слово: Привіт", key, model, "Ти помічник.");
+    if (reply) {
+      res.className = "test-result ok";
+      res.textContent = "✅ З'єднання успішне! Ключ працює.";
+    }
+  } catch (err) {
+    res.className = "test-result err";
+    res.textContent = "❌ Помилка: " + err.message;
+  }
+}
+
+/* ============================================================
+   GEMINI API
+   ============================================================ */
+function dataUrlToInlineData(dataUrl) {
+  const match = dataUrl.match(/^data:(.+?);base64,(.*)$/);
+  if (!match) return null;
+  return { mime_type: match[1], data: match[2] };
+}
+
+async function callGemini(userText, apiKey, model, systemPrompt, history=[], images=[]) {
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(apiKey)}`;
+  const contents = [];
+  history.forEach(m => {
+    contents.push({ role: m.role === "bot" ? "model" : "user", parts: [{ text: m.text || "" }] });
+  });
+  const currentParts = [];
+  if (userText) currentParts.push({ text: userText });
+  images.forEach(dataUrl => {
+    const inline = dataUrlToInlineData(dataUrl);
+    if (inline) currentParts.push({ inline_data: inline });
+  });
+  if (currentParts.length === 0) currentParts.push({ text: "" });
+  contents.push({ role: "user", parts: currentParts });
+
+  const body = {
+    system_instruction: { parts: [{ text: systemPrompt }] },
+    contents: contents,
+    generationConfig: { temperature: 0.7, maxOutputTokens: 2048 }
+  };
+
+  const resp = await fetch(url, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body)
+  });
+
+  if (!resp.ok) {
+    let msg = `HTTP ${resp.status}`;
+    try {
+      const errData = await resp.json();
+      if (errData.error && errData.error.message) msg = errData.error.message;
+    } catch(e){}
+    if (resp.status === 400) msg = "Невірний запит або ключ. " + msg;
+    if (resp.status === 403) msg = "Доступ заборонено. Перевірте ключ API.";
+    if (resp.status === 429) msg = "Перевищено ліміт запитів. Спробуйте пізніше.";
+    if (resp.status === 404) msg = "Модель не знайдено. Спробуйте іншу модель у налаштуваннях.";
+    throw new Error(msg);
+  }
+
+  const data = await resp.json();
+  const text = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+  if (!text) {
+    if (data?.candidates?.[0]?.finishReason === "SAFETY")
+      throw new Error("Відповідь заблоковано фільтром безпеки.");
+    throw new Error("Порожня відповідь від моделі.");
+  }
+  return text.trim();
+}
+
+function buildSystemPrompt(subject) {
+  return `Ти — ДомашкаAI, доброзичливий AI-помічник з домашніх завдань для українських школярів. 
+Ти спеціалізуєшся на предметі: ${SUBJECT_CONTEXT[subject]}.
+ПРАВИЛА ФОРМАТУВАННЯ ВІДПОВІДІ:
+1. Відповідай ВИКЛЮЧНО українською мовою.
+2. Дотримуйся української шкільної програми.
+3. Якщо у повідомленні є зображення — уважно прочитай завдання на ньому й розв'яжи його.
+4. Пояснюй розв'язання КРОК ЗА КРОКОМ у форматі "Крок 1:", "Крок 2:" тощо.
+5. Використовуй Markdown: **жирний** для важливого, списки (* або 1.), заголовки (##), таблиці.
+6. Для математичних формул ЗАВЖДИ використовуй LaTeX: інлайн у $...$, а окремі формули у $$...$$.
+7. Для математики та фізики завжди показуй обчислення й перевірку.
+8. Для літератури давай аналіз (тема, ідея, художні засоби).
+9. Для історії вказуй причини, перебіг, наслідки та дати.
+10. Будь підбадьорливим і зрозумілим для дитини. Наприкінці додай короткий підсумок або пораду.`;
+}
+
+/* ============================================================
+   MARKDOWN + LATEX RENDERING
+   ============================================================ */
+function escapeHtml(s) {
+  return s.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+}
+
+function renderMarkdown(text) {
+  const placeholders = [];
+  function stash(content) {
+    placeholders.push(content);
+    return `\u0000${placeholders.length - 1}\u0000`;
+  }
+
+  text = text.replace(/```(\w+)?\n?([\s\S]*?)```/g, (m, lang, code) =>
+    stash(`<pre><code>${escapeHtml(code.replace(/\n$/,''))}</code></pre>`));
+
+  text = text.replace(/\$\$([\s\S]+?)\$\$/g, (m, expr) => stash(`\u0001DISPLAY\u0001${expr}\u0001`));
+  text = text.replace(/\$([^\$\n]+?)\$/g, (m, expr) => stash(`\u0001INLINE\u0001${expr}\u0001`));
+  text = text.replace(/`([^`]+?)`/g, (m, code) => stash(`<code>${escapeHtml(code)}</code>`));
+
+  text = escapeHtml(text);
+
+  text = text.replace(/(^\|.+\|[ \t]*\n\|[ \t:|-]+\|[ \t]*\n(?:\|.*\|[ \t]*\n?)+)/gm, (block) => {
+    const rows = block.trim().split("\n");
+    const header = rows[0].split("|").slice(1,-1).map(c => c.trim());
+    const bodyRows = rows.slice(2).map(r => r.split("|").slice(1,-1).map(c => c.trim()));
+    let html = "<table><thead><tr>" + header.map(h => `<th>${h}</th>`).join("") + "</tr></thead><tbody>";
+    bodyRows.forEach(r => { html += "<tr>" + r.map(c => `<td>${c}</td>`).join("") + "</tr>"; });
+    html += "</tbody></table>";
+    return stash(html);
+  });
+
+  text = text.replace(/^### (.*)$/gm, "<h3>$1</h3>");
+  text = text.replace(/^## (.*)$/gm, "<h2>$1</h2>");
+  text = text.replace(/^# (.*)$/gm, "<h1>$1</h1>");
+  text = text.replace(/^&gt; (.*)$/gm, "<blockquote>$1</blockquote>");
+  text = text.replace(/^\s*---\s*$/gm, "<hr>");
+  text = text.replace(/\*\*([^*]+?)\*\*/g, "<strong>$1</strong>");
+  text = text.replace(/(?<!\*)\*([^*\n]+?)\*(?!\*)/g, "<em>$1</em>");
+
+  const lines = text.split("\n");
+  let out = [], inUl = false, inOl = false;
+  for (let line of lines) {
+    const ulMatch = line.match(/^\s*[\*\-]\s+(.*)$/);
+    const olMatch = line.match(/^\s*\d+\.\s+(.*)$/);
+    if (ulMatch) {
+      if (inOl) { out.push("</ol>"); inOl = false; }
+      if (!inUl) { out.push("<ul>"); inUl = true; }
+      out.push(`<li>${ulMatch[1]}</li>`);
+    } else if (olMatch) {
+      if (inUl) { out.push("</ul>"); inUl = false; }
+      if (!inOl) { out.push("<ol>"); inOl = true; }
+      out.push(`<li>${olMatch[1]}</li>`);
+    } else {
+      if (inUl) { out.push("</ul>"); inUl = false; }
+      if (inOl) { out.push("</ol>"); inOl = false; }
+      out.push(line);
+    }
+  }
+  if (inUl) out.push("</ul>");
+  if (inOl) out.push("</ol>");
+  text = out.join("\n");
+
+  text = text.replace(/^\s*(Крок\s*\d+)([:.])\s*(.*)$/gmi,
+    '<div class="step"><span class="step-badge">$1</span>$3</div>');
+
+  const blocks = text.split(/\n{2,}/).map(b => {
+    const t = b.trim();
+    if (!t) return "";
+    if (/^<(h[1-3]|ul|ol|div|pre|blockquote|table|hr)/.test(t)) return t;
+    return `<p>${t.replace(/\n/g, "<br>")}</p>`;
+  });
+  text = blocks.join("\n");
+
+  text = text.replace(/\u0000(\d+)\u0000/g, (m, i) => placeholders[parseInt(i)]);
+  return text;
+}
+
+function renderMathInElement_safe(el) {
+  if (window.renderMathInElement) {
+    try {
+      renderMathInElement(el, {
+        delimiters: [
+          { left: "\u0001DISPLAY\u0001", right: "\u0001", display: true },
+          { left: "\u0001INLINE\u0001", right: "\u0001", display: false }
+        ],
+        throwOnError: false
+      });
+      return;
+    } catch(e){}
+  }
+  el.innerHTML = el.innerHTML
+    .replace(/\u0001DISPLAY\u0001/g, "").replace(/\u0001INLINE\u0001/g, "").replace(/\u0001/g, "");
+}
+
+/* ============================================================
+   UI SETUP
+   ============================================================ */
+function renderSubjects() {
+  const el = document.getElementById("subjects");
+  if (!el) return;
+  el.textContent = "";
+  Object.keys(SUBJECTS).forEach(key => {
+    const s = SUBJECTS[key];
+    const btn = document.createElement("button");
+    btn.className = "subject-btn" + (key === state.currentSubject ? " active" : "");
+    btn.type = "button";
+    btn.dataset.subject = key;
+
+    const icon = document.createElement("span");
+    icon.className = "subject-icon";
+    icon.textContent = s.icon;
+
+    const label = document.createElement("span");
+    label.className = "subject-label";
+    label.textContent = s.name;
+
+    btn.appendChild(icon);
+    btn.appendChild(label);
+
+    const count = (state.chats[key] || []).length;
+    const badge = document.createElement("span");
+    badge.className = "subject-count" + (count > 0 ? " show" : "");
+    badge.textContent = count;
+    btn.appendChild(badge);
+
+    btn.addEventListener("click", () => switchSubject(key));
+    el.appendChild(btn);
+  });
+}
+
+function switchSubject(key) {
+  state.currentSubject = key;
+  renderSubjects();
+  updateHeader();
+  renderMessages();
+  renderQuickPrompts();
+  updateStats();
+  saveMeta();
+  scrollChatToTop(false);
+}
+
+function updateHeader() {
+  const s = SUBJECTS[state.currentSubject];
+  document.getElementById("chatIcon").textContent = s.icon;
+  document.getElementById("chatTitle").textContent = s.name;
+}
+
+function renderQuickPrompts() {
+  const el = document.getElementById("quickPrompts");
+  el.textContent = "";
+  SUBJECTS[state.currentSubject].prompts.forEach(p => {
+    const b = document.createElement("div");
+    b.className = "quick-prompt";
+    b.textContent = p;
+    b.addEventListener("click", () => { document.getElementById("input").value = p; sendMessage(); });
+    el.appendChild(b);
+  });
+}
+
+function renderMessages() {
+  const el = document.getElementById("messages");
+  el.textContent = "";
+  const chat = state.chats[state.currentSubject] || [];
+  if (chat.length === 0) {
+    const s = SUBJECTS[state.currentSubject];
+    const w = document.createElement("div");
+    w.className = "welcome";
+    const icon = document.createElement("div");
+    icon.className = "big-icon";
+    icon.textContent = s.icon;
+    const h2 = document.createElement("h2");
+    h2.textContent = s.name;
+    const p = document.createElement("p");
+    p.textContent = "Постав своє запитання або прикріпи фото завдання 📎, і я поясню розв'язання крок за кроком! 🇺🇦";
+    w.appendChild(icon); w.appendChild(h2); w.appendChild(p);
+    el.appendChild(w);
+    return;
+  }
+  chat.forEach(m => addMessageToDOM(m.role, m.text, false, m.images || []));
+}
+
+function addMessageToDOM(role, text, animate=true, images=[]) {
+  const el = document.getElementById("messages");
+  const welcome = el.querySelector(".welcome");
+  if (welcome) welcome.remove();
+  const div = document.createElement("div");
+  div.className = "msg " + role;
+
+  if (role === "bot") {
+    const roleLabel = document.createElement("div");
+    roleLabel.className = "msg-role";
+    const avatar = document.createElement("span");
+    avatar.className = "avatar";
+    avatar.textContent = "🎓";
+    const rname = document.createElement("span");
+    rname.textContent = "ДомашкаAI";
+    roleLabel.appendChild(avatar);
+    roleLabel.appendChild(rname);
+    div.appendChild(roleLabel);
+  }
+
+  if (images && images.length) {
+    const imgWrap = document.createElement("div");
+    imgWrap.className = "msg-images";
+    images.forEach(src => {
+      const img = document.createElement("img");
+      img.src = src;
+      img.addEventListener("click", () => openLightbox(src));
+      imgWrap.appendChild(img);
+    });
+    div.appendChild(imgWrap);
+  }
+
+  if (role === "bot") {
+    const content = document.createElement("div");
+    content.innerHTML = renderMarkdown(text || "");
+    renderMathInElement_safe(content);
+    div.appendChild(content);
+
+    const actions = document.createElement("div");
+    actions.className = "msg-actions";
+    const copyBtn = document.createElement("button");
+    copyBtn.className = "msg-action-btn";
+    copyBtn.textContent = "📋 Копіювати";
+    copyBtn.addEventListener("click", () => {
+      navigator.clipboard.writeText(text || "").then(() => {
+        copyBtn.textContent = "✅ Скопійовано";
+        setTimeout(() => copyBtn.textContent = "📋 Копіювати", 1500);
+      });
+    });
+    actions.appendChild(copyBtn);
+    div.appendChild(actions);
+  } else if (text) {
+    const content = document.createElement("div");
+    content.textContent = text;
+    content.style.whiteSpace = "pre-wrap";
+    div.appendChild(content);
+  }
+
+  if (!animate) div.style.animation = "none";
+  el.appendChild(div);
+}
+
+function updateStats() {
+  document.getElementById("statQuestions").textContent = state.questionCount;
+  document.getElementById("statSubject").textContent = SUBJECTS[state.currentSubject].name;
+}
+
+/* ============================================================
+   SCROLL HELPERS
+   ============================================================ */
+function scrollChatToBottom() {
+  const el = document.getElementById("messages");
+  el.scrollTop = el.scrollHeight;
+}
+function scrollChatToTop(smooth = true) {
+  const el = document.getElementById("messages");
+  if (!el) return;
+  if (smooth) el.scrollTo({ top: 0, behavior: "smooth" });
+  else el.scrollTop = 0;
+  updateScrollTopBtn();
+}
+function updateScrollTopBtn() {
+  const el = document.getElementById("messages");
+  const btn = document.getElementById("scrollTopBtn");
+  if (!el || !btn) return;
+  if (el.scrollTop > 250) btn.classList.add("visible");
+  else btn.classList.remove("visible");
+}
+
+/* ============================================================
+   IMAGE ATTACHMENT
+   ============================================================ */
+function resizeImage(file, maxDim) {
+  return new Promise((resolve) => {
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      const img = new Image();
+      img.onload = () => {
+        let { width, height } = img;
+        if (width > maxDim || height > maxDim) {
+          if (width > height) { height = height * maxDim / width; width = maxDim; }
+          else { width = width * maxDim / height; height = maxDim; }
+        }
+        const canvas = document.createElement("canvas");
+        canvas.width = width; canvas.height = height;
+        canvas.getContext("2d").drawImage(img, 0, 0, width, height);
+        resolve(canvas.toDataURL("image/jpeg", 0.85));
+      };
+      img.onerror = () => resolve(ev.target.result);
+      img.src = ev.target.result;
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+function renderAttachPreview() {
+  const el = document.getElementById("attachPreview");
+  el.textContent = "";
+  pendingImages.forEach((src, i) => {
+    const thumb = document.createElement("div");
+    thumb.className = "attach-thumb";
+    const img = document.createElement("img");
+    img.src = src;
+    img.addEventListener("click", () => openLightbox(src));
+    const rm = document.createElement("button");
+    rm.className = "remove";
+    rm.textContent = "✕";
+    rm.addEventListener("click", () => { pendingImages.splice(i, 1); renderAttachPreview(); });
+    thumb.appendChild(img);
+    thumb.appendChild(rm);
+    el.appendChild(thumb);
+  });
+}
+
+function openLightbox(src) {
+  document.getElementById("lightboxImg").src = src;
+  document.getElementById("lightbox").classList.add("open");
+}
+
+/* ============================================================
+   MESSAGE HANDLING
+   ============================================================ */
+async function sendMessage() {
+  const input = document.getElementById("input");
+  const text = input.value.trim();
+  const images = pendingImages.slice();
+  if (!text && images.length === 0) return;
+
+  input.value = "";
+  input.style.height = "auto";
+  pendingImages = [];
+  renderAttachPreview();
+
+  const subject = state.currentSubject;
+  state.chats[subject].push({ role: "user", text, images });
+  addMessageToDOM("user", text, true, images);
+  scrollChatToBottom();
+  state.questionCount++;
+  updateStats();
+  renderSubjects();
+  await dbAddMessage(subject, "user", text, images);
+  await saveMeta();
+
+  const sendBtn = document.getElementById("sendBtn");
+  sendBtn.disabled = true;
+  showTyping();
+
+  try {
+    let answer;
+    if (settings.apiKey) {
+      const history = state.chats[subject].slice(-9, -1).map(m => ({ role: m.role, text: m.text }));
+      answer = await callGemini(text || "Допоможи з цим завданням на зображенні.", settings.apiKey, settings.model, buildSystemPrompt(subject), history, images);
+    } else {
+      await new Promise(r => setTimeout(r, 700));
+      answer = images.length
+        ? "📸 Я бачу, що ви прикріпили зображення!\n\n💡 Щоб я міг **прочитати та розв'язати** завдання з фото, додайте безкоштовний ключ Gemini API у ⚙️ Налаштуваннях."
+        : generateAnswer(text, subject);
+    }
+    removeTyping();
+    state.chats[subject].push({ role: "bot", text: answer, images: [] });
+    addMessageToDOM("bot", answer);
+    scrollChatToBottom();
+    renderSubjects();
+    await dbAddMessage(subject, "bot", answer, []);
+  } catch (err) {
+    removeTyping();
+    const errMsg = "⚠️ Не вдалося отримати відповідь від Gemini.\n\n" + err.message + "\n\nПеревірте API ключ у ⚙️ Налаштуваннях або скористайтесь демо-режимом.";
+    addMessageToDOM("error", errMsg);
+    scrollChatToBottom();
+  } finally {
+    sendBtn.disabled = false;
+    document.getElementById("input").focus();
+  }
+}
+
+function showTyping() {
+  const el = document.getElementById("messages");
+  const div = document.createElement("div");
+  div.className = "msg bot";
+  div.id = "typingIndicator";
+  div.innerHTML = `<div class="typing"><span></span><span></span><span></span></div>`;
+  el.appendChild(div);
+  scrollChatToBottom();
+}
+function removeTyping() {
+  const t = document.getElementById("typingIndicator");
+  if (t) t.remove();
+}
+
+/* ============================================================
+   DEMO ANSWER GENERATOR
+   ============================================================ */
+function generateAnswer(q, subject) {
+  const lower = q.toLowerCase();
+  const eq = q.replace(/\s/g,"").match(/(-?\d*)x([+\-]\d+)?=(-?\d+)/);
+  if (subject === "math" && eq) {
+    let a = eq[1] === "" || eq[1] === "+" ? 1 : (eq[1] === "-" ? -1 : parseFloat(eq[1]));
+    let b = eq[2] ? parseFloat(eq[2]) : 0;
+    let c = parseFloat(eq[3]);
+    let x = (c - b) / a;
+    return `## Розв'язання рівняння\n\nРівняння: $${eq[0]}$\n\nКрок 1: Переносимо вільний член у праву частину:\n$$${a}x = ${c-b}$$\nКрок 2: Ділимо обидві частини на ${a}:\n$$x = \\frac{${c-b}}{${a}}$$\nКрок 3: Отримуємо **відповідь**:\n$$x = ${Number(x.toFixed(4))}$$\n\n✅ **Перевірка:** підставляємо значення назад у рівняння.`;
+  }
+  const KB = {
+    math: {
+      "піфагор": "## Теорема Піфагора\n\nУ прямокутному трикутнику квадрат гіпот��нузи дорівнює сумі квадратів катетів:\n$$c^2 = a^2 + b^2$$\nде:\n* $c$ — гіпотенуза;\n* $a$, $b$ — катети.\n\nКрок 1: Наприклад, $a=3$, $b=4$.\nКрок 2: $c = \\sqrt{9+16} = \\sqrt{25} = 5$.",
+      "площ": "## Площа трикутника\n\nКрок 1: Основна формула:\n$$S = \\frac{1}{2} a h$$\nКрок 2: Через дві сторони й кут:\n$$S = \\frac{1}{2} a b \\sin\\gamma$$\nКрок 3: Формула Герона:\n$$S = \\sqrt{p(p-a)(p-b)(p-c)}$$"
+    },
+    literature: {
+      "заповіт": "## «Заповіт» Тараса Шевченка (1845)\n\n* **Жанр:** громадянська лірика\n* **Тема:** заповіт поета народу\n* **Ідея:** заклик до боротьби за волю\n\n> «Поховайте та вставайте, кайдани порвіте»",
+      "кайдаш": "## «Кайдашева сім'я»\n\n**Іван Нечуй-Левицький (1878)** — соціально-побутова повість про життя української селянської родини.",
+      "метафор": "**Метафора** — це художній засіб, приховане порівняння за подібністю.\n\n*Приклади:* «золоте серце», «час біжить»."
+    },
+    history: {
+      "козац": "## Козацька доба (XV–XVIII ст.)\n\nКрок 1: Виникнення козацтва.\nКрок 2: Заснування Запорізької Січі.\nКрок 3: Розквіт за Богдана Хмельницького.",
+      "хмельницьк": "## Богдан Хмельницький (1595–1657)\n\nГетьман, керівник Національно-визвольної війни **1648–1657 рр.**",
+      "київськ": "## Київська Русь (IX–XIII ст.)\n\nДержава зі столицею в Києві. Розквіт за **Володимира Великого** та **Ярослава Мудрого**."
+    },
+    physics: {
+      "ом": "## Закон Ома\n\nМатематично Закон Ома записується так:\n$$I = \\frac{U}{R}$$\nДе кожна літера означає важливу фізичну величину:\n* $I$ — сила струму (Ампери, А);\n* $U$ — електрична напруга (Вольти, В);\n* $R$ — електричний опір (Оми, Ом).",
+      "ньютон": "## Закони Ньютона\n\nКрок 1: **I закон** — закон інерції.\nКрок 2: **II закон** — $$F = ma$$\nКрок 3: **III закон** — дія дорівнює протидії.",
+      "швидк": "## Швидкість руху\n\nКрок 1: Формула:\n$$v = \\frac{s}{t}$$\nКрок 2: $s$ — шлях (м), $t$ — час (с).\nКрок 3: Наприклад, $s=100$ м, $t=20$ с, тоді $v = 5$ м/с."
+    }
+  };
+  const kb = KB[subject] || {};
+  for (const key in kb) { if (lower.includes(key)) return kb[key]; }
+  const generic = {
+    math: "Це цікаве математичне запитання! 🔢\n\n💡 **Порада:** додайте API ключ Gemini у ⚙️ Налаштуваннях, щоб отримувати повні розв'язання будь-яких задач крок за кроком!",
+    literature: "Гарне запитання з української літератури! 📖\n\n💡 Додайте API ключ Gemini у ⚙️ Налаштуваннях для детального аналізу творів.",
+    history: "Цікаве історичне запитання! 🏛\n\n💡 Додайте API ключ Gemini у ⚙️ Налаштуваннях для повних історичних відповідей.",
+    physics: "Фізичне запитання! ⚡\n\n💡 Додайте API ключ Gemini у ⚙️ Налаштуваннях, щоб розв'язувати будь-які задачі."
+  };
+  return generic[subject];
+}
+
+/* ============================================================
+   CLEAR
+   ============================================================ */
+async function clearHistory() {
+  const ok = await customConfirm({
+    icon: "🗑️",
+    title: "Очистити історію?",
+    text: "Це назавжди видалить усі збережені діалоги та прикріплені зображення з усіх предметів.",
+    okText: "Так, очистити",
+    cancelText: "Скасувати"
+  });
+  if (!ok) return;
+  await dbClearMessages();
+  state.questionCount = 0;
+  state.chats = emptyChats();
+  await saveMeta();
+  renderSubjects();
+  renderMessages();
+  updateStats();
+}
+
+/* ============================================================
+   EVENT LISTENERS
+   ============================================================ */
+function setupEventListeners() {
+  const fileInput = document.getElementById("fileInput");
+  fileInput.addEventListener("change", async (e) => {
+    const files = Array.from(e.target.files);
+    for (const file of files) {
+      if (!file.type.startsWith("image/")) continue;
+      const dataUrl = await resizeImage(file, 1024);
+      pendingImages.push(dataUrl);
+    }
+    fileInput.value = "";
+    renderAttachPreview();
+  });
+
+  const inputEl = document.getElementById("input");
+  inputEl.addEventListener("input", () => {
+    inputEl.style.height = "auto";
+    inputEl.style.height = Math.min(inputEl.scrollHeight, 120) + "px";
+  });
+  inputEl.addEventListener("keydown", e => {
+    if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(); }
+  });
+  inputEl.addEventListener("paste", async (e) => {
+    const items = e.clipboardData?.items || [];
+    for (const item of items) {
+      if (item.type.startsWith("image/")) {
+        const file = item.getAsFile();
+        if (file) {
+          const dataUrl = await resizeImage(file, 1024);
+          pendingImages.push(dataUrl);
+          renderAttachPreview();
+        }
+      }
+    }
+  });
+
+  document.getElementById("messages").addEventListener("scroll", updateScrollTopBtn);
+
+  document.getElementById("settingsModal").addEventListener("click", (e) => {
+    if (e.target.id === "settingsModal") closeSettings();
+  });
+  document.getElementById("infoModal").addEventListener("click", (e) => {
+    if (e.target.id === "infoModal") closeInfo();
+  });
+  document.getElementById("confirmOk").addEventListener("click", () => closeConfirm(true));
+  document.getElementById("confirmCancel").addEventListener("click", () => closeConfirm(false));
+  document.getElementById("confirmModal").addEventListener("click", (e) => {
+    if (e.target.id === "confirmModal") closeConfirm(false);
+  });
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape") {
+      closeSettings(); closeInfo();
+      if (document.getElementById("confirmModal").classList.contains("open")) closeConfirm(false);
+      document.getElementById("lightbox").classList.remove("open");
+    }
+  });
+}
+
+/* ============================================================
+   RENDER EVERYTHING FROM CURRENT STATE
+   ============================================================ */
+function renderAll() {
+  renderSubjects();
+  updateHeader();
+  renderMessages();
+  renderQuickPrompts();
+  updateStats();
+  updateApiStatus();
+}
+
+/* ============================================================
+   INIT
+   ============================================================ */
+async function init() {
+  loadSettings();
+  setupEventListeners();
+
+  // Initial render (empty state) so UI is responsive immediately
+  renderAll();
+
+  // Restore ALL dialogs for every subject from IndexedDB
+  let restored = 0;
+  try {
+    await openDB();
+    restored = await loadFromDB();
+  } catch(e) {
+    console.warn("IndexedDB недоступний:", e);
+    const st = document.getElementById("statSaved");
+    if (st) st.textContent = "недоступно";
+  }
+
+  // Re-render UI with restored dialogs + counters
+  renderAll();
+
+  // Show restored answers starting FROM THE TOP after layout/KaTeX settle
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => scrollChatToTop(false));
+  });
+
+  console.log(`Init готово. Активний предмет: ${state.currentSubject}, повідомлень відновлено: ${restored}`);
+}
+
+if (document.readyState === "loading") {
+  document.addEventListener("DOMContentLoaded", init);
+} else {
+  init();
+}
+</script>
+</body>
+</html>
