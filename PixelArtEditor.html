@@ -1,0 +1,1008 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Піксель Арт Редактор</title>
+<style>
+  * {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: 'Segoe UI', Tahoma, sans-serif;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  :root {
+    --bg-1: #1a1a2e;
+    --bg-2: #16213e;
+    --accent: #e94560;
+    --accent-2: #0f3460;
+    --panel: #22223b;
+    --light: #f0f0f5;
+    --success: #06d6a0;
+  }
+
+  body {
+    background: linear-gradient(135deg, var(--bg-1), var(--bg-2));
+    color: var(--light);
+    min-height: 100vh;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  /* ===== Top bar with language switch fixed inline ===== */
+  .topbar {
+    width: 100%;
+    max-width: 1200px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+  }
+
+  header {
+    text-align: left;
+  }
+
+  h1 {
+    font-size: 1.8rem;
+    background: linear-gradient(90deg, #e94560, #ffb703, #8ecae6);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    letter-spacing: 1px;
+  }
+
+  .subtitle {
+    font-size: 0.85rem;
+    color: #9a9ab8;
+    margin-top: 2px;
+  }
+
+  .lang-switch {
+    display: flex;
+    gap: 6px;
+    background: var(--panel);
+    padding: 6px;
+    border-radius: 10px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+    flex-shrink: 0;
+  }
+
+  .lang-btn {
+    background: transparent;
+    border: none;
+    color: #b0b0d0;
+    padding: 8px 14px;
+    border-radius: 7px;
+    cursor: pointer;
+    font-size: 0.85rem;
+    font-weight: 600;
+    transition: all 0.15s;
+  }
+  .lang-btn.active { background: var(--accent); color: #fff; }
+  .lang-btn:hover:not(.active) { background: rgba(255,255,255,0.08); }
+
+  .app {
+    display: flex;
+    gap: 20px;
+    flex-wrap: wrap;
+    justify-content: center;
+    align-items: flex-start;
+    max-width: 1200px;
+    width: 100%;
+  }
+
+  .app.vertical {
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .panel {
+    background: var(--panel);
+    border-radius: 14px;
+    padding: 16px;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+    border: 1px solid rgba(255,255,255,0.06);
+  }
+
+  .controls {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    min-width: 240px;
+    max-width: 280px;
+  }
+
+  .control-group label {
+    display: block;
+    font-size: 0.75rem;
+    color: #b0b0d0;
+    margin-bottom: 6px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  .palette {
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    gap: 6px;
+  }
+
+  .swatch {
+    width: 100%;
+    aspect-ratio: 1;
+    border-radius: 6px;
+    cursor: pointer;
+    border: 2px solid transparent;
+    transition: transform 0.1s, border 0.1s;
+  }
+
+  .swatch:hover { transform: scale(1.12); }
+  .swatch.active { border-color: #fff; box-shadow: 0 0 8px rgba(255,255,255,0.6); }
+
+  .color-picker-row {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+  }
+
+  input[type="color"] {
+    width: 44px;
+    height: 44px;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    background: none;
+    flex-shrink: 0;
+  }
+
+  .btn {
+    background: var(--accent-2);
+    color: var(--light);
+    border: none;
+    padding: 10px 12px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 0.85rem;
+    transition: background 0.15s, transform 0.1s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+  }
+
+  .btn:hover { background: #16549c; transform: translateY(-1px); }
+  .btn.accent { background: var(--accent); }
+  .btn.accent:hover { background: #ff5c78; }
+  .btn.success { background: var(--success); color: #06231a; }
+  .btn.success:hover { background: #0af3b8; }
+  .btn.active { background: var(--accent); box-shadow: 0 0 0 2px rgba(255,255,255,0.25) inset; }
+  .btn.small { padding: 8px 8px; font-size: 0.8rem; }
+
+  .tool-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 6px;
+  }
+
+  .btn-row {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+  .btn-row .btn { flex: 1; }
+
+  select, input[type="number"], input[type="range"] {
+    width: 100%;
+    padding: 8px;
+    border-radius: 8px;
+    border: 1px solid rgba(255,255,255,0.1);
+    background: var(--bg-2);
+    color: var(--light);
+    font-size: 0.85rem;
+  }
+  input[type="range"] { padding: 0; }
+
+  .size-row {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+  }
+  .size-row input { width: 60px; text-align: center; }
+  .size-row span { color: #9a9ab8; }
+
+  .canvas-wrap {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  #gridCanvas {
+    background:
+      linear-gradient(45deg, #2a2a40 25%, transparent 25%),
+      linear-gradient(-45deg, #2a2a40 25%, transparent 25%),
+      linear-gradient(45deg, transparent 75%, #2a2a40 75%),
+      linear-gradient(-45deg, transparent 75%, #2a2a40 75%);
+    background-size: 20px 20px;
+    background-position: 0 0, 0 10px, 10px -10px, -10px 0;
+    background-color: #33334d;
+    border-radius: 8px;
+    cursor: crosshair;
+    image-rendering: pixelated;
+    touch-action: none;
+    max-width: 100%;
+  }
+
+  .toggle-row { display: flex; gap: 6px; }
+
+  .info {
+    font-size: 0.75rem;
+    color: #7a7a9a;
+    text-align: center;
+    margin-top: 10px;
+  }
+
+  .slider-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .slider-row .val {
+    min-width: 30px;
+    text-align: right;
+    font-size: 0.85rem;
+    color: var(--success);
+  }
+
+  /* Wizard modal */
+  .modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.7);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 100;
+    padding: 16px;
+  }
+  .modal-overlay.open { display: flex; }
+  .modal {
+    background: var(--panel);
+    border-radius: 16px;
+    padding: 24px;
+    max-width: 420px;
+    width: 100%;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.6);
+    border: 1px solid rgba(255,255,255,0.1);
+  }
+  .modal h2 {
+    font-size: 1.3rem;
+    margin-bottom: 6px;
+    background: linear-gradient(90deg, #e94560, #ffb703);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+  .modal p { color: #9a9ab8; font-size: 0.85rem; margin-bottom: 16px; }
+  .wizard-list { display: flex; flex-direction: column; gap: 10px; }
+  .wizard-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background: var(--bg-2);
+    padding: 12px 14px;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: all 0.15s;
+    border: 1px solid transparent;
+  }
+  .wizard-item:hover { border-color: var(--accent); transform: translateX(4px); }
+  .wizard-item .ico { font-size: 1.6rem; }
+  .wizard-item .txt strong { display: block; font-size: 0.95rem; }
+  .wizard-item .txt small { color: #9a9ab8; font-size: 0.75rem; }
+  .modal-close {
+    margin-top: 16px;
+    width: 100%;
+  }
+
+  .section-divider {
+    height: 1px;
+    background: rgba(255,255,255,0.08);
+    margin: 2px 0;
+  }
+
+  @media (max-width: 640px) {
+    h1 { font-size: 1.3rem; }
+    .controls { min-width: 0; max-width: 100%; width: 100%; }
+    .topbar { justify-content: center; }
+    header { text-align: center; }
+  }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <header>
+    <h1 data-i18n="title">Піксель Арт Редактор</h1>
+    <p class="subtitle" data-i18n="subtitle">Малюй пікселями та експортуй у PNG</p>
+  </header>
+  <div class="lang-switch">
+    <button class="lang-btn active" data-lang="uk">УКР</button>
+    <button class="lang-btn" data-lang="en">EN</button>
+  </div>
+</div>
+
+<div class="app" id="app">
+  <div class="panel controls">
+    <div class="control-group">
+      <label data-i18n="tools">Інструменти</label>
+      <div class="tool-grid">
+        <button class="btn small active" id="toolPen" data-i18n="pen">✏️</button>
+        <button class="btn small" id="toolErase" data-i18n="eraser">🧽</button>
+        <button class="btn small" id="toolFill" data-i18n="fill">🪣</button>
+        <button class="btn small" id="toolPick" data-i18n="picker">💧</button>
+        <button class="btn small" id="toolLine" data-i18n="line">📏</button>
+        <button class="btn small" id="toolRect" data-i18n="rect">▭</button>
+        <button class="btn small" id="toolCircle" data-i18n="circle">⬭</button>
+        <button class="btn small" id="toolSpray" data-i18n="spray">💨</button>
+        <button class="btn small" id="toolShade" data-i18n="shade">🌗</button>
+      </div>
+    </div>
+
+    <div class="control-group">
+      <label data-i18n="brushSize">Розмір пензля</label>
+      <div class="slider-row">
+        <input type="range" id="brushSize" min="1" max="6" value="1">
+        <span class="val" id="brushVal">1</span>
+      </div>
+    </div>
+
+    <div class="control-group">
+      <label data-i18n="mirror">Дзеркало / Симетрія</label>
+      <div class="btn-row">
+        <button class="btn small" id="mirrorX" data-i18n="mirrorX">↔</button>
+        <button class="btn small" id="mirrorY" data-i18n="mirrorY">↕</button>
+      </div>
+    </div>
+
+    <div class="control-group">
+      <label data-i18n="currentColor">Поточний колір</label>
+      <div class="color-picker-row">
+        <input type="color" id="colorPicker" value="#e94560">
+        <button class="btn accent" id="addColorBtn" style="flex:1" data-i18n="addColor">+ Додати</button>
+      </div>
+    </div>
+
+    <div class="control-group">
+      <label data-i18n="palette">Палітра</label>
+      <div class="palette" id="palette"></div>
+    </div>
+
+    <div class="section-divider"></div>
+
+    <div class="control-group">
+      <button class="btn success" id="wizardBtn" style="width:100%" data-i18n="wizards">🧙 Майстри</button>
+    </div>
+
+    <div class="control-group">
+      <label data-i18n="gridSize">Розмір сітки</label>
+      <div class="size-row">
+        <input type="number" id="gridW" value="24" min="4" max="80">
+        <span>×</span>
+        <input type="number" id="gridH" value="24" min="4" max="80">
+        <button class="btn" id="applySize" data-i18n="apply">OK</button>
+      </div>
+    </div>
+
+    <div class="control-group">
+      <label data-i18n="orientation">Орієнтація</label>
+      <div class="toggle-row">
+        <button class="btn active" id="orientH" style="flex:1" data-i18n="horizontal">↔ Горизонт.</button>
+        <button class="btn" id="orientV" style="flex:1" data-i18n="vertical">↕ Вертик.</button>
+      </div>
+    </div>
+
+    <div class="control-group">
+      <div class="btn-row">
+        <button class="btn" id="undoBtn" data-i18n="undo">↩️</button>
+        <button class="btn" id="redoBtn" data-i18n="redo">↪️</button>
+        <button class="btn" id="clearBtn" data-i18n="clear">🗑️</button>
+      </div>
+      <div class="btn-row" style="margin-top:8px;">
+        <button class="btn accent" id="exportBtn" style="flex:1" data-i18n="export">💾 PNG</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="panel canvas-wrap">
+    <canvas id="gridCanvas"></canvas>
+    <p class="info" data-i18n="hint">Клікай або тягни для малювання</p>
+  </div>
+</div>
+
+<!-- Wizard Modal -->
+<div class="modal-overlay" id="wizardModal">
+  <div class="modal">
+    <h2 data-i18n="wizardTitle">🧙 Майстри</h2>
+    <p data-i18n="wizardDesc">Автоматичні генератори та ефекти</p>
+    <div class="wizard-list">
+      <div class="wizard-item" data-wizard="checker">
+        <span class="ico">🏁</span>
+        <div class="txt"><strong data-i18n="wzChecker">Шахова дошка</strong><small data-i18n="wzCheckerD">Заповнити візерунком</small></div>
+      </div>
+      <div class="wizard-item" data-wizard="gradient">
+        <span class="ico">🌈</span>
+        <div class="txt"><strong data-i18n="wzGradient">Градієнт</strong><small data-i18n="wzGradientD">Плавний перехід кольору</small></div>
+      </div>
+      <div class="wizard-item" data-wizard="frame">
+        <span class="ico">🖼️</span>
+        <div class="txt"><strong data-i18n="wzFrame">Рамка</strong><small data-i18n="wzFrameD">Обвести полотно</small></div>
+      </div>
+      <div class="wizard-item" data-wizard="noise">
+        <span class="ico">✨</span>
+        <div class="txt"><strong data-i18n="wzNoise">Шум / Зорі</strong><small data-i18n="wzNoiseD">Випадкові пікселі</small></div>
+      </div>
+      <div class="wizard-item" data-wizard="dither">
+        <span class="ico">🎞️</span>
+        <div class="txt"><strong data-i18n="wzDither">Дизеринг</strong><small data-i18n="wzDitherD">Змішати два кольори</small></div>
+      </div>
+      <div class="wizard-item" data-wizard="mirrorArt">
+        <span class="ico">🔮</span>
+        <div class="txt"><strong data-i18n="wzMirror">Симетрія</strong><small data-i18n="wzMirrorD">Віддзеркалити половину</small></div>
+      </div>
+      <div class="wizard-item" data-wizard="invert">
+        <span class="ico">🔄</span>
+        <div class="txt"><strong data-i18n="wzInvert">Інвертувати</strong><small data-i18n="wzInvertD">Змінити кольори</small></div>
+      </div>
+      <div class="wizard-item" data-wizard="rainbowFill">
+        <span class="ico">🎨</span>
+        <div class="txt"><strong data-i18n="wzRainbow">Веселка</strong><small data-i18n="wzRainbowD">Розфарбувати рядки</small></div>
+      </div>
+    </div>
+    <button class="btn modal-close" id="wizardClose" data-i18n="close">Закрити</button>
+  </div>
+</div>
+
+<script>
+// ===== Translations =====
+const i18n = {
+  uk: {
+    title: "Піксель Арт Ре��актор", subtitle: "Малюй пікселями та експортуй у PNG",
+    tools: "Інструменти", pen: "✏️", eraser: "🧽", fill: "🪣", picker: "💧",
+    line: "📏", rect: "▭", circle: "⬭", spray: "💨", shade: "🌗",
+    brushSize: "Розмір пензля", mirror: "Дзеркало / Симетрія", mirrorX: "↔", mirrorY: "↕",
+    currentColor: "Поточний колір", addColor: "+ Додати", palette: "Палітра",
+    wizards: "🧙 Майстри", gridSize: "Розмір сітки", apply: "OK",
+    orientation: "Орієнтація", horizontal: "↔ Горизонт.", vertical: "↕ Вертик.",
+    undo: "↩️", redo: "↪️", clear: "🗑️", export: "💾 PNG",
+    hint: "Клікай або тягни для малювання",
+    wizardTitle: "🧙 Майстри", wizardDesc: "Автоматичні генератори та ефекти",
+    wzChecker: "Шахова дошка", wzCheckerD: "Заповнити візерунком",
+    wzGradient: "Градієнт", wzGradientD: "Плавний перехід кольору",
+    wzFrame: "Рамка", wzFrameD: "Обвести полотно",
+    wzNoise: "Шум / Зорі", wzNoiseD: "Випадкові пікселі",
+    wzDither: "Дизеринг", wzDitherD: "Змішати два кольори",
+    wzMirror: "Симетрія", wzMirrorD: "Віддзеркалити половину",
+    wzInvert: "Інвертувати", wzInvertD: "Змінити кольори",
+    wzRainbow: "Веселка", wzRainbowD: "Розфарбувати рядки",
+    close: "Закрити"
+  },
+  en: {
+    title: "Pixel Art Editor", subtitle: "Draw with pixels and export to PNG",
+    tools: "Tools", pen: "✏️", eraser: "🧽", fill: "🪣", picker: "💧",
+    line: "📏", rect: "▭", circle: "⬭", spray: "💨", shade: "🌗",
+    brushSize: "Brush size", mirror: "Mirror / Symmetry", mirrorX: "↔", mirrorY: "↕",
+    currentColor: "Current color", addColor: "+ Add", palette: "Palette",
+    wizards: "🧙 Wizards", gridSize: "Grid size", apply: "OK",
+    orientation: "Orientation", horizontal: "↔ Horizontal", vertical: "↕ Vertical",
+    undo: "↩️", redo: "↪️", clear: "🗑️", export: "💾 PNG",
+    hint: "Click or drag to draw",
+    wizardTitle: "🧙 Wizards", wizardDesc: "Automatic generators and effects",
+    wzChecker: "Checkerboard", wzCheckerD: "Fill with pattern",
+    wzGradient: "Gradient", wzGradientD: "Smooth color transition",
+    wzFrame: "Frame", wzFrameD: "Outline the canvas",
+    wzNoise: "Noise / Stars", wzNoiseD: "Random pixels",
+    wzDither: "Dithering", wzDitherD: "Blend two colors",
+    wzMirror: "Symmetry", wzMirrorD: "Mirror one half",
+    wzInvert: "Invert", wzInvertD: "Change colors",
+    wzRainbow: "Rainbow", wzRainbowD: "Colorize rows",
+    close: "Close"
+  }
+};
+
+// ===== State =====
+const STORAGE_KEY = "pixelArtEditorState_v2";
+const defaultPalette = [
+  "#000000","#ffffff","#e94560","#f8961e","#ffd166","#06d6a0",
+  "#118ab2","#8338ec","#ff006e","#3a86ff","#8ecae6","#c77dff",
+  "#2d6a4f","#95d5b2","#7f5539","#dda15e","#adb5bd","#495057"
+];
+
+// Default artwork - a simple smiley on 24x24
+function buildDefaultPixels() {
+  const p = {};
+  const set = (x,y,c) => p[x+"_"+y] = c;
+  // background sky
+  for (let y=0;y<24;y++) for(let x=0;x<24;x++){
+    const d = Math.hypot(x-11.5,y-11.5);
+    if (d < 11) set(x,y,"#ffd166"); // face
+  }
+  // outline circle
+  for (let a=0;a<360;a+=3){
+    const x=Math.round(11.5+11*Math.cos(a*Math.PI/180));
+    const y=Math.round(11.5+11*Math.sin(a*Math.PI/180));
+    set(x,y,"#f8961e");
+  }
+  // eyes
+  [[8,9],[8,10],[15,9],[15,10]].forEach(([x,y])=>set(x,y,"#1a1a2e"));
+  // smile
+  [[7,15],[8,16],[9,17],[10,17],[11,17],[12,17],[13,17],[14,16],[15,15]].forEach(([x,y])=>set(x,y,"#e94560"));
+  return p;
+}
+
+let state = {
+  lang: "uk",
+  gridW: 24,
+  gridH: 24,
+  orientation: "horizontal",
+  currentColor: "#e94560",
+  tool: "pen",
+  brushSize: 1,
+  mirrorX: false,
+  mirrorY: false,
+  palette: [...defaultPalette],
+  pixels: buildDefaultPixels()
+};
+
+// history for undo/redo
+let history = [];
+let historyIndex = -1;
+
+// ===== DOM =====
+const canvas = document.getElementById("gridCanvas");
+const ctx = canvas.getContext("2d");
+const paletteEl = document.getElementById("palette");
+const colorPicker = document.getElementById("colorPicker");
+const gridWInput = document.getElementById("gridW");
+const gridHInput = document.getElementById("gridH");
+const appEl = document.getElementById("app");
+const brushSlider = document.getElementById("brushSize");
+const brushVal = document.getElementById("brushVal");
+
+let cellSize = 20;
+
+// ===== Storage =====
+function save() { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }
+function load() {
+  const raw = localStorage.getItem(STORAGE_KEY);
+  if (raw) { try { state = { ...state, ...JSON.parse(raw) }; } catch(e){} }
+}
+
+// ===== History =====
+function pushHistory() {
+  history = history.slice(0, historyIndex + 1);
+  history.push(JSON.stringify(state.pixels));
+  if (history.length > 50) history.shift();
+  historyIndex = history.length - 1;
+}
+function undo() {
+  if (historyIndex > 0) {
+    historyIndex--;
+    state.pixels = JSON.parse(history[historyIndex]);
+    drawGrid(); save();
+  }
+}
+function redo() {
+  if (historyIndex < history.length - 1) {
+    historyIndex++;
+    state.pixels = JSON.parse(history[historyIndex]);
+    drawGrid(); save();
+  }
+}
+
+// ===== Language =====
+function applyLang() {
+  const t = i18n[state.lang];
+  document.documentElement.lang = state.lang;
+  document.querySelectorAll("[data-i18n]").forEach(el => {
+    const key = el.getAttribute("data-i18n");
+    if (t[key] !== undefined) el.textContent = t[key];
+  });
+  document.querySelectorAll(".lang-btn").forEach(b => {
+    b.classList.toggle("active", b.dataset.lang === state.lang);
+  });
+}
+
+// ===== Palette =====
+function renderPalette() {
+  paletteEl.innerHTML = "";
+  state.palette.forEach(color => {
+    const sw = document.createElement("div");
+    sw.className = "swatch" + (color === state.currentColor ? " active" : "");
+    sw.style.background = color;
+    sw.title = color;
+    sw.addEventListener("click", () => {
+      state.currentColor = color; colorPicker.value = color;
+      renderPalette(); save();
+    });
+    sw.addEventListener("dblclick", () => {
+      if (state.palette.length > 1) {
+        state.palette = state.palette.filter(c => c !== color);
+        renderPalette(); save();
+      }
+    });
+    paletteEl.appendChild(sw);
+  });
+}
+
+// ===== Canvas =====
+function computeCellSize() {
+  const maxDim = Math.min(window.innerWidth - 80, 600);
+  const larger = Math.max(state.gridW, state.gridH);
+  cellSize = Math.max(6, Math.floor(maxDim / larger));
+}
+function resizeCanvas() {
+  computeCellSize();
+  canvas.width = state.gridW * cellSize;
+  canvas.height = state.gridH * cellSize;
+  drawGrid();
+}
+function drawGrid() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  for (let key in state.pixels) {
+    const [x, y] = key.split("_").map(Number);
+    ctx.fillStyle = state.pixels[key];
+    ctx.fillRect(x * cellSize, y * cellSize, cellSize, cellSize);
+  }
+  if (cellSize >= 10) {
+    ctx.strokeStyle = "rgba(255,255,255,0.06)";
+    ctx.lineWidth = 1;
+    for (let x = 0; x <= state.gridW; x++) {
+      ctx.beginPath(); ctx.moveTo(x*cellSize,0); ctx.lineTo(x*cellSize,canvas.height); ctx.stroke();
+    }
+    for (let y = 0; y <= state.gridH; y++) {
+      ctx.beginPath(); ctx.moveTo(0,y*cellSize); ctx.lineTo(canvas.width,y*cellSize); ctx.stroke();
+    }
+  }
+}
+function drawPreview(cells) {
+  drawGrid();
+  ctx.fillStyle = state.currentColor;
+  cells.forEach(([x,y]) => {
+    if (x>=0&&y>=0&&x<state.gridW&&y<state.gridH)
+      ctx.fillRect(x*cellSize, y*cellSize, cellSize, cellSize);
+  });
+}
+function getCell(e) {
+  const rect = canvas.getBoundingClientRect();
+  const scaleX = canvas.width / rect.width;
+  const scaleY = canvas.height / rect.height;
+  const cx = e.touches ? e.touches[0].clientX : e.clientX;
+  const cy = e.touches ? e.touches[0].clientY : e.clientY;
+  const x = Math.floor((cx - rect.left) * scaleX / cellSize);
+  const y = Math.floor((cy - rect.top) * scaleY / cellSize);
+  if (x < 0 || y < 0 || x >= state.gridW || y >= state.gridH) return null;
+  return { x, y };
+}
+
+// ===== Color helpers =====
+function hexToRgb(h){h=h.replace('#','');return{r:parseInt(h.substr(0,2),16),g:parseInt(h.substr(2,2),16),b:parseInt(h.substr(4,2),16)};}
+function rgbToHex(r,g,b){return '#'+[r,g,b].map(v=>Math.max(0,Math.min(255,Math.round(v))).toString(16).padStart(2,'0')).join('');}
+function lerpColor(a,b,t){const c1=hexToRgb(a),c2=hexToRgb(b);return rgbToHex(c1.r+(c2.r-c1.r)*t,c1.g+(c2.g-c1.g)*t,c1.b+(c2.b-c1.b)*t);}
+function hsl(h,s,l){s/=100;l/=100;const k=n=>(n+h/30)%12;const a=s*Math.min(l,1-l);const f=n=>l-a*Math.max(-1,Math.min(k(n)-3,Math.min(9-k(n),1)));return rgbToHex(255*f(0),255*f(8),255*f(4));}
+
+// ===== Paint with brush + mirror =====
+function paintCell(x, y, color) {
+  const b = state.brushSize;
+  const off = Math.floor(b/2);
+  const points = new Set();
+  for (let dx=0; dx<b; dx++) for(let dy=0; dy<b; dy++){
+    const px = x - off + dx, py = y - off + dy;
+    addPoint(px, py, points);
+  }
+  points.forEach(k => {
+    const [px,py]=k.split("_").map(Number);
+    if (px>=0&&py>=0&&px<state.gridW&&py<state.gridH){
+      if (color === null) delete state.pixels[k];
+      else state.pixels[k] = color;
+    }
+  });
+}
+function addPoint(px, py, set) {
+  set.add(px+"_"+py);
+  if (state.mirrorX) set.add((state.gridW-1-px)+"_"+py);
+  if (state.mirrorY) set.add(px+"_"+(state.gridH-1-py));
+  if (state.mirrorX && state.mirrorY) set.add((state.gridW-1-px)+"_"+(state.gridH-1-py));
+}
+
+// ===== Tools logic =====
+let drawing = false;
+let startCell = null;
+let lastCell = null;
+
+function lineCells(x0,y0,x1,y1){
+  const cells=[]; const dx=Math.abs(x1-x0),dy=Math.abs(y1-y0);
+  const sx=x0<x1?1:-1,sy=y0<y1?1:-1; let err=dx-dy;
+  while(true){cells.push([x0,y0]);if(x0===x1&&y0===y1)break;const e2=2*err;if(e2>-dy){err-=dy;x0+=sx;}if(e2<dx){err+=dx;y0+=sy;}}
+  return cells;
+}
+function rectCells(x0,y0,x1,y1){
+  const cells=[];const minX=Math.min(x0,x1),maxX=Math.max(x0,x1),minY=Math.min(y0,y1),maxY=Math.max(y0,y1);
+  for(let x=minX;x<=maxX;x++){cells.push([x,minY]);cells.push([x,maxY]);}
+  for(let y=minY;y<=maxY;y++){cells.push([minX,y]);cells.push([maxX,y]);}
+  return cells;
+}
+function circleCells(x0,y0,x1,y1){
+  const cells=[];const cx=(x0+x1)/2,cy=(y0+y1)/2;const rx=Math.abs(x1-x0)/2,ry=Math.abs(y1-y0)/2;
+  if(rx<0.5||ry<0.5)return[[x0,y0]];
+  for(let a=0;a<360;a+=2){const x=Math.round(cx+rx*Math.cos(a*Math.PI/180));const y=Math.round(cy+ry*Math.sin(a*Math.PI/180));cells.push([x,y]);}
+  return cells;
+}
+
+function applyTool(cell) {
+  if (!cell) return;
+  const key = cell.x + "_" + cell.y;
+  switch(state.tool){
+    case "pen": paintCell(cell.x, cell.y, state.currentColor); break;
+    case "eraser": paintCell(cell.x, cell.y, null); break;
+    case "picker":
+      if (state.pixels[key]) { state.currentColor = state.pixels[key]; colorPicker.value = state.pixels[key]; renderPalette(); }
+      return;
+    case "fill": floodFill(cell.x, cell.y); break;
+    case "spray": spray(cell.x, cell.y); break;
+    case "shade": shade(cell.x, cell.y); break;
+  }
+  drawGrid();
+}
+function floodFill(x, y) {
+  const target = state.pixels[x+"_"+y] || null;
+  const repl = state.currentColor;
+  if (target === repl) return;
+  const stack=[[x,y]]; const visited=new Set();
+  while(stack.length){
+    const [cx,cy]=stack.pop();
+    if(cx<0||cy<0||cx>=state.gridW||cy>=state.gridH)continue;
+    const k=cx+"_"+cy; if(visited.has(k))continue; visited.add(k);
+    const cur=state.pixels[k]||null; if(cur!==target)continue;
+    state.pixels[k]=repl;
+    stack.push([cx+1,cy],[cx-1,cy],[cx,cy+1],[cx,cy-1]);
+  }
+}
+function spray(x,y){
+  const r=state.brushSize+1;
+  for(let i=0;i<r*3;i++){
+    const px=x+Math.round((Math.random()-0.5)*r*2);
+    const py=y+Math.round((Math.random()-0.5)*r*2);
+    if(Math.hypot(px-x,py-y)<=r && px>=0&&py>=0&&px<state.gridW&&py<state.gridH){
+      if(Math.random()>0.4){const pts=new Set();addPoint(px,py,pts);pts.forEach(k=>state.pixels[k]=state.currentColor);}
+    }
+  }
+}
+function shade(x,y){
+  const k=x+"_"+y;
+  if(state.pixels[k]){
+    const c=hexToRgb(state.pixels[k]);
+    const pts=new Set();addPoint(x,y,pts);
+    pts.forEach(kk=>{if(state.pixels[kk]){const cc=hexToRgb(state.pixels[kk]);state.pixels[kk]=rgbToHex(cc.r*0.82,cc.g*0.82,cc.b*0.82);}});
+  }
+}
+
+// ===== Drawing events =====
+function startDraw(e){
+  e.preventDefault();
+  const cell=getCell(e); if(!cell)return;
+  drawing=true; startCell=cell; lastCell=cell;
+  if(["line","rect","circle"].includes(state.tool)){/* preview on move */}
+  else applyTool(cell);
+}
+function moveDraw(e){
+  if(!drawing)return;
+  const cell=getCell(e); if(!cell)return;
+  e.preventDefault();
+  if(["line","rect","circle"].includes(state.tool)){
+    let cells;
+    if(state.tool==="line")cells=lineCells(startCell.x,startCell.y,cell.x,cell.y);
+    else if(state.tool==="rect")cells=rectCells(startCell.x,startCell.y,cell.x,cell.y);
+    else cells=circleCells(startCell.x,startCell.y,cell.x,cell.y);
+    drawPreview(cells);
+  } else if(["fill","picker","shade"].includes(state.tool)){
+    return;
+  } else {
+    // interpolate for smooth strokes
+    lineCells(lastCell.x,lastCell.y,cell.x,cell.y).forEach(([x,y])=>{
+      if(state.tool==="eraser")paintCell(x,y,null);
+      else if(state.tool==="spray")spray(x,y);
+      else paintCell(x,y,state.currentColor);
+    });
+    drawGrid(); lastCell=cell;
+  }
+}
+function endDraw(e){
+  if(!drawing)return;
+  drawing=false;
+  if(["line","rect","circle"].includes(state.tool) && startCell){
+    const cell = lastCell;
+    let cells;
+    if(state.tool==="line")cells=lineCells(startCell.x,startCell.y,cell.x,cell.y);
+    else if(state.tool==="rect")cells=rectCells(startCell.x,startCell.y,cell.x,cell.y);
+    else cells=circleCells(startCell.x,startCell.y,cell.x,cell.y);
+    cells.forEach(([x,y])=>paintCell(x,y,state.currentColor));
+    drawGrid();
+  }
+  pushHistory(); save();
+}
+canvas.addEventListener("mousedown", startDraw);
+canvas.addEventListener("mousemove", e=>{drawing?moveDraw(e):null; if(drawing)lastCell=getCell(e)||lastCell;});
+window.addEventListener("mouseup", endDraw);
+canvas.addEventListener("touchstart", startDraw, {passive:false});
+canvas.addEventListener("touchmove", e=>{const c=getCell(e);if(c)lastCell=c;moveDraw(e);}, {passive:false});
+canvas.addEventListener("touchend", endDraw);
+
+// track lastCell for line/rect/circle
+canvas.addEventListener("mousemove", e=>{const c=getCell(e);if(c&&drawing)lastCell=c;});
+
+// ===== Tool buttons =====
+const toolBtns = {
+  pen: document.getElementById("toolPen"), eraser: document.getElementById("toolErase"),
+  fill: document.getElementById("toolFill"), picker: document.getElementById("toolPick"),
+  line: document.getElementById("toolLine"), rect: document.getElementById("toolRect"),
+  circle: document.getElementById("toolCircle"), spray: document.getElementById("toolSpray"),
+  shade: document.getElementById("toolShade")
+};
+function setTool(t){
+  state.tool=t;
+  Object.keys(toolBtns).forEach(k=>toolBtns[k].classList.toggle("active",k===t));
+  canvas.style.cursor = t==="picker"?"cell":(t==="fill"?"pointer":"crosshair");
+  save();
+}
+Object.keys(toolBtns).forEach(k=>toolBtns[k].onclick=()=>setTool(k));
+
+// ===== Brush size =====
+brushSlider.addEventListener("input", e=>{
+  state.brushSize=parseInt(e.target.value);
+  brushVal.textContent=state.brushSize; save();
+});
+
+// ===== Mirror =====
+document.getElementById("mirrorX").onclick=function(){state.mirrorX=!state.mirrorX;this.classList.toggle("active",state.mirrorX);save();};
+document.getElementById("mirrorY").onclick=function(){state.mirrorY=!state.mirrorY;this.classList.toggle("active",state.mirrorY);save();};
+
+// ===== Color =====
+colorPicker.addEventListener("input", e=>{state.currentColor=e.target.value;renderPalette();save();});
+document.getElementById("addColorBtn").onclick=()=>{
+  if(!state.palette.includes(state.currentColor)){state.palette.push(state.currentColor);renderPalette();save();}
+};
+
+// ===== Size =====
+document.getElementById("applySize").onclick=()=>{
+  const w=Math.min(80,Math.max(4,parseInt(gridWInput.value)||24));
+  const h=Math.min(80,Math.max(4,parseInt(gridHInput.value)||24));
+  state.gridW=w;state.gridH=h;
+  for(let key in state.pixels){const [x,y]=key.split("_").map(Number);if(x>=w||y>=h)delete state.pixels[key];}
+  gridWInput.value=w;gridHInput.value=h;
+  resizeCanvas();pushHistory();save();
+};
+
+// ===== Orientation =====
+function setOrientation(o){
+  state.orientation=o;
+  appEl.classList.toggle("vertical",o==="vertical");
+  document.getElementById("orientH").classList.toggle("active",o==="horizontal");
+  document.getElementById("orientV").classList.toggle("active",o==="vertical");
+  save();resizeCanvas();
+}
+document.getElementById("orientH").onclick=()=>setOrientation("horizontal");
+document.getElementById("orientV").onclick=()=>setOrientation("vertical");
+
+// ===== Undo/Redo/Clear =====
+document.getElementById("undoBtn").onclick=undo;
+document.getElementById("redoBtn").onclick=redo;
+document.getElementById("clearBtn").onclick=()=>{
+  const msg=state.lang==="uk"?"Очистити все полотно?":"Clear the whole canvas?";
+  if(confirm(msg)){state.pixels={};drawGrid();pushHistory();save();}
+};
+
+// ===== Export =====
+document.getElementById("exportBtn").onclick=()=>{
+  const scale=20;
+  const out=document.createElement("canvas");
+  out.width=state.gridW*scale;out.height=state.gridH*scale;
+  const octx=out.getContext("2d");
+  for(let key in state.pixels){const [x,y]=key.split("_").map(Number);octx.fillStyle=state.pixels[key];octx.fillRect(x*scale,y*scale,scale,scale);}
+  const link=document.createElement("a");
+  link.download="pixel-art.png";link.href=out.toDataURL("image/png");link.click();
+};
+
+// ===== Wizards =====
+const wizardModal=document.getElementById("wizardModal");
+document.getElementById("wizardBtn").onclick=()=>wizardModal.classList.add("open");
+document.getElementById("wizardClose").onclick=()=>wizardModal.classList.remove("open");
+wizardModal.addEventListener("click",e=>{if(e.target===wizardModal)wizardModal.classList.remove("open");});
+
+const wizards = {
+  checker(){
+    const c1=state.currentColor, c2=state.palette[1]||"#ffffff";
+    for(let y=0;y<state.gridH;y++)for(let x=0;x<state.gridW;x++)
+      state.pixels[x+"_"+y]=(x+y)%2===0?c1:c2;
+  },
+  gradient(){
+    const c1=state.currentColor, c2=state.palette[9]||"#3a86ff";
+    for(let y=0;y<state.gridH;y++)for(let x=0;x<state.gridW;x++)
+      state.pixels[x+"_"+y]=lerpColor(c1,c2,x/(state.gridW-1));
+  },
+  frame(){
+    const c=state.currentColor;
+    for(let x=0;x<state.gridW;x++){state.pixels[x+"_0"]=c;state.pixels[x+"_"+(state.gridH-1)]=c;}
+    for(let y=0;y<state.gridH;y++){state.pixels["0_"+y]=c;state.pixels[(state.gridW-1)+"_"+y]=c;}
+  },
+  noise(){
+    const c=state.currentColor;
+    for(let i=0;i<state.gridW*state.gridH*0.15;i++){
+      const x=Math.floor(Math.random()*state.gridW),y=Math.floor(Math.random()*state.gridH);
+      state.pixels[x+"_"+y]=c;
+    }
+  },
+  dither(){
+    const c1=state.currentColor, c2=state.palette[0]||"#000000";
+    for(let y=0;y<state.gridH;y++)for(let x=0;x<state.gridW;x++)
+      state.pixels[x+"_"+y]=((x%2)===(y%2))?c1:c2;
+  },
+  mirrorArt(){
+    const half=Math.floor(state.gridW/2);
+    for(let y=0;y<state.gridH;y++)for(let x=0;x<half;x++){
+      const k=x+"_"+y; if(state.pixels[k])state.pixels[(state.gridW-1-x)+"_"+y]=state.pixels[k];
+      else delete state.pixels[(state.gridW-1-x)+"_"+y];
+    }
+  },
+  invert(){
+    for(let key in state.pixels){const c=hexToRgb(state.pixels[key]);state.pixels[key]=rgbToHex(255-c.r,255-c.g,255-c.b);}
+  },
+  rainbowFill(){
+    for(let y=0;y<state.gridH;y++){const col=hsl((y/state.gridH)*360,80,60);for(let x=0;x<state.gridW;x++)state.pixels[x+"_"+y]=col;}
+  }
+};
+document.querySelectorAll(".wizard-item").forEach(item=>{
+  item.onclick=()=>{
+    const w=item.dataset.wizard;
+    if(wizards[w]){wizards[w]();drawGrid();pushHistory();save();}
+    wizardModal.classList.remove("open");
+  };
+});
+
+// ===== Language switch =====
+document.querySelectorAll(".lang-btn").forEach(btn=>{
+  btn.onclick=()=>{state.lang=btn.dataset.lang;applyLang();save();};
+});
+
+// keyboard shortcuts
+window.addEventListener("keydown",e=>{
+  if((e.ctrlKey||e.metaKey)&&e.key==="z"){e.preventDefault();undo();}
+  if((e.ctrlKey||e.metaKey)&&(e.key==="y"||(e.shiftKey&&e.key==="z"))){e.preventDefault();redo();}
+  if(e.key==="b")setTool("pen");
+  if(e.key==="e")setTool("eraser");
+  if(e.key==="g")setTool("fill");
+});
+
+// ===== Init =====
+window.addEventListener("resize", resizeCanvas);
+function init(){
+  load();
+  gridWInput.value=state.gridW; gridHInput.value=state.gridH;
+  colorPicker.value=state.currentColor;
+  brushSlider.value=state.brushSize; brushVal.textContent=state.brushSize;
+  document.getElementById("mirrorX").classList.toggle("active",state.mirrorX);
+  document.getElementById("mirrorY").classList.toggle("active",state.mirrorY);
+  applyLang(); renderPalette(); setTool(state.tool); setOrientation(state.orientation);
+  resizeCanvas(); pushHistory();
+}
+init();
+</script>
+</body>
+</html>
