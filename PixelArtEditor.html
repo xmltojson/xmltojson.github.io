@@ -1,0 +1,653 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Піксель Арт Редактор</title>
+<style>
+  * {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: 'Segoe UI', Tahoma, sans-serif;
+    user-select: none;
+  }
+
+  :root {
+    --bg-1: #1a1a2e;
+    --bg-2: #16213e;
+    --accent: #e94560;
+    --accent-2: #0f3460;
+    --panel: #22223b;
+    --light: #f0f0f5;
+  }
+
+  body {
+    background: linear-gradient(135deg, var(--bg-1), var(--bg-2));
+    color: var(--light);
+    min-height: 100vh;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  header {
+    text-align: center;
+    margin-bottom: 16px;
+  }
+
+  h1 {
+    font-size: 2rem;
+    background: linear-gradient(90deg, #e94560, #ffb703, #8ecae6);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    letter-spacing: 1px;
+  }
+
+  .subtitle {
+    font-size: 0.9rem;
+    color: #9a9ab8;
+    margin-top: 4px;
+  }
+
+  .app {
+    display: flex;
+    gap: 20px;
+    flex-wrap: wrap;
+    justify-content: center;
+    align-items: flex-start;
+    max-width: 1200px;
+    width: 100%;
+  }
+
+  .app.vertical {
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .panel {
+    background: var(--panel);
+    border-radius: 14px;
+    padding: 16px;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+    border: 1px solid rgba(255,255,255,0.06);
+  }
+
+  .controls {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    min-width: 220px;
+  }
+
+  .control-group label {
+    display: block;
+    font-size: 0.8rem;
+    color: #b0b0d0;
+    margin-bottom: 6px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  .palette {
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    gap: 6px;
+  }
+
+  .swatch {
+    width: 100%;
+    aspect-ratio: 1;
+    border-radius: 6px;
+    cursor: pointer;
+    border: 2px solid transparent;
+    transition: transform 0.1s, border 0.1s;
+  }
+
+  .swatch:hover { transform: scale(1.1); }
+  .swatch.active { border-color: #fff; box-shadow: 0 0 8px rgba(255,255,255,0.6); }
+
+  .color-picker-row {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+  }
+
+  input[type="color"] {
+    width: 44px;
+    height: 44px;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    background: none;
+  }
+
+  .btn {
+    background: var(--accent-2);
+    color: var(--light);
+    border: none;
+    padding: 10px 14px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    transition: background 0.15s, transform 0.1s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+  }
+
+  .btn:hover { background: #16549c; transform: translateY(-1px); }
+  .btn.accent { background: var(--accent); }
+  .btn.accent:hover { background: #ff5c78; }
+  .btn.active { background: var(--accent); }
+
+  .btn-row {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+  .btn-row .btn { flex: 1; }
+
+  select, input[type="number"] {
+    width: 100%;
+    padding: 8px;
+    border-radius: 8px;
+    border: 1px solid rgba(255,255,255,0.1);
+    background: var(--bg-2);
+    color: var(--light);
+    font-size: 0.9rem;
+  }
+
+  .size-row {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+  }
+  .size-row input { width: 60px; text-align: center; }
+  .size-row span { color: #9a9ab8; }
+
+  .canvas-wrap {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  #gridCanvas {
+    background:
+      linear-gradient(45deg, #2a2a40 25%, transparent 25%),
+      linear-gradient(-45deg, #2a2a40 25%, transparent 25%),
+      linear-gradient(45deg, transparent 75%, #2a2a40 75%),
+      linear-gradient(-45deg, transparent 75%, #2a2a40 75%);
+    background-size: 20px 20px;
+    background-position: 0 0, 0 10px, 10px -10px, -10px 0;
+    background-color: #33334d;
+    border-radius: 8px;
+    cursor: crosshair;
+    image-rendering: pixelated;
+    touch-action: none;
+    max-width: 100%;
+  }
+
+  .lang-switch {
+    position: absolute;
+    top: 16px;
+    right: 16px;
+    display: flex;
+    gap: 6px;
+  }
+
+  .lang-btn {
+    background: rgba(255,255,255,0.1);
+    border: none;
+    color: #fff;
+    padding: 6px 12px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.85rem;
+  }
+  .lang-btn.active { background: var(--accent); }
+
+  .toggle-row {
+    display: flex;
+    gap: 6px;
+  }
+
+  .info {
+    font-size: 0.75rem;
+    color: #7a7a9a;
+    text-align: center;
+    margin-top: 10px;
+  }
+
+  @media (max-width: 640px) {
+    h1 { font-size: 1.4rem; }
+    .controls { min-width: 0; width: 100%; }
+  }
+</style>
+</head>
+<body>
+
+<div class="lang-switch">
+  <button class="lang-btn active" data-lang="uk">УКР</button>
+  <button class="lang-btn" data-lang="en">EN</button>
+</div>
+
+<header>
+  <h1 data-i18n="title">Піксель Арт Редактор</h1>
+  <p class="subtitle" data-i18n="subtitle">Малюй пікселями та експортуй у PNG</p>
+</header>
+
+<div class="app" id="app">
+  <div class="panel controls">
+    <div class="control-group">
+      <label data-i18n="tools">Інструменти</label>
+      <div class="btn-row">
+        <button class="btn active" id="toolPen" data-i18n="pen">✏️ Олівець</button>
+        <button class="btn" id="toolErase" data-i18n="eraser">🧽 Гумка</button>
+      </div>
+      <div class="btn-row" style="margin-top:8px;">
+        <button class="btn" id="toolFill" data-i18n="fill">🪣 Заливка</button>
+        <button class="btn" id="toolPick" data-i18n="picker">💧 Піпетка</button>
+      </div>
+    </div>
+
+    <div class="control-group">
+      <label data-i18n="currentColor">Поточний колір</label>
+      <div class="color-picker-row">
+        <input type="color" id="colorPicker" value="#e94560">
+        <button class="btn accent" id="addColorBtn" style="flex:1" data-i18n="addColor">+ Додати</button>
+      </div>
+    </div>
+
+    <div class="control-group">
+      <label data-i18n="palette">Палітра</label>
+      <div class="palette" id="palette"></div>
+    </div>
+
+    <div class="control-group">
+      <label data-i18n="gridSize">Розмір сітки</label>
+      <div class="size-row">
+        <input type="number" id="gridW" value="16" min="4" max="64">
+        <span>×</span>
+        <input type="number" id="gridH" value="16" min="4" max="64">
+        <button class="btn" id="applySize" data-i18n="apply">OK</button>
+      </div>
+    </div>
+
+    <div class="control-group">
+      <label data-i18n="orientation">Орієнтація</label>
+      <div class="toggle-row">
+        <button class="btn active" id="orientH" style="flex:1" data-i18n="horizontal">↔ Горизонт.</button>
+        <button class="btn" id="orientV" style="flex:1" data-i18n="vertical">↕ Вертик.</button>
+      </div>
+    </div>
+
+    <div class="control-group">
+      <div class="btn-row">
+        <button class="btn" id="clearBtn" data-i18n="clear">🗑️ Очистити</button>
+        <button class="btn accent" id="exportBtn" data-i18n="export">💾 PNG</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="panel canvas-wrap">
+    <canvas id="gridCanvas"></canvas>
+    <p class="info" data-i18n="hint">Клікай або тягни для малювання</p>
+  </div>
+</div>
+
+<script>
+// ===== Translations =====
+const i18n = {
+  uk: {
+    title: "Піксель Арт Редактор",
+    subtitle: "Малюй пікселями та експортуй у PNG",
+    tools: "Інструменти",
+    pen: "✏️ Олівець",
+    eraser: "🧽 Гумка",
+    fill: "🪣 Заливка",
+    picker: "💧 Піпетка",
+    currentColor: "Поточний колір",
+    addColor: "+ Додати",
+    palette: "Палітра",
+    gridSize: "Розмір сітки",
+    apply: "OK",
+    orientation: "Орієнтація",
+    horizontal: "↔ Горизонт.",
+    vertical: "↕ Вертик.",
+    clear: "🗑️ Очистити",
+    export: "💾 PNG",
+    hint: "Клікай або тягни для малювання"
+  },
+  en: {
+    title: "Pixel Art Editor",
+    subtitle: "Draw with pixels and export to PNG",
+    tools: "Tools",
+    pen: "✏️ Pen",
+    eraser: "🧽 Eraser",
+    fill: "🪣 Fill",
+    picker: "💧 Picker",
+    currentColor: "Current color",
+    addColor: "+ Add",
+    palette: "Palette",
+    gridSize: "Grid size",
+    apply: "OK",
+    orientation: "Orientation",
+    horizontal: "↔ Horizontal",
+    vertical: "↕ Vertical",
+    clear: "🗑️ Clear",
+    export: "💾 PNG",
+    hint: "Click or drag to draw"
+  }
+};
+
+// ===== State =====
+const STORAGE_KEY = "pixelArtEditorState";
+const defaultPalette = [
+  "#000000","#ffffff","#e94560","#f8961e","#ffd166","#06d6a0",
+  "#118ab2","#8338ec","#ff006e","#3a86ff","#8ecae6","#c77dff"
+];
+
+let state = {
+  lang: "uk",
+  gridW: 16,
+  gridH: 16,
+  orientation: "horizontal",
+  currentColor: "#e94560",
+  tool: "pen",
+  palette: [...defaultPalette],
+  pixels: {} // "x_y": color
+};
+
+// ===== DOM =====
+const canvas = document.getElementById("gridCanvas");
+const ctx = canvas.getContext("2d");
+const paletteEl = document.getElementById("palette");
+const colorPicker = document.getElementById("colorPicker");
+const gridWInput = document.getElementById("gridW");
+const gridHInput = document.getElementById("gridH");
+const appEl = document.getElementById("app");
+
+let cellSize = 24;
+
+// ===== Storage =====
+function save() {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+}
+function load() {
+  const raw = localStorage.getItem(STORAGE_KEY);
+  if (raw) {
+    try { state = { ...state, ...JSON.parse(raw) }; } catch(e){}
+  }
+}
+
+// ===== Language =====
+function applyLang() {
+  const t = i18n[state.lang];
+  document.documentElement.lang = state.lang;
+  document.querySelectorAll("[data-i18n]").forEach(el => {
+    const key = el.getAttribute("data-i18n");
+    if (t[key]) el.textContent = t[key];
+  });
+  document.querySelectorAll(".lang-btn").forEach(b => {
+    b.classList.toggle("active", b.dataset.lang === state.lang);
+  });
+}
+
+// ===== Palette =====
+function renderPalette() {
+  paletteEl.innerHTML = "";
+  state.palette.forEach(color => {
+    const sw = document.createElement("div");
+    sw.className = "swatch" + (color === state.currentColor ? " active" : "");
+    sw.style.background = color;
+    sw.title = color;
+    sw.addEventListener("click", () => {
+      state.currentColor = color;
+      colorPicker.value = color;
+      renderPalette();
+      save();
+    });
+    // double click remove
+    sw.addEventListener("dblclick", () => {
+      if (state.palette.length > 1) {
+        state.palette = state.palette.filter(c => c !== color);
+        renderPalette();
+        save();
+      }
+    });
+    paletteEl.appendChild(sw);
+  });
+}
+
+// ===== Canvas =====
+function computeCellSize() {
+  const maxDim = Math.min(window.innerWidth - 80, 600);
+  const larger = Math.max(state.gridW, state.gridH);
+  cellSize = Math.max(6, Math.floor(maxDim / larger));
+}
+
+function resizeCanvas() {
+  computeCellSize();
+  canvas.width = state.gridW * cellSize;
+  canvas.height = state.gridH * cellSize;
+  drawGrid();
+}
+
+function drawGrid() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  // draw pixels
+  for (let key in state.pixels) {
+    const [x, y] = key.split("_").map(Number);
+    ctx.fillStyle = state.pixels[key];
+    ctx.fillRect(x * cellSize, y * cellSize, cellSize, cellSize);
+  }
+  // grid lines
+  ctx.strokeStyle = "rgba(255,255,255,0.08)";
+  ctx.lineWidth = 1;
+  for (let x = 0; x <= state.gridW; x++) {
+    ctx.beginPath();
+    ctx.moveTo(x * cellSize, 0);
+    ctx.lineTo(x * cellSize, canvas.height);
+    ctx.stroke();
+  }
+  for (let y = 0; y <= state.gridH; y++) {
+    ctx.beginPath();
+    ctx.moveTo(0, y * cellSize);
+    ctx.lineTo(canvas.width, y * cellSize);
+    ctx.stroke();
+  }
+}
+
+function getCell(e) {
+  const rect = canvas.getBoundingClientRect();
+  const scaleX = canvas.width / rect.width;
+  const scaleY = canvas.height / rect.height;
+  const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+  const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+  const x = Math.floor((clientX - rect.left) * scaleX / cellSize);
+  const y = Math.floor((clientY - rect.top) * scaleY / cellSize);
+  if (x < 0 || y < 0 || x >= state.gridW || y >= state.gridH) return null;
+  return { x, y };
+}
+
+function applyTool(cell) {
+  if (!cell) return;
+  const key = cell.x + "_" + cell.y;
+  if (state.tool === "pen") {
+    state.pixels[key] = state.currentColor;
+  } else if (state.tool === "eraser") {
+    delete state.pixels[key];
+  } else if (state.tool === "picker") {
+    if (state.pixels[key]) {
+      state.currentColor = state.pixels[key];
+      colorPicker.value = state.pixels[key];
+      renderPalette();
+    }
+    return;
+  } else if (state.tool === "fill") {
+    floodFill(cell.x, cell.y);
+  }
+  drawGrid();
+}
+
+function floodFill(x, y) {
+  const target = state.pixels[x + "_" + y] || null;
+  const repl = state.currentColor;
+  if (target === repl) return;
+  const stack = [[x, y]];
+  const visited = new Set();
+  while (stack.length) {
+    const [cx, cy] = stack.pop();
+    if (cx < 0 || cy < 0 || cx >= state.gridW || cy >= state.gridH) continue;
+    const k = cx + "_" + cy;
+    if (visited.has(k)) continue;
+    visited.add(k);
+    const cur = state.pixels[k] || null;
+    if (cur !== target) continue;
+    state.pixels[k] = repl;
+    stack.push([cx+1,cy],[cx-1,cy],[cx,cy+1],[cx,cy-1]);
+  }
+}
+
+// ===== Drawing events =====
+let drawing = false;
+function startDraw(e) {
+  e.preventDefault();
+  drawing = true;
+  applyTool(getCell(e));
+}
+function moveDraw(e) {
+  if (!drawing) return;
+  if (state.tool === "fill" || state.tool === "picker") return;
+  e.preventDefault();
+  applyTool(getCell(e));
+}
+function endDraw() {
+  if (drawing) { drawing = false; save(); }
+}
+
+canvas.addEventListener("mousedown", startDraw);
+canvas.addEventListener("mousemove", moveDraw);
+window.addEventListener("mouseup", endDraw);
+canvas.addEventListener("touchstart", startDraw, {passive:false});
+canvas.addEventListener("touchmove", moveDraw, {passive:false});
+canvas.addEventListener("touchend", endDraw);
+
+// ===== Tool buttons =====
+const toolBtns = {
+  pen: document.getElementById("toolPen"),
+  eraser: document.getElementById("toolErase"),
+  fill: document.getElementById("toolFill"),
+  picker: document.getElementById("toolPick")
+};
+function setTool(t) {
+  state.tool = t;
+  Object.keys(toolBtns).forEach(k => toolBtns[k].classList.toggle("active", k === t));
+  canvas.style.cursor = t === "picker" ? "cell" : (t === "fill" ? "pointer" : "crosshair");
+  save();
+}
+toolBtns.pen.onclick = () => setTool("pen");
+toolBtns.eraser.onclick = () => setTool("eraser");
+toolBtns.fill.onclick = () => setTool("fill");
+toolBtns.picker.onclick = () => setTool("picker");
+
+// ===== Color =====
+colorPicker.addEventListener("input", e => {
+  state.currentColor = e.target.value;
+  renderPalette();
+  save();
+});
+document.getElementById("addColorBtn").onclick = () => {
+  if (!state.palette.includes(state.currentColor)) {
+    state.palette.push(state.currentColor);
+    renderPalette();
+    save();
+  }
+};
+
+// ===== Size =====
+document.getElementById("applySize").onclick = () => {
+  const w = Math.min(64, Math.max(4, parseInt(gridWInput.value)||16));
+  const h = Math.min(64, Math.max(4, parseInt(gridHInput.value)||16));
+  state.gridW = w; state.gridH = h;
+  // remove out of bounds pixels
+  for (let key in state.pixels) {
+    const [x, y] = key.split("_").map(Number);
+    if (x >= w || y >= h) delete state.pixels[key];
+  }
+  gridWInput.value = w; gridHInput.value = h;
+  resizeCanvas();
+  save();
+};
+
+// ===== Orientation =====
+function setOrientation(o) {
+  state.orientation = o;
+  appEl.classList.toggle("vertical", o === "vertical");
+  document.getElementById("orientH").classList.toggle("active", o === "horizontal");
+  document.getElementById("orientV").classList.toggle("active", o === "vertical");
+  save();
+  resizeCanvas();
+}
+document.getElementById("orientH").onclick = () => setOrientation("horizontal");
+document.getElementById("orientV").onclick = () => setOrientation("vertical");
+
+// ===== Clear =====
+document.getElementById("clearBtn").onclick = () => {
+  const msg = state.lang === "uk" ? "Очистити все полотно?" : "Clear the whole canvas?";
+  if (confirm(msg)) {
+    state.pixels = {};
+    drawGrid();
+    save();
+  }
+};
+
+// ===== Export =====
+document.getElementById("exportBtn").onclick = () => {
+  const scale = 20;
+  const out = document.createElement("canvas");
+  out.width = state.gridW * scale;
+  out.height = state.gridH * scale;
+  const octx = out.getContext("2d");
+  for (let key in state.pixels) {
+    const [x, y] = key.split("_").map(Number);
+    octx.fillStyle = state.pixels[key];
+    octx.fillRect(x * scale, y * scale, scale, scale);
+  }
+  const link = document.createElement("a");
+  link.download = "pixel-art.png";
+  link.href = out.toDataURL("image/png");
+  link.click();
+};
+
+// ===== Language switch =====
+document.querySelectorAll(".lang-btn").forEach(btn => {
+  btn.onclick = () => {
+    state.lang = btn.dataset.lang;
+    applyLang();
+    save();
+  };
+});
+
+// ===== Init =====
+window.addEventListener("resize", resizeCanvas);
+
+function init() {
+  load();
+  gridWInput.value = state.gridW;
+  gridHInput.value = state.gridH;
+  colorPicker.value = state.currentColor;
+  applyLang();
+  renderPalette();
+  setTool(state.tool);
+  setOrientation(state.orientation);
+  resizeCanvas();
+}
+init();
+</script>
+</body>
+</html>
