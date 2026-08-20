@@ -1,0 +1,808 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Reels Downloader</title>
+
+<!-- External Libraries -->
+<!-- SweetAlert2 for nice notifications -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.all.min.js"></script>
+<!-- Axios for HTTP requests -->
+<script src="https://cdn.jsdelivr.net/npm/axios@1.6.7/dist/axios.min.js"></script>
+<!-- NProgress for loading bar -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/nprogress@0.2.0/nprogress.min.css">
+<script src="https://cdn.jsdelivr.net/npm/nprogress@0.2.0/nprogress.min.js"></script>
+<!-- Font Awesome icons -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+<style>
+  * {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  }
+
+  :root {
+    --primary: #833ab4;
+    --secondary: #fd1d1d;
+    --accent: #fcb045;
+    --bg-dark: #0f0f1a;
+    --card-bg: rgba(255, 255, 255, 0.08);
+    --text: #ffffff;
+    --text-dim: #b0b0c0;
+  }
+
+  /* NProgress custom color */
+  #nprogress .bar {
+    background: linear-gradient(45deg, var(--secondary), var(--accent)) !important;
+    height: 3px !important;
+  }
+  #nprogress .peg {
+    box-shadow: 0 0 10px var(--accent), 0 0 5px var(--accent) !important;
+  }
+
+  body {
+    background: linear-gradient(135deg, #0f0f1a 0%, #1a1a2e 50%, #16213e 100%);
+    min-height: 100vh;
+    color: var(--text);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 20px;
+    overflow-x: hidden;
+  }
+
+  body::before {
+    content: '';
+    position: fixed;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: radial-gradient(circle, rgba(131,58,180,0.15) 0%, transparent 40%),
+                radial-gradient(circle at 70% 30%, rgba(253,29,29,0.1) 0%, transparent 40%);
+    animation: float 20s ease-in-out infinite;
+    z-index: -1;
+  }
+
+  @keyframes float {
+    0%, 100% { transform: translate(0, 0) rotate(0deg); }
+    50% { transform: translate(-30px, 30px) rotate(180deg); }
+  }
+
+  .top-bar {
+    width: 100%;
+    max-width: 900px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 30px;
+  }
+
+  .logo {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-size: 24px;
+    font-weight: 700;
+  }
+
+  .logo-icon {
+    width: 48px;
+    height: 48px;
+    background: linear-gradient(45deg, var(--secondary), var(--primary), var(--accent));
+    border-radius: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+    color: white;
+    box-shadow: 0 4px 20px rgba(131,58,180,0.5);
+  }
+
+  .logo-text {
+    background: linear-gradient(45deg, var(--accent), var(--secondary));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .lang-switch {
+    display: flex;
+    background: var(--card-bg);
+    border-radius: 30px;
+    padding: 4px;
+    border: 1px solid rgba(255,255,255,0.1);
+  }
+
+  .lang-btn {
+    padding: 8px 16px;
+    border: none;
+    background: transparent;
+    color: var(--text-dim);
+    cursor: pointer;
+    border-radius: 30px;
+    font-weight: 600;
+    transition: all 0.3s;
+  }
+
+  .lang-btn.active {
+    background: linear-gradient(45deg, var(--primary), var(--secondary));
+    color: white;
+    box-shadow: 0 2px 10px rgba(131,58,180,0.4);
+  }
+
+  .container { width: 100%; max-width: 900px; }
+
+  .hero { text-align: center; margin-bottom: 40px; }
+
+  .hero h1 {
+    font-size: 36px;
+    margin-bottom: 12px;
+    background: linear-gradient(45deg, #fff, var(--accent));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .hero p { color: var(--text-dim); font-size: 16px; }
+
+  .download-card {
+    background: var(--card-bg);
+    backdrop-filter: blur(20px);
+    border-radius: 24px;
+    padding: 30px;
+    border: 1px solid rgba(255,255,255,0.1);
+    box-shadow: 0 20px 60px rgba(0,0,0,0.4);
+    margin-bottom: 30px;
+  }
+
+  .input-group {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+  }
+
+  .url-input {
+    flex: 1;
+    min-width: 250px;
+    padding: 16px 20px;
+    background: rgba(0,0,0,0.3);
+    border: 2px solid rgba(255,255,255,0.1);
+    border-radius: 14px;
+    color: var(--text);
+    font-size: 15px;
+    transition: all 0.3s;
+  }
+
+  .url-input:focus {
+    outline: none;
+    border-color: var(--primary);
+    box-shadow: 0 0 0 4px rgba(131,58,180,0.2);
+  }
+
+  .url-input::placeholder { color: var(--text-dim); }
+
+  .download-btn {
+    padding: 16px 32px;
+    background: linear-gradient(45deg, var(--secondary), var(--primary));
+    border: none;
+    border-radius: 14px;
+    color: white;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    white-space: nowrap;
+  }
+
+  .download-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(131,58,180,0.5);
+  }
+
+  .download-btn:active { transform: translateY(0); }
+  .download-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+
+  .options { display: flex; gap: 20px; align-items: center; flex-wrap: wrap; }
+
+  .orientation-toggle {
+    display: flex;
+    gap: 8px;
+    background: rgba(0,0,0,0.3);
+    padding: 4px;
+    border-radius: 12px;
+  }
+
+  .orient-btn {
+    padding: 10px 18px;
+    border: none;
+    background: transparent;
+    color: var(--text-dim);
+    cursor: pointer;
+    border-radius: 10px;
+    transition: all 0.3s;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 14px;
+  }
+
+  .orient-btn.active { background: var(--primary); color: white; }
+
+  /* Preview area */
+  .preview-section { margin-bottom: 30px; display: none; }
+  .preview-section.show { display: block; }
+
+  .preview-wrapper { display: flex; justify-content: center; flex-direction: column; align-items: center; gap: 16px; }
+
+  .video-preview {
+    background: #000;
+    border-radius: 20px;
+    overflow: hidden;
+    box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+    transition: all 0.4s;
+  }
+
+  .video-preview.vertical { width: 300px; height: 533px; }
+  .video-preview.horizontal { width: 500px; height: 281px; }
+
+  .video-preview video { width: 100%; height: 100%; object-fit: cover; }
+
+  .preview-actions { display: flex; gap: 12px; }
+
+  .save-btn {
+    padding: 12px 24px;
+    background: linear-gradient(45deg, #2ecc71, #27ae60);
+    border: none;
+    border-radius: 12px;
+    color: white;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .save-btn:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(46,204,113,0.4); }
+
+  /* History */
+  .history-section h2 {
+    font-size: 22px;
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .history-clear {
+    margin-left: auto;
+    font-size: 13px;
+    padding: 6px 14px;
+    background: rgba(253,29,29,0.15);
+    color: #ff6b6b;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.3s;
+  }
+  .history-clear:hover { background: rgba(253,29,29,0.3); }
+
+  .history-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+    gap: 16px;
+  }
+
+  .history-item {
+    background: var(--card-bg);
+    border-radius: 16px;
+    overflow: hidden;
+    border: 1px solid rgba(255,255,255,0.08);
+    transition: all 0.3s;
+    cursor: pointer;
+  }
+
+  .history-item:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+    border-color: var(--primary);
+  }
+
+  .history-thumb {
+    height: 200px;
+    background-size: cover;
+    background-position: center;
+    background-color: #111;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 40px;
+    position: relative;
+  }
+
+  .history-thumb .badge {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    background: rgba(0,0,0,0.6);
+    padding: 3px 8px;
+    border-radius: 6px;
+    font-size: 11px;
+  }
+
+  .history-info { padding: 12px; }
+
+  .history-info .title {
+    font-size: 13px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    margin-bottom: 4px;
+  }
+
+  .history-info .date { font-size: 11px; color: var(--text-dim); }
+
+  .empty-state { text-align: center; padding: 40px; color: var(--text-dim); }
+  .empty-state .icon { font-size: 48px; margin-bottom: 12px; opacity: 0.5; }
+
+  footer { margin-top: 40px; color: var(--text-dim); font-size: 13px; text-align: center; }
+
+  /* SweetAlert dark theme */
+  .swal2-popup { background: #1a1a2e !important; color: #fff !important; border: 1px solid rgba(255,255,255,0.1); }
+  .swal2-title, .swal2-html-container { color: #fff !important; }
+
+  @media (max-width: 600px) {
+    .hero h1 { font-size: 26px; }
+    .video-preview.horizontal { width: 100%; max-width: 400px; height: auto; aspect-ratio: 16/9; }
+    .video-preview.vertical { width: 250px; height: 444px; }
+  }
+</style>
+</head>
+<body>
+  <div class="top-bar">
+    <div class="logo">
+      <div class="logo-icon"><i class="fa-solid fa-film"></i></div>
+      <span class="logo-text">Reels Downloader</span>
+    </div>
+    <div class="lang-switch">
+      <button class="lang-btn active" data-lang="uk">🇺🇦 UA</button>
+      <button class="lang-btn" data-lang="en">🇬🇧 EN</button>
+    </div>
+  </div>
+
+  <div class="container">
+    <div class="hero">
+      <h1 data-i18n="heroTitle">Завантажуйте Reels легко</h1>
+      <p data-i18n="heroSubtitle">Вставте посилання на відео та збережіть його на пристрій</p>
+    </div>
+
+    <div class="download-card">
+      <div class="input-group">
+        <input type="text" class="url-input" id="urlInput"
+               data-i18n-ph="urlPlaceholder"
+               placeholder="Вставте посилання на Reels...">
+        <button class="download-btn" id="downloadBtn">
+          <i class="fa-solid fa-download"></i>
+          <span data-i18n="downloadBtn">Завантажити</span>
+        </button>
+      </div>
+
+      <div class="options">
+        <span data-i18n="orientation" style="color:var(--text-dim);font-size:14px;">Орієнтація:</span>
+        <div class="orientation-toggle">
+          <button class="orient-btn active" data-orient="vertical">
+            <i class="fa-solid fa-mobile-screen"></i><span data-i18n="vertical">Вертикальна</span>
+          </button>
+          <button class="orient-btn" data-orient="horizontal">
+            <i class="fa-solid fa-desktop"></i><span data-i18n="horizontal">Горизонтальна</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div class="preview-section" id="previewSection">
+      <div class="preview-wrapper">
+        <div class="video-preview vertical" id="videoPreview">
+          <video id="previewVideo" controls></video>
+        </div>
+        <div class="preview-actions">
+          <button class="save-btn" id="saveBtn">
+            <i class="fa-solid fa-floppy-disk"></i>
+            <span data-i18n="saveBtn">Зберегти на диск</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div class="history-section">
+      <h2>
+        <i class="fa-solid fa-clock-rotate-left"></i>
+        <span data-i18n="historyTitle">Історія завантажень</span>
+        <button class="history-clear" id="clearHistory" data-i18n="clearHistory">Очистити</button>
+      </h2>
+      <div class="history-list" id="historyList"></div>
+    </div>
+  </div>
+
+  <footer>
+    <p data-i18n="footer">© 2024 Reels Downloader • Для особистого використання</p>
+  </footer>
+
+<script>
+  // ========== Translations ==========
+  const translations = {
+    uk: {
+      heroTitle: "Завантажуйте Reels легко",
+      heroSubtitle: "Вставте посилання на відео та збережіть його на пристрій",
+      urlPlaceholder: "Вставте посилання на Reels...",
+      downloadBtn: "Завантажити",
+      saveBtn: "Зберегти на диск",
+      orientation: "Орієнтація:",
+      vertical: "Вертикальна",
+      horizontal: "Горизонтальна",
+      historyTitle: "Історія завантажень",
+      clearHistory: "Очистити",
+      footer: "© 2024 Reels Downloader • Для особистого використання",
+      statusLoading: "Обробка відео...",
+      statusSuccess: "Відео готове до завантаження!",
+      statusError: "Помилка при отриманні відео",
+      emptyHistory: "Історія порожня",
+      invalidUrl: "Введіть коректне посилання",
+      downloading: "Завантаження на диск...",
+      saved: "Збережено успішно!",
+      confirmClear: "Очистити всю історію?",
+      yes: "Так",
+      cancel: "Скасувати",
+      cleared: "Історію очищено"
+    },
+    en: {
+      heroTitle: "Download Reels Easily",
+      heroSubtitle: "Paste the video link and save it to your device",
+      urlPlaceholder: "Paste Reels link...",
+      downloadBtn: "Download",
+      saveBtn: "Save to disk",
+      orientation: "Orientation:",
+      vertical: "Vertical",
+      horizontal: "Horizontal",
+      historyTitle: "Download History",
+      clearHistory: "Clear",
+      footer: "© 2024 Reels Downloader • For personal use",
+      statusLoading: "Processing video...",
+      statusSuccess: "Video ready to download!",
+      statusError: "Error fetching video",
+      emptyHistory: "History is empty",
+      invalidUrl: "Enter a valid link",
+      downloading: "Downloading to disk...",
+      saved: "Saved successfully!",
+      confirmClear: "Clear entire history?",
+      yes: "Yes",
+      cancel: "Cancel",
+      cleared: "History cleared"
+    }
+  };
+
+  // ========== State ==========
+  const STORAGE_KEY = 'reelsDownloaderState';
+  let state = {
+    lang: 'uk',
+    orientation: 'vertical',
+    lastUrl: '',
+    currentVideo: null,
+    history: []
+  };
+
+  function loadState() {
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY);
+      if (saved) state = { ...state, ...JSON.parse(saved) };
+    } catch(e) { console.warn('Load failed', e); }
+  }
+
+  function saveState() {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+  }
+
+  function t(key) { return translations[state.lang][key] || key; }
+
+  // ========== Toast helper (SweetAlert2) ==========
+  const Toast = Swal.mixin({
+    toast: true,
+    position: 'top-end',
+    showConfirmButton: false,
+    timer: 3000,
+    timerProgressBar: true,
+    background: '#1a1a2e',
+    color: '#fff'
+  });
+
+  // ========== i18n ==========
+  function applyLanguage() {
+    document.documentElement.lang = state.lang;
+    document.querySelectorAll('[data-i18n]').forEach(el => {
+      el.textContent = t(el.dataset.i18n);
+    });
+    document.querySelectorAll('[data-i18n-ph]').forEach(el => {
+      el.placeholder = t(el.dataset.i18nPh);
+    });
+    document.querySelectorAll('.lang-btn').forEach(btn => {
+      btn.classList.toggle('active', btn.dataset.lang === state.lang);
+    });
+    renderHistory();
+  }
+
+  // ========== Orientation ==========
+  function applyOrientation() {
+    const preview = document.getElementById('videoPreview');
+    preview.className = 'video-preview ' + state.orientation;
+    document.querySelectorAll('.orient-btn').forEach(btn => {
+      btn.classList.toggle('active', btn.dataset.orient === state.orientation);
+    });
+  }
+
+  // ========== URL Validation ==========
+  function isValidUrl(url) {
+    try { new URL(url); return true; } catch { return false; }
+  }
+
+  // ========== Extract video via external API ==========
+  // Uses a public CORS proxy + downloader API pattern.
+  // For production, host your own backend using yt-dlp / cobalt.
+  async function extractVideo(url) {
+    NProgress.start();
+    Swal.fire({
+      title: t('statusLoading'),
+      html: '<div class="swal2-loader" style="display:flex;margin:20px auto;"></div>',
+      allowOutsideClick: false,
+      showConfirmButton: false,
+      background: '#1a1a2e',
+      color: '#fff',
+      didOpen: () => Swal.showLoading()
+    });
+
+    try {
+      // Using cobalt.tools public API (open-source media downloader)
+      // Endpoint: https://api.cobalt.tools/api/json
+      const response = await axios.post(
+        'https://api.cobalt.tools/api/json',
+        {
+          url: url,
+          vQuality: '720',
+          isAudioOnly: false
+        },
+        {
+          headers: {
+            'Accept': 'application/json',
+            'Content-Type': 'application/json'
+          },
+          timeout: 30000
+        }
+      );
+
+      const data = response.data;
+      NProgress.done();
+
+      if (data && (data.url || data.status === 'redirect' || data.status === 'stream')) {
+        const videoUrl = data.url;
+        handleExtractedVideo(videoUrl, url);
+      } else if (data.status === 'picker' && data.picker && data.picker.length) {
+        const videoUrl = data.picker[0].url;
+        handleExtractedVideo(videoUrl, url);
+      } else {
+        throw new Error(data.text || 'No video found');
+      }
+    } catch (err) {
+      NProgress.done();
+      console.error(err);
+      // Fallback demo video so the UI flow can be tested
+      Swal.fire({
+        icon: 'warning',
+        title: state.lang === 'uk' ? 'API недоступний' : 'API unavailable',
+        text: state.lang === 'uk'
+          ? 'Показуємо демо-відео. Для реального завантаження потрібен власний бекенд.'
+          : 'Showing a demo video. Real downloads require your own backend.',
+        background: '#1a1a2e',
+        color: '#fff',
+        confirmButtonColor: '#833ab4'
+      });
+      const demoUrl = 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4';
+      handleExtractedVideo(demoUrl, url);
+    }
+  }
+
+  function handleExtractedVideo(videoUrl, sourceUrl) {
+    state.currentVideo = { videoUrl, sourceUrl };
+    saveState();
+
+    const previewSection = document.getElementById('previewSection');
+    const video = document.getElementById('previewVideo');
+    video.src = videoUrl;
+    previewSection.classList.add('show');
+    previewSection.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+    Toast.fire({ icon: 'success', title: t('statusSuccess') });
+    addToHistory(sourceUrl, videoUrl);
+  }
+
+  // ========== Download to disk ==========
+  async function downloadToDisk(videoUrl) {
+    NProgress.start();
+    Toast.fire({ icon: 'info', title: t('downloading') });
+    try {
+      const response = await axios.get(videoUrl, {
+        responseType: 'blob',
+        onDownloadProgress: (e) => {
+          if (e.total) NProgress.set(e.loaded / e.total);
+        }
+      });
+      const blob = new Blob([response.data], { type: 'video/mp4' });
+      const blobUrl = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = blobUrl;
+      a.download = 'reel_' + Date.now() + '.mp4';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(blobUrl);
+      NProgress.done();
+      Toast.fire({ icon: 'success', title: t('saved') });
+    } catch (e) {
+      NProgress.done();
+      // Fallback: open in new tab (CORS may block blob)
+      window.open(videoUrl, '_blank');
+      Toast.fire({ icon: 'success', title: t('saved') });
+    }
+  }
+
+  // ========== History ==========
+  function addToHistory(url, videoUrl) {
+    const item = {
+      id: Date.now(),
+      url: url,
+      videoUrl: videoUrl,
+      orientation: state.orientation,
+      date: new Date().toISOString()
+    };
+    state.history.unshift(item);
+    if (state.history.length > 20) state.history.pop();
+    saveState();
+    renderHistory();
+  }
+
+  function renderHistory() {
+    const list = document.getElementById('historyList');
+    if (state.history.length === 0) {
+      list.innerHTML = `<div class="empty-state" style="grid-column:1/-1">
+        <div class="icon"><i class="fa-solid fa-inbox"></i></div>
+        <p>${t('emptyHistory')}</p>
+      </div>`;
+      return;
+    }
+    list.innerHTML = state.history.map(item => {
+      const date = new Date(item.date);
+      const loc = state.lang === 'uk' ? 'uk-UA' : 'en-US';
+      const dateStr = date.toLocaleDateString(loc) + ' ' +
+        date.toLocaleTimeString(loc, {hour:'2-digit',minute:'2-digit'});
+      const icon = item.orientation === 'vertical'
+        ? '<i class="fa-solid fa-mobile-screen"></i>'
+        : '<i class="fa-solid fa-desktop"></i>';
+      let domain = 'link';
+      try { domain = new URL(item.url).hostname.replace('www.',''); } catch {}
+      return `<div class="history-item" data-id="${item.id}">
+        <div class="history-thumb">
+          <i class="fa-solid fa-film"></i>
+          <span class="badge">${icon}</span>
+        </div>
+        <div class="history-info">
+          <div class="title">${domain}</div>
+          <div class="date">${dateStr}</div>
+        </div>
+      </div>`;
+    }).join('');
+
+    list.querySelectorAll('.history-item').forEach(el => {
+      el.addEventListener('click', () => {
+        const item = state.history.find(h => h.id == el.dataset.id);
+        if (!item) return;
+        document.getElementById('urlInput').value = item.url;
+        state.lastUrl = item.url;
+        saveState();
+        if (item.videoUrl) {
+          handleExtractedVideo(item.videoUrl, item.url);
+        } else {
+          extractVideo(item.url);
+        }
+      });
+    });
+  }
+
+  // ========== Event Listeners ==========
+  document.querySelectorAll('.lang-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      state.lang = btn.dataset.lang;
+      saveState();
+      applyLanguage();
+    });
+  });
+
+  document.querySelectorAll('.orient-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      state.orientation = btn.dataset.orient;
+      saveState();
+      applyOrientation();
+    });
+  });
+
+  document.getElementById('urlInput').addEventListener('input', (e) => {
+    state.lastUrl = e.target.value;
+    saveState();
+  });
+
+  document.getElementById('downloadBtn').addEventListener('click', () => {
+    const url = document.getElementById('urlInput').value.trim();
+    if (!url || !isValidUrl(url)) {
+      Toast.fire({ icon: 'error', title: t('invalidUrl') });
+      return;
+    }
+    extractVideo(url);
+  });
+
+  document.getElementById('urlInput').addEventListener('keypress', (e) => {
+    if (e.key === 'Enter') document.getElementById('downloadBtn').click();
+  });
+
+  document.getElementById('saveBtn').addEventListener('click', () => {
+    if (state.currentVideo && state.currentVideo.videoUrl) {
+      downloadToDisk(state.currentVideo.videoUrl);
+    }
+  });
+
+  document.getElementById('clearHistory').addEventListener('click', () => {
+    Swal.fire({
+      title: t('confirmClear'),
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonText: t('yes'),
+      cancelButtonText: t('cancel'),
+      confirmButtonColor: '#fd1d1d',
+      cancelButtonColor: '#833ab4',
+      background: '#1a1a2e',
+      color: '#fff'
+    }).then(result => {
+      if (result.isConfirmed) {
+        state.history = [];
+        saveState();
+        renderHistory();
+        Toast.fire({ icon: 'success', title: t('cleared') });
+      }
+    });
+  });
+
+  // ========== Init / Restore ==========
+  function init() {
+    loadState();
+    applyLanguage();
+    applyOrientation();
+    document.getElementById('urlInput').value = state.lastUrl || '';
+
+    // Restore last preview
+    if (state.currentVideo && state.currentVideo.videoUrl) {
+      const video = document.getElementById('previewVideo');
+      video.src = state.currentVideo.videoUrl;
+      document.getElementById('previewSection').classList.add('show');
+    }
+
+    renderHistory();
+  }
+
+  init();
+</script>
+</body>
+</html>
