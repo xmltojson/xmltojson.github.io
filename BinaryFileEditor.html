@@ -1,0 +1,881 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Бінарний Редактор Файлів</title>
+<style>
+    * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+        font-family: 'Segoe UI', Tahoma, sans-serif;
+    }
+
+    :root {
+        --bg-primary: #1e1e2e;
+        --bg-secondary: #27293d;
+        --bg-tertiary: #2d3250;
+        --accent: #7c5cff;
+        --accent-hover: #9575ff;
+        --text-primary: #e4e4f0;
+        --text-secondary: #a0a0c0;
+        --border: #3a3f5c;
+        --success: #4ade80;
+        --danger: #f87171;
+        --hex-color: #7dd3fc;
+        --offset-color: #fbbf24;
+        --ascii-color: #86efac;
+    }
+
+    body {
+        background: var(--bg-primary);
+        color: var(--text-primary);
+        height: 100vh;
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+    }
+
+    /* Header / Toolbar */
+    .toolbar {
+        background: linear-gradient(135deg, var(--bg-secondary), var(--bg-tertiary));
+        padding: 12px 16px;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+        z-index: 100;
+        flex-wrap: wrap;
+    }
+
+    .app-title {
+        font-size: 18px;
+        font-weight: 700;
+        background: linear-gradient(135deg, var(--accent), #4dd0ff);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-right: 12px;
+    }
+
+    .app-title svg { width: 28px; height: 28px; }
+
+    .btn {
+        background: var(--bg-tertiary);
+        color: var(--text-primary);
+        border: 1px solid var(--border);
+        padding: 8px 14px;
+        border-radius: 8px;
+        cursor: pointer;
+        font-size: 13px;
+        transition: all 0.2s;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+    }
+
+    .btn:hover {
+        background: var(--accent);
+        border-color: var(--accent);
+        transform: translateY(-1px);
+    }
+
+    .btn:active { transform: translateY(0); }
+
+    .btn.primary {
+        background: var(--accent);
+        border-color: var(--accent);
+    }
+
+    .btn.primary:hover { background: var(--accent-hover); }
+
+    .btn svg { width: 16px; height: 16px; }
+
+    .spacer { flex: 1; }
+
+    select {
+        background: var(--bg-tertiary);
+        color: var(--text-primary);
+        border: 1px solid var(--border);
+        padding: 8px 10px;
+        border-radius: 8px;
+        cursor: pointer;
+        font-size: 13px;
+    }
+
+    /* Tabs */
+    .tabs-bar {
+        background: var(--bg-secondary);
+        display: flex;
+        align-items: center;
+        overflow-x: auto;
+        min-height: 42px;
+        border-bottom: 1px solid var(--border);
+    }
+
+    .tabs-bar::-webkit-scrollbar { height: 6px; }
+    .tabs-bar::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+    .tab {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 10px 14px;
+        cursor: pointer;
+        border-right: 1px solid var(--border);
+        white-space: nowrap;
+        transition: background 0.2s;
+        max-width: 220px;
+    }
+
+    .tab:hover { background: var(--bg-tertiary); }
+
+    .tab.active {
+        background: var(--bg-primary);
+        border-bottom: 2px solid var(--accent);
+    }
+
+    .tab-name {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        font-size: 13px;
+    }
+
+    .tab-modified { color: var(--accent); font-weight: bold; }
+
+    .tab-close {
+        background: none;
+        border: none;
+        color: var(--text-secondary);
+        cursor: pointer;
+        font-size: 16px;
+        padding: 0 4px;
+        border-radius: 4px;
+        line-height: 1;
+    }
+
+    .tab-close:hover { background: var(--danger); color: white; }
+
+    /* Editor Area */
+    .editor-container {
+        flex: 1;
+        overflow: hidden;
+        position: relative;
+        display: flex;
+    }
+
+    .editor-container.horizontal { flex-direction: column; }
+
+    .hex-view {
+        flex: 1;
+        overflow: auto;
+        padding: 16px;
+        font-family: 'Consolas', 'Courier New', monospace;
+        font-size: 14px;
+    }
+
+    .hex-view::-webkit-scrollbar { width: 12px; height: 12px; }
+    .hex-view::-webkit-scrollbar-track { background: var(--bg-secondary); }
+    .hex-view::-webkit-scrollbar-thumb { background: var(--border); border-radius: 6px; }
+
+    .hex-table {
+        border-collapse: collapse;
+        width: 100%;
+    }
+
+    .hex-header {
+        color: var(--text-secondary);
+        font-size: 12px;
+        position: sticky;
+        top: 0;
+        background: var(--bg-primary);
+        z-index: 5;
+    }
+
+    .hex-header td { padding: 4px 3px; text-align: center; }
+
+    .hex-row td { padding: 2px 0; }
+
+    .offset {
+        color: var(--offset-color);
+        padding-right: 16px !important;
+        user-select: none;
+        text-align: right;
+    }
+
+    .hex-cell {
+        color: var(--hex-color);
+        padding: 2px 4px;
+        cursor: text;
+        border-radius: 3px;
+        min-width: 20px;
+        text-align: center;
+        outline: none;
+    }
+
+    .hex-cell:hover { background: var(--bg-tertiary); }
+    .hex-cell.selected { background: var(--accent); color: white; }
+    .hex-cell.editing { background: var(--accent); color: white; }
+    .hex-cell.modified { color: var(--success); font-weight: bold; }
+    .hex-cell.zero { color: var(--text-secondary); opacity: 0.5; }
+
+    .hex-group-spacer { width: 10px; }
+
+    .ascii-section {
+        padding-left: 16px !important;
+        border-left: 1px solid var(--border);
+    }
+
+    .ascii-char {
+        color: var(--ascii-color);
+        padding: 0 1px;
+        cursor: text;
+        border-radius: 2px;
+    }
+    .ascii-char:hover { background: var(--bg-tertiary); }
+    .ascii-char.selected { background: var(--accent); color: white; }
+    .ascii-char.nonprintable { color: var(--text-secondary); opacity: 0.4; }
+
+    /* Empty State */
+    .empty-state {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        color: var(--text-secondary);
+        gap: 16px;
+    }
+
+    .empty-state svg { width: 80px; height: 80px; opacity: 0.4; }
+    .empty-state h2 { font-weight: 500; }
+
+    /* Info Panel */
+    .info-panel {
+        width: 280px;
+        background: var(--bg-secondary);
+        border-left: 1px solid var(--border);
+        padding: 16px;
+        overflow-y: auto;
+    }
+
+    .info-panel.hidden { display: none; }
+
+    .editor-container.horizontal .info-panel {
+        width: auto;
+        border-left: none;
+        border-top: 1px solid var(--border);
+        max-height: 200px;
+    }
+
+    .info-title {
+        font-size: 13px;
+        text-transform: uppercase;
+        color: var(--text-secondary);
+        margin-bottom: 12px;
+        letter-spacing: 1px;
+    }
+
+    .info-row {
+        display: flex;
+        justify-content: space-between;
+        padding: 6px 0;
+        border-bottom: 1px solid var(--border);
+        font-size: 13px;
+    }
+
+    .info-row .label { color: var(--text-secondary); }
+    .info-row .value { font-family: monospace; color: var(--hex-color); }
+
+    .data-inspector { margin-top: 20px; }
+
+    /* Status Bar */
+    .status-bar {
+        background: var(--bg-secondary);
+        padding: 6px 16px;
+        display: flex;
+        gap: 20px;
+        font-size: 12px;
+        color: var(--text-secondary);
+        border-top: 1px solid var(--border);
+    }
+
+    .status-bar span strong { color: var(--hex-color); }
+
+    input[type="file"] { display: none; }
+
+    /* Search box */
+    .search-box {
+        display: none;
+        align-items: center;
+        gap: 8px;
+        background: var(--bg-tertiary);
+        padding: 6px 10px;
+        border-radius: 8px;
+    }
+    .search-box.active { display: flex; }
+    .search-box input {
+        background: var(--bg-primary);
+        border: 1px solid var(--border);
+        color: var(--text-primary);
+        padding: 6px 8px;
+        border-radius: 6px;
+        font-size: 13px;
+        width: 140px;
+    }
+</style>
+</head>
+<body>
+    <div class="toolbar">
+        <div class="app-title">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="3" y="3" width="18" height="18" rx="2"/>
+                <path d="M7 8h4M7 12h6M7 16h4"/>
+            </svg>
+            <span id="t-title">Бінарний Редактор</span>
+        </div>
+        <button class="btn primary" id="btnOpen">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"/></svg>
+            <span id="t-open">Відкрити</span>
+        </button>
+        <button class="btn" id="btnNew">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
+            <span id="t-new">Новий</span>
+        </button>
+        <button class="btn" id="btnSave">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><path d="M17 21v-8H7v8M7 3v5h8"/></svg>
+            <span id="t-save">Зберегти</span>
+        </button>
+
+        <div class="search-box" id="searchBox">
+            <input type="text" id="searchInput" placeholder="Hex: FF или текст">
+            <select id="searchType">
+                <option value="hex">Hex</option>
+                <option value="text">Текст</option>
+            </select>
+            <button class="btn" id="btnFindNext" style="padding:4px 10px">▼</button>
+        </div>
+        <button class="btn" id="btnSearch">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4-4"/></svg>
+            <span id="t-search">Пошук</span>
+        </button>
+
+        <div class="spacer"></div>
+
+        <button class="btn" id="btnOrientation">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="18"/><rect x="14" y="3" width="7" height="18"/></svg>
+            <span id="t-orientation">Орієнтація</span>
+        </button>
+        <button class="btn" id="btnInfo">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
+        </button>
+        <select id="langSelect">
+            <option value="uk">🇺🇦 Українська</option>
+            <option value="en">🇬🇧 English</option>
+        </select>
+    </div>
+
+    <div class="tabs-bar" id="tabsBar"></div>
+
+    <div class="editor-container vertical" id="editorContainer">
+        <div class="hex-view" id="hexView">
+            <div class="empty-state" id="emptyState">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M7 8h10M7 12h10M7 16h6"/></svg>
+                <h2 id="t-empty">Відкрийте або створіть файл для редагування</h2>
+            </div>
+        </div>
+        <div class="info-panel" id="infoPanel">
+            <div class="info-title" id="t-fileinfo">Інформація про файл</div>
+            <div class="info-row"><span class="label" id="t-name">Ім'я</span><span class="value" id="infName">—</span></div>
+            <div class="info-row"><span class="label" id="t-size">Розмір</span><span class="value" id="infSize">—</span></div>
+            <div class="info-row"><span class="label" id="t-offset">Зміщення</span><span class="value" id="infOffset">—</span></div>
+
+            <div class="data-inspector">
+                <div class="info-title" id="t-inspector">Інспектор даних</div>
+                <div class="info-row"><span class="label">Int8</span><span class="value" id="dInt8">—</span></div>
+                <div class="info-row"><span class="label">Uint8</span><span class="value" id="dUint8">—</span></div>
+                <div class="info-row"><span class="label">Int16 (LE)</span><span class="value" id="dInt16">—</span></div>
+                <div class="info-row"><span class="label">Uint16 (LE)</span><span class="value" id="dUint16">—</span></div>
+                <div class="info-row"><span class="label">Int32 (LE)</span><span class="value" id="dInt32">—</span></div>
+                <div class="info-row"><span class="label">Uint32 (LE)</span><span class="value" id="dUint32">—</span></div>
+                <div class="info-row"><span class="label">Float32</span><span class="value" id="dFloat">—</span></div>
+                <div class="info-row"><span class="label" id="t-binary">Двійкове</span><span class="value" id="dBin">—</span></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="status-bar">
+        <span id="statFile"></span>
+        <span id="t-statSel">Виділено:</span> <strong id="statSel">—</strong>
+        <div class="spacer" style="flex:1"></div>
+        <span id="statTabs"></span>
+    </div>
+
+    <input type="file" id="fileInput">
+
+<script>
+// ============ TRANSLATIONS ============
+const I18N = {
+    uk: {
+        title: 'Бінарний Редактор', open: 'Відкрити', new: 'Новий', save: 'Зберегти',
+        search: 'Пошук', orientation: 'Орієнтація', empty: 'Відкрийте або створіть файл для редагування',
+        fileinfo: 'Інформація про файл', name: "Ім'я", size: 'Розмір', offset: 'Зміщення',
+        inspector: 'Інспектор даних', binary: 'Двійкове', statSel: 'Виділено:',
+        newFileName: 'новий-файл.bin', bytes: 'байт', modified: 'Змінено',
+        tabs: 'Вкладок:', confirmClose: 'Закрити файл із незбереженими змінами?'
+    },
+    en: {
+        title: 'Binary Editor', open: 'Open', new: 'New', save: 'Save',
+        search: 'Search', orientation: 'Orientation', empty: 'Open or create a file to edit',
+        fileinfo: 'File Information', name: 'Name', size: 'Size', offset: 'Offset',
+        inspector: 'Data Inspector', binary: 'Binary', statSel: 'Selected:',
+        newFileName: 'new-file.bin', bytes: 'bytes', modified: 'Modified',
+        tabs: 'Tabs:', confirmClose: 'Close file with unsaved changes?'
+    }
+};
+
+// ============ STATE ============
+const state = {
+    tabs: [],        // {id, name, data:[], modified}
+    activeTab: null,
+    lang: 'uk',
+    orientation: 'vertical',
+    showInfo: true,
+    selectedByte: null
+};
+
+const BYTES_PER_ROW = 16;
+
+// ============ PERSISTENCE ============
+function saveState() {
+    const serial = {
+        tabs: state.tabs.map(t => ({
+            id: t.id, name: t.name, modified: t.modified,
+            data: btoa(String.fromCharCode.apply(null, t.data.length > 100000 ? t.data.slice(0,100000) : t.data))
+        })),
+        activeTab: state.activeTab,
+        lang: state.lang,
+        orientation: state.orientation,
+        showInfo: state.showInfo,
+        selectedByte: state.selectedByte
+    };
+    try {
+        localStorage.setItem('binEditorState', JSON.stringify(serial));
+    } catch(e) { console.warn('Storage full', e); }
+}
+
+function loadState() {
+    const raw = localStorage.getItem('binEditorState');
+    if (!raw) return;
+    try {
+        const s = JSON.parse(raw);
+        state.lang = s.lang || 'uk';
+        state.orientation = s.orientation || 'vertical';
+        state.showInfo = s.showInfo !== false;
+        state.activeTab = s.activeTab;
+        state.selectedByte = s.selectedByte;
+        state.tabs = (s.tabs || []).map(t => {
+            const bin = atob(t.data);
+            const arr = new Array(bin.length);
+            for (let i = 0; i < bin.length; i++) arr[i] = bin.charCodeAt(i);
+            return { id: t.id, name: t.name, modified: t.modified, data: arr };
+        });
+    } catch(e) { console.warn('Failed to load state', e); }
+}
+
+// ============ TRANSLATION APPLY ============
+function applyLang() {
+    const T = I18N[state.lang];
+    document.documentElement.lang = state.lang;
+    document.getElementById('t-title').textContent = T.title;
+    document.getElementById('t-open').textContent = T.open;
+    document.getElementById('t-new').textContent = T.new;
+    document.getElementById('t-save').textContent = T.save;
+    document.getElementById('t-search').textContent = T.search;
+    document.getElementById('t-orientation').textContent = T.orientation;
+    document.getElementById('t-empty').textContent = T.empty;
+    document.getElementById('t-fileinfo').textContent = T.fileinfo;
+    document.getElementById('t-name').textContent = T.name;
+    document.getElementById('t-size').textContent = T.size;
+    document.getElementById('t-offset').textContent = T.offset;
+    document.getElementById('t-inspector').textContent = T.inspector;
+    document.getElementById('t-binary').textContent = T.binary;
+    document.getElementById('t-statSel').textContent = T.statSel;
+    document.title = T.title;
+    document.getElementById('langSelect').value = state.lang;
+}
+
+// ============ TAB MANAGEMENT ============
+function createTab(name, data) {
+    const tab = {
+        id: 'tab_' + Date.now() + '_' + Math.random().toString(36).slice(2,6),
+        name: name,
+        data: Array.from(data),
+        modified: false
+    };
+    state.tabs.push(tab);
+    state.activeTab = tab.id;
+    state.selectedByte = data.length ? 0 : null;
+    renderAll();
+    saveState();
+    return tab;
+}
+
+function getActiveTab() {
+    return state.tabs.find(t => t.id === state.activeTab);
+}
+
+function closeTab(id) {
+    const tab = state.tabs.find(t => t.id === id);
+    if (tab && tab.modified) {
+        if (!confirm(I18N[state.lang].confirmClose)) return;
+    }
+    const idx = state.tabs.findIndex(t => t.id === id);
+    state.tabs.splice(idx, 1);
+    if (state.activeTab === id) {
+        state.activeTab = state.tabs.length ? state.tabs[Math.max(0, idx-1)].id : null;
+        state.selectedByte = 0;
+    }
+    renderAll();
+    saveState();
+}
+
+function switchTab(id) {
+    state.activeTab = id;
+    state.selectedByte = 0;
+    renderAll();
+    saveState();
+}
+
+// ============ RENDER TABS ============
+function renderTabs() {
+    const bar = document.getElementById('tabsBar');
+    bar.innerHTML = '';
+    state.tabs.forEach(tab => {
+        const el = document.createElement('div');
+        el.className = 'tab' + (tab.id === state.activeTab ? ' active' : '');
+        el.innerHTML = `
+            <span class="tab-name">${tab.modified ? '<span class="tab-modified">● </span>' : ''}${escapeHtml(tab.name)}</span>
+            <button class="tab-close">×</button>
+        `;
+        el.querySelector('.tab-name').onclick = () => switchTab(tab.id);
+        el.querySelector('.tab-close').onclick = (e) => { e.stopPropagation(); closeTab(tab.id); };
+        bar.appendChild(el);
+    });
+}
+
+function escapeHtml(s) {
+    return s.replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+}
+
+// ============ RENDER HEX VIEW ============
+function renderHex() {
+    const view = document.getElementById('hexView');
+    const tab = getActiveTab();
+    const empty = document.getElementById('emptyState');
+
+    if (!tab) {
+        view.innerHTML = '';
+        view.appendChild(empty);
+        empty.style.display = 'flex';
+        return;
+    }
+
+    const data = tab.data;
+    const rows = Math.ceil(data.length / BYTES_PER_ROW) || 1;
+
+    let html = '<table class="hex-table">';
+    // Header
+    html += '<tr class="hex-header"><td></td>';
+    for (let i = 0; i < BYTES_PER_ROW; i++) {
+        html += `<td>${i.toString(16).toUpperCase().padStart(2,'0')}</td>`;
+        if (i === 7) html += '<td class="hex-group-spacer"></td>';
+    }
+    html += '<td class="ascii-section">ASCII</td></tr>';
+
+    for (let r = 0; r < rows; r++) {
+        const offset = r * BYTES_PER_ROW;
+        html += '<tr class="hex-row">';
+        html += `<td class="offset">${offset.toString(16).toUpperCase().padStart(8,'0')}</td>`;
+
+        // Hex cells
+        let asciiHtml = '';
+        for (let c = 0; c < BYTES_PER_ROW; c++) {
+            const idx = offset + c;
+            if (idx < data.length) {
+                const byte = data[idx];
+                const hex = byte.toString(16).toUpperCase().padStart(2,'0');
+                const cls = 'hex-cell' + (byte === 0 ? ' zero' : '') +
+                            (idx === state.selectedByte ? ' selected' : '');
+                html += `<td><span class="${cls}" contenteditable="true" data-idx="${idx}" data-type="hex">${hex}</span></td>`;
+                const ch = (byte >= 32 && byte < 127) ? String.fromCharCode(byte) : '.';
+                const achCls = 'ascii-char' + (byte < 32 || byte >= 127 ? ' nonprintable' : '') +
+                               (idx === state.selectedByte ? ' selected' : '');
+                asciiHtml += `<span class="${achCls}" data-idx="${idx}" data-type="ascii">${escapeHtml(ch)}</span>`;
+            } else {
+                html += '<td><span class="hex-cell" style="opacity:0.2">··</span></td>';
+                asciiHtml += '<span class="ascii-char" style="opacity:0.2"> </span>';
+            }
+            if (c === 7) html += '<td class="hex-group-spacer"></td>';
+        }
+        html += `<td class="ascii-section">${asciiHtml}</td>`;
+        html += '</tr>';
+    }
+    html += '</table>';
+    view.innerHTML = html;
+
+    attachCellHandlers();
+}
+
+function attachCellHandlers() {
+    document.querySelectorAll('.hex-cell[contenteditable]').forEach(cell => {
+        cell.addEventListener('focus', () => {
+            const idx = parseInt(cell.dataset.idx);
+            selectByte(idx);
+            cell.classList.add('editing');
+        });
+        cell.addEventListener('blur', () => {
+            cell.classList.remove('editing');
+            commitHexEdit(cell);
+        });
+        cell.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') { e.preventDefault(); cell.blur(); }
+        });
+        cell.addEventListener('input', () => {
+            let txt = cell.textContent.replace(/[^0-9a-fA-F]/g,'').slice(0,2);
+            if (txt.length === 2) {
+                // auto commit and move
+            }
+        });
+    });
+    document.querySelectorAll('.ascii-char[data-idx]').forEach(ch => {
+        ch.addEventListener('click', () => selectByte(parseInt(ch.dataset.idx)));
+    });
+}
+
+function commitHexEdit(cell) {
+    const idx = parseInt(cell.dataset.idx);
+    const tab = getActiveTab();
+    if (!tab) return;
+    let txt = cell.textContent.replace(/[^0-9a-fA-F]/g,'').slice(0,2);
+    if (txt === '') {
+        cell.textContent = tab.data[idx].toString(16).toUpperCase().padStart(2,'0');
+        return;
+    }
+    const val = parseInt(txt, 16);
+    if (tab.data[idx] !== val) {
+        tab.data[idx] = val;
+        tab.modified = true;
+        cell.classList.add('modified');
+        renderTabs();
+        saveState();
+    }
+    cell.textContent = val.toString(16).toUpperCase().padStart(2,'0');
+    updateInspector();
+    renderHex();
+}
+
+function selectByte(idx) {
+    state.selectedByte = idx;
+    document.querySelectorAll('.selected').forEach(e => e.classList.remove('selected'));
+    document.querySelectorAll(`[data-idx="${idx}"]`).forEach(e => e.classList.add('selected'));
+    updateInspector();
+    updateStatus();
+    saveState();
+}
+
+// ============ DATA INSPECTOR ============
+function updateInspector() {
+    const tab = getActiveTab();
+    const idx = state.selectedByte;
+    const set = (id, v) => document.getElementById(id).textContent = v;
+
+    if (!tab || idx === null || idx >= tab.data.length) {
+        ['dInt8','dUint8','dInt16','dUint16','dInt32','dUint32','dFloat','dBin']
+            .forEach(id => set(id, '—'));
+        document.getElementById('infOffset').textContent = '—';
+        return;
+    }
+
+    const d = tab.data;
+    const buf = new ArrayBuffer(4);
+    const dv = new DataView(buf);
+    const u8 = new Uint8Array(buf);
+    for (let i=0;i<4;i++) u8[i] = d[idx+i] || 0;
+
+    set('dInt8', dv.getInt8(0));
+    set('dUint8', dv.getUint8(0));
+    set('dInt16', dv.getInt16(0, true));
+    set('dUint16', dv.getUint16(0, true));
+    set('dInt32', dv.getInt32(0, true));
+    set('dUint32', dv.getUint32(0, true) >>> 0);
+    set('dFloat', dv.getFloat32(0, true).toPrecision(6));
+    set('dBin', d[idx].toString(2).padStart(8,'0'));
+    document.getElementById('infOffset').textContent = '0x' + idx.toString(16).toUpperCase();
+}
+
+// ============ INFO PANEL ============
+function updateInfo() {
+    const tab = getActiveTab();
+    const T = I18N[state.lang];
+    if (!tab) {
+        document.getElementById('infName').textContent = '—';
+        document.getElementById('infSize').textContent = '—';
+        return;
+    }
+    document.getElementById('infName').textContent = tab.name;
+    document.getElementById('infSize').textContent = tab.data.length + ' ' + T.bytes;
+}
+
+// ============ STATUS BAR ============
+function updateStatus() {
+    const tab = getActiveTab();
+    const T = I18N[state.lang];
+    document.getElementById('statFile').textContent = tab ? tab.name : '';
+    document.getElementById('statSel').textContent =
+        state.selectedByte !== null && tab ? ('0x' + state.selectedByte.toString(16).toUpperCase()) : '—';
+    document.getElementById('statTabs').textContent = T.tabs + ' ' + state.tabs.length;
+}
+
+// ============ RENDER ALL ============
+function renderAll() {
+    applyLang();
+    renderTabs();
+    renderHex();
+    updateInfo();
+    updateInspector();
+    updateStatus();
+    document.getElementById('editorContainer').className =
+        'editor-container ' + state.orientation;
+    document.getElementById('infoPanel').classList.toggle('hidden', !state.showInfo);
+}
+
+// ============ SEARCH ============
+function performSearch() {
+    const tab = getActiveTab();
+    if (!tab) return;
+    const input = document.getElementById('searchInput').value;
+    const type = document.getElementById('searchType').value;
+    let pattern = [];
+
+    if (type === 'hex') {
+        const clean = input.replace(/[^0-9a-fA-F]/g,'');
+        for (let i=0; i<clean.length; i+=2) pattern.push(parseInt(clean.substr(i,2),16));
+    } else {
+        for (let i=0; i<input.length; i++) pattern.push(input.charCodeAt(i));
+    }
+    if (!pattern.length) return;
+
+    const start = (state.selectedByte || 0) + 1;
+    const d = tab.data;
+    for (let i = start; i <= d.length - pattern.length; i++) {
+        let match = true;
+        for (let j = 0; j < pattern.length; j++) {
+            if (d[i+j] !== pattern[j]) { match = false; break; }
+        }
+        if (match) {
+            selectByte(i);
+            document.querySelector(`[data-idx="${i}"]`)?.scrollIntoView({block:'center'});
+            return;
+        }
+    }
+    // wrap around search
+    for (let i = 0; i < start && i <= d.length - pattern.length; i++) {
+        let match = true;
+        for (let j = 0; j < pattern.length; j++) {
+            if (d[i+j] !== pattern[j]) { match = false; break; }
+        }
+        if (match) {
+            selectByte(i);
+            document.querySelector(`[data-idx="${i}"]`)?.scrollIntoView({block:'center'});
+            return;
+        }
+    }
+}
+
+// ============ FILE OPERATIONS ============
+document.getElementById('btnOpen').onclick = () => document.getElementById('fileInput').click();
+
+document.getElementById('fileInput').onchange = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+        const bytes = new Uint8Array(ev.target.result);
+        createTab(file.name, bytes);
+    };
+    reader.readAsArrayBuffer(file);
+    e.target.value = '';
+};
+
+document.getElementById('btnNew').onclick = () => {
+    createTab(I18N[state.lang].newFileName, new Uint8Array(64));
+};
+
+document.getElementById('btnSave').onclick = () => {
+    const tab = getActiveTab();
+    if (!tab) return;
+    const blob = new Blob([new Uint8Array(tab.data)], {type:'application/octet-stream'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = tab.name;
+    a.click();
+    URL.revokeObjectURL(url);
+    tab.modified = false;
+    renderTabs();
+    saveState();
+};
+
+document.getElementById('btnSearch').onclick = () => {
+    document.getElementById('searchBox').classList.toggle('active');
+    document.getElementById('searchInput').focus();
+};
+document.getElementById('btnFindNext').onclick = performSearch;
+document.getElementById('searchInput').addEventListener('keydown', e => {
+    if (e.key === 'Enter') performSearch();
+});
+
+document.getElementById('btnOrientation').onclick = () => {
+    state.orientation = state.orientation === 'vertical' ? 'horizontal' : 'vertical';
+    renderAll();
+    saveState();
+};
+
+document.getElementById('btnInfo').onclick = () => {
+    state.showInfo = !state.showInfo;
+    renderAll();
+    saveState();
+};
+
+document.getElementById('langSelect').onchange = (e) => {
+    state.lang = e.target.value;
+    renderAll();
+    saveState();
+};
+
+// Keyboard navigation
+document.addEventListener('keydown', (e) => {
+    if (state.selectedByte === null) return;
+    const tab = getActiveTab();
+    if (!tab) return;
+    if (document.activeElement.isContentEditable) return;
+    let ni = state.selectedByte;
+    if (e.key === 'ArrowRight') ni++;
+    else if (e.key === 'ArrowLeft') ni--;
+    else if (e.key === 'ArrowDown') ni += BYTES_PER_ROW;
+    else if (e.key === 'ArrowUp') ni -= BYTES_PER_ROW;
+    else return;
+    e.preventDefault();
+    ni = Math.max(0, Math.min(tab.data.length-1, ni));
+    selectByte(ni);
+});
+
+// ============ INIT ============
+loadState();
+renderAll();
+</script>
+</body>
+</html>
