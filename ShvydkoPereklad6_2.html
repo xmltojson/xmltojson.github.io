@@ -1393,55 +1393,69 @@ async function limitReachedModal(type) {
   );
 }
 
-/* ============ TEXT-TO-SPEECH ENGINE (Android Chrome fixed) ============ */
+/* ============ TEXT-TO-SPEECH ENGINE ============ */
 const TTS = (() => {
   const supported = 'speechSynthesis' in window && 'SpeechSynthesisUtterance' in window;
   let voices = [];
   let voicesLoaded = false;
+  let voicesLoadingPromise = null;
   let currentUtterance = null;
   let currentToken = 0;
   const listeners = new Set();
   let activeCall = null;
-  let unlocked = false;
 
-  // Detect Android Chrome (where the pause/resume keepAlive trick breaks audio)
-  const isAndroid = /Android/i.test(navigator.userAgent);
+  function loadVoices() {
+    if (!supported) return Promise.resolve([]);
+    if (voicesLoaded) return Promise.resolve(voices);
+    if (voicesLoadingPromise) return voicesLoadingPromise;
 
-  function refreshVoices() {
-    if (!supported) return [];
-    const list = window.speechSynthesis.getVoices();
-    if (list && list.length > 0) {
-      voices = list;
-      voicesLoaded = true;
-    }
-    return voices;
-  }
+    voicesLoadingPromise = new Promise((resolve) => {
+      const tryGet = () => {
+        const list = window.speechSynthesis.getVoices();
+        if (list && list.length > 0) {
+          voices = list;
+          voicesLoaded = true;
+          resolve(voices);
+          return true;
+        }
+        return false;
+      };
 
-  // Populate voices as soon as possible (event + polling).
-  function initVoices() {
-    if (!supported) return;
-    refreshVoices();
-    if ('onvoiceschanged' in window.speechSynthesis) {
-      window.speechSynthesis.onvoiceschanged = () => refreshVoices();
-    }
-    // Some Android builds populate voices lazily — poll a few times.
-    let attempts = 0;
-    const intv = setInterval(() => {
-      attempts++;
-      refreshVoices();
-      if (voicesLoaded || attempts > 40) clearInterval(intv);
-    }, 150);
+      if (tryGet()) return;
+
+      const onChanged = () => {
+        if (tryGet()) {
+          window.speechSynthesis.removeEventListener('voiceschanged', onChanged);
+        }
+      };
+      window.speechSynthesis.addEventListener('voiceschanged', onChanged);
+
+      let attempts = 0;
+      const intv = setInterval(() => {
+        attempts++;
+        if (tryGet() || attempts > 30) {
+          clearInterval(intv);
+          window.speechSynthesis.removeEventListener('voiceschanged', onChanged);
+          if (!voicesLoaded) {
+            voices = window.speechSynthesis.getVoices() || [];
+            voicesLoaded = true;
+            resolve(voices);
+          }
+        }
+      }, 100);
+    });
+
+    return voicesLoadingPromise;
   }
 
   function pickVoice(langCode) {
-    refreshVoices();
     if (!voices || voices.length === 0) return null;
     const target = (SPEECH_LANG_MAP[langCode] || langCode || '').toLowerCase();
     const short = target.split('-')[0];
 
-    let v = voices.find(vo => (vo.lang || '').toLowerCase().replace('_', '-') === target);
+    let v = voices.find(vo => (vo.lang || '').toLowerCase() === target);
     if (v) return v;
-    v = voices.find(vo => (vo.lang || '').toLowerCase().replace('_', '-').startsWith(short + '-'));
+    v = voices.find(vo => (vo.lang || '').toLowerCase().startsWith(short + '-'));
     if (v) return v;
     v = voices.find(vo => (vo.lang || '').toLowerCase() === short);
     if (v) return v;
@@ -1453,8 +1467,13 @@ const TTS = (() => {
     listeners.forEach(fn => { try { fn(activeCall); } catch(e) {} });
   }
 
-  function isSpeaking() { return activeCall !== null; }
-  function isCurrent(token) { return activeCall && activeCall.token === token; }
+  function isSpeaking() {
+    return activeCall !== null;
+  }
+
+  function isCurrent(token) {
+    return activeCall && activeCall.token === token;
+  }
 
   function stop() {
     if (!supported) return;
@@ -1474,44 +1493,21 @@ const TTS = (() => {
     }
   }
 
-  // Unlock speech on the first user gesture. Must be called synchronously
-  // from within a user-initiated event (click/touch).
-  function unlock() {
-    if (!supported || unlocked) return;
-    try {
-      // Speak an empty/near-silent utterance to unlock the audio engine.
-      const u = new SpeechSynthesisUtterance('');
-      u.volume = 0;
-      window.speechSynthesis.speak(u);
-      window.speechSynthesis.cancel();
-      unlocked = true;
-    } catch (e) { /* ignore */ }
-    refreshVoices();
-  }
-
-  /**
-   * IMPORTANT: This function is synchronous and must be called directly
-   * inside a user-gesture (click) handler. Do NOT await anything before it,
-   * or Android Chrome will silently refuse to speak.
-   */
-  function speak({ text, lang, button = null }) {
+  async function speak({ text, lang, button = null }) {
     if (!supported) {
       showToast('Озвучення не підтримується вашим браузером', 'error');
-      return -1;
+      return false;
     }
     const trimmed = (text || '').trim();
     if (!trimmed) {
       showToast('Немає тексту для озвучення', 'warn');
-      return -1;
+      return false;
     }
 
-    // Cancel anything currently playing (synchronously).
-    try {
-      window.speechSynthesis.cancel();
-    } catch (e) {}
+    stop();
+    await loadVoices();
 
     const myToken = ++currentToken;
-
     const u = new SpeechSynthesisUtterance(trimmed);
     const langTag = SPEECH_LANG_MAP[lang] || 'en-US';
     u.lang = langTag;
@@ -1523,57 +1519,48 @@ const TTS = (() => {
 
     activeCall = { token: myToken, button, voice: voice ? voice.name : null, lang: langTag };
     currentUtterance = u;
-
-    let settled = false;
-    const finish = () => {
-      if (settled) return;
-      settled = true;
-      if (currentToken === myToken) {
-        activeCall = null;
-        currentUtterance = null;
-        notify();
-      }
-    };
-
-    u.onend = () => finish();
-    u.onerror = (e) => {
-      const err = e && e.error;
-      if (err && err !== 'canceled' && err !== 'interrupted') {
-        console.warn('TTS error:', err);
-        if (currentToken === myToken && !voice) {
-          showToast('Не знайдено голос для цієї мови', 'warn');
-        }
-      }
-      finish();
-    };
-
-    // Notify listeners AFTER token assignment so buttons can capture it.
     notify();
 
-    try {
-      // On desktop Chrome speech can get "stuck" after ~15s; a resume() helps.
-      // On Android the pause/resume trick BREAKS audio, so we skip it there.
-      window.speechSynthesis.speak(u);
-
-      if (!isAndroid) {
-        const keepAlive = setInterval(() => {
-          if (currentToken !== myToken || !window.speechSynthesis.speaking) {
-            clearInterval(keepAlive);
-            return;
-          }
-          try {
-            window.speechSynthesis.pause();
-            window.speechSynthesis.resume();
-          } catch(e) {}
-        }, 12000);
-      }
-    } catch (err) {
-      console.error('TTS speak failed:', err);
-      showToast('Помилка озвучення', 'error');
-      finish();
+    if (!voice) {
+      console.warn('No TTS voice found for', lang, '— using default. Available:',
+        voices.map(v => `${v.name} (${v.lang})`).slice(0, 10));
     }
 
-    return myToken;
+    return new Promise((resolve) => {
+      let settled = false;
+      const finish = (ok) => {
+        if (settled) return;
+        settled = true;
+        if (currentToken === myToken) {
+          activeCall = null;
+          currentUtterance = null;
+          notify();
+        }
+        resolve(ok);
+      };
+
+      u.onend = () => finish(true);
+      u.onerror = (e) => {
+        if (e && (e.error === 'canceled' || e.error === 'interrupted')) {
+          finish(false);
+        } else {
+          console.warn('TTS error:', e && e.error);
+          if (currentToken === myToken && !voice) {
+            showToast('Не знайдено голос для цієї мови', 'warn');
+          }
+          finish(false);
+        }
+      };
+
+      try {
+        try { window.speechSynthesis.resume(); } catch(e) {}
+        window.speechSynthesis.speak(u);
+      } catch (err) {
+        console.error('TTS speak failed:', err);
+        showToast('Помилка озвучення', 'error');
+        finish(false);
+      }
+    });
   }
 
   function onChange(fn) {
@@ -1581,25 +1568,15 @@ const TTS = (() => {
     return () => listeners.delete(fn);
   }
 
-  if (supported) initVoices();
+  if (supported) loadVoices();
 
-  // Stop speaking when the page is hidden / unloaded.
   document.addEventListener('visibilitychange', () => {
     if (document.hidden) stop();
   });
+  window.addEventListener('beforeunload', stop);
   window.addEventListener('pagehide', stop);
 
-  // Unlock on the very first user interaction anywhere on the page.
-  const unlockOnce = () => {
-    unlock();
-    document.removeEventListener('touchend', unlockOnce);
-    document.removeEventListener('click', unlockOnce);
-  };
-  document.addEventListener('touchend', unlockOnce, { passive: true });
-  document.addEventListener('click', unlockOnce);
-
-  return { supported, speak, stop, isSpeaking, isCurrent, onChange, refreshVoices, unlock,
-           getVoices: () => { refreshVoices(); return voices; } };
+  return { supported, speak, stop, isSpeaking, isCurrent, onChange, loadVoices };
 })();
 
 TTS.onChange(() => {
@@ -1640,32 +1617,41 @@ TTS.onChange(() => {
   });
 });
 
-/**
- * Speak text tied to a UI element. Synchronous — safe for click handlers.
- * Toggling: clicking again while it's speaking will stop it.
- */
-function speakWithButton(button, text, lang) {
-  if (button._speakToken !== undefined && TTS.isCurrent(button._speakToken)) {
-    TTS.stop();
-    return;
-  }
-  if (!text || !text.trim()) {
-    showToast('Немає тексту для озвучення', 'warn');
-    return;
-  }
-  const token = TTS.speak({ text, lang, button });
-  if (token !== -1) button._speakToken = token;
-}
-
 function quickSpeak(text, lang, hostElement = null) {
   if (hostElement && hostElement._speakToken !== undefined && TTS.isCurrent(hostElement._speakToken)) {
     TTS.stop();
     return;
   }
+  TTS.stop();
   if (!text || !text.trim()) return;
   if (hostElement) hostElement.classList.add('speaking');
-  const token = TTS.speak({ text, lang, button: hostElement });
-  if (token !== -1 && hostElement) hostElement._speakToken = token;
+  const off = TTS.onChange(() => {
+    off();
+  });
+  TTS.speak({ text, lang, button: hostElement });
+  // capture token
+  const off2 = TTS.onChange((active) => {
+    if (active && hostElement) hostElement._speakToken = active.token;
+    off2();
+  });
+}
+
+// Simplified token-capturing speak for list buttons
+function speakWithButton(button, text, lang) {
+  if (button._speakToken !== undefined && TTS.isCurrent(button._speakToken)) {
+    TTS.stop();
+    return;
+  }
+  TTS.stop();
+  if (!text || !text.trim()) {
+    showToast('Немає тексту для озвучення', 'warn');
+    return;
+  }
+  const off = TTS.onChange((active) => {
+    if (active) button._speakToken = active.token;
+    off();
+  });
+  TTS.speak({ text, lang, button });
 }
 
 // ============ TRANSLATION PROVIDERS ============
@@ -2133,7 +2119,6 @@ document.querySelectorAll('.tab').forEach(t => {
 });
 
 document.querySelectorAll('#contextTags .tag').forEach(t => {
-
   t.onclick = () => {
     state.context = t.dataset.ctx;
     document.querySelectorAll('#contextTags .tag').forEach(x => x.classList.remove('active'));
@@ -2239,7 +2224,6 @@ document.getElementById('copyBtn').onclick = () => {
   showToast('Скопійовано!', 'success');
 };
 
-// FIXED: synchronous speak call inside the click handler (critical for Android Chrome)
 document.getElementById('speakBtn').onclick = () => {
   const btn = document.getElementById('speakBtn');
   if (btn._speakToken !== undefined && TTS.isCurrent(btn._speakToken)) {
@@ -2247,7 +2231,11 @@ document.getElementById('speakBtn').onclick = () => {
     return;
   }
   if (!state.tgtText.trim()) { showToast('Немає тексту для озвучення', 'warn'); return; }
-  speakWithButton(btn, state.tgtText, state.tgtLang);
+  const off = TTS.onChange((active) => {
+    if (active) btn._speakToken = active.token;
+    off();
+  });
+  TTS.speak({ text: state.tgtText, lang: state.tgtLang, button: btn });
 };
 
 document.getElementById('saveBtn').onclick = () => {
@@ -2320,8 +2308,6 @@ if (SpeechRecognition) {
 
 function startListening() {
   if (!recognition) return;
-  // Stop any TTS so the mic doesn't pick up the speaker (esp. on Android).
-  TTS.stop();
   try {
     recognition.lang = SPEECH_LANG_MAP[state.srcLang] || 'uk-UA';
     recognition.start();
@@ -2489,7 +2475,6 @@ document.getElementById('copyOcrBtn').onclick = () => {
   showToast('Скопійовано!', 'success');
 };
 
-// FIXED: synchronous speak call inside the click handler (critical for Android Chrome)
 document.getElementById('speakOcrBtn').onclick = () => {
   const btn = document.getElementById('speakOcrBtn');
   if (btn._speakToken !== undefined && TTS.isCurrent(btn._speakToken)) {
@@ -2497,9 +2482,14 @@ document.getElementById('speakOcrBtn').onclick = () => {
     return;
   }
   if (!state.ocrResult.trim()) { showToast('Немає тексту для озвучення', 'warn'); return; }
+  // Speak translated part if available, else the recognized text
+  const off = TTS.onChange((active) => {
+    if (active) btn._speakToken = active.token;
+    off();
+  });
   // Prefer target language if translation was done
   const lang = state.photoSrcLang !== state.photoTgtLang ? state.photoTgtLang : state.photoSrcLang;
-  speakWithButton(btn, state.ocrResult, lang);
+  TTS.speak({ text: state.ocrResult, lang, button: btn });
 };
 
 // ============ CLEAR BUTTONS ============
@@ -2588,24 +2578,23 @@ document.getElementById('clearAllBtn').onclick = async () => {
 
 // ============ INFO MODAL ============
 document.getElementById('infoBtn').onclick = async () => {
-  // Build voice info (synchronous — voices already populated on load / first gesture)
+  // Build voice info
   let voiceInfo = '';
   try {
-    const vs = TTS.getVoices();
+    const vs = await TTS.loadVoices();
     if (vs && vs.length) {
       const langs = ['uk', 'en', 'pl', 'de', 'cs'];
       const found = langs.map(l => {
         const target = SPEECH_LANG_MAP[l].toLowerCase();
         const short = target.split('-')[0];
-        const has = vs.find(v => {
-          const vl = (v.lang || '').toLowerCase().replace('_', '-');
-          return vl === target || vl.startsWith(short + '-') || vl === short;
-        });
+        const has = vs.find(v => (v.lang||'').toLowerCase() === target ||
+                                  (v.lang||'').toLowerCase().startsWith(short+'-') ||
+                                  (v.lang||'').toLowerCase() === short);
         return `<li>${l.toUpperCase()}: ${has ? '✅ ' + has.name : '⚠️ не знайдено'}</li>`;
       }).join('');
       voiceInfo = `<p><strong>🔊 Голоси озвучення:</strong></p><ul>${found}</ul>`;
     } else {
-      voiceInfo = '<p class="muted">⚠️ Голоси озвучення ще завантажуються або недоступні. На Android спробуйте встановити «Google Speech Services» / мовні дані TTS у налаштуваннях системи.</p>';
+      voiceInfo = '<p class="muted">⚠️ Голоси озвучення недоступні в цьому браузері</p>';
     }
   } catch(e) {}
 
