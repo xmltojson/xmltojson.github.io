@@ -48,3 +48,5 @@ Warm regards,
 Yuliya Kolesnikova
 
 P.S. Keep your streak alive 🔥 - just a few cards a day is all it takes to build lasting vocabulary! Hit "Нова колода" to create your own custom deck anytime. 📚✨
+
+#FlashLearn #EnglishLearning #Flashcards #SpacedRepetition #VocabularyBuilder #LanguageLearning #Base44
