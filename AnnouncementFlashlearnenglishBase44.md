@@ -40,7 +40,7 @@ We're excited to present **FlashLearn** - an intelligent spaced-repetition flash
 
 🔗 Experience it here: https://flashlearnenglish.base44.app
 
-📚 **320 words per level** across B1, B2, and C1 - that's a comprehensive vocabulary foundation waiting for you!
+📚 **333 words per level** across B1, B2, and C1 - that's a comprehensive vocabulary foundation waiting for you!
 
 Wishing you a productive learning journey filled with progress, confidence, and fluency!
 
