@@ -6,7 +6,7 @@ We're excited to present **FlashLearn** - an intelligent spaced-repetition flash
 
 🎁 WHAT'S INSIDE:
 
-📚 **Curated Vocabulary Decks** - Ready-to-study collections for B1, B2, and C1 levels with 320 carefully selected words per category
+📚 **Curated Vocabulary Decks** - Ready-to-study collections for B1, B2, and C1 levels with 333 carefully selected words per category
 🎯 **Smart Study Mode** - SM-2 spaced-repetition algorithm shows you cards exactly when you're about to forget them
 🃏 **3D Flip Cards** - Beautiful animated flashcards with words, translations, and example sentences
 ⭐ **Self-Rating System** - Rate each card (Again, Hard, Good, Easy) to fine-tune your review schedule
