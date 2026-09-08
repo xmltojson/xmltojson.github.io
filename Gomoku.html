@@ -1,0 +1,1033 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="description" content="Гомоку — класична гра «п'ять в ряд» з непереможним ШІ, режимом ШІ проти ШІ та підтримкою двох гравців. Gomoku - classic five-in-a-row game with unbeatable AI, AI vs AI mode and 2-player support.">
+<meta name="theme-color" content="#1a1a2e">
+<title>Гомоку</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='10' fill='%23d4a574'/%3E%3Cg stroke='%238b5a2b' stroke-width='2'%3E%3Cpath d='M16 16h32M16 32h32M16 48h32M16 16v32M32 16v32M48 16v32'/%3E%3C/g%3E%3Ccircle cx='16' cy='16' r='7' fill='url(%23b)'/%3E%3Ccircle cx='48' cy='48' r='7' fill='url(%23w)'/%3E%3Ccircle cx='32' cy='32' r='7' fill='url(%23b)'/%3E%3Cdefs%3E%3CradialGradient id='b' cx='0.35' cy='0.35' r='0.7'%3E%3Cstop offset='0' stop-color='%23666'/%3E%3Cstop offset='1' stop-color='%23000'/%3E%3C/radialGradient%3E%3CradialGradient id='w' cx='0.35' cy='0.35' r='0.7'%3E%3Cstop offset='0' stop-color='%23fff'/%3E%3Cstop offset='1' stop-color='%23bbb'/%3E%3C/radialGradient%3E%3C/defs%3E%3C/svg%3E">
+<style>
+  * {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  :root {
+    --bg-dark: #1a1a2e;
+    --bg-panel: #16213e;
+    --board-bg: #d4a574;
+    --board-line: #8b5a2b;
+    --accent: #e94560;
+    --accent2: #0f9d9d;
+    --text: #eef;
+  }
+
+  html, body { height: 100%; }
+
+  body {
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    background: linear-gradient(135deg, var(--bg-dark), #0f1626);
+    color: var(--text);
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 10px;
+    overflow: hidden;
+  }
+
+  h1 {
+    font-size: clamp(1.3rem, 4vw, 2.2rem);
+    margin: 4px 0;
+    background: linear-gradient(90deg, var(--accent), var(--accent2));
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    text-align: center;
+    flex: 0 0 auto;
+  }
+
+  .container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+    max-width: 700px;
+    flex: 1 1 auto;
+    min-height: 0;
+    justify-content: center;
+  }
+
+  .controls {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    justify-content: center;
+    width: 100%;
+  }
+
+  .status {
+    font-size: clamp(0.85rem, 3.5vw, 1.1rem);
+    padding: 8px 16px;
+    background: var(--bg-panel);
+    border-radius: 10px;
+    min-width: 200px;
+    text-align: center;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+  }
+
+  .stone-icon {
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    display: inline-block;
+    flex: 0 0 auto;
+  }
+  .stone-icon.black {
+    background: radial-gradient(circle at 30% 30%, #666, #000);
+  }
+  .stone-icon.white {
+    background: radial-gradient(circle at 30% 30%, #fff, #bbb);
+  }
+
+  button, select {
+    font-family: inherit;
+    font-size: 0.9rem;
+    padding: 8px 14px;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    background: var(--bg-panel);
+    color: var(--text);
+    transition: transform 0.1s, background 0.2s;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+  }
+  button:hover, select:hover { background: #1f2d54; }
+  button:active { transform: scale(0.95); }
+
+  button.primary {
+    background: linear-gradient(135deg, var(--accent), #c1304a);
+  }
+  button.primary:hover { background: linear-gradient(135deg, #ff5570, var(--accent)); }
+
+  button.stopbtn {
+    background: linear-gradient(135deg, #0f9d9d, #0b7373);
+  }
+  button.stopbtn:hover { background: linear-gradient(135deg, #14c2c2, #0f9d9d); }
+
+  .board-wrap {
+    position: relative;
+    width: min(92vw, 92vh, 560px);
+    aspect-ratio: 1;
+    flex: 0 0 auto;
+  }
+
+  canvas {
+    width: 100%;
+    height: 100%;
+    display: block;
+    background: var(--board-bg);
+    border-radius: 8px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+    cursor: pointer;
+    touch-action: none;
+  }
+
+  .setting-group {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.85rem;
+  }
+
+  .win-overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(0,0,0,0.7);
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+    border-radius: 8px;
+    animation: fadeIn 0.3s;
+  }
+  .win-overlay.show { display: flex; }
+  @keyframes fadeIn { from {opacity:0;} to {opacity:1;} }
+
+  .win-overlay h2 {
+    font-size: clamp(1.5rem, 7vw, 2.5rem);
+    text-align: center;
+  }
+
+  .countdown {
+    font-size: 1rem;
+    opacity: 0.85;
+  }
+
+  .scoreboard {
+    display: flex;
+    gap: 16px;
+    font-size: 0.9rem;
+  }
+  .scoreboard div {
+    background: var(--bg-panel);
+    padding: 6px 12px;
+    border-radius: 8px;
+  }
+
+  .side-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    width: 100%;
+    align-items: center;
+  }
+
+  footer {
+    font-size: 0.75rem;
+    opacity: 0.6;
+    flex: 0 0 auto;
+    padding-top: 6px;
+  }
+
+  @media (min-width: 760px) and (min-height: 480px) {
+    body { padding: 16px; }
+    h1 { margin: 2px 0 8px; }
+    .container {
+      flex-direction: row;
+      align-items: center;
+      justify-content: center;
+      gap: 28px;
+      max-width: 1100px;
+    }
+    .board-wrap {
+      width: min(70vh, 60vw, 620px);
+    }
+    .side-panel {
+      width: auto;
+      min-width: 240px;
+      max-width: 300px;
+      align-items: stretch;
+    }
+    .status { min-width: 0; }
+    .scoreboard { justify-content: center; }
+    .controls { justify-content: stretch; }
+    .controls button { flex: 1 1 auto; }
+  }
+
+  @media (orientation: landscape) and (max-height: 480px) {
+    body { flex-direction: row; align-items: center; padding: 6px; }
+    h1 { display: none; }
+    footer { display: none; }
+    .container {
+      flex-direction: row;
+      align-items: center;
+      gap: 14px;
+    }
+    .board-wrap { width: min(94vh, 55vw); }
+    .side-panel {
+      max-width: 220px;
+      gap: 7px;
+    }
+    .status { font-size: 0.8rem; padding: 6px 10px; }
+    button, select { font-size: 0.8rem; padding: 6px 10px; }
+  }
+</style>
+</head>
+<body>
+  <h1 id="title">Гомоку</h1>
+  <div class="container">
+    <div class="board-wrap">
+      <canvas id="board"></canvas>
+      <div class="win-overlay" id="winOverlay">
+        <h2 id="winText"></h2>
+        <div class="countdown" id="countdown"></div>
+        <button class="primary" id="playAgain">Грати знову</button>
+      </div>
+    </div>
+    <div class="side-panel">
+      <div class="status" id="status"></div>
+      <div class="scoreboard">
+        <div id="scoreBlack"></div>
+        <div id="scoreWhite"></div>
+      </div>
+      <div class="controls">
+        <button class="primary" id="newGame"></button>
+        <button class="stopbtn" id="stopStart"></button>
+        <button id="undo"></button>
+      </div>
+      <div class="controls">
+        <div class="setting-group">
+          <label id="modeLabel"></label>
+          <select id="mode"></select>
+        </div>
+      </div>
+      <div class="controls">
+        <div class="setting-group">
+          <label id="langLabel"></label>
+          <select id="lang">
+            <option value="uk">Українська</option>
+            <option value="en">English</option>
+          </select>
+        </div>
+      </div>
+    </div>
+  </div>
+  <footer id="footer"></footer>
+
+<script>
+const SIZE = 15;
+const EMPTY = 0, BLACK = 1, WHITE = 2;
+const AUTO_RESTART_MS = 5000;
+
+// ---------- Translations ----------
+const I18N = {
+  uk: {
+    title: "Гомоку",
+    yourTurn: "Ваш хід",
+    aiThinking: "ШІ думає...",
+    aiBlackThinking: "ШІ (чорні) думає...",
+    aiWhiteThinking: "ШІ (білі) думає...",
+    turnBlack: "Хід чорних",
+    turnWhite: "Хід білих",
+    win: "перемогли!",
+    black: "Чорні",
+    white: "Білі",
+    you: "Ви",
+    ai: "ШІ",
+    aiBlack: "ШІ Чорні",
+    aiWhite: "ШІ Білі",
+    playAgain: "Грати знову",
+    newGame: "Нова гра",
+    undo: "Скасувати хід",
+    stop: "Зупинити",
+    start: "Продовжити",
+    paused: "Гру призупинено",
+    mode: "Режим:",
+    lang: "Мова:",
+    modes: {
+      aivsai: "ШІ проти ШІ",
+      pvp: "2 гравці",
+      easy: "ШІ (легкий)",
+      hard: "ШІ (непереможний)"
+    },
+    footer: "Збери 5 в ряд, щоб перемогти",
+    draw: "Нічия!",
+    restartIn: "Перезапуск через"
+  },
+  en: {
+    title: "Gomoku",
+    yourTurn: "Your turn",
+    aiThinking: "AI thinking...",
+    aiBlackThinking: "AI (black) thinking...",
+    aiWhiteThinking: "AI (white) thinking...",
+    turnBlack: "Black's turn",
+    turnWhite: "White's turn",
+    win: "wins!",
+    black: "Black",
+    white: "White",
+    you: "You",
+    ai: "AI",
+    aiBlack: "AI Black",
+    aiWhite: "AI White",
+    playAgain: "Play again",
+    newGame: "New game",
+    undo: "Undo",
+    stop: "Stop",
+    start: "Resume",
+    paused: "Game paused",
+    mode: "Mode:",
+    lang: "Language:",
+    modes: {
+      aivsai: "AI vs AI",
+      pvp: "2 players",
+      easy: "AI (easy)",
+      hard: "AI (unbeatable)"
+    },
+    footer: "Get 5 in a row to win",
+    draw: "Draw!",
+    restartIn: "Restart in"
+  }
+};
+
+// ---------- State ----------
+let state = {
+  board: [],
+  turn: BLACK,
+  history: [],
+  gameOver: false,
+  winner: 0,
+  winLine: null,
+  mode: 'aivsai',
+  lang: 'uk',
+  scores: { black: 0, white: 0 },
+  paused: false
+};
+
+let restartTimer = null;
+let countdownTimer = null;
+let aiTimer = null;
+
+const canvas = document.getElementById('board');
+const ctx = canvas.getContext('2d');
+let cell = 0, pad = 0, dpr = window.devicePixelRatio || 1;
+
+// ---------- Persistence ----------
+function save() {
+  localStorage.setItem('gomoku', JSON.stringify(state));
+}
+function load() {
+  try {
+    const s = JSON.parse(localStorage.getItem('gomoku'));
+    if (s && s.board && s.board.length === SIZE) {
+      state = Object.assign(state, s);
+    }
+  } catch(e) {}
+  if (!state.board || state.board.length !== SIZE) newBoard();
+  if (typeof state.paused !== 'boolean') state.paused = false;
+}
+function newBoard() {
+  state.board = Array.from({length: SIZE}, () => new Array(SIZE).fill(EMPTY));
+  state.turn = BLACK;
+  state.history = [];
+  state.gameOver = false;
+  state.winner = 0;
+  state.winLine = null;
+}
+
+// ---------- Rendering ----------
+function resize() {
+  const rect = canvas.getBoundingClientRect();
+  canvas.width = rect.width * dpr;
+  canvas.height = rect.height * dpr;
+  pad = rect.width * 0.04;
+  cell = (rect.width - pad * 2) / (SIZE - 1);
+  draw();
+}
+
+function draw() {
+  const rect = canvas.getBoundingClientRect();
+  const w = rect.width;
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  ctx.clearRect(0, 0, w, w);
+
+  ctx.strokeStyle = 'rgba(139,90,43,0.85)';
+  ctx.lineWidth = 1;
+  for (let i = 0; i < SIZE; i++) {
+    const p = pad + i * cell;
+    ctx.beginPath();
+    ctx.moveTo(pad, p); ctx.lineTo(w - pad, p);
+    ctx.moveTo(p, pad); ctx.lineTo(p, w - pad);
+    ctx.stroke();
+  }
+
+  const stars = [3, 7, 11];
+  ctx.fillStyle = 'rgba(139,90,43,0.9)';
+  for (const r of stars) for (const c of stars) {
+    ctx.beginPath();
+    ctx.arc(pad + c*cell, pad + r*cell, cell*0.08, 0, Math.PI*2);
+    ctx.fill();
+  }
+
+  for (let r = 0; r < SIZE; r++) {
+    for (let c = 0; c < SIZE; c++) {
+      if (state.board[r][c] !== EMPTY) drawStone(r, c, state.board[r][c]);
+    }
+  }
+
+  if (state.history.length && !state.gameOver) {
+    const last = state.history[state.history.length-1];
+    ctx.strokeStyle = '#e94560';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.arc(pad + last.c*cell, pad + last.r*cell, cell*0.42, 0, Math.PI*2);
+    ctx.stroke();
+  }
+
+  if (state.winLine) {
+    const [a, b] = state.winLine;
+    ctx.strokeStyle = '#e94560';
+    ctx.lineWidth = cell*0.12;
+    ctx.lineCap = 'round';
+    ctx.beginPath();
+    ctx.moveTo(pad + a.c*cell, pad + a.r*cell);
+    ctx.lineTo(pad + b.c*cell, pad + b.r*cell);
+    ctx.stroke();
+  }
+}
+
+function drawStone(r, c, color) {
+  const x = pad + c*cell, y = pad + r*cell, rad = cell*0.42;
+  ctx.beginPath();
+  ctx.arc(x, y, rad, 0, Math.PI*2);
+  const g = ctx.createRadialGradient(x-rad*0.35, y-rad*0.35, rad*0.1, x, y, rad);
+  if (color === BLACK) {
+    g.addColorStop(0, '#666'); g.addColorStop(1, '#000');
+  } else {
+    g.addColorStop(0, '#fff'); g.addColorStop(1, '#c0c0c0');
+  }
+  ctx.fillStyle = g;
+  ctx.shadowColor = 'rgba(0,0,0,0.4)';
+  ctx.shadowBlur = 4;
+  ctx.shadowOffsetY = 2;
+  ctx.fill();
+  ctx.shadowColor = 'transparent';
+}
+
+// ---------- Game Logic ----------
+function place(r, c) {
+  if (state.gameOver || state.board[r][c] !== EMPTY) return false;
+  state.board[r][c] = state.turn;
+  state.history.push({r, c, player: state.turn});
+  const line = checkWin(r, c, state.turn);
+  if (line) {
+    state.gameOver = true;
+    state.winner = state.turn;
+    state.winLine = line;
+    if (state.turn === BLACK) state.scores.black++; else state.scores.white++;
+  } else if (state.history.length === SIZE*SIZE) {
+    state.gameOver = true;
+    state.winner = 0;
+  } else {
+    state.turn = state.turn === BLACK ? WHITE : BLACK;
+  }
+  save();
+  return true;
+}
+
+const DIRS = [[0,1],[1,0],[1,1],[1,-1]];
+function checkWin(r, c, player) {
+  for (const [dr, dc] of DIRS) {
+    let count = 1;
+    let a = {r, c}, b = {r, c};
+    for (let s = 1; s < 5; s++) {
+      const nr = r+dr*s, nc = c+dc*s;
+      if (inBounds(nr,nc) && state.board[nr][nc] === player) { count++; b = {r:nr,c:nc}; }
+      else break;
+    }
+    for (let s = 1; s < 5; s++) {
+      const nr = r-dr*s, nc = c-dc*s;
+      if (inBounds(nr,nc) && state.board[nr][nc] === player) { count++; a = {r:nr,c:nc}; }
+      else break;
+    }
+    if (count >= 5) return [a, b];
+  }
+  return null;
+}
+function inBounds(r, c) { return r>=0 && r<SIZE && c>=0 && c<SIZE; }
+
+// ---------- AI ----------
+// Difficulty config per mode. Randomness lets AI-vs-AI produce varied games.
+function aiTurnInfo() {
+  if (state.gameOver || state.paused) return null;
+  switch (state.mode) {
+    case 'aivsai':
+      // Both sides strong but with randomness so results differ each game
+      return { depth: 4, topK: 6, randomness: 0.9 };
+    case 'easy':
+      return state.turn === WHITE ? { depth: 2, topK: 8, randomness: 3.0 } : null;
+    case 'hard':
+      return state.turn === WHITE ? { depth: 4, topK: 6, randomness: 0 } : null;
+    case 'pvp':
+    default:
+      return null;
+  }
+}
+
+function isAITurn() { return aiTurnInfo() !== null; }
+
+function scheduleAI() {
+  clearTimeout(aiTimer);
+  const info = aiTurnInfo();
+  if (!info) return;
+  const delay = state.mode === 'aivsai' ? 550 : 250;
+  aiTimer = setTimeout(() => aiMove(info), delay);
+}
+
+function aiMove(info) {
+  if (state.gameOver || state.paused) return;
+  const player = state.turn;
+  const move = bestMove(info, player);
+  if (move) place(move.r, move.c);
+  render();
+  if (state.gameOver) {
+    handleGameOver();
+  } else {
+    scheduleAI();
+  }
+}
+
+// Candidate moves near existing stones (radius 2)
+function candidates() {
+  if (state.history.length === 0) return [{r:7,c:7}];
+  const seen = new Set();
+  const res = [];
+  for (let r = 0; r < SIZE; r++)
+    for (let c = 0; c < SIZE; c++)
+      if (state.board[r][c] !== EMPTY)
+        for (let dr = -2; dr <= 2; dr++)
+          for (let dc = -2; dc <= 2; dc++) {
+            const nr = r+dr, nc = c+dc;
+            if (inBounds(nr,nc) && state.board[nr][nc] === EMPTY) {
+              const key = nr*SIZE+nc;
+              if (!seen.has(key)) { seen.add(key); res.push({r:nr,c:nc}); }
+            }
+          }
+  return res;
+}
+
+/* ---------- Smarter pattern-based evaluation ----------
+   We scan every line (rows, cols, both diagonals) once and classify
+   consecutive/spaced patterns, distinguishing OPEN (both ends free) from
+   CLOSED (one end blocked). This lets the AI value open threes/fours and
+   defend real threats correctly. */
+const PAT = {
+  FIVE:        10000000,
+  OPEN_FOUR:     900000,   // _XXXX_  -> unstoppable
+  CLOSED_FOUR:   90000,    // OXXXX_ or four with a gap: forces a response
+  OPEN_THREE:    50000,    // _XXX_  -> creates open four threat
+  CLOSED_THREE:   6000,
+  OPEN_TWO:        800,
+  CLOSED_TWO:      120
+};
+
+// Build the list of all lines as arrays of cell values.
+function getAllLines() {
+  const lines = [];
+  for (let r = 0; r < SIZE; r++) {
+    const row = [];
+    for (let c = 0; c < SIZE; c++) row.push(state.board[r][c]);
+    lines.push(row);
+  }
+  for (let c = 0; c < SIZE; c++) {
+    const col = [];
+    for (let r = 0; r < SIZE; r++) col.push(state.board[r][c]);
+    lines.push(col);
+  }
+  for (let k = 0; k < 2*SIZE-1; k++) {
+    const d1 = [], d2 = [];
+    for (let r = 0; r < SIZE; r++) {
+      const c = k - r;
+      if (c >= 0 && c < SIZE) d1.push(state.board[r][c]);
+      const c2 = r - (k - (SIZE-1));
+      if (c2 >= 0 && c2 < SIZE) d2.push(state.board[r][c2]);
+    }
+    if (d1.length >= 5) lines.push(d1);
+    if (d2.length >= 5) lines.push(d2);
+  }
+  return lines;
+}
+
+// Score all of `player`'s patterns on a single line.
+function scoreLineFor(line, player) {
+  const opp = player === BLACK ? WHITE : BLACK;
+  const n = line.length;
+  let score = 0;
+  let i = 0;
+  while (i < n) {
+    if (line[i] !== player) { i++; continue; }
+    // run of consecutive player stones
+    let j = i;
+    while (j < n && line[j] === player) j++;
+    const runLen = j - i;
+    const leftOpen = (i - 1 >= 0 && line[i-1] === EMPTY);
+    const rightOpen = (j < n && line[j] === EMPTY);
+    const openEnds = (leftOpen ? 1 : 0) + (rightOpen ? 1 : 0);
+
+    if (runLen >= 5) {
+      score += PAT.FIVE;
+    } else if (runLen === 4) {
+      score += openEnds === 2 ? PAT.OPEN_FOUR : (openEnds === 1 ? PAT.CLOSED_FOUR : 0);
+    } else if (runLen === 3) {
+      score += openEnds === 2 ? PAT.OPEN_THREE : (openEnds === 1 ? PAT.CLOSED_THREE : 0);
+    } else if (runLen === 2) {
+      score += openEnds === 2 ? PAT.OPEN_TWO : (openEnds === 1 ? PAT.CLOSED_TWO : 0);
+    } else if (runLen === 1) {
+      if (openEnds === 2) score += 20;
+    }
+    i = j;
+  }
+
+  // Detect split patterns with a single gap: X X _ X X  and  X X X _ X etc.
+  // These form "broken fours/threes" which are strong threats.
+  for (let s = 0; s <= n - 5; s++) {
+    let p = 0, o = 0, gaps = 0;
+    for (let t = 0; t < 5; t++) {
+      const v = line[s+t];
+      if (v === player) p++;
+      else if (v === opp) o++;
+      else gaps++;
+    }
+    if (o === 0) {
+      // window of 5 with only player stones + gaps
+      if (p === 4 && gaps === 1) score += PAT.CLOSED_FOUR;      // broken four
+      else if (p === 3 && gaps === 2) score += PAT.CLOSED_THREE * 0.6; // broken three
+    }
+  }
+  return score;
+}
+
+function evaluateLineFor(player) {
+  let total = 0;
+  for (const line of getAllLines()) total += scoreLineFor(line, player);
+  return total;
+}
+
+// Positive = good for `me`
+function evaluateBoard(me) {
+  const opp = me === BLACK ? WHITE : BLACK;
+  // Weight defense slightly higher so the AI blocks real threats.
+  return evaluateLineFor(me) - evaluateLineFor(opp) * 1.15;
+}
+
+// Local incremental score around a move (fast heuristic for ordering).
+function localScore(r, c, player) {
+  const opp = player === BLACK ? WHITE : BLACK;
+  let s = 0;
+  for (const [dr, dc] of DIRS) {
+    let own = 0, block = 0, space = 0;
+    for (const sign of [1, -1]) {
+      for (let k = 1; k <= 4; k++) {
+        const nr = r + dr*k*sign, nc = c + dc*k*sign;
+        if (!inBounds(nr, nc)) { block++; break; }
+        const v = state.board[nr][nc];
+        if (v === player) own++;
+        else if (v === opp) { block++; break; }
+        else { space++; break; }
+      }
+    }
+    s += own * own * 12 + space * 2 - block;
+  }
+  return s;
+}
+
+function bestMove(info, me) {
+  const { depth, topK, randomness } = info;
+  const opp = me === BLACK ? WHITE : BLACK;
+  let cands = candidates();
+  if (cands.length === 0) return {r:7,c:7};
+
+  // 1. Immediate win
+  for (const m of cands) {
+    state.board[m.r][m.c] = me;
+    const win = checkWin(m.r, m.c, me);
+    state.board[m.r][m.c] = EMPTY;
+    if (win) return m;
+  }
+  // 2. Block opponent's immediate win
+  const blocks = [];
+  for (const m of cands) {
+    state.board[m.r][m.c] = opp;
+    const win = checkWin(m.r, m.c, opp);
+    state.board[m.r][m.c] = EMPTY;
+    if (win) blocks.push(m);
+  }
+  if (blocks.length) {
+    // If multiple winning threats, just pick one (can't stop all, but try)
+    return blocks[Math.floor(Math.random() * blocks.length)];
+  }
+
+  // 3. Order candidates by local heuristic, keep top ones for search
+  const ordered = cands.map(m => ({ m, h: localScore(m.r, m.c, me) + localScore(m.r, m.c, opp) * 0.9 }))
+                       .sort((a, b) => b.h - a.h)
+                       .slice(0, Math.max(topK, 8));
+
+  // 4. Minimax with alpha-beta for each candidate
+  const evaluated = [];
+  for (const { m } of ordered) {
+    state.board[m.r][m.c] = me;
+    const val = minimax(depth - 1, -Infinity, Infinity, false, me);
+    state.board[m.r][m.c] = EMPTY;
+    evaluated.push({ m, val });
+  }
+  evaluated.sort((a, b) => b.val - a.val);
+
+  // 5. Randomized selection among near-best moves (for variety)
+  if (randomness > 0 && evaluated.length > 1) {
+    const bestVal = evaluated[0].val;
+    // consider moves within a tolerance band relative to the spread
+    const tol = Math.max(Math.abs(bestVal) * 0.06, PAT.OPEN_TWO * randomness);
+    const pool = evaluated.filter(e => bestVal - e.val <= tol).slice(0, topK);
+    // weighted random: better moves more likely
+    const weights = pool.map((e, idx) => (pool.length - idx));
+    const sum = weights.reduce((a, b) => a + b, 0);
+    let rnd = Math.random() * sum;
+    for (let i = 0; i < pool.length; i++) {
+      rnd -= weights[i];
+      if (rnd <= 0) return pool[i].m;
+    }
+    return pool[0].m;
+  }
+
+  return evaluated[0].m;
+}
+
+function minimax(depth, alpha, beta, maximizing, me) {
+  const opp = me === BLACK ? WHITE : BLACK;
+  const score = evaluateBoard(me);
+  // Terminal / depth cutoff
+  if (depth === 0 || Math.abs(score) >= PAT.FIVE * 0.9) return score;
+
+  const mover = maximizing ? me : opp;
+  // order moves for better pruning
+  let cands = candidates()
+    .map(m => ({ m, h: localScore(m.r, m.c, mover) }))
+    .sort((a, b) => b.h - a.h)
+    .slice(0, 10)
+    .map(x => x.m);
+
+  if (maximizing) {
+    let best = -Infinity;
+    for (const m of cands) {
+      state.board[m.r][m.c] = me;
+      const win = checkWin(m.r, m.c, me);
+      const val = win ? PAT.FIVE : minimax(depth - 1, alpha, beta, false, me);
+      state.board[m.r][m.c] = EMPTY;
+      best = Math.max(best, val);
+      alpha = Math.max(alpha, best);
+      if (beta <= alpha) break;
+    }
+    return best;
+  } else {
+    let best = Infinity;
+    for (const m of cands) {
+      state.board[m.r][m.c] = opp;
+      const win = checkWin(m.r, m.c, opp);
+      const val = win ? -PAT.FIVE : minimax(depth - 1, alpha, beta, true, me);
+      state.board[m.r][m.c] = EMPTY;
+      best = Math.min(best, val);
+      beta = Math.min(beta, best);
+      if (beta <= alpha) break;
+    }
+    return best;
+  }
+}
+
+// ---------- Auto restart (AI vs AI) ----------
+function handleGameOver() {
+  render();
+  if (state.mode === 'aivsai' && !state.paused) {
+    startCountdown();
+  }
+}
+
+function clearTimers() {
+  clearTimeout(restartTimer);
+  clearInterval(countdownTimer);
+  clearTimeout(aiTimer);
+  restartTimer = countdownTimer = aiTimer = null;
+}
+
+function startCountdown() {
+  clearTimeout(restartTimer);
+  clearInterval(countdownTimer);
+  let remaining = Math.ceil(AUTO_RESTART_MS / 1000);
+  const cdEl = document.getElementById('countdown');
+  const T = t();
+  cdEl.textContent = `${T.restartIn} ${remaining}...`;
+  countdownTimer = setInterval(() => {
+    remaining--;
+    if (remaining > 0) cdEl.textContent = `${T.restartIn} ${remaining}...`;
+  }, 1000);
+  restartTimer = setTimeout(() => {
+    clearInterval(countdownTimer);
+    if (state.paused) return;
+    newBoard();
+    save();
+    render();
+    scheduleAI();
+  }, AUTO_RESTART_MS);
+}
+
+// ---------- UI ----------
+function t() { return I18N[state.lang]; }
+
+function render() {
+  draw();
+  const T = t();
+  document.getElementById('title').textContent = T.title;
+  document.getElementById('newGame').textContent = T.newGame;
+  document.getElementById('undo').textContent = T.undo;
+  document.getElementById('modeLabel').textContent = T.mode;
+  document.getElementById('langLabel').textContent = T.lang;
+  document.getElementById('playAgain').textContent = T.playAgain;
+  document.getElementById('footer').textContent = T.footer;
+
+  const isAIMode = state.mode === 'easy' || state.mode === 'hard';
+  const isAiVsAi = state.mode === 'aivsai';
+
+  const stopBtn = document.getElementById('stopStart');
+  stopBtn.style.display = isAiVsAi ? '' : 'none';
+  stopBtn.textContent = state.paused ? T.start : T.stop;
+  stopBtn.className = state.paused ? 'primary' : 'stopbtn';
+
+  let blackLabel, whiteLabel;
+  if (isAiVsAi) { blackLabel = T.aiBlack; whiteLabel = T.aiWhite; }
+  else if (isAIMode) { blackLabel = T.you; whiteLabel = T.ai; }
+  else { blackLabel = T.black; whiteLabel = T.white; }
+
+  document.getElementById('scoreBlack').innerHTML =
+    `<span class="stone-icon black"></span> ${blackLabel}: ${state.scores.black}`;
+  document.getElementById('scoreWhite').innerHTML =
+    `<span class="stone-icon white"></span> ${whiteLabel}: ${state.scores.white}`;
+
+  document.getElementById('undo').style.display = isAiVsAi ? 'none' : '';
+
+  const modeSel = document.getElementById('mode');
+  modeSel.innerHTML = '';
+  for (const key of ['aivsai','pvp','easy','hard']) {
+    const opt = document.createElement('option');
+    opt.value = key; opt.textContent = T.modes[key];
+    if (key === state.mode) opt.selected = true;
+    modeSel.appendChild(opt);
+  }
+  document.getElementById('lang').value = state.lang;
+
+  const statusEl = document.getElementById('status');
+  const overlay = document.getElementById('winOverlay');
+  if (state.gameOver) {
+    if (state.winner === 0) {
+      statusEl.innerHTML = T.draw;
+      document.getElementById('winText').textContent = T.draw;
+    } else {
+      let who;
+      if (isAiVsAi) who = state.winner === BLACK ? T.aiBlack : T.aiWhite;
+      else who = state.winner === BLACK ? T.black : T.white;
+      const cls = state.winner === BLACK ? 'black' : 'white';
+      statusEl.innerHTML = `<span class="stone-icon ${cls}"></span> ${who} ${T.win}`;
+      document.getElementById('winText').innerHTML =
+        `<span class="stone-icon ${cls}" style="width:28px;height:28px;"></span> ${who} ${T.win}`;
+    }
+    overlay.classList.add('show');
+    const showCountdown = isAiVsAi && !state.paused;
+    document.getElementById('countdown').style.display = showCountdown ? '' : 'none';
+    document.getElementById('playAgain').style.display = showCountdown ? 'none' : '';
+  } else {
+    overlay.classList.remove('show');
+    let txt, cls = state.turn === BLACK ? 'black' : 'white';
+    if (state.paused && isAiVsAi) {
+      statusEl.innerHTML = `<span class="stone-icon ${cls}"></span> ${T.paused}`;
+      return;
+    }
+    if (isAiVsAi) {
+      txt = state.turn === BLACK ? T.aiBlackThinking : T.aiWhiteThinking;
+    } else if (isAIMode) {
+      txt = state.turn === BLACK ? T.yourTurn : T.aiThinking;
+    } else {
+      txt = state.turn === BLACK ? T.turnBlack : T.turnWhite;
+    }
+    statusEl.innerHTML = `<span class="stone-icon ${cls}"></span> ${txt}`;
+  }
+}
+
+function handleClick(e) {
+  if (state.gameOver) return;
+  if (isAITurn()) return;
+  if (state.mode === 'aivsai') return;
+  const rect = canvas.getBoundingClientRect();
+  const px = (e.clientX - rect.left);
+  const py = (e.clientY - rect.top);
+  const c = Math.round((px - pad) / cell);
+  const r = Math.round((py - pad) / cell);
+  if (!inBounds(r, c)) return;
+  const dx = px - (pad + c*cell), dy = py - (pad + r*cell);
+  if (Math.hypot(dx, dy) > cell*0.55) return;
+
+  if (place(r, c)) {
+    render();
+    if (state.gameOver) { handleGameOver(); return; }
+    scheduleAI();
+  }
+}
+
+function undo() {
+  if (state.mode === 'aivsai') return;
+  const steps = (state.mode !== 'pvp' && !state.gameOver) ? 2 : 1;
+  for (let i = 0; i < steps; i++) {
+    const last = state.history.pop();
+    if (!last) break;
+    state.board[last.r][last.c] = EMPTY;
+    state.turn = last.player;
+  }
+  state.gameOver = false;
+  state.winner = 0;
+  state.winLine = null;
+  save();
+  render();
+}
+
+function restartGame() {
+  clearTimers();
+  state.paused = false;
+  newBoard();
+  save();
+  render();
+  scheduleAI();
+}
+
+function toggleStop() {
+  state.paused = !state.paused;
+  if (state.paused) {
+    clearTimers();
+  } else {
+    if (state.gameOver) {
+      startCountdown();
+    } else {
+      scheduleAI();
+    }
+  }
+  save();
+  render();
+}
+
+// ---------- Events ----------
+canvas.addEventListener('click', handleClick);
+
+document.getElementById('newGame').addEventListener('click', restartGame);
+document.getElementById('playAgain').addEventListener('click', restartGame);
+document.getElementById('undo').addEventListener('click', undo);
+document.getElementById('stopStart').addEventListener('click', toggleStop);
+
+document.getElementById('mode').addEventListener('change', e => {
+  clearTimers();
+  state.mode = e.target.value;
+  state.paused = false;
+  newBoard();
+  save();
+  render();
+  scheduleAI();
+});
+document.getElementById('lang').addEventListener('change', e => {
+  state.lang = e.target.value;
+  document.documentElement.lang = e.target.value;
+  save();
+  render();
+});
+
+window.addEventListener('resize', resize);
+window.addEventListener('orientationchange', () => setTimeout(resize, 100));
+
+// ---------- Init ----------
+load();
+document.documentElement.lang = state.lang;
+resize();
+render();
+if (state.paused) {
+  // stay stopped
+} else if (state.gameOver) {
+  handleGameOver();
+} else {
+  scheduleAI();
+}
+</script>
+</body>
+</html>
