@@ -1,0 +1,1175 @@
+<!DOCTYPE html>
+<!-- MIT License
+Copyright (c) 2025-2026 Valentyn Kolesnikov <0009-0003-9608-3364@orcid.org>
+-->
+<html lang="uk">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="description" content="Точки — класична гра з непереможним ШІ. Dots - classic strategy game with unbeatable AI.">
+<meta name="theme-color" content="#1a1a2e">
+<title>Точки</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='10' fill='%23f4f1e8'/%3E%3Cg stroke='%23cfd8e0' stroke-width='1.5'%3E%3Cpath d='M12 12h40M12 26h40M12 40h40M12 54h40M12 12v42M26 12v42M40 12v42M54 12v42'/%3E%3C/g%3E%3Ccircle cx='26' cy='26' r='6' fill='%23e94560'/%3E%3Ccircle cx='40' cy='40' r='6' fill='%230f9d9d'/%3E%3Ccircle cx='40' cy='26' r='6' fill='%23e94560'/%3E%3Ccircle cx='26' cy='40' r='6' fill='%230f9d9d'/%3E%3C/svg%3E">
+<style>
+  * {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  :root {
+    --bg-dark: #1a1a2e;
+    --bg-panel: #16213e;
+    --board-bg: #f4f1e8;
+    --board-line: #cfd8e0;
+    --red: #e94560;
+    --blue: #0f9d9d;
+    --text: #eef;
+  }
+
+  html, body { height: 100%; }
+
+  body {
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    background: linear-gradient(135deg, var(--bg-dark), #0f1626);
+    color: var(--text);
+    height: 100vh;
+    height: 100dvh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 8px;
+    overflow: hidden;
+  }
+
+  h1 {
+    font-size: clamp(1.1rem, 3.5vw, 2rem);
+    margin: 2px 0;
+    background: linear-gradient(90deg, var(--red), var(--blue));
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    text-align: center;
+    flex: 0 0 auto;
+  }
+
+  .container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    max-width: 700px;
+    flex: 1 1 auto;
+    min-height: 0;
+    justify-content: center;
+    overflow: hidden;
+  }
+
+  .controls {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    justify-content: center;
+    width: 100%;
+  }
+
+  .status {
+    font-size: clamp(0.8rem, 3.2vw, 1.05rem);
+    padding: 7px 14px;
+    background: var(--bg-panel);
+    border-radius: 10px;
+    min-width: 180px;
+    text-align: center;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+  }
+
+  .dot-icon {
+    width: 15px;
+    height: 15px;
+    border-radius: 50%;
+    display: inline-block;
+    flex: 0 0 auto;
+  }
+  .dot-icon.red {
+    background: radial-gradient(circle at 30% 30%, #ff7088, var(--red));
+  }
+  .dot-icon.blue {
+    background: radial-gradient(circle at 30% 30%, #3fd0d0, var(--blue));
+  }
+
+  button, select {
+    font-family: inherit;
+    font-size: 0.88rem;
+    padding: 7px 12px;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    background: var(--bg-panel);
+    color: var(--text);
+    transition: transform 0.1s, background 0.2s;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+  }
+  button:hover, select:hover { background: #1f2d54; }
+  button:active { transform: scale(0.95); }
+
+  button.primary {
+    background: linear-gradient(135deg, var(--red), #c1304a);
+  }
+  button.primary:hover { background: linear-gradient(135deg, #ff5570, var(--red)); }
+
+  button.stopbtn {
+    background: linear-gradient(135deg, #0f9d9d, #0b7373);
+  }
+  button.stopbtn:hover { background: linear-gradient(135deg, #14c2c2, #0f9d9d); }
+
+  .board-wrap {
+    position: relative;
+    width: min(96vw, var(--board-max, 70vh));
+    height: min(96vw, var(--board-max, 70vh));
+    max-width: 96vw;
+    aspect-ratio: 1;
+    flex: 0 1 auto;
+    min-height: 0;
+  }
+
+  canvas {
+    width: 100%;
+    height: 100%;
+    display: block;
+    background: var(--board-bg);
+    border-radius: 8px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+    cursor: pointer;
+    touch-action: none;
+  }
+
+  .setting-group {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.82rem;
+  }
+
+  .win-overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(0,0,0,0.7);
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 14px;
+    border-radius: 8px;
+    animation: fadeIn 0.3s;
+  }
+  .win-overlay.show { display: flex; }
+  @keyframes fadeIn { from {opacity:0;} to {opacity:1;} }
+
+  .win-overlay h2 {
+    font-size: clamp(1.3rem, 6vw, 2.3rem);
+    text-align: center;
+  }
+  .win-overlay .final-score {
+    font-size: clamp(0.85rem, 3.5vw, 1.15rem);
+    opacity: 0.9;
+    display: flex;
+    gap: 18px;
+    align-items: center;
+  }
+  .win-overlay .final-score span {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .countdown {
+    font-size: 0.95rem;
+    opacity: 0.85;
+  }
+
+  .scoreboard {
+    display: flex;
+    gap: 14px;
+    font-size: 0.85rem;
+  }
+  .scoreboard div {
+    background: var(--bg-panel);
+    padding: 5px 11px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .side-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 9px;
+    width: 100%;
+    align-items: center;
+    flex: 0 0 auto;
+  }
+
+  footer {
+    font-size: 0.72rem;
+    opacity: 0.6;
+    flex: 0 0 auto;
+    padding-top: 4px;
+    text-align: center;
+  }
+
+  @media (max-width: 759px) {
+    .board-wrap {
+      --board-max: min(96vw, calc(100dvh - 270px));
+      width: var(--board-max);
+      height: var(--board-max);
+    }
+  }
+
+  @media (min-width: 760px) and (min-height: 480px) {
+    body { padding: 16px; }
+    h1 { margin: 2px 0 6px; }
+    .container {
+      flex-direction: row;
+      align-items: center;
+      justify-content: center;
+      gap: 28px;
+      max-width: 1100px;
+    }
+    .board-wrap {
+      --board-max: min(88vh, 58vw, 640px);
+      width: var(--board-max);
+      height: var(--board-max);
+    }
+    .side-panel {
+      width: auto;
+      min-width: 240px;
+      max-width: 300px;
+      align-items: stretch;
+    }
+    .status { min-width: 0; }
+    .scoreboard { justify-content: center; }
+    .controls { justify-content: stretch; }
+    .controls button { flex: 1 1 auto; }
+  }
+
+  @media (orientation: landscape) and (max-height: 480px) {
+    body { flex-direction: row; align-items: center; padding: 6px; }
+    h1 { display: none; }
+    footer { display: none; }
+    .container {
+      flex-direction: row;
+      align-items: center;
+      gap: 12px;
+      overflow: visible;
+    }
+    .board-wrap {
+      --board-max: min(96dvh, 55vw);
+      width: var(--board-max);
+      height: var(--board-max);
+    }
+    .side-panel {
+      max-width: 210px;
+      gap: 6px;
+    }
+    .status { font-size: 0.78rem; padding: 5px 9px; min-width: 0; }
+    button, select { font-size: 0.78rem; padding: 5px 9px; }
+    .scoreboard { font-size: 0.75rem; }
+  }
+</style>
+</head>
+<body>
+  <h1 id="title">Точки</h1>
+  <div class="container">
+    <div class="board-wrap">
+      <canvas id="board"></canvas>
+      <div class="win-overlay" id="winOverlay">
+        <h2 id="winText"></h2>
+        <div class="final-score" id="finalScore"></div>
+        <div class="countdown" id="countdown"></div>
+        <button class="primary" id="playAgain">Грати знову</button>
+      </div>
+    </div>
+    <div class="side-panel">
+      <div class="status" id="status"></div>
+      <div class="scoreboard">
+        <div id="scoreRed"></div>
+        <div id="scoreBlue"></div>
+      </div>
+      <div class="controls">
+        <button class="primary" id="newGame"></button>
+        <button class="stopbtn" id="finishBtn"></button>
+        <button id="undo"></button>
+      </div>
+      <div class="controls">
+        <div class="setting-group">
+          <label id="modeLabel"></label>
+          <select id="mode"></select>
+        </div>
+        <div class="setting-group">
+          <label id="sizeLabel"></label>
+          <select id="sizeSel"></select>
+        </div>
+      </div>
+      <div class="controls">
+        <div class="setting-group">
+          <label id="langLabel"></label>
+          <select id="lang">
+            <option value="uk">Українська</option>
+            <option value="en">English</option>
+          </select>
+        </div>
+      </div>
+    </div>
+  </div>
+  <footer id="footer"></footer>
+
+<script>
+const EMPTY = 0, RED = 1, BLUE = 2;
+const AUTO_RESTART_MS = 5000;
+
+// ---------- Translations ----------
+const I18N = {
+  uk: {
+    title: "Точки",
+    yourTurn: "Ваш хід",
+    aiThinking: "ШІ думає...",
+    aiRedThinking: "ШІ (червоні) думає...",
+    aiBlueThinking: "ШІ (сині) думає...",
+    turnRed: "Хід червоних",
+    turnBlue: "Хід синіх",
+    win: "перемогли!",
+    red: "Червоні",
+    blue: "Сині",
+    you: "Ви",
+    ai: "ШІ",
+    aiRed: "ШІ Червоні",
+    aiBlue: "ШІ Сині",
+    playAgain: "Грати знову",
+    newGame: "Нова гра",
+    undo: "Скасувати хід",
+    finish: "Завершити",
+    stop: "Зупинити",
+    start: "Продовжити",
+    paused: "Гру призупинено",
+    mode: "Режим:",
+    size: "Поле:",
+    lang: "Мова:",
+    modes: {
+      aivsai: "ШІ проти ШІ",
+      pvp: "2 гравці",
+      easy: "ШІ (легкий)",
+      hard: "ШІ (непереможний)"
+    },
+    footer: "Оточуй точки суперника своїми, щоб захопити їх",
+    draw: "Нічия!",
+    restartIn: "Перезапуск через"
+  },
+  en: {
+    title: "Dots",
+    yourTurn: "Your turn",
+    aiThinking: "AI thinking...",
+    aiRedThinking: "AI (red) thinking...",
+    aiBlueThinking: "AI (blue) thinking...",
+    turnRed: "Red's turn",
+    turnBlue: "Blue's turn",
+    win: "wins!",
+    red: "Red",
+    blue: "Blue",
+    you: "You",
+    ai: "AI",
+    aiRed: "AI Red",
+    aiBlue: "AI Blue",
+    playAgain: "Play again",
+    newGame: "New game",
+    undo: "Undo",
+    finish: "Finish",
+    stop: "Stop",
+    start: "Resume",
+    paused: "Game paused",
+    mode: "Mode:",
+    size: "Board:",
+    lang: "Language:",
+    modes: {
+      aivsai: "AI vs AI",
+      pvp: "2 players",
+      easy: "AI (easy)",
+      hard: "AI (unbeatable)"
+    },
+    footer: "Surround enemy dots with your own to capture them",
+    draw: "Draw!",
+    restartIn: "Restart in"
+  }
+};
+
+// ---------- State ----------
+let state = {
+  size: 11,
+  board: [],        // dot color at each point
+  captured: [],     // 0 = alive, RED/BLUE = captured by that color (dead & out of play)
+  turn: RED,
+  history: [],
+  areas: [],        // list of captured area polygons {color, points, territory}
+  gameOver: false,
+  winner: 0,
+  finalRed: 0,
+  finalBlue: 0,
+  mode: 'hard',
+  lang: 'uk',
+  paused: false,
+  scores: { red: 0, blue: 0 }
+};
+
+let aiTimer = null;
+let restartTimer = null;
+let countdownTimer = null;
+
+const canvas = document.getElementById('board');
+const ctx = canvas.getContext('2d');
+let cell = 0, pad = 0, dpr = window.devicePixelRatio || 1;
+
+// ---------- Persistence ----------
+function save() {
+  localStorage.setItem('dotsGame', JSON.stringify(state));
+}
+function load() {
+  try {
+    const s = JSON.parse(localStorage.getItem('dotsGame'));
+    if (s && s.board && s.size && s.board.length === s.size) {
+      state = Object.assign(state, s);
+    }
+  } catch(e) {}
+  if (!state.board || state.board.length !== state.size) newBoard();
+  if (typeof state.paused !== 'boolean') state.paused = false;
+}
+
+function newBoard() {
+  const N = state.size;
+  state.board = Array.from({length: N}, () => new Array(N).fill(EMPTY));
+  state.captured = Array.from({length: N}, () => new Array(N).fill(EMPTY));
+  state.turn = RED;
+  state.history = [];
+  state.areas = [];
+  state.gameOver = false;
+  state.winner = 0;
+  state.finalRed = 0;
+  state.finalBlue = 0;
+  state.scores = { red: 0, blue: 0 };
+}
+
+// ---------- Helpers ----------
+function inBounds(r, c) { return r>=0 && r<state.size && c>=0 && c<state.size; }
+function opp(p) { return p === RED ? BLUE : RED; }
+
+// ---------- Rendering ----------
+function resize() {
+  const rect = canvas.getBoundingClientRect();
+  if (rect.width < 2) { requestAnimationFrame(resize); return; }
+  canvas.width = Math.round(rect.width * dpr);
+  canvas.height = Math.round(rect.height * dpr);
+  pad = rect.width * 0.055;
+  cell = (rect.width - pad * 2) / (state.size - 1);
+  draw();
+}
+
+function px(c) { return pad + c*cell; }
+function py(r) { return pad + r*cell; }
+
+function draw() {
+  const rect = canvas.getBoundingClientRect();
+  const w = rect.width;
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  ctx.clearRect(0, 0, w, w);
+
+  ctx.strokeStyle = 'rgba(160,175,190,0.75)';
+  ctx.lineWidth = 1;
+  for (let i = 0; i < state.size; i++) {
+    const p = pad + i * cell;
+    ctx.beginPath();
+    ctx.moveTo(pad, p); ctx.lineTo(w - pad, p);
+    ctx.moveTo(p, pad); ctx.lineTo(p, w - pad);
+    ctx.stroke();
+  }
+
+  for (const area of state.areas) {
+    const col = area.color === RED ? 'rgba(233,69,96,' : 'rgba(15,157,157,';
+    ctx.fillStyle = col + '0.18)';
+    for (const pt of area.territory) {
+      ctx.fillRect(px(pt.c)-cell/2, py(pt.r)-cell/2, cell, cell);
+    }
+    if (area.points.length > 1) {
+      ctx.strokeStyle = col + '0.9)';
+      ctx.lineWidth = Math.max(2, cell*0.09);
+      ctx.lineJoin = 'round';
+      ctx.beginPath();
+      ctx.moveTo(px(area.points[0].c), py(area.points[0].r));
+      for (let i = 1; i < area.points.length; i++)
+        ctx.lineTo(px(area.points[i].c), py(area.points[i].r));
+      ctx.closePath();
+      ctx.stroke();
+    }
+  }
+
+  for (let r = 0; r < state.size; r++)
+    for (let c = 0; c < state.size; c++)
+      if (state.board[r][c] !== EMPTY)
+        drawDot(r, c, state.board[r][c], state.captured[r][c] !== EMPTY);
+
+  if (state.history.length && !state.gameOver) {
+    const last = state.history[state.history.length-1];
+    ctx.strokeStyle = '#333';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.arc(px(last.c), py(last.r), cell*0.32, 0, Math.PI*2);
+    ctx.stroke();
+  }
+}
+
+function drawDot(r, c, color, dead) {
+  const x = px(c), y = py(r), rad = cell*0.22;
+  ctx.beginPath();
+  ctx.arc(x, y, rad, 0, Math.PI*2);
+  const g = ctx.createRadialGradient(x-rad*0.35, y-rad*0.35, rad*0.1, x, y, rad);
+  if (color === RED) {
+    g.addColorStop(0, '#ff7088'); g.addColorStop(1, '#e94560');
+  } else {
+    g.addColorStop(0, '#3fd0d0'); g.addColorStop(1, '#0f9d9d');
+  }
+  ctx.fillStyle = g;
+  if (!dead) {
+    ctx.shadowColor = 'rgba(0,0,0,0.35)';
+    ctx.shadowBlur = 3;
+    ctx.shadowOffsetY = 1;
+  }
+  ctx.globalAlpha = dead ? 0.45 : 1;
+  ctx.fill();
+  ctx.globalAlpha = 1;
+  ctx.shadowColor = 'transparent';
+}
+
+// ---------- Capture Logic ----------
+function computeCaptures(player) {
+  const N = state.size;
+  const en = opp(player);
+  const isWall = (r,c) => state.board[r][c] === player && state.captured[r][c] === EMPTY;
+
+  const visited = Array.from({length:N}, () => new Array(N).fill(false));
+  const regions = [];
+
+  for (let r = 0; r < N; r++) {
+    for (let c = 0; c < N; c++) {
+      if (visited[r][c] || isWall(r,c)) continue;
+      const stack = [[r,c]];
+      visited[r][c] = true;
+      const cells = [];
+      let touchesBorder = false;
+      let hasEnemyLive = false;
+      while (stack.length) {
+        const [cr, cc] = stack.pop();
+        cells.push({r:cr, c:cc});
+        if (cr===0||cc===0||cr===N-1||cc===N-1) touchesBorder = true;
+        if (state.board[cr][cc] === en && state.captured[cr][cc] === EMPTY) hasEnemyLive = true;
+        for (const [dr,dc] of [[0,1],[0,-1],[1,0],[-1,0]]) {
+          const nr = cr+dr, nc = cc+dc;
+          if (inBounds(nr,nc) && !visited[nr][nc] && !isWall(nr,nc)) {
+            visited[nr][nc] = true;
+            stack.push([nr,nc]);
+          }
+        }
+      }
+      if (!touchesBorder && hasEnemyLive) {
+        regions.push(cells);
+      }
+    }
+  }
+  return regions;
+}
+
+function buildBoundary(cells, player) {
+  const cellSet = new Set(cells.map(p => p.r*state.size+p.c));
+  const borderDots = new Set();
+  for (const p of cells) {
+    for (const [dr,dc] of [[0,1],[0,-1],[1,0],[-1,0],[1,1],[1,-1],[-1,1],[-1,-1]]) {
+      const nr = p.r+dr, nc = p.c+dc;
+      if (inBounds(nr,nc) && state.board[nr][nc] === player && state.captured[nr][nc] === EMPTY
+          && !cellSet.has(nr*state.size+nc)) {
+        borderDots.add(nr*state.size+nc);
+      }
+    }
+  }
+  const pts = [...borderDots].map(k => ({r: Math.floor(k/state.size), c: k%state.size}));
+  if (pts.length < 2) return pts;
+  let cx=0, cy=0;
+  for (const p of pts) { cx += p.c; cy += p.r; }
+  cx/=pts.length; cy/=pts.length;
+  pts.sort((a,b) => Math.atan2(a.r-cy, a.c-cx) - Math.atan2(b.r-cy, b.c-cx));
+  return pts;
+}
+
+function applyCaptures(player) {
+  const regions = computeCaptures(player);
+  let gained = 0;
+  for (const cells of regions) {
+    const boundary = buildBoundary(cells, player);
+    for (const p of cells) {
+      if (state.board[p.r][p.c] === opp(player) && state.captured[p.r][p.c] === EMPTY) {
+        gained++;
+      }
+      state.captured[p.r][p.c] = player;
+    }
+    state.areas.push({ color: player, points: boundary, territory: cells.slice() });
+  }
+  if (gained > 0) {
+    if (player === RED) state.scores.red += gained;
+    else state.scores.blue += gained;
+  }
+  return gained;
+}
+
+function canPlace(r, c) {
+  return inBounds(r,c) && state.board[r][c] === EMPTY && state.captured[r][c] === EMPTY;
+}
+
+// ---------- Move ----------
+function place(r, c) {
+  if (state.gameOver || !canPlace(r,c)) return false;
+  const player = state.turn;
+  const snap = {
+    r, c, player,
+    scoreRed: state.scores.red,
+    scoreBlue: state.scores.blue,
+    areasLen: state.areas.length,
+    capturedCells: []
+  };
+  state.board[r][c] = player;
+
+  const before = state.areas.length;
+  const gained = applyCaptures(player);
+  for (let i = before; i < state.areas.length; i++) {
+    for (const p of state.areas[i].territory) snap.capturedCells.push({r:p.r, c:p.c});
+  }
+  snap.gained = gained;
+
+  state.history.push(snap);
+  state.turn = opp(player);
+  save();
+  return true;
+}
+
+function undo() {
+  if (state.mode === 'aivsai') return;
+  if (state.mode !== 'pvp' && !state.gameOver) {
+    doUndo();
+  }
+  doUndo();
+  state.gameOver = false;
+  state.winner = 0;
+  save();
+  render();
+}
+
+function doUndo() {
+  const snap = state.history.pop();
+  if (!snap) return;
+  state.board[snap.r][snap.c] = EMPTY;
+  for (const p of snap.capturedCells) {
+    state.captured[p.r][p.c] = EMPTY;
+  }
+  state.areas.length = snap.areasLen;
+  state.scores.red = snap.scoreRed;
+  state.scores.blue = snap.scoreBlue;
+  state.turn = snap.player;
+}
+
+// ---------- Grounding / Winner calculation ----------
+// A dot group is "grounded" (safe) if it can reach the border through
+// same-color adjacency (8-directional) without leaving alive dots.
+// Improved final scoring:
+//   final score = captured enemy dots + potential territory bonus for
+//   ungrounded enemy dots that are effectively surrounded.
+function computeGrounded(player) {
+  const N = state.size;
+  const grounded = Array.from({length:N}, () => new Array(N).fill(false));
+  const stack = [];
+  const isLive = (r,c) => state.board[r][c] === player && state.captured[r][c] === EMPTY;
+  // seed from border dots of player
+  for (let r=0;r<N;r++) for (let c=0;c<N;c++) {
+    if ((r===0||c===0||r===N-1||c===N-1) && isLive(r,c)) {
+      grounded[r][c] = true; stack.push([r,c]);
+    }
+  }
+  while (stack.length) {
+    const [r,c] = stack.pop();
+    for (const [dr,dc] of [[0,1],[0,-1],[1,0],[-1,0],[1,1],[1,-1],[-1,1],[-1,-1]]) {
+      const nr=r+dr, nc=c+dc;
+      if (inBounds(nr,nc) && !grounded[nr][nc] && isLive(nr,nc)) {
+        grounded[nr][nc] = true; stack.push([nr,nc]);
+      }
+    }
+  }
+  return grounded;
+}
+
+// Count live dots per color that are NOT grounded (potentially capturable)
+function countLiveDots(color) {
+  let n = 0;
+  for (let r=0;r<state.size;r++) for (let c=0;c<state.size;c++)
+    if (state.board[r][c]===color && state.captured[r][c]===EMPTY) n++;
+  return n;
+}
+
+// Improved winner determination.
+// Base scores come from already-captured dots. When finishing early, we also
+// consider "at-risk" (ungrounded) dots as a tie-breaker advantage indicator.
+function computeFinalScores() {
+  let red = state.scores.red;
+  let blue = state.scores.blue;
+
+  const groundedRed = computeGrounded(RED);
+  const groundedBlue = computeGrounded(BLUE);
+
+  // ungrounded (at-risk) live dots
+  let redAtRisk = 0, blueAtRisk = 0;
+  for (let r=0;r<state.size;r++) for (let c=0;c<state.size;c++) {
+    if (state.captured[r][c]!==EMPTY) continue;
+    if (state.board[r][c]===RED && !groundedRed[r][c]) redAtRisk++;
+    if (state.board[r][c]===BLUE && !groundedBlue[r][c]) blueAtRisk++;
+  }
+
+  return { red, blue, redAtRisk, blueAtRisk };
+}
+
+// ---------- End game ----------
+function anyMovesLeft() {
+  for (let r = 0; r < state.size; r++)
+    for (let c = 0; c < state.size; c++)
+      if (canPlace(r,c)) return true;
+  return false;
+}
+
+function finishGame() {
+  const f = computeFinalScores();
+  state.finalRed = f.red;
+  state.finalBlue = f.blue;
+  state.gameOver = true;
+
+  if (f.red > f.blue) state.winner = RED;
+  else if (f.blue > f.red) state.winner = BLUE;
+  else {
+    // Tie in captured dots — use at-risk dots as tie-breaker
+    // The side with fewer at-risk dots (safer position) wins the tie.
+    if (f.redAtRisk < f.blueAtRisk) state.winner = RED;
+    else if (f.blueAtRisk < f.redAtRisk) state.winner = BLUE;
+    else state.winner = 0; // genuine draw
+  }
+  save();
+  render();
+  if (state.mode === 'aivsai' && !state.paused) startCountdown();
+}
+
+function checkAutoEnd() {
+  if (!anyMovesLeft() && !state.gameOver) {
+    finishGame();
+    return true;
+  }
+  return false;
+}
+
+// ---------- AI ----------
+function aiIsTurn() {
+  if (state.gameOver || state.paused) return false;
+  if (state.mode === 'easy' || state.mode === 'hard')
+    return state.turn === BLUE;
+  if (state.mode === 'aivsai')
+    return true;
+  return false;
+}
+
+function scheduleAI() {
+  clearTimeout(aiTimer);
+  if (!aiIsTurn()) return;
+  const delay = state.mode === 'aivsai' ? 450 : 300;
+  aiTimer = setTimeout(aiMove, delay);
+}
+
+function legalMoves() {
+  const res = [];
+  const N = state.size;
+  const near = Array.from({length:N}, () => new Array(N).fill(false));
+  let any = false;
+  for (let r=0;r<N;r++) for (let c=0;c<N;c++) {
+    if (state.board[r][c] !== EMPTY) {
+      any = true;
+      for (let dr=-2;dr<=2;dr++) for (let dc=-2;dc<=2;dc++) {
+        const nr=r+dr, nc=c+dc;
+        if (inBounds(nr,nc)) near[nr][nc] = true;
+      }
+    }
+  }
+  for (let r=0;r<N;r++) for (let c=0;c<N;c++) {
+    if (canPlace(r,c) && (!any || near[r][c])) res.push({r,c});
+  }
+  if (res.length === 0) {
+    for (let r=0;r<N;r++) for (let c=0;c<N;c++) if (canPlace(r,c)) res.push({r,c});
+  }
+  return res;
+}
+
+function legalMovesFast(me) {
+  const N = state.size;
+  const near = new Set();
+  for (let r=0;r<N;r++) for (let c=0;c<N;c++) {
+    if (state.board[r][c] !== EMPTY) {
+      for (let dr=-1;dr<=1;dr++) for (let dc=-1;dc<=1;dc++) {
+        const nr=r+dr, nc=c+dc;
+        if (inBounds(nr,nc) && canPlace(nr,nc)) near.add(nr*N+nc);
+      }
+    }
+  }
+  return [...near].map(k => ({r:Math.floor(k/N), c:k%N}));
+}
+
+function evaluateMove(r, c, me) {
+  const enemy = opp(me);
+  const areasLen = state.areas.length;
+  const capSnapshot = [];
+  const sRed = state.scores.red, sBlue = state.scores.blue;
+
+  state.board[r][c] = me;
+  const before = state.areas.length;
+  const myGain = applyCaptures(me);
+  for (let i=before;i<state.areas.length;i++)
+    for (const p of state.areas[i].territory) capSnapshot.push({r:p.r,c:p.c});
+
+  let score = myGain * 1000;
+
+  const N = state.size;
+  const centerDist = Math.abs(r-(N-1)/2) + Math.abs(c-(N-1)/2);
+  score += (N - centerDist) * 0.5;
+
+  let ownAdj = 0, enemyAdj = 0;
+  for (const [dr,dc] of [[0,1],[0,-1],[1,0],[-1,0],[1,1],[1,-1],[-1,1],[-1,-1]]) {
+    const nr=r+dr, nc=c+dc;
+    if (inBounds(nr,nc)) {
+      if (state.board[nr][nc] === me && state.captured[nr][nc]===EMPTY) ownAdj++;
+      else if (state.board[nr][nc] === enemy && state.captured[nr][nc]===EMPTY) enemyAdj++;
+    }
+  }
+  score += ownAdj * 3 + enemyAdj * 4;
+
+  // opponent's best immediate capture response
+  let enemyBestGain = 0;
+  const responders = legalMovesFast(me);
+  for (const m of responders) {
+    if (!canPlace(m.r, m.c)) continue;
+    const aL = state.areas.length;
+    const cs = [];
+    const er = state.scores.red, eb = state.scores.blue;
+    state.board[m.r][m.c] = enemy;
+    const bf = state.areas.length;
+    const eg = applyCaptures(enemy);
+    for (let i=bf;i<state.areas.length;i++)
+      for (const p of state.areas[i].territory) cs.push({r:p.r,c:p.c});
+    if (eg > enemyBestGain) enemyBestGain = eg;
+    state.board[m.r][m.c] = EMPTY;
+    for (const p of cs) state.captured[p.r][p.c] = EMPTY;
+    state.areas.length = aL;
+    state.scores.red = er; state.scores.blue = eb;
+  }
+  score -= enemyBestGain * 1200;
+
+  state.board[r][c] = EMPTY;
+  for (const p of capSnapshot) state.captured[p.r][p.c] = EMPTY;
+  state.areas.length = areasLen;
+  state.scores.red = sRed; state.scores.blue = sBlue;
+
+  return score;
+}
+
+function aiMove() {
+  if (!aiIsTurn()) return;
+  const me = state.turn;
+  const moves = legalMoves();
+  if (moves.length === 0) { checkAutoEnd(); render(); return; }
+
+  let best = null, bestScore = -Infinity;
+  const easy = state.mode === 'easy';
+  const aivsai = state.mode === 'aivsai';
+  const scored = [];
+  for (const m of moves) {
+    let sc = evaluateMove(m.r, m.c, me);
+    if (easy) sc += (Math.random()-0.5) * 800;
+    if (aivsai) sc += (Math.random()-0.5) * 200; // slight variety
+    scored.push({m, sc});
+    if (sc > bestScore) { bestScore = sc; best = m; }
+  }
+
+  if (easy) {
+    scored.sort((a,b)=>b.sc-a.sc);
+    const top = scored.slice(0, Math.min(5, scored.length));
+    best = top[Math.floor(Math.random()*top.length)].m;
+  } else if (aivsai) {
+    scored.sort((a,b)=>b.sc-a.sc);
+    const top = scored.slice(0, Math.min(3, scored.length));
+    best = top[Math.floor(Math.random()*top.length)].m;
+  }
+
+  if (best) place(best.r, best.c);
+  render();
+  if (!checkAutoEnd()) scheduleAI();
+}
+
+// ---------- Auto restart (AI vs AI) ----------
+function clearTimers() {
+  clearTimeout(aiTimer);
+  clearTimeout(restartTimer);
+  clearInterval(countdownTimer);
+  aiTimer = restartTimer = countdownTimer = null;
+}
+
+function startCountdown() {
+  clearTimeout(restartTimer);
+  clearInterval(countdownTimer);
+  let remaining = Math.ceil(AUTO_RESTART_MS / 1000);
+  const cdEl = document.getElementById('countdown');
+  const T = t();
+  cdEl.style.display = '';
+  cdEl.textContent = `${T.restartIn} ${remaining}...`;
+  countdownTimer = setInterval(() => {
+    remaining--;
+    if (remaining > 0) cdEl.textContent = `${T.restartIn} ${remaining}...`;
+  }, 1000);
+  restartTimer = setTimeout(() => {
+    clearInterval(countdownTimer);
+    if (state.paused) return;
+    newBoard();
+    save();
+    render();
+    scheduleAI();
+  }, AUTO_RESTART_MS);
+}
+
+function toggleStop() {
+  state.paused = !state.paused;
+  if (state.paused) {
+    clearTimers();
+  } else {
+    if (state.gameOver) startCountdown();
+    else scheduleAI();
+  }
+  save();
+  render();
+}
+
+// ---------- UI ----------
+function t() { return I18N[state.lang]; }
+
+function render() {
+  draw();
+  const T = t();
+  document.getElementById('title').textContent = T.title;
+  document.getElementById('newGame').textContent = T.newGame;
+  document.getElementById('undo').textContent = T.undo;
+  document.getElementById('finishBtn').textContent = T.finish;
+  document.getElementById('modeLabel').textContent = T.mode;
+  document.getElementById('sizeLabel').textContent = T.size;
+  document.getElementById('langLabel').textContent = T.lang;
+  document.getElementById('playAgain').textContent = T.playAgain;
+  document.getElementById('footer').textContent = T.footer;
+
+  const isAIMode = state.mode === 'easy' || state.mode === 'hard';
+  const isAiVsAi = state.mode === 'aivsai';
+
+  let redLabel, blueLabel;
+  if (isAiVsAi) { redLabel = T.aiRed; blueLabel = T.aiBlue; }
+  else if (isAIMode) { redLabel = T.you; blueLabel = T.ai; }
+  else { redLabel = T.red; blueLabel = T.blue; }
+
+  document.getElementById('scoreRed').innerHTML =
+    `<span class="dot-icon red"></span> ${redLabel}: ${state.scores.red}`;
+  document.getElementById('scoreBlue').innerHTML =
+    `<span class="dot-icon blue"></span> ${blueLabel}: ${state.scores.blue}`;
+
+  // Stop/Resume button only in AI vs AI
+  const finishBtn = document.getElementById('finishBtn');
+  if (isAiVsAi) {
+    finishBtn.textContent = state.paused ? T.start : T.stop;
+    finishBtn.className = state.paused ? 'primary' : 'stopbtn';
+  } else {
+    finishBtn.textContent = T.finish;
+    finishBtn.className = 'stopbtn';
+  }
+
+  document.getElementById('undo').style.display = isAiVsAi ? 'none' : '';
+
+  const modeSel = document.getElementById('mode');
+  modeSel.innerHTML = '';
+  for (const key of ['aivsai','pvp','easy','hard']) {
+    const opt = document.createElement('option');
+    opt.value = key; opt.textContent = T.modes[key];
+    if (key === state.mode) opt.selected = true;
+    modeSel.appendChild(opt);
+  }
+
+  const sizeSel = document.getElementById('sizeSel');
+  sizeSel.innerHTML = '';
+  for (const s of [9, 11, 13, 15, 17, 19]) {
+    const opt = document.createElement('option');
+    opt.value = s; opt.textContent = `${s}×${s}`;
+    if (s === state.size) opt.selected = true;
+    sizeSel.appendChild(opt);
+  }
+
+  document.getElementById('lang').value = state.lang;
+
+  const statusEl = document.getElementById('status');
+  const overlay = document.getElementById('winOverlay');
+  const cdEl = document.getElementById('countdown');
+  const finalScoreEl = document.getElementById('finalScore');
+
+  if (state.gameOver) {
+    const rScore = state.finalRed, bScore = state.finalBlue;
+    if (state.winner === 0) {
+      statusEl.innerHTML = T.draw;
+      document.getElementById('winText').textContent = T.draw;
+    } else {
+      const who = state.winner === RED ? redLabel : blueLabel;
+      const cls = state.winner === RED ? 'red' : 'blue';
+      statusEl.innerHTML = `<span class="dot-icon ${cls}"></span> ${who} ${T.win}`;
+      document.getElementById('winText').innerHTML =
+        `<span class="dot-icon ${cls}" style="width:26px;height:26px;"></span> ${who} ${T.win}`;
+    }
+    finalScoreEl.innerHTML =
+      `<span><span class="dot-icon red"></span> ${rScore}</span>` +
+      `<span><span class="dot-icon blue"></span> ${bScore}</span>`;
+    overlay.classList.add('show');
+
+    const showCountdown = isAiVsAi && !state.paused;
+    cdEl.style.display = showCountdown ? '' : 'none';
+    document.getElementById('playAgain').style.display = showCountdown ? 'none' : '';
+  } else {
+    overlay.classList.remove('show');
+    cdEl.style.display = 'none';
+    const cls = state.turn === RED ? 'red' : 'blue';
+    let txt;
+    if (state.paused && isAiVsAi) {
+      statusEl.innerHTML = `<span class="dot-icon ${cls}"></span> ${T.paused}`;
+      return;
+    }
+    if (isAiVsAi) {
+      txt = state.turn === RED ? T.aiRedThinking : T.aiBlueThinking;
+    } else if (isAIMode) {
+      txt = state.turn === RED ? T.yourTurn : T.aiThinking;
+    } else {
+      txt = state.turn === RED ? T.turnRed : T.turnBlue;
+    }
+    statusEl.innerHTML = `<span class="dot-icon ${cls}"></span> ${txt}`;
+  }
+}
+
+function handleClick(e) {
+  if (state.gameOver) return;
+  if (aiIsTurn()) return;
+  if (state.mode === 'aivsai') return;
+  const rect = canvas.getBoundingClientRect();
+  const clickX = (e.clientX - rect.left);
+  const clickY = (e.clientY - rect.top);
+  const c = Math.round((clickX - pad) / cell);
+  const r = Math.round((clickY - pad) / cell);
+  if (!inBounds(r, c)) return;
+  const dx = clickX - px(c), dy = clickY - py(r);
+  if (Math.hypot(dx, dy) > cell*0.45) return;
+  if (!canPlace(r, c)) return;
+
+  if (place(r, c)) {
+    render();
+    if (checkAutoEnd()) return;
+    scheduleAI();
+  }
+}
+
+function restartGame() {
+  clearTimers();
+  state.paused = false;
+  newBoard();
+  save();
+  resize();
+  render();
+  scheduleAI();
+}
+
+// ---------- Events ----------
+canvas.addEventListener('click', handleClick);
+
+document.getElementById('newGame').addEventListener('click', restartGame);
+document.getElementById('playAgain').addEventListener('click', restartGame);
+document.getElementById('undo').addEventListener('click', undo);
+document.getElementById('finishBtn').addEventListener('click', () => {
+  if (state.mode === 'aivsai') {
+    toggleStop();
+  } else {
+    clearTimers();
+    finishGame();
+  }
+});
+
+document.getElementById('mode').addEventListener('change', e => {
+  clearTimers();
+  state.mode = e.target.value;
+  state.paused = false;
+  newBoard();
+  save();
+  render();
+  scheduleAI();
+});
+
+document.getElementById('sizeSel').addEventListener('change', e => {
+  clearTimers();
+  state.size = parseInt(e.target.value, 10);
+  state.paused = false;
+  newBoard();
+  save();
+  resize();
+  render();
+  scheduleAI();
+});
+
+document.getElementById('lang').addEventListener('change', e => {
+  state.lang = e.target.value;
+  document.documentElement.lang = e.target.value;
+  save();
+  render();
+});
+
+let resizeRAF = null;
+function scheduleResize() {
+  cancelAnimationFrame(resizeRAF);
+  resizeRAF = requestAnimationFrame(resize);
+}
+window.addEventListener('resize', scheduleResize);
+window.addEventListener('orientationchange', () => setTimeout(scheduleResize, 150));
+if (window.visualViewport) {
+  window.visualViewport.addEventListener('resize', scheduleResize);
+}
+
+// ---------- Init ----------
+load();
+document.documentElement.lang = state.lang;
+resize();
+render();
+if (state.paused) {
+  // stay stopped
+} else if (state.gameOver) {
+  if (state.mode === 'aivsai') startCountdown();
+} else {
+  scheduleAI();
+}
+</script>
+</body>
+</html>
