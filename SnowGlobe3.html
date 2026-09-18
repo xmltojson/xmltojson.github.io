@@ -1,0 +1,2698 @@
+<!DOCTYPE html>
+<!-- MIT License
+Copyright (c) 2025 Yuliya Kolesnikova <0009-0000-6151-7415@orcid.org>
+-->
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#101c25">
+    <meta name="description" content="An interactive winter miniature with realistic glass, drifting snow, and four atmospheric modes.">
+    <title>The Snow Globe — A Little Winter</title>
+
+    <style>
+        :root {
+            color-scheme: dark;
+            --background: #101c25;
+            --text: #edf3f5;
+            --muted: #a4b7c2;
+            --accent: #dfc28d;
+            --border: rgba(218, 235, 245, .12);
+            --halo: rgba(100, 159, 190, .15);
+
+            /* Native 100% zoom layout: compact and viewport-aware. */
+            --page-width: 960px;
+            --panel-width: 280px;
+            --globe-size: clamp(300px, calc(100vh - 340px), 430px);
+        }
+
+        @supports (height: 100svh) {
+            :root {
+                --globe-size: clamp(300px, calc(100svh - 340px), 430px);
+            }
+        }
+
+        * { box-sizing: border-box; }
+
+        body {
+            margin: 0;
+            min-width: 280px;
+            min-height: 100vh;
+            font-family: Inter, "Segoe UI", system-ui, sans-serif;
+            line-height: 1.45;
+            color: var(--text);
+            background: var(--background);
+            transition: background-color .7s;
+        }
+
+        body[data-mode="night"] {
+            --background: #0b1420;
+            --halo: rgba(99, 127, 187, .16);
+        }
+
+        body[data-mode="aurora"] {
+            --background: #0b1c21;
+            --halo: rgba(64, 179, 151, .15);
+        }
+
+        body[data-mode="blizzard"] {
+            --background: #17222c;
+            --halo: rgba(161, 193, 210, .15);
+        }
+
+        button, input { font: inherit; }
+        button { -webkit-tap-highlight-color: transparent; }
+        button:disabled { cursor: not-allowed; opacity: .5; }
+
+        button:focus-visible,
+        input:focus-visible,
+        [tabindex]:focus-visible {
+            outline: 2px solid var(--accent);
+            outline-offset: 4px;
+        }
+
+        .ambient {
+            position: fixed;
+            inset: 0;
+            z-index: -1;
+            pointer-events: none;
+            background:
+                radial-gradient(ellipse at 30% 43%, var(--halo), transparent 57%),
+                radial-gradient(ellipse at 90% 0%, rgba(255, 223, 176, .045), transparent 45%);
+        }
+
+        .ambient::after {
+            content: "";
+            position: absolute;
+            inset: 0;
+            opacity: .2;
+            background: repeating-linear-gradient(
+                0deg,
+                transparent,
+                transparent 3px,
+                rgba(255,255,255,.025) 4px
+            );
+        }
+
+        .page {
+            width: min(var(--page-width), calc(100% - 40px));
+            margin: 0 auto;
+            padding: 18px 0 14px;
+        }
+
+        .masthead {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 16px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 9px;
+            font-size: 10px;
+            letter-spacing: .19em;
+            text-transform: uppercase;
+        }
+
+        .brand-mark {
+            color: var(--accent);
+            font-size: 20px;
+            line-height: 1;
+        }
+
+        .edition {
+            color: var(--muted);
+            font-size: 10px;
+            letter-spacing: .07em;
+        }
+
+        .intro {
+            text-align: center;
+            padding: 18px 0 8px;
+        }
+
+        .eyebrow {
+            margin: 0 0 6px;
+            color: var(--accent);
+            font-size: 9px;
+            text-transform: uppercase;
+            letter-spacing: .24em;
+        }
+
+        h1 {
+            margin: 0;
+            font-family: Georgia, "Times New Roman", serif;
+            font-weight: 400;
+            font-size: clamp(32px, 3.6vw, 42px);
+            line-height: 1.08;
+            letter-spacing: -.045em;
+        }
+
+        .subtitle {
+            margin: 8px 0 0;
+            color: var(--muted);
+            font-size: 12px;
+            line-height: 1.5;
+        }
+
+        .workspace {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) var(--panel-width);
+            gap: clamp(20px, 3vw, 38px);
+            align-items: center;
+            width: min(100%, 880px);
+            margin: 0 auto;
+        }
+
+        .stage {
+            position: relative;
+            min-width: 0;
+            margin: 0;
+            padding: 10px 6px 0;
+            text-align: center;
+        }
+
+        .stage::before {
+            content: "";
+            position: absolute;
+            left: -4%;
+            right: -4%;
+            bottom: 38px;
+            height: 140px;
+            pointer-events: none;
+            background:
+                radial-gradient(ellipse at 50% 83%, rgba(0,0,0,.65), transparent 45%),
+                radial-gradient(ellipse at 50% 100%, rgba(155,188,205,.1), transparent 68%);
+            border-bottom: 1px solid rgba(224,239,245,.055);
+        }
+
+        .sculpture {
+            position: relative;
+            width: min(100%, var(--globe-size));
+            margin: 0 auto;
+            transform-origin: 50% 91%;
+            transition: transform .35s cubic-bezier(.2,.8,.2,1);
+        }
+
+        .sculpture.dragging { transition: none; }
+
+        .globe {
+            position: relative;
+            width: 100%;
+            aspect-ratio: 1;
+            border-radius: 50%;
+            overflow: hidden;
+            isolation: isolate;
+            cursor: grab;
+            touch-action: none;
+            user-select: none;
+            background: #183448;
+            box-shadow:
+                0 20px 42px rgba(0,0,0,.25),
+                0 0 60px rgba(131,185,212,.08),
+                inset 0 0 0 1px rgba(230,248,255,.4);
+        }
+
+        .globe:active { cursor: grabbing; }
+
+        .globe canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+            border-radius: inherit;
+        }
+
+        .globe::after {
+            content: "";
+            position: absolute;
+            inset: 0;
+            z-index: 2;
+            border-radius: inherit;
+            pointer-events: none;
+            background:
+                radial-gradient(ellipse at 27% 15%, rgba(255,255,255,.16), transparent 36%),
+                radial-gradient(ellipse at 76% 80%, rgba(173,223,249,.08), transparent 41%),
+                radial-gradient(
+                    circle at 50% 48%,
+                    transparent 67%,
+                    rgba(160,211,235,.12) 89%,
+                    rgba(222,244,252,.44) 97%,
+                    rgba(66,100,117,.58) 100%
+                );
+            box-shadow:
+                inset 0 0 2px 2px rgba(237,249,255,.65),
+                inset 9px -9px 20px rgba(8,32,47,.4),
+                inset -7px 5px 17px rgba(214,242,255,.12);
+        }
+
+        .glass-reflections {
+            position: absolute;
+            inset: 0;
+            z-index: 3;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+        }
+
+        .base {
+            position: relative;
+            z-index: 5;
+            width: 67%;
+            aspect-ratio: 3.55;
+            margin: -8% auto 0;
+            pointer-events: none;
+            filter: drop-shadow(0 15px 10px rgba(0,0,0,.4));
+        }
+
+        .base-foot {
+            position: absolute;
+            inset: 62% 0 0;
+            border-radius: 50%;
+            background: linear-gradient(
+                90deg,
+                #1a1210,
+                #553a2a 28%,
+                #241a14 78%,
+                #120f0c
+            );
+            border-bottom: 3px solid #110d0b;
+            box-shadow: inset 0 -3px 3px #0008, inset 0 2px 1px #ad835b66;
+        }
+
+        .base-wall {
+            position: absolute;
+            inset: 16% 4% 16%;
+            border-radius: 5% 5% 30% 30% / 10% 10% 32% 32%;
+            background:
+                repeating-linear-gradient(
+                    2deg,
+                    transparent 0 3px,
+                    #0002 4px,
+                    #c38b4b0a 5px 7px
+                ),
+                linear-gradient(
+                    90deg,
+                    #211710 0%,
+                    #674731 25%,
+                    #503724 50%,
+                    #302017 82%,
+                    #18120e 100%
+                );
+            box-shadow: inset 0 -9px 10px #0006, inset 0 2px 2px #d8ac6a44;
+            border-bottom: 2px solid #b8965480;
+        }
+
+        .base-lip {
+            position: absolute;
+            inset: 0 0 60%;
+            border-radius: 50%;
+            background: radial-gradient(
+                ellipse at 50% 24%,
+                #4d4234 0%,
+                #29231d 49%,
+                #a2885b 53%,
+                #d7b977 57%,
+                #75603d 65%,
+                #2d241b 74%
+            );
+            box-shadow: 0 4px 4px #0008, inset 0 1px 2px #f6e1b966;
+        }
+
+        .plaque {
+            position: absolute;
+            top: 42%;
+            left: 50%;
+            transform: translateX(-50%);
+            display: grid;
+            place-items: center;
+            width: 42%;
+            height: 28%;
+            border: 1px solid #ddc18a88;
+            border-radius: 3px;
+            color: #302419;
+            background: linear-gradient(110deg, #aa864e, #e6c890 45%, #b59560);
+            box-shadow: 0 2px 3px #0008, inset 0 1px #fff5;
+            font-size: clamp(6px, .75vw, 8px);
+            font-weight: 700;
+            letter-spacing: .14em;
+            white-space: nowrap;
+        }
+
+        figcaption {
+            position: relative;
+            margin-top: 16px;
+            color: var(--muted);
+            font-size: 11px;
+            line-height: 1.6;
+        }
+
+        .panel {
+            position: relative;
+            min-width: 0;
+            padding: 18px;
+            background: linear-gradient(
+                145deg,
+                rgba(255,255,255,.045),
+                rgba(255,255,255,.015)
+            );
+            border: 1px solid var(--border);
+            border-radius: 18px;
+            box-shadow: 0 16px 36px rgba(0,0,0,.1);
+        }
+
+        .panel-heading {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+            margin-bottom: 12px;
+        }
+
+        h2 {
+            font-size: 13px;
+            font-weight: 500;
+            line-height: 1.3;
+            margin: 0;
+        }
+
+        .live-indicator {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            color: var(--muted);
+            font-size: 9px;
+            white-space: nowrap;
+        }
+
+        .live-indicator::before {
+            content: "";
+            width: 5px;
+            height: 5px;
+            flex: 0 0 auto;
+            border-radius: 50%;
+            background: #a5cbb9;
+            box-shadow: 0 0 7px #a5cbb944;
+        }
+
+        body.paused .live-indicator::before {
+            background: var(--accent);
+            box-shadow: none;
+        }
+
+        .mode-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 6px;
+        }
+
+        .mode-button {
+            position: relative;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            min-height: 50px;
+            padding: 8px 10px;
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            background: rgba(4,12,20,.14);
+            color: var(--muted);
+            cursor: pointer;
+            text-align: left;
+            transition: border-color .2s, background .2s, color .2s;
+        }
+
+        .mode-button:hover {
+            background: rgba(255,255,255,.055);
+            color: #fff;
+        }
+
+        .mode-button[aria-pressed="true"] {
+            color: #f5e7ce;
+            border-color: #dec08a88;
+            background: rgba(223,194,141,.085);
+        }
+
+        .mode-icon {
+            font-size: 20px;
+            line-height: 1;
+            width: 20px;
+            flex: 0 0 auto;
+            text-align: center;
+        }
+
+        .mode-name { font-size: 11px; line-height: 1.25; }
+
+        .new-badge {
+            display: block;
+            width: fit-content;
+            margin-top: 3px;
+            font-size: 7px;
+            line-height: 1;
+            letter-spacing: .1em;
+            text-transform: uppercase;
+            color: #b5dccd;
+        }
+
+        .mode-description {
+            min-height: 49.5px;
+            margin: 10px 0 0;
+            color: var(--muted);
+            font-size: 11px;
+            line-height: 1.5;
+        }
+
+        .divider {
+            border: 0;
+            border-top: 1px solid var(--border);
+            margin: 12px 0;
+        }
+
+        .range-heading {
+            display: flex;
+            justify-content: space-between;
+            gap: 12px;
+            font-size: 11px;
+            line-height: 1.4;
+        }
+
+        output {
+            color: var(--accent);
+            font-variant-numeric: tabular-nums;
+        }
+
+        input[type="range"] {
+            display: block;
+            width: 100%;
+            height: 5px;
+            margin: 13px 0;
+            accent-color: var(--accent);
+            cursor: pointer;
+        }
+
+        .range-labels {
+            display: flex;
+            justify-content: space-between;
+            gap: 8px;
+            color: var(--muted);
+            font-size: 9px;
+        }
+
+        .actions {
+            display: grid;
+            grid-template-columns: 1fr 44px;
+            gap: 8px;
+            margin-top: 16px;
+        }
+
+        .shake-button,
+        .pause-button {
+            min-height: 44px;
+            border-radius: 10px;
+            border: 1px solid #dfc28d44;
+            cursor: pointer;
+        }
+
+        .shake-button {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            background: linear-gradient(110deg, #e2c997, #cfae76);
+            color: #262017;
+            font-size: 12px;
+            font-weight: 600;
+            box-shadow: 0 4px 14px #0002;
+        }
+
+        .shake-button:hover { filter: brightness(1.08); }
+        .shake-button:active { transform: translateY(1px); }
+
+        .pause-button {
+            display: grid;
+            place-items: center;
+            padding: 0;
+            color: var(--text);
+            background: rgba(255,255,255,.045);
+        }
+
+        .pause-button:hover { background: rgba(255,255,255,.09); }
+        .pause-button svg { width: 16px; height: 16px; }
+
+        .stats {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-top: 16px;
+        }
+
+        .stat + .stat {
+            border-left: 1px solid var(--border);
+            padding-left: 16px;
+        }
+
+        .stat-value {
+            display: block;
+            font-size: 23px;
+            line-height: 1.1;
+            font-family: Georgia, serif;
+            font-variant-numeric: tabular-nums;
+        }
+
+        .stat-label {
+            display: block;
+            margin-top: 4px;
+            color: var(--muted);
+            font-size: 9px;
+            line-height: 1.4;
+        }
+
+        .utility {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            margin-top: 12px;
+        }
+
+        .text-button {
+            padding: 5px 0;
+            border: 0;
+            color: var(--muted);
+            background: none;
+            font-size: 10px;
+            line-height: 1.4;
+            cursor: pointer;
+            text-decoration: underline;
+            text-decoration-color: transparent;
+            text-underline-offset: 4px;
+        }
+
+        .text-button:hover {
+            color: var(--text);
+            text-decoration-color: currentColor;
+        }
+
+        .text-button[aria-pressed="true"] { color: #b5dccd; }
+
+        /* Status is below the workspace, keeping the controls compact. */
+        .status {
+            width: min(100%, 880px);
+            min-height: 15px;
+            margin: 15px auto 0;
+            color: var(--muted);
+            font-size: 10px;
+            line-height: 1.5;
+            text-align: center;
+        }
+
+        .footer {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 8px 22px;
+            margin-top: 12px;
+            padding-top: 11px;
+            border-top: 1px solid var(--border);
+            color: var(--muted);
+            font-size: 9px;
+        }
+
+        kbd {
+            display: inline-block;
+            margin-right: 5px;
+            padding: 1px 4px;
+            border: 1px solid #ffffff20;
+            border-radius: 4px;
+            font: inherit;
+            line-height: 1.3;
+            color: #e3e9ec;
+        }
+
+        .sr-only {
+            position: absolute;
+            width: 1px;
+            height: 1px;
+            padding: 0;
+            overflow: hidden;
+            clip: rect(0,0,0,0);
+            white-space: nowrap;
+            border: 0;
+        }
+
+        noscript {
+            display: block;
+            padding: 20px;
+            text-align: center;
+            color: var(--accent);
+        }
+
+        /* Additional vertical breathing room on larger desktop displays. */
+        @media (min-width: 1100px) and (min-height: 850px) {
+            .page { padding-top: 26px; }
+            .intro { padding-top: 24px; padding-bottom: 14px; }
+            .workspace { gap: 42px; }
+            .status { margin-top: 20px; }
+            .footer { margin-top: 16px; }
+        }
+
+        /* Short laptop screens still work at native browser zoom. */
+        @media (min-width: 821px) and (max-height: 700px) {
+            .page { padding-top: 12px; padding-bottom: 10px; }
+            .masthead { padding-bottom: 10px; }
+            .intro { padding: 12px 0 8px; }
+            .eyebrow { display: none; }
+            h1 { font-size: 34px; }
+            .subtitle { margin-top: 6px; font-size: 11px; }
+            .panel { padding: 14px; }
+            .panel-heading { margin-bottom: 10px; }
+            .mode-button { min-height: 46px; padding-block: 7px; }
+            .mode-description { margin-top: 8px; }
+            .divider { margin: 10px 0; }
+            .actions { margin-top: 12px; }
+            .stats { margin-top: 12px; }
+            .utility { margin-top: 8px; }
+            .status { margin-top: 10px; }
+            .footer { margin-top: 9px; padding-top: 9px; }
+        }
+
+        /* On narrow screens, use a comfortable stacked layout. */
+        @media (max-width: 820px) {
+            .page {
+                width: min(620px, calc(100% - 32px));
+                padding-top: 18px;
+            }
+
+            .intro { padding-top: 23px; padding-bottom: 12px; }
+            h1 { font-size: clamp(34px, 7vw, 44px); }
+
+            .workspace {
+                grid-template-columns: 1fr;
+                gap: 24px;
+            }
+
+            .stage { padding: 12px 10px 0; }
+            .sculpture { width: min(100%, 450px); }
+            figcaption { margin-top: 20px; font-size: 12px; }
+
+            .panel {
+                width: min(100%, 480px);
+                margin: 0 auto;
+                padding: 20px;
+            }
+
+            h2 { font-size: 14px; }
+            .live-indicator { font-size: 10px; }
+
+            .mode-grid {
+                grid-template-columns: repeat(4, 1fr);
+                gap: 8px;
+            }
+
+            .mode-button {
+                flex-direction: column;
+                justify-content: center;
+                min-height: 76px;
+                padding: 10px 4px;
+                gap: 7px;
+                text-align: center;
+            }
+
+            .mode-name { font-size: 12px; }
+            .new-badge { margin: 4px auto 0; }
+            .mode-description { min-height: 0; font-size: 12px; }
+
+            .range-heading { font-size: 12px; }
+            .range-labels, .stat-label { font-size: 10px; }
+            .shake-button { font-size: 13px; }
+            .text-button { font-size: 11px; padding-block: 9px; }
+
+            .status {
+                width: min(100%, 480px);
+                margin-top: 16px;
+            }
+
+            .footer { margin-top: 18px; font-size: 10px; }
+            .plaque { font-size: 8px; }
+        }
+
+        @media (max-width: 380px) {
+            .page { width: calc(100% - 24px); }
+            .panel { padding: 16px; }
+            .edition { display: none; }
+            .mode-name { font-size: 10px; }
+            .mode-grid { gap: 6px; }
+            .stage { padding-inline: 2px; }
+            .plaque { font-size: 6px; }
+            .subtitle { font-size: 11px; }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            *, *::before, *::after {
+                transition: none !important;
+                scroll-behavior: auto !important;
+            }
+        }
+    </style>
+</head>
+
+<body data-mode="day">
+    <div class="ambient" aria-hidden="true"></div>
+
+    <div class="page">
+        <header class="masthead">
+            <div class="brand">
+                <span class="brand-mark" aria-hidden="true">❄</span>
+                Winter Atelier
+            </div>
+            <div class="edition">AN INTERACTIVE MINIATURE · No. 025</div>
+        </header>
+
+        <section class="intro" aria-labelledby="pageTitle">
+            <p class="eyebrow">A little winter, held in glass</p>
+            <h1 id="pageTitle">The Snow Globe</h1>
+            <p class="subtitle">A quiet cabin. A thousand little moments. Make it snow.</p>
+        </section>
+
+        <main class="workspace">
+            <figure class="stage">
+                <div class="sculpture" id="sculpture">
+                    <div
+                        class="globe"
+                        id="globe"
+                        role="button"
+                        tabindex="0"
+                        aria-label="Shake the snow globe"
+                        aria-describedby="globeHelp sceneDescription"
+                    >
+                        <canvas id="sceneCanvas" aria-hidden="true">
+                            A snow-covered cabin and pine trees inside a glass snow globe.
+                        </canvas>
+
+                        <svg class="glass-reflections" viewBox="0 0 600 600" aria-hidden="true">
+                            <defs>
+                                <linearGradient id="reflection" x1="0" y1="0" x2="1" y2="1">
+                                    <stop offset="0" stop-color="#fff" stop-opacity=".72"/>
+                                    <stop offset=".45" stop-color="#e5f7ff" stop-opacity=".18"/>
+                                    <stop offset="1" stop-color="#fff" stop-opacity="0"/>
+                                </linearGradient>
+                                <linearGradient id="rimReflection" x1="0" y1="0" x2="0" y2="1">
+                                    <stop stop-color="#fff" stop-opacity=".7"/>
+                                    <stop offset="1" stop-color="#d9f2ff" stop-opacity="0"/>
+                                </linearGradient>
+                                <filter id="softReflection" x="-30%" y="-30%" width="160%" height="160%">
+                                    <feGaussianBlur stdDeviation="3"/>
+                                </filter>
+                            </defs>
+
+                            <path
+                                d="M 65 252 C 71 160 138 83 224 59"
+                                fill="none"
+                                stroke="url(#reflection)"
+                                stroke-width="28"
+                                stroke-linecap="round"
+                                filter="url(#softReflection)"
+                            />
+                            <path
+                                d="M 40 279 C 43 160 131 51 255 30"
+                                fill="none"
+                                stroke="url(#rimReflection)"
+                                stroke-width="2.5"
+                                stroke-linecap="round"
+                            />
+                            <path
+                                d="M 481 79 C 547 133 577 200 575 280"
+                                fill="none"
+                                stroke="url(#rimReflection)"
+                                stroke-width="6"
+                                stroke-linecap="round"
+                                opacity=".55"
+                            />
+                            <path
+                                d="M 534 384 C 514 449 478 484 456 499"
+                                fill="none"
+                                stroke="#d7efff"
+                                stroke-width="3"
+                                stroke-linecap="round"
+                                opacity=".17"
+                            />
+                            <ellipse
+                                cx="300"
+                                cy="550"
+                                rx="112"
+                                ry="13"
+                                fill="none"
+                                stroke="#e9f7ff"
+                                stroke-width="3"
+                                opacity=".12"
+                            />
+                        </svg>
+                    </div>
+
+                    <div class="base" aria-hidden="true">
+                        <div class="base-foot"></div>
+                        <div class="base-wall"></div>
+                        <div class="base-lip"></div>
+                        <div class="plaque">WINTER · No. 025</div>
+                    </div>
+                </div>
+
+                <figcaption id="globeHelp">Tap the glass or drag to stir the snow.</figcaption>
+                <span class="sr-only" id="sceneDescription">
+                    A dimensional wooden cabin, snowy evergreens, and a snowman beneath a winter sky.
+                </span>
+            </figure>
+
+            <aside class="panel" aria-label="Snow globe controls">
+                <div class="panel-heading">
+                    <h2>Set the atmosphere</h2>
+                    <span class="live-indicator" id="activity">Gently falling</span>
+                </div>
+
+                <div class="mode-grid" role="group" aria-label="Scene mode">
+                    <button class="mode-button" data-mode="day" aria-pressed="true">
+                        <span class="mode-icon" aria-hidden="true">☀</span>
+                        <span class="mode-name">Daylight</span>
+                    </button>
+
+                    <button class="mode-button" data-mode="night" aria-pressed="false">
+                        <span class="mode-icon" aria-hidden="true">☾</span>
+                        <span class="mode-name">Midnight</span>
+                    </button>
+
+                    <button class="mode-button" data-mode="aurora" aria-pressed="false">
+                        <span class="mode-icon" aria-hidden="true">〰</span>
+                        <span class="mode-name">
+                            Aurora
+                            <span class="new-badge">New mode</span>
+                        </span>
+                    </button>
+
+                    <button class="mode-button" data-mode="blizzard" aria-pressed="false">
+                        <span class="mode-icon" aria-hidden="true">≋</span>
+                        <span class="mode-name">
+                            Blizzard
+                            <span class="new-badge">New mode</span>
+                        </span>
+                    </button>
+                </div>
+
+                <p class="mode-description" id="modeDescription"></p>
+
+                <hr class="divider">
+
+                <div class="range-heading">
+                    <label for="intensity">Snowfall intensity</label>
+                    <output for="intensity" id="intensityValue">50%</output>
+                </div>
+
+                <input id="intensity" type="range" min="10" max="100" step="5" value="50">
+
+                <div class="range-labels" aria-hidden="true">
+                    <span>A few flurries</span>
+                    <span>A winter blanket</span>
+                </div>
+
+                <div class="actions">
+                    <button class="shake-button" id="shakeButton">
+                        <span aria-hidden="true">❄</span>
+                        Shake the globe
+                    </button>
+
+                    <button
+                        class="pause-button"
+                        id="pauseButton"
+                        aria-label="Pause animation"
+                        aria-pressed="false"
+                        title="Pause animation (P)"
+                    >
+                        <svg id="pauseIcon" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                            <path d="M5 3h3v14H5zm7 0h3v14h-3z"/>
+                        </svg>
+                    </button>
+                </div>
+
+                <div class="stats">
+                    <div class="stat">
+                        <span class="stat-value" id="shakeCount">0</span>
+                        <span class="stat-label">Globe shakes</span>
+                    </div>
+                    <div class="stat">
+                        <span class="stat-value" id="flakeCount">0</span>
+                        <span class="stat-label">Snow particles</span>
+                    </div>
+                </div>
+
+                <div class="utility">
+                    <button class="text-button" id="motionButton" aria-pressed="false">
+                        Enable device shake
+                    </button>
+                    <button class="text-button" id="resetButton">Reset count</button>
+                </div>
+            </aside>
+        </main>
+
+        <p class="status" id="status" role="status" aria-live="polite">
+            Your atmosphere and snowfall settings are saved on this device.
+        </p>
+
+        <footer class="footer">
+            <span><kbd>Space</kbd> Shake</span>
+            <span><kbd>P</kbd> Pause / play</span>
+            <span><kbd>1–4</kbd> Change atmosphere</span>
+            <span>Made for a moment of calm.</span>
+        </footer>
+
+        <noscript>Please enable JavaScript to render and interact with the snow globe.</noscript>
+    </div>
+
+    <script>
+    (() => {
+        "use strict";
+
+        const SIZE = 600;
+        const CENTER = 300;
+        const RADIUS = 291;
+        const STORAGE_KEY = "snowGlobeStudio.v2";
+        const TAU = Math.PI * 2;
+
+        const clamp = (value, min, max) => Math.max(min, Math.min(max, value));
+        const random = (min, max) => min + Math.random() * (max - min);
+
+        function seededRandom(seed) {
+            return function () {
+                seed |= 0;
+                seed = seed + 0x6D2B79F5 | 0;
+                let t = Math.imul(seed ^ seed >>> 15, 1 | seed);
+                t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+                return ((t ^ t >>> 14) >>> 0) / 4294967296;
+            };
+        }
+
+        function gradient(ctx, x0, y0, x1, y1, stops) {
+            const g = ctx.createLinearGradient(x0, y0, x1, y1);
+            stops.forEach(([position, color]) => g.addColorStop(position, color));
+            return g;
+        }
+
+        function polygon(ctx, points, fill, stroke = null, width = 1) {
+            ctx.beginPath();
+            points.forEach(([x, y], i) => {
+                if (i === 0) ctx.moveTo(x, y);
+                else ctx.lineTo(x, y);
+            });
+            ctx.closePath();
+
+            if (fill) {
+                ctx.fillStyle = fill;
+                ctx.fill();
+            }
+
+            if (stroke) {
+                ctx.strokeStyle = stroke;
+                ctx.lineWidth = width;
+                ctx.stroke();
+            }
+        }
+
+        function ellipse(ctx, x, y, rx, ry, fill) {
+            ctx.beginPath();
+            ctx.ellipse(x, y, rx, ry, 0, 0, TAU);
+            ctx.fillStyle = fill;
+            ctx.fill();
+        }
+
+        function softEllipse(ctx, x, y, rx, ry, color) {
+            ctx.save();
+            ctx.translate(x, y);
+            ctx.scale(rx, ry);
+
+            const g = ctx.createRadialGradient(0, 0, 0, 0, 0, 1);
+            g.addColorStop(0, color);
+            g.addColorStop(1, "transparent");
+
+            ctx.fillStyle = g;
+            ctx.fillRect(-1, -1, 2, 2);
+            ctx.restore();
+        }
+
+        const MODES = {
+            day: {
+                name: "Daylight",
+                description: "Pale winter sunshine, soft blue shadows, and a gently drifting snowfall.",
+                sky: ["#3f7196", "#b9d4df"],
+                snow: ["#f5fafc", "#9cb9cd"],
+                mountain: ["#8bafc1", "#577d99"],
+                tree: ["#315b50", "#153b36"],
+                wind: 4,
+                density: 1
+            },
+            night: {
+                name: "Midnight",
+                description: "Moonlit snow, a sky full of stars, and warm light in the cabin windows.",
+                sky: ["#071321", "#36536b"],
+                snow: ["#dce9f1", "#7897b1"],
+                mountain: ["#3b566f", "#203c54"],
+                tree: ["#25454b", "#102a31"],
+                wind: 2,
+                density: .95
+            },
+            aurora: {
+                name: "Aurora",
+                description: "Living curtains of northern light ripple above a peaceful, starlit forest.",
+                sky: ["#06171e", "#22505b"],
+                snow: ["#e0eff0", "#749ca9"],
+                mountain: ["#355c67", "#173e4d"],
+                tree: ["#2b514e", "#103333"],
+                wind: 9,
+                density: 1.05
+            },
+            blizzard: {
+                name: "Blizzard",
+                description: "Rolling gusts, wind-driven snow, and a cabin glowing through the winter haze.",
+                sky: ["#3b5062", "#b6c8d2"],
+                snow: ["#e3edf2", "#90a9bc"],
+                mountain: ["#8ba3b4", "#647f94"],
+                tree: ["#3a5558", "#253e45"],
+                wind: 105,
+                density: 1.85
+            }
+        };
+
+        class SnowGlobe {
+            constructor() {
+                this.globe = document.getElementById("globe");
+                this.sculpture = document.getElementById("sculpture");
+                this.canvas = document.getElementById("sceneCanvas");
+                this.ctx = this.canvas.getContext("2d");
+
+                this.ui = {
+                    modeDescription: document.getElementById("modeDescription"),
+                    sceneDescription: document.getElementById("sceneDescription"),
+                    intensity: document.getElementById("intensity"),
+                    intensityValue: document.getElementById("intensityValue"),
+                    shakes: document.getElementById("shakeCount"),
+                    flakes: document.getElementById("flakeCount"),
+                    activity: document.getElementById("activity"),
+                    status: document.getElementById("status"),
+                    pause: document.getElementById("pauseButton"),
+                    pauseIcon: document.getElementById("pauseIcon"),
+                    motion: document.getElementById("motionButton")
+                };
+
+                if (!this.ctx) {
+                    this.ui.status.textContent = "Your browser does not support the canvas renderer.";
+                    return;
+                }
+
+                this.reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
+                this.state = this.loadState();
+                this.paused = this.reducedMotion.matches || this.state.paused;
+                this.particles = [];
+                this.time = 0;
+                this.energy = 0;
+                this.frameId = 0;
+                this.lastFrame = 0;
+                this.lastUI = 0;
+                this.pointer = null;
+                this.motionEnabled = false;
+                this.motionPending = false;
+                this.lastMotionShake = -Infinity;
+                this.shakeAnimation = null;
+                this.quality = 1;
+
+                this.onMotion = event => this.handleMotion(event);
+                this.tick = timestamp => this.animate(timestamp);
+
+                this.snowSprite = this.makeSnowSprite();
+                this.bindEvents();
+                this.syncParticles(true);
+                this.resize();
+                this.updateUI();
+
+                if (this.reducedMotion.matches) {
+                    this.announce(
+                        "Animation is paused to match your reduced-motion preference. Press Play to animate."
+                    );
+                }
+
+                if (!window.isSecureContext || !("DeviceMotionEvent" in window)) {
+                    this.ui.motion.disabled = true;
+                    this.ui.motion.textContent = "Device shake unavailable";
+                    this.ui.motion.title =
+                        "Device motion requires a supported browser and a secure HTTPS connection.";
+                }
+
+                this.start();
+            }
+
+            loadState() {
+                const defaults = {
+                    mode: "day",
+                    intensity: 50,
+                    shakes: 0,
+                    paused: false
+                };
+
+                try {
+                    let saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || "null");
+
+                    // Preserve preferences from the original application.
+                    if (!saved) {
+                        const old = JSON.parse(
+                            localStorage.getItem("snowGlobeState") || "null"
+                        );
+
+                        if (old && typeof old === "object") {
+                            saved = {
+                                mode: old.nightMode ? "night" : "day",
+                                intensity: old.intensity,
+                                shakes: old.shakeCount
+                            };
+                        }
+                    }
+
+                    if (!saved || typeof saved !== "object") return defaults;
+
+                    return {
+                        mode: Object.prototype.hasOwnProperty.call(MODES, saved.mode)
+                            ? saved.mode
+                            : defaults.mode,
+                        intensity: Number.isFinite(saved.intensity)
+                            ? clamp(Math.round(saved.intensity / 5) * 5, 10, 100)
+                            : defaults.intensity,
+                        shakes: Number.isSafeInteger(saved.shakes)
+                            ? clamp(saved.shakes, 0, 999999999)
+                            : 0,
+                        paused: saved.paused === true
+                    };
+                } catch {
+                    return defaults;
+                }
+            }
+
+            saveState() {
+                try {
+                    localStorage.setItem(STORAGE_KEY, JSON.stringify({
+                        ...this.state,
+                        paused: this.paused
+                    }));
+                } catch {
+                    // Everything remains usable if storage is unavailable.
+                }
+            }
+
+            announce(message) {
+                this.ui.status.textContent = message;
+            }
+
+            makeLayer() {
+                const canvas = document.createElement("canvas");
+                canvas.width = canvas.height = Math.round(SIZE * this.quality);
+
+                const ctx = canvas.getContext("2d");
+                ctx.setTransform(
+                    canvas.width / SIZE, 0,
+                    0, canvas.height / SIZE,
+                    0, 0
+                );
+
+                return { canvas, ctx };
+            }
+
+            resize() {
+                // CSS controls the displayed dimensions; render at device resolution.
+                const pixels = Math.max(1, Math.round(
+                    this.globe.clientWidth * Math.min(window.devicePixelRatio || 1, 2)
+                ));
+
+                if (this.canvas.width === pixels && this.skyLayer) {
+                    this.render();
+                    return;
+                }
+
+                this.canvas.width = this.canvas.height = pixels;
+                this.quality = pixels / SIZE;
+                this.buildScene();
+                this.render();
+            }
+
+            buildScene() {
+                this.skyLayer = this.makeLayer();
+                this.landLayer = this.makeLayer();
+                this.drawSky(this.skyLayer.ctx);
+                this.drawLandscape(this.landLayer.ctx);
+            }
+
+            makeSnowSprite() {
+                const canvas = document.createElement("canvas");
+                canvas.width = canvas.height = 48;
+
+                const ctx = canvas.getContext("2d");
+                const g = ctx.createRadialGradient(24, 24, 0, 24, 24, 24);
+
+                g.addColorStop(0, "rgba(255,255,255,1)");
+                g.addColorStop(.24, "rgba(250,254,255,.9)");
+                g.addColorStop(.58, "rgba(233,247,255,.28)");
+                g.addColorStop(1, "rgba(233,247,255,0)");
+
+                ctx.fillStyle = g;
+                ctx.fillRect(0, 0, 48, 48);
+                return canvas;
+            }
+
+            drawSky(ctx) {
+                const mode = MODES[this.state.mode];
+                const rng = seededRandom(307);
+                const dark = this.state.mode === "night" || this.state.mode === "aurora";
+
+                ctx.fillStyle = gradient(ctx, 0, 0, 0, 600, [
+                    [0, mode.sky[0]],
+                    [1, mode.sky[1]]
+                ]);
+                ctx.fillRect(0, 0, SIZE, SIZE);
+
+                softEllipse(
+                    ctx, 340, 310, 380, 150,
+                    dark ? "rgba(115,170,183,.1)" : "rgba(244,247,223,.23)"
+                );
+
+                if (dark) {
+                    for (let i = 0; i < 125; i++) {
+                        const x = rng() * SIZE;
+                        const y = rng() * 345;
+                        const radius = .35 + rng() * .95;
+
+                        ellipse(
+                            ctx, x, y, radius, radius,
+                            `rgba(225,243,255,${.2 + rng() * .6})`
+                        );
+
+                        if (i % 16 === 0) {
+                            softEllipse(ctx, x, y, 4, 4, "rgba(195,233,255,.2)");
+                        }
+                    }
+
+                    const moonX = this.state.mode === "aurora" ? 431 : 414;
+                    const moonY = 126;
+
+                    softEllipse(ctx, moonX, moonY, 95, 95, "rgba(199,227,244,.14)");
+                    softEllipse(ctx, moonX, moonY, 46, 46, "rgba(223,239,247,.14)");
+
+                    const moon = ctx.createRadialGradient(
+                        moonX - 9, moonY - 10, 1,
+                        moonX, moonY, 23
+                    );
+                    moon.addColorStop(0, "#f3f5e8");
+                    moon.addColorStop(.75, "#d1dfde");
+                    moon.addColorStop(1, "#9dafb7");
+
+                    ellipse(ctx, moonX, moonY, 23, 23, moon);
+
+                    ctx.save();
+                    ctx.beginPath();
+                    ctx.arc(moonX, moonY, 22, 0, TAU);
+                    ctx.clip();
+
+                    for (let i = 0; i < 21; i++) {
+                        ellipse(
+                            ctx,
+                            moonX + (rng() - .5) * 42,
+                            moonY + (rng() - .5) * 42,
+                            1 + rng() * 5,
+                            1 + rng() * 3,
+                            "rgba(81,111,129,.12)"
+                        );
+                    }
+
+                    ctx.fillStyle = gradient(ctx, moonX - 20, 0, moonX + 24, 0, [
+                        [0, "transparent"],
+                        [.6, "rgba(32,57,77,.05)"],
+                        [1, "rgba(18,39,62,.7)"]
+                    ]);
+                    ctx.fillRect(moonX - 24, moonY - 24, 48, 48);
+                    ctx.restore();
+                } else if (this.state.mode === "day") {
+                    softEllipse(ctx, 410, 126, 96, 96, "rgba(255,243,207,.28)");
+                    softEllipse(ctx, 410, 126, 44, 44, "rgba(255,251,227,.42)");
+                    ellipse(ctx, 410, 126, 21, 21, "#f5f1db");
+                }
+
+                if (!dark) {
+                    for (let i = 0; i < 24; i++) {
+                        softEllipse(
+                            ctx,
+                            rng() * 700 - 50,
+                            115 + rng() * 190,
+                            50 + rng() * 100,
+                            9 + rng() * 18,
+                            this.state.mode === "blizzard"
+                                ? "rgba(229,237,239,.1)"
+                                : "rgba(239,246,245,.1)"
+                        );
+                    }
+                }
+
+                for (let i = 0; i < 2500; i++) {
+                    ctx.fillStyle = `rgba(255,255,255,${rng() * .026})`;
+                    ctx.fillRect(rng() * 600, rng() * 600, .7, .7);
+                }
+            }
+
+            drawLandscape(ctx) {
+                const mode = MODES[this.state.mode];
+                const rng = seededRandom(921);
+                const dark = this.state.mode === "night" || this.state.mode === "aurora";
+
+                polygon(ctx, [
+                    [0,365], [64,305], [127,338], [208,237], [287,327],
+                    [352,253], [465,350], [526,294], [600,347], [600,460], [0,460]
+                ], gradient(ctx, 0, 235, 0, 450, [
+                    [0, mode.mountain[0]],
+                    [1, mode.mountain[1]]
+                ]));
+
+                polygon(
+                    ctx,
+                    [[208,237],[217,331],[285,362],[287,327]],
+                    dark ? "#234250" : "#7094ae"
+                );
+
+                polygon(
+                    ctx,
+                    [[352,253],[365,345],[465,350]],
+                    dark ? "#264751" : "#7497ac"
+                );
+
+                polygon(ctx, [
+                    [208,237],[170,284],[191,271],[203,280],[220,268],[252,294]
+                ], dark ? "#90aebd" : "#e2edf0");
+
+                polygon(ctx, [
+                    [352,253],[322,292],[343,280],[354,288],[365,278],[398,310]
+                ], dark ? "#86a7b6" : "#d9e8ed");
+
+                polygon(
+                    ctx,
+                    [[526,294],[501,323],[523,313],[536,323],[546,314]],
+                    dark ? "#7899ac" : "#d7e5eb"
+                );
+
+                polygon(ctx, [
+                    [0,411],[0,368],[58,343],[130,386],[216,331],
+                    [293,383],[388,336],[487,389],[556,359],[600,380],[600,459]
+                ], gradient(ctx, 0, 330, 0, 445, [
+                    [0, dark ? "#2d505c" : "#7a9fb1"],
+                    [1, dark ? "#527582" : "#b2cbd6"]
+                ]));
+
+                softEllipse(
+                    ctx, 295, 385, 360, 48,
+                    dark ? "rgba(139,183,195,.12)" : "rgba(225,239,242,.35)"
+                );
+
+                for (let i = 0; i < 36; i++) {
+                    const x = i * 18 - 15 + rng() * 12;
+                    this.drawTree(
+                        ctx, x,
+                        419 + rng() * 13,
+                        38 + rng() * 54,
+                        i + 70,
+                        true
+                    );
+                }
+
+                ctx.save();
+                this.groundPath(ctx);
+                ctx.fillStyle = gradient(ctx, 0, 403, 0, 600, [
+                    [0, mode.snow[0]],
+                    [.36, mode.snow[0]],
+                    [1, mode.snow[1]]
+                ]);
+                ctx.fill();
+                ctx.clip();
+
+                softEllipse(ctx, 129, 479, 170, 31, "rgba(52,95,125,.17)");
+                softEllipse(ctx, 465, 483, 146, 26, "rgba(42,82,112,.2)");
+                softEllipse(ctx, 323, 481, 103, 26, "rgba(43,79,103,.24)");
+                softEllipse(ctx, 319, 474, 72, 27, "rgba(255,191,105,.22)");
+
+                ctx.beginPath();
+                ctx.moveTo(310,463);
+                ctx.bezierCurveTo(300,482,351,489,317,515);
+                ctx.bezierCurveTo(291,535,257,553,270,584);
+                ctx.lineWidth = 18;
+                ctx.strokeStyle = dark
+                    ? "rgba(87,127,150,.24)"
+                    : "rgba(137,166,182,.27)";
+                ctx.stroke();
+
+                for (let i = 0; i < 4500; i++) {
+                    const x = rng() * 600;
+                    const y = 404 + rng() * 196;
+                    const size = .3 + rng() * 1.1;
+
+                    ctx.fillStyle = rng() > .5
+                        ? `rgba(255,255,255,${.08 + rng() * .18})`
+                        : `rgba(58,104,130,${rng() * .075})`;
+                    ctx.fillRect(x, y, size, size * .5);
+                }
+
+                for (let i = 0; i < 8; i++) {
+                    const y = 473 + i * 8;
+                    const x = 318 + Math.sin(i * .7) * 12 + (i % 2 ? 4 : -4);
+                    ellipse(ctx, x, y, 2, 1, "rgba(82,114,133,.25)");
+                }
+
+                ctx.restore();
+
+                this.drawTree(ctx, 76, 455, 113, 2);
+                this.drawTree(ctx, 111, 448, 141, 3);
+                this.drawTree(ctx, 153, 466, 198, 4);
+                this.drawTree(ctx, 202, 459, 99, 6);
+                this.drawTree(ctx, 514, 453, 146, 7);
+                this.drawTree(ctx, 470, 462, 197, 8);
+                this.drawTree(ctx, 556, 467, 109, 9);
+
+                this.drawCabin(ctx);
+                this.drawSnowman(ctx, 422, 496);
+
+                this.drawTree(ctx, 76, 531, 107, 11);
+                this.drawTree(ctx, 524, 532, 111, 12);
+
+                ctx.beginPath();
+                ctx.moveTo(115, 531);
+                ctx.bezierCurveTo(180, 516, 198, 526, 235, 539);
+                ctx.bezierCurveTo(201, 535, 157, 538, 115, 531);
+                ctx.fillStyle = "rgba(246,253,255,.2)";
+                ctx.fill();
+
+                if (this.state.mode === "blizzard") {
+                    softEllipse(ctx, 300, 355, 370, 145, "rgba(199,217,227,.22)");
+                }
+            }
+
+            groundPath(ctx) {
+                ctx.beginPath();
+                ctx.moveTo(0, 437);
+                ctx.bezierCurveTo(92, 399, 193, 400, 286, 423);
+                ctx.bezierCurveTo(395, 393, 506, 410, 600, 438);
+                ctx.lineTo(600, 600);
+                ctx.lineTo(0, 600);
+                ctx.closePath();
+            }
+
+            drawTree(ctx, x, y, height, seed, distant = false) {
+                const rng = seededRandom(seed * 107);
+                const mode = MODES[this.state.mode];
+
+                ctx.save();
+                ctx.translate(x, y);
+                ctx.scale(height / 160, height / 160);
+
+                if (!distant) {
+                    softEllipse(ctx, 5, 1, 42, 7, "rgba(24,57,70,.22)");
+                }
+
+                ctx.fillStyle = distant ? "#486875" : "#483f32";
+                ctx.fillRect(-2.7, -142, 5.4, 146);
+
+                const green = gradient(ctx, -45, 0, 45, 0, [
+                    [0, distant ? mode.mountain[0] : mode.tree[0]],
+                    [.45, distant ? mode.mountain[1] : mode.tree[0]],
+                    [1, distant ? mode.mountain[1] : mode.tree[1]]
+                ]);
+
+                for (let i = 0; i < 13; i++) {
+                    const py = -148 + i * 10.6;
+                    const width = 5 + i * 3.2;
+                    const left = width * (.8 + rng() * .3);
+                    const right = width * (.85 + rng() * .3);
+
+                    polygon(ctx, [
+                        [0, py - 20],
+                        [right * .35, py - 8],
+                        [right * .63, py - 2],
+                        [right, py + 7],
+                        [right * .61, py + 5],
+                        [right * .77, py + 11],
+                        [right * .24, py + 7],
+                        [0, py + 12],
+                        [-left * .3, py + 8],
+                        [-left * .85, py + 12],
+                        [-left * .67, py + 5],
+                        [-left, py + 7],
+                        [-left * .4, py - 7]
+                    ], green);
+
+                    polygon(ctx, [
+                        [0,py - 17],
+                        [right * .3,py - 6],
+                        [right * .84,py + 5],
+                        [right * .49,py + 3],
+                        [right * .27,py + 1],
+                        [1,py - 6],
+                        [-left * .25,py + 1],
+                        [-left * .65,py + 5],
+                        [-left * .87,py + 5],
+                        [-left * .38,py - 5]
+                    ], gradient(ctx, -width, py - 10, width, py + 8, [
+                        [0, distant ? "rgba(194,217,225,.55)" : mode.snow[0]],
+                        [1, distant ? "rgba(157,191,208,.2)" : mode.snow[1]]
+                    ]));
+
+                    if (!distant) {
+                        ctx.strokeStyle = "rgba(5,25,28,.21)";
+                        ctx.lineWidth = .65;
+
+                        for (let j = 0; j < 7; j++) {
+                            const side = j % 2 ? 1 : -1;
+                            const bx = side * rng() * width * .8;
+
+                            ctx.beginPath();
+                            ctx.moveTo(bx, py + 5);
+                            ctx.lineTo(bx + side * 5, py + 10 + rng() * 4);
+                            ctx.stroke();
+                        }
+                    }
+                }
+
+                ctx.restore();
+            }
+
+            drawCabin(ctx) {
+                const rng = seededRandom(455);
+                const dark = this.state.mode !== "day";
+
+                softEllipse(ctx, 328, 466, 95, 13, "rgba(27,49,62,.33)");
+                softEllipse(
+                    ctx, 308, 471, 63, 24,
+                    dark ? "rgba(255,179,78,.23)" : "rgba(255,199,123,.14)"
+                );
+
+                polygon(
+                    ctx,
+                    [[362,386],[408,363],[408,438],[362,465]],
+                    gradient(ctx, 362, 380, 411, 441, [
+                        [0, "#594131"], [1, "#302b27"]
+                    ])
+                );
+
+                polygon(
+                    ctx,
+                    [[249,386],[305,329],[363,386],[363,465],[249,457]],
+                    gradient(ctx, 250, 355, 367, 460, [
+                        [0, "#997353"], [.55, "#78533b"], [1, "#4d382b"]
+                    ])
+                );
+
+                ctx.save();
+                polygon(
+                    ctx,
+                    [[249,386],[305,329],[363,386],[363,465],[249,457]],
+                    null
+                );
+                ctx.clip();
+
+                for (let y = 346; y < 465; y += 9) {
+                    ctx.fillStyle = "rgba(27,17,11,.5)";
+                    ctx.fillRect(246, y, 120, 1.8);
+                    ctx.fillStyle = "rgba(232,180,119,.24)";
+                    ctx.fillRect(246, y + 2, 120, 1);
+
+                    for (let i = 0; i < 5; i++) {
+                        ctx.fillStyle = "rgba(34,22,15,.2)";
+                        ctx.fillRect(
+                            250 + rng() * 100,
+                            y + 4 + rng() * 3,
+                            4 + rng() * 15,
+                            .55
+                        );
+                    }
+                }
+
+                ctx.restore();
+
+                ctx.strokeStyle = "rgba(15,18,17,.45)";
+                ctx.lineWidth = 1.3;
+
+                for (let y = 391; y < 461; y += 9) {
+                    ctx.beginPath();
+                    ctx.moveTo(363, y);
+                    ctx.lineTo(407, y - 24);
+                    ctx.stroke();
+                }
+
+                for (let y = 390; y < 460; y += 9) {
+                    ellipse(ctx, 253, y + 2, 3.5, 3.1, "#a17a54");
+                    ellipse(ctx, 253, y + 2, 1.8, 1.6, "#694a34");
+                    ellipse(ctx, 360, y + 2, 2.5, 3.1, "#a17a54");
+                }
+
+                polygon(
+                    ctx,
+                    [[305,321],[353,300],[424,366],[370,395]],
+                    "#3a3937"
+                );
+
+                polygon(
+                    ctx,
+                    [[305,317],[353,296],[425,363],[370,387]],
+                    gradient(ctx, 338, 307, 388, 389, [
+                        [0, "#f2f6f4"],
+                        [.5, MODES[this.state.mode].snow[0]],
+                        [1, "#94aebe"]
+                    ])
+                );
+
+                polygon(
+                    ctx,
+                    [[370,387],[425,363],[425,370],[370,396]],
+                    "#8ca6b6"
+                );
+
+                polygon(
+                    ctx,
+                    [[237,391],[305,316],[375,389],[369,398],[305,332],[244,400]],
+                    "#514237"
+                );
+
+                ctx.beginPath();
+                ctx.moveTo(236,389);
+                ctx.lineTo(302,316);
+                ctx.quadraticCurveTo(305,313,309,318);
+                ctx.lineTo(376,387);
+                ctx.lineTo(370,392);
+                ctx.lineTo(306,326);
+                ctx.lineTo(244,395);
+                ctx.quadraticCurveTo(239,398,236,389);
+                ctx.fillStyle = "#f1f6f6";
+                ctx.fill();
+
+                for (let i = 0; i < 8; i++) {
+                    const x = 376 + i * 6;
+                    const y = 387 - i * 2.5;
+                    polygon(
+                        ctx,
+                        [[x,y],[x+2,y-1],[x+1,y+4+rng()*5]],
+                        "rgba(210,233,243,.7)"
+                    );
+                }
+
+                polygon(
+                    ctx,
+                    [[366,297],[381,293],[381,334],[366,338]],
+                    "#78665d"
+                );
+                polygon(
+                    ctx,
+                    [[381,293],[388,299],[388,338],[381,334]],
+                    "#443e3a"
+                );
+
+                ctx.strokeStyle = "#392f2b";
+                ctx.lineWidth = .8;
+
+                for (let y = 303; y < 333; y += 7) {
+                    ctx.beginPath();
+                    ctx.moveTo(367,y);
+                    ctx.lineTo(381,y-3);
+                    ctx.stroke();
+                }
+
+                polygon(
+                    ctx,
+                    [[362,294],[380,289],[392,295],[388,301],[363,299]],
+                    "#e5eef2"
+                );
+                polygon(
+                    ctx,
+                    [[369,293],[380,291],[385,295],[373,297]],
+                    "#3d3936"
+                );
+
+                ctx.fillStyle = "#372d26";
+                ctx.fillRect(298, 414, 25, 49);
+                ctx.fillStyle = "#564334";
+                ctx.fillRect(301, 417, 19, 44);
+                ctx.strokeStyle = "#2d2823";
+                ctx.lineWidth = 1;
+                ctx.strokeRect(304, 430, 13, 25);
+
+                this.drawWindow(ctx, 303, 417, 15, 11);
+                ellipse(ctx, 317, 440, 1.6, 1.6, "#dbc085");
+
+                polygon(
+                    ctx,
+                    [[294,459],[324,461],[331,468],[291,465]],
+                    "#e0e9e9"
+                );
+
+                this.drawWindow(ctx, 263, 401, 25, 29);
+                this.drawWindow(ctx, 331, 403, 22, 27);
+
+                softEllipse(ctx, 388, 406, 27, 28, "rgba(255,189,89,.15)");
+
+                polygon(
+                    ctx,
+                    [[376,396],[396,386],[396,411],[376,422]],
+                    "#322a25"
+                );
+
+                polygon(
+                    ctx,
+                    [[379,397],[393,390],[393,409],[379,416]],
+                    gradient(ctx, 380, 391, 393, 418, [
+                        [0, "#fff1b8"], [1, "#e89b49"]
+                    ])
+                );
+
+                ctx.strokeStyle = "#5b4432";
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.moveTo(386,394);
+                ctx.lineTo(386,414);
+                ctx.moveTo(378,407);
+                ctx.lineTo(395,399);
+                ctx.stroke();
+
+                ellipse(ctx, 271, 459, 25, 5, MODES[this.state.mode].snow[0]);
+                ellipse(ctx, 350, 466, 20, 4, MODES[this.state.mode].snow[0]);
+            }
+
+            drawWindow(ctx, x, y, width, height) {
+                softEllipse(
+                    ctx,
+                    x + width / 2,
+                    y + height / 2,
+                    width * 1.1,
+                    height,
+                    "rgba(255,183,79,.22)"
+                );
+
+                ctx.fillStyle = "#392d25";
+                ctx.fillRect(x - 2, y - 2, width + 4, height + 4);
+
+                ctx.fillStyle = gradient(ctx, x, y, x + width, y + height, [
+                    [0, "#fff2bd"],
+                    [.5, "#ffda87"],
+                    [1, "#d78a43"]
+                ]);
+                ctx.fillRect(x, y, width, height);
+
+                ctx.fillStyle = "#624531";
+                ctx.fillRect(x + width / 2 - 1, y, 2, height);
+                ctx.fillRect(x, y + height / 2 - 1, width, 2);
+
+                ctx.fillStyle = "#dce8ed";
+                ctx.fillRect(x - 3, y + height + 2, width + 6, 2.7);
+            }
+
+            drawSnowman(ctx, x, y) {
+                const mode = MODES[this.state.mode];
+
+                softEllipse(ctx, x + 4, y, 26, 6, "rgba(45,81,105,.25)");
+
+                ctx.strokeStyle = "#5d4b3c";
+                ctx.lineWidth = 2;
+                ctx.lineCap = "round";
+
+                ctx.beginPath();
+                ctx.moveTo(x - 9, y - 32);
+                ctx.lineTo(x - 28, y - 44);
+                ctx.lineTo(x - 30, y - 51);
+                ctx.moveTo(x - 25, y - 42);
+                ctx.lineTo(x - 33, y - 43);
+                ctx.moveTo(x + 9, y - 32);
+                ctx.lineTo(x + 27, y - 44);
+                ctx.lineTo(x + 29, y - 51);
+                ctx.stroke();
+
+                const ball = (cx, cy, r) => {
+                    const g = ctx.createRadialGradient(
+                        cx - r * .35, cy - r * .4, 1,
+                        cx + r * .2, cy + r * .15, r * 1.1
+                    );
+                    g.addColorStop(0, "#fcffff");
+                    g.addColorStop(.48, mode.snow[0]);
+                    g.addColorStop(1, mode.snow[1]);
+                    ellipse(ctx, cx, cy, r, r * .95, g);
+                };
+
+                ball(x, y - 17, 18);
+                ball(x, y - 38, 13.5);
+                ball(x - 1, y - 57, 10.5);
+
+                ctx.fillStyle = "#923c36";
+                ctx.fillRect(x - 11, y - 49, 22, 5);
+
+                polygon(
+                    ctx,
+                    [[x+4,y-46],[x+10,y-46],[x+12,y-31],[x+5,y-33]],
+                    "#b14c40"
+                );
+
+                ellipse(ctx, x - 1, y - 66, 14, 3, "#1e2930");
+
+                ctx.fillStyle = gradient(ctx, x - 9, 0, x + 7, 0, [
+                    [0, "#394047"], [1, "#151e25"]
+                ]);
+                ctx.fillRect(x - 9, y - 79, 16, 13);
+
+                ctx.fillStyle = "#914238";
+                ctx.fillRect(x - 9, y - 70, 16, 3);
+
+                ellipse(ctx, x - 5, y - 60, 1.3, 1.3, "#26313a");
+                ellipse(ctx, x + 1, y - 61, 1.3, 1.3, "#26313a");
+
+                polygon(
+                    ctx,
+                    [[x-1,y-57],[x+10,y-55],[x-1,y-54]],
+                    "#dc873f"
+                );
+
+                for (let i = 0; i < 3; i++) {
+                    ellipse(ctx, x, y - 39 + i * 8, 1.5, 1.5, "#3c4850");
+                }
+            }
+
+            drawAurora(ctx) {
+                if (this.state.mode !== "aurora") return;
+
+                const t = this.time;
+                ctx.save();
+                ctx.globalCompositeOperation = "screen";
+
+                for (let band = 0; band < 3; band++) {
+                    const wave = x => 190 + band * 19
+                        + Math.sin(x * .009 + t * .19 + band * 1.1) * 34
+                        + Math.sin(x * .024 - t * .11 + band) * 10;
+
+                    const g = gradient(
+                        ctx, 0, 65 + band * 12, 0, 260 + band * 12,
+                        [
+                            [0, "rgba(127,106,227,0)"],
+                            [.28, "rgba(112,93,193,.035)"],
+                            [.68, "rgba(73,206,167,.11)"],
+                            [.9, "rgba(101,238,188,.24)"],
+                            [1, "rgba(124,236,198,0)"]
+                        ]
+                    );
+
+                    ctx.beginPath();
+
+                    for (let x = 10; x <= 590; x += 8) {
+                        if (x === 10) ctx.moveTo(x, wave(x));
+                        else ctx.lineTo(x, wave(x));
+                    }
+
+                    for (let x = 590; x >= 10; x -= 8) {
+                        ctx.lineTo(x, wave(x) - 125);
+                    }
+
+                    ctx.closePath();
+                    ctx.fillStyle = g;
+                    ctx.fill();
+
+                    ctx.strokeStyle = g;
+                    ctx.lineWidth = 1.4;
+
+                    for (let x = 15; x < 590; x += 7) {
+                        const y = wave(x);
+                        ctx.globalAlpha = .35 + .3 * Math.sin(x * .21 + band + t * .4);
+
+                        ctx.beginPath();
+                        ctx.moveTo(x, y);
+                        ctx.bezierCurveTo(x-5, y-35, x+9, y-65, x+15, y-115);
+                        ctx.stroke();
+                    }
+
+                    ctx.globalAlpha = 1;
+                }
+
+                ctx.restore();
+            }
+
+            drawSmoke(ctx) {
+                const wind = MODES[this.state.mode].wind;
+                ctx.save();
+
+                for (let i = 0; i < 9; i++) {
+                    const age = (this.time * .19 + i / 9) % 1;
+                    const x = 376
+                        + Math.sin(age * 5 + this.time * .3) * age * 13
+                        + age * wind * .47;
+                    const y = 293 - age * (this.state.mode === "blizzard" ? 45 : 81);
+                    const radius = 4 + age * 15;
+
+                    softEllipse(
+                        ctx, x, y, radius, radius * .77,
+                        `rgba(218,230,230,${(1 - age) * .13})`
+                    );
+                }
+
+                ctx.restore();
+            }
+
+            targetParticleCount() {
+                return Math.min(720, Math.round(
+                    (70 + this.state.intensity * 3.1) * MODES[this.state.mode].density
+                ));
+            }
+
+            newParticle(scattered = false) {
+                const depth = Math.random();
+                const particle = {
+                    x: 0,
+                    y: 0,
+                    vx: 0,
+                    vy: 0,
+                    depth,
+                    radius: .45 + depth * depth * 2,
+                    opacity: .28 + depth * .64,
+                    phase: random(0, TAU),
+                    settled: false,
+                    restTime: 0
+                };
+
+                this.placeParticle(particle, scattered);
+                return particle;
+            }
+
+            placeParticle(particle, scattered) {
+                const x = random(38, 562);
+                const dx = x - CENTER;
+                const top = CENTER - Math.sqrt(
+                    Math.max(0, RADIUS * RADIUS - dx * dx)
+                );
+                const floor = this.particleFloor(particle, x);
+
+                particle.x = x;
+                particle.y = scattered
+                    ? random(top + 7, Math.max(top + 8, floor - 3))
+                    : top + 5 + random(0, 17);
+
+                particle.vx = MODES[this.state.mode].wind
+                    * (.25 + particle.depth * .75)
+                    + random(-6, 6);
+
+                particle.vy = 9 + particle.depth * 17 + random(0, 7);
+                particle.settled = false;
+                particle.restTime = 0;
+            }
+
+            particleFloor(particle, x = particle.x) {
+                const dx = x - CENTER;
+                const circleBottom = CENTER + Math.sqrt(
+                    Math.max(0, (RADIUS - 4) ** 2 - dx * dx)
+                );
+                const snowSurface =
+                    423 + particle.depth * 123 + Math.sin(x * .013) * 5;
+
+                return Math.min(
+                    circleBottom - particle.radius,
+                    snowSurface
+                );
+            }
+
+            syncParticles(scattered = false) {
+                const target = this.targetParticleCount();
+
+                while (this.particles.length < target) {
+                    this.particles.push(this.newParticle(scattered));
+                }
+
+                if (this.particles.length > target) {
+                    this.particles.length = target;
+                }
+            }
+
+            updatePhysics(dt) {
+                const mode = MODES[this.state.mode];
+                const storm = this.state.mode === "blizzard";
+                const gust = storm
+                    ? .8 + .4 * Math.sin(this.time * .8)
+                        + .2 * Math.sin(this.time * 1.7)
+                    : 1;
+
+                this.energy *= Math.exp(-dt * .72);
+                if (this.energy < .002) this.energy = 0;
+
+                for (const p of this.particles) {
+                    if (p.settled) {
+                        p.restTime -= dt;
+                        if (p.restTime <= 0) this.placeParticle(p, false);
+                        continue;
+                    }
+
+                    const depthFactor = .25 + p.depth * .75;
+                    const drift = Math.sin(
+                        this.time * .72 + p.phase + p.y * .014
+                    ) * 9;
+                    const wind = mode.wind * gust * depthFactor + drift;
+
+                    const swirlX = Math.sin(
+                        p.y * .018 + this.time * 2.5 + p.phase
+                    ) * this.energy * 180;
+
+                    const swirlY = Math.cos(
+                        p.x * .015 + this.time * 2 + p.phase
+                    ) * this.energy * 115;
+
+                    const fallSpeed = (12 + p.depth * 23) * (storm ? 1.5 : 1);
+
+                    p.vx += (wind + swirlX - p.vx)
+                        * (1 - Math.exp(-dt * 1.1));
+                    p.vy += (fallSpeed + swirlY - p.vy)
+                        * (1 - Math.exp(-dt * .78));
+
+                    p.x += p.vx * dt;
+                    p.y += p.vy * dt;
+
+                    const dx = p.x - CENTER;
+                    const dy = p.y - CENTER;
+                    const distance = Math.hypot(dx, dy);
+                    const limit = RADIUS - p.radius - 2;
+
+                    if (distance > limit) {
+                        const nx = dx / distance;
+                        const ny = dy / distance;
+
+                        p.x = CENTER + nx * limit;
+                        p.y = CENTER + ny * limit;
+
+                        const outwardSpeed = p.vx * nx + p.vy * ny;
+
+                        if (outwardSpeed > 0) {
+                            p.vx -= 1.3 * outwardSpeed * nx;
+                            p.vy -= 1.3 * outwardSpeed * ny;
+                        }
+                    }
+
+                    const floor = this.particleFloor(p);
+
+                    if (p.y >= floor && p.vy > 0 && this.energy < .17) {
+                        p.y = floor;
+                        p.vx = 0;
+                        p.vy = 0;
+                        p.settled = true;
+                        p.restTime = storm ? random(.3, 1.8) : random(2, 7);
+                    }
+                }
+            }
+
+            drawParticles(ctx, behindScene) {
+                const storm = this.state.mode === "blizzard";
+                ctx.save();
+
+                for (const p of this.particles) {
+                    if ((p.depth < .24) !== behindScene) continue;
+
+                    ctx.globalAlpha = p.opacity * (p.settled ? .63 : 1);
+
+                    if (
+                        storm &&
+                        !p.settled &&
+                        Math.abs(p.vx) > 60 &&
+                        p.depth > .4
+                    ) {
+                        ctx.beginPath();
+                        ctx.moveTo(p.x, p.y);
+                        ctx.lineTo(
+                            p.x - p.vx * .035,
+                            p.y - p.vy * .035
+                        );
+                        ctx.lineWidth = Math.max(.65, p.radius * .65);
+                        ctx.strokeStyle = "#edf8ff";
+                        ctx.stroke();
+                    } else if (p.depth > .84) {
+                        const size = p.radius * 3.5;
+                        ctx.drawImage(
+                            this.snowSprite,
+                            p.x - size / 2,
+                            p.y - size / 2,
+                            size,
+                            size
+                        );
+                    } else {
+                        ellipse(
+                            ctx,
+                            p.x,
+                            p.y,
+                            p.radius,
+                            p.radius * .87,
+                            "#f4fbff"
+                        );
+                    }
+                }
+
+                ctx.restore();
+            }
+
+            drawStormHaze(ctx) {
+                if (this.state.mode !== "blizzard") return;
+
+                const strength = .045 + Math.sin(this.time * .9) * .015;
+                ctx.fillStyle = `rgba(218,233,243,${strength})`;
+                ctx.fillRect(0, 0, 600, 600);
+
+                for (let i = 0; i < 3; i++) {
+                    const x = ((this.time * 48 + i * 240) % 960) - 180;
+
+                    softEllipse(
+                        ctx,
+                        x,
+                        265 + i * 78,
+                        220,
+                        48,
+                        "rgba(226,237,243,.055)"
+                    );
+                }
+            }
+
+            render() {
+                if (!this.skyLayer) return;
+
+                const ctx = this.ctx;
+                const scale = this.canvas.width / SIZE;
+
+                ctx.setTransform(scale, 0, 0, scale, 0, 0);
+                ctx.clearRect(0, 0, SIZE, SIZE);
+                ctx.save();
+
+                ctx.beginPath();
+                ctx.arc(CENTER, CENTER, 299, 0, TAU);
+                ctx.clip();
+
+                ctx.drawImage(this.skyLayer.canvas, 0, 0, SIZE, SIZE);
+                this.drawAurora(ctx);
+                this.drawParticles(ctx, true);
+
+                ctx.drawImage(this.landLayer.canvas, 0, 0, SIZE, SIZE);
+                this.drawSmoke(ctx);
+                this.drawParticles(ctx, false);
+                this.drawStormHaze(ctx);
+
+                const vignette = ctx.createRadialGradient(
+                    290, 265, 155,
+                    300, 300, 303
+                );
+                vignette.addColorStop(0, "rgba(5,25,39,0)");
+                vignette.addColorStop(.7, "rgba(5,25,39,.025)");
+                vignette.addColorStop(1, "rgba(5,25,39,.3)");
+
+                ctx.fillStyle = vignette;
+                ctx.fillRect(0, 0, SIZE, SIZE);
+                ctx.restore();
+            }
+
+            animate(timestamp) {
+                this.frameId = 0;
+                if (this.paused || document.hidden) return;
+
+                const dt = this.lastFrame
+                    ? Math.min((timestamp - this.lastFrame) / 1000, .04)
+                    : 1 / 60;
+
+                this.lastFrame = timestamp;
+                this.time += dt;
+                this.updatePhysics(dt);
+                this.render();
+
+                if (timestamp - this.lastUI > 250) {
+                    this.updateActivity();
+                    this.lastUI = timestamp;
+                }
+
+                this.frameId = requestAnimationFrame(this.tick);
+            }
+
+            start() {
+                if (this.frameId || this.paused || document.hidden) return;
+                this.lastFrame = 0;
+                this.frameId = requestAnimationFrame(this.tick);
+            }
+
+            stop() {
+                if (this.frameId) cancelAnimationFrame(this.frameId);
+                this.frameId = 0;
+                this.lastFrame = 0;
+            }
+
+            shake(source = "button") {
+                this.state.shakes = Math.min(999999999, this.state.shakes + 1);
+                this.energy = 1;
+
+                for (const p of this.particles) {
+                    if (this.paused) this.placeParticle(p, true);
+                    p.settled = false;
+                    p.restTime = 0;
+                    p.vx += random(-155, 155);
+                    p.vy = random(-180, -40);
+                }
+
+                if (this.shakeAnimation) this.shakeAnimation.cancel();
+
+                if (
+                    !this.reducedMotion.matches &&
+                    !this.paused &&
+                    this.sculpture.animate
+                ) {
+                    this.shakeAnimation = this.sculpture.animate([
+                        { transform: "translateX(0) rotate(0)" },
+                        { transform: "translateX(-9px) rotate(-2deg)" },
+                        { transform: "translateX(9px) rotate(2deg)" },
+                        { transform: "translateX(-6px) rotate(-1.4deg)" },
+                        { transform: "translateX(5px) rotate(1deg)" },
+                        { transform: "translateX(-2px) rotate(-.4deg)" },
+                        { transform: "translateX(0) rotate(0)" }
+                    ], {
+                        duration: 580,
+                        easing: "ease-in-out"
+                    });
+                }
+
+                this.saveState();
+                this.updateUI();
+                this.render();
+
+                if (source !== "motion") {
+                    this.announce(this.paused
+                        ? "Snow stirred. Animation is paused; press Play to watch it fall."
+                        : "A fresh swirl of snow. Watch it settle.");
+                }
+            }
+
+            setMode(mode) {
+                if (
+                    !Object.prototype.hasOwnProperty.call(MODES, mode) ||
+                    this.state.mode === mode
+                ) return;
+
+                this.state.mode = mode;
+                this.syncParticles(true);
+                this.buildScene();
+                this.updateUI();
+                this.saveState();
+                this.render();
+                this.announce(`${MODES[mode].name} mode. ${MODES[mode].description}`);
+            }
+
+            setIntensity(value) {
+                this.state.intensity = clamp(Number(value), 10, 100);
+                this.syncParticles(true);
+                this.updateUI();
+                this.render();
+            }
+
+            setPaused(paused, announce = true) {
+                this.paused = paused;
+
+                if (paused) {
+                    this.stop();
+                    if (this.shakeAnimation) this.shakeAnimation.cancel();
+                } else {
+                    this.start();
+                }
+
+                this.updateUI();
+                this.saveState();
+                this.render();
+
+                if (announce) {
+                    this.announce(paused ? "Animation paused." : "Animation playing.");
+                }
+            }
+
+            updateActivity() {
+                this.ui.activity.textContent = this.paused
+                    ? "Paused"
+                    : this.energy > .18
+                        ? "Snow swirling"
+                        : this.state.mode === "blizzard"
+                            ? "Winter gusts"
+                            : "Gently falling";
+            }
+
+            updateUI() {
+                document.body.dataset.mode = this.state.mode;
+                document.body.classList.toggle("paused", this.paused);
+
+                document.querySelectorAll(".mode-button").forEach(button => {
+                    button.setAttribute(
+                        "aria-pressed",
+                        String(button.dataset.mode === this.state.mode)
+                    );
+                });
+
+                this.ui.modeDescription.textContent =
+                    MODES[this.state.mode].description;
+
+                this.ui.sceneDescription.textContent =
+                    "A wooden cabin, snowy evergreens, and a snowman inside a glass globe. "
+                    + MODES[this.state.mode].description;
+
+                this.ui.intensity.value = this.state.intensity;
+                this.ui.intensityValue.value = `${this.state.intensity}%`;
+
+                this.ui.intensity.setAttribute(
+                    "aria-valuetext",
+                    `${this.state.intensity} percent snowfall intensity`
+                );
+
+                this.ui.shakes.textContent = this.state.shakes.toLocaleString();
+                this.ui.flakes.textContent = this.particles.length.toLocaleString();
+
+                this.ui.pause.setAttribute("aria-pressed", String(this.paused));
+                this.ui.pause.setAttribute(
+                    "aria-label",
+                    this.paused ? "Play animation" : "Pause animation"
+                );
+
+                this.ui.pause.title = this.paused
+                    ? "Play animation (P)"
+                    : "Pause animation (P)";
+
+                this.ui.pauseIcon.innerHTML = this.paused
+                    ? '<path d="M6 3l11 7-11 7z"/>'
+                    : '<path d="M5 3h3v14H5zm7 0h3v14h-3z"/>';
+
+                this.updateActivity();
+            }
+
+            beginDrag(event) {
+                if (!event.isPrimary || event.button !== 0 || this.pointer) return;
+
+                event.preventDefault();
+                this.globe.focus({ preventScroll: true });
+
+                if (this.shakeAnimation) this.shakeAnimation.cancel();
+
+                this.pointer = {
+                    id: event.pointerId,
+                    startX: event.clientX,
+                    startY: event.clientY,
+                    lastX: event.clientX,
+                    lastY: event.clientY
+                };
+
+                this.globe.setPointerCapture(event.pointerId);
+                this.sculpture.classList.add("dragging");
+            }
+
+            drag(event) {
+                if (!this.pointer || this.pointer.id !== event.pointerId) return;
+
+                const scale = SIZE / Math.max(1, this.globe.clientWidth);
+                const dx = (event.clientX - this.pointer.lastX) * scale;
+                const dy = (event.clientY - this.pointer.lastY) * scale;
+                const distance = Math.hypot(dx, dy);
+
+                if (distance > 1 && !this.paused) {
+                    this.energy = Math.min(1, this.energy + distance * .004);
+
+                    for (const p of this.particles) {
+                        p.settled = false;
+                        p.vx += clamp(-dx * 2.4, -55, 55);
+                        p.vy += clamp(-dy * 2.4, -55, 55);
+                    }
+                }
+
+                if (!this.reducedMotion.matches && !this.paused) {
+                    const displacement = event.clientX - this.pointer.startX;
+                    const vertical = event.clientY - this.pointer.startY;
+
+                    this.sculpture.style.transform =
+                        `translate(${clamp(displacement * .06, -8, 8)}px, `
+                        + `${clamp(vertical * .025, -3, 3)}px) `
+                        + `rotate(${clamp(displacement * .025, -5, 5)}deg)`;
+                }
+
+                this.pointer.lastX = event.clientX;
+                this.pointer.lastY = event.clientY;
+            }
+
+            endDrag(event, cancelled = false) {
+                if (!this.pointer || this.pointer.id !== event.pointerId) return;
+
+                const pointerId = this.pointer.id;
+                this.pointer = null;
+                this.sculpture.classList.remove("dragging");
+                this.sculpture.style.transform = "";
+
+                if (this.globe.hasPointerCapture(pointerId)) {
+                    this.globe.releasePointerCapture(pointerId);
+                }
+
+                if (!cancelled) this.shake("pointer");
+            }
+
+            async toggleMotion() {
+                if (this.motionPending) return;
+
+                if (this.motionEnabled) {
+                    window.removeEventListener("devicemotion", this.onMotion);
+                    this.motionEnabled = false;
+                    this.updateMotionUI();
+                    this.announce("Device shake disabled.");
+                    return;
+                }
+
+                if (!window.isSecureContext || !("DeviceMotionEvent" in window)) {
+                    this.announce(
+                        "Device shake is not available here. Tap the globe or use the Shake button."
+                    );
+                    return;
+                }
+
+                this.motionPending = true;
+                this.ui.motion.disabled = true;
+
+                try {
+                    if (typeof DeviceMotionEvent.requestPermission === "function") {
+                        const permission = await DeviceMotionEvent.requestPermission();
+                        if (permission !== "granted") {
+                            throw new Error("Permission not granted");
+                        }
+                    }
+
+                    window.addEventListener(
+                        "devicemotion",
+                        this.onMotion,
+                        { passive: true }
+                    );
+
+                    this.motionEnabled = true;
+                    this.announce(
+                        "Device shake enabled. Gently move your device to stir the snow; keep a secure grip."
+                    );
+                } catch {
+                    this.announce(
+                        "Motion access was not granted. You can still tap, drag, or use the Shake button."
+                    );
+                } finally {
+                    this.motionPending = false;
+                    this.ui.motion.disabled = false;
+                    this.updateMotionUI();
+                }
+            }
+
+            updateMotionUI() {
+                this.ui.motion.setAttribute(
+                    "aria-pressed",
+                    String(this.motionEnabled)
+                );
+                this.ui.motion.textContent = this.motionEnabled
+                    ? "Disable device shake"
+                    : "Enable device shake";
+            }
+
+            handleMotion(event) {
+                if (!this.motionEnabled || this.paused || document.hidden) return;
+
+                const usable = a => a
+                    && Number.isFinite(a.x)
+                    && Number.isFinite(a.y)
+                    && Number.isFinite(a.z);
+
+                const linear = usable(event.acceleration);
+                const acceleration = linear
+                    ? event.acceleration
+                    : event.accelerationIncludingGravity;
+
+                if (!usable(acceleration)) return;
+
+                const force = Math.hypot(
+                    acceleration.x,
+                    acceleration.y,
+                    acceleration.z
+                );
+                const now = performance.now();
+
+                if (
+                    force > (linear ? 13 : 23) &&
+                    now - this.lastMotionShake > 1100
+                ) {
+                    this.lastMotionShake = now;
+                    this.shake("motion");
+                }
+            }
+
+            bindEvents() {
+                document.getElementById("shakeButton").addEventListener(
+                    "click",
+                    () => this.shake()
+                );
+
+                this.ui.pause.addEventListener(
+                    "click",
+                    () => this.setPaused(!this.paused)
+                );
+
+                this.ui.motion.addEventListener(
+                    "click",
+                    () => this.toggleMotion()
+                );
+
+                document.getElementById("resetButton").addEventListener("click", () => {
+                    this.state.shakes = 0;
+                    this.updateUI();
+                    this.saveState();
+                    this.announce(
+                        "Shake count reset. Your scene and snowfall settings are unchanged."
+                    );
+                });
+
+                document.querySelectorAll(".mode-button").forEach(button => {
+                    button.addEventListener(
+                        "click",
+                        () => this.setMode(button.dataset.mode)
+                    );
+                });
+
+                this.ui.intensity.addEventListener(
+                    "input",
+                    event => this.setIntensity(event.target.value)
+                );
+
+                this.ui.intensity.addEventListener(
+                    "change",
+                    () => this.saveState()
+                );
+
+                this.globe.addEventListener(
+                    "pointerdown",
+                    event => this.beginDrag(event)
+                );
+                this.globe.addEventListener(
+                    "pointermove",
+                    event => this.drag(event)
+                );
+                this.globe.addEventListener(
+                    "pointerup",
+                    event => this.endDrag(event)
+                );
+                this.globe.addEventListener(
+                    "pointercancel",
+                    event => this.endDrag(event, true)
+                );
+                this.globe.addEventListener(
+                    "lostpointercapture",
+                    event => this.endDrag(event, true)
+                );
+
+                this.globe.addEventListener("keydown", event => {
+                    if (
+                        (event.code === "Space" || event.key === "Enter")
+                        && !event.repeat
+                    ) {
+                        event.preventDefault();
+                        event.stopPropagation();
+                        this.shake("keyboard");
+                    }
+                });
+
+                document.addEventListener("keydown", event => {
+                    if (
+                        event.repeat ||
+                        event.altKey ||
+                        event.ctrlKey ||
+                        event.metaKey
+                    ) return;
+
+                    if (event.target.closest(
+                        "input, select, textarea, button, a, [contenteditable='true']"
+                    )) return;
+
+                    if (event.code === "Space") {
+                        event.preventDefault();
+                        this.shake("keyboard");
+                    } else if (event.key.toLowerCase() === "p") {
+                        event.preventDefault();
+                        this.setPaused(!this.paused);
+                    } else if (/^[1-4]$/.test(event.key)) {
+                        this.setMode(
+                            ["day", "night", "aurora", "blizzard"][Number(event.key) - 1]
+                        );
+                    }
+                });
+
+                if ("ResizeObserver" in window) {
+                    this.resizeObserver = new ResizeObserver(() => this.resize());
+                    this.resizeObserver.observe(this.globe);
+                }
+
+                window.addEventListener("resize", () => this.resize());
+
+                document.addEventListener("visibilitychange", () => {
+                    if (document.hidden) {
+                        this.stop();
+
+                        if (this.pointer) {
+                            this.endDrag(
+                                { pointerId: this.pointer.id },
+                                true
+                            );
+                        }
+                    } else {
+                        this.resize();
+                        this.start();
+                    }
+                });
+
+                const motionPreferenceChanged = event => {
+                    if (event.matches) {
+                        this.setPaused(true, false);
+                        this.announce(
+                            "Animation paused because reduced motion is enabled on your device."
+                        );
+                    }
+                };
+
+                if (this.reducedMotion.addEventListener) {
+                    this.reducedMotion.addEventListener(
+                        "change",
+                        motionPreferenceChanged
+                    );
+                } else {
+                    this.reducedMotion.addListener(motionPreferenceChanged);
+                }
+
+                window.addEventListener("pagehide", () => {
+                    this.saveState();
+                    this.stop();
+                });
+
+                window.addEventListener("pageshow", () => this.start());
+            }
+        }
+
+        new SnowGlobe();
+    })();
+    </script>
+</body>
+</html>
