@@ -1,0 +1,1522 @@
+<!DOCTYPE html>
+<!-- MIT License
+Copyright (c) 2025-2027 Yuliya Kolesnikova <0009-0000-6151-7415@orcid.org>
+-->
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <link rel="icon" type="image/x-icon" href="favicon.ico"/>
+    <meta name="theme-color" content="#050c13">
+    <meta name="description" content="A peaceful, interactive Arctic night with flowing aurora curtains, a star-filled sky, snowy mountains and lake reflections.">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <title>Northlight — Aurora Borealis</title>
+
+    <style>
+        :root {
+            color-scheme: dark;
+            --text: #e7f1f1;
+            --muted: #94a9ad;
+            --accent: #a0e6c7;
+            --line: rgba(190, 225, 224, .13);
+            --panel: rgba(9, 20, 28, .94);
+        }
+
+        * { box-sizing: border-box; }
+
+        html, body {
+            width: 100%;
+            height: 100%;
+            margin: 0;
+            overflow: hidden;
+            background: #050c13;
+            overscroll-behavior: none;
+        }
+
+        body {
+            font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+            color: var(--text);
+        }
+
+        button, input, select { font: inherit; }
+        button { -webkit-tap-highlight-color: transparent; }
+        button, select, input[type="checkbox"] { cursor: pointer; }
+        button { color: inherit; }
+
+        button:focus-visible, input:focus-visible, select:focus-visible {
+            outline: 2px solid var(--accent);
+            outline-offset: 5px;
+        }
+
+        #canvas {
+            position: fixed;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            display: block;
+        }
+
+        .branding {
+            position: fixed;
+            top: max(30px, env(safe-area-inset-top));
+            left: max(32px, env(safe-area-inset-left));
+            pointer-events: none;
+            text-shadow: 0 2px 16px #000;
+        }
+
+        .eyebrow {
+            color: var(--accent);
+            font-size: 10px;
+            font-weight: 600;
+            letter-spacing: .32em;
+            text-transform: uppercase;
+        }
+
+        h1 {
+            margin: 9px 0 6px;
+            font-size: clamp(23px, 3vw, 34px);
+            font-weight: 300;
+            letter-spacing: .13em;
+        }
+
+        .branding p {
+            margin: 0;
+            color: #9dafb6;
+            font-size: 11px;
+            letter-spacing: .06em;
+        }
+
+        .toolbar {
+            position: fixed;
+            top: max(28px, env(safe-area-inset-top));
+            right: max(28px, env(safe-area-inset-right));
+            display: flex;
+            gap: 8px;
+        }
+
+        .icon-button {
+            display: inline-flex;
+            justify-content: center;
+            align-items: center;
+            width: 44px;
+            height: 44px;
+            border: 1px solid var(--line);
+            border-radius: 50%;
+            background: rgba(9, 20, 28, .55);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            transition: background .2s, border-color .2s;
+        }
+
+        .icon-button:hover {
+            background: rgba(31, 55, 63, .85);
+            border-color: rgba(160, 230, 199, .5);
+        }
+
+        .icon-button:disabled { opacity: .35; cursor: not-allowed; }
+        svg { width: 19px; height: 19px; fill: none; stroke: currentColor; stroke-width: 1.5; }
+
+        .caption {
+            position: fixed;
+            left: max(32px, env(safe-area-inset-left));
+            bottom: max(28px, env(safe-area-inset-bottom));
+            pointer-events: none;
+            text-shadow: 0 2px 12px #000;
+        }
+
+        .caption strong {
+            display: block;
+            color: #c1d4d4;
+            font-weight: 400;
+            font-size: 11px;
+            letter-spacing: .17em;
+            text-transform: uppercase;
+        }
+
+        .caption span {
+            display: block;
+            margin-top: 7px;
+            font-size: 10px;
+            color: #81999f;
+            letter-spacing: .06em;
+        }
+
+        .compass {
+            position: fixed;
+            bottom: max(28px, env(safe-area-inset-bottom));
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            font-size: 10px;
+            color: #aac0c4;
+            pointer-events: none;
+        }
+
+        .compass::before, .compass::after {
+            content: "";
+            width: 38px;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, #647e83);
+        }
+
+        .compass::after { transform: rotate(180deg); }
+
+        .keyboard-hint {
+            position: fixed;
+            right: max(30px, env(safe-area-inset-right));
+            bottom: max(28px, env(safe-area-inset-bottom));
+            color: #80969c;
+            font-size: 10px;
+        }
+
+        kbd {
+            font-family: inherit;
+            border: 1px solid var(--line);
+            border-radius: 4px;
+            padding: 3px 6px;
+            margin-right: 5px;
+        }
+
+        .overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 5, 10, .4);
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity .25s, visibility .25s;
+            z-index: 10;
+        }
+
+        .overlay.open { opacity: 1; visibility: visible; }
+
+        .panel {
+            position: fixed;
+            inset: 0 0 0 auto;
+            width: min(370px, 100%);
+            padding: max(26px, env(safe-area-inset-top)) max(26px, env(safe-area-inset-right)) max(26px, env(safe-area-inset-bottom)) 26px;
+            background: var(--panel);
+            border-left: 1px solid var(--line);
+            backdrop-filter: blur(28px);
+            -webkit-backdrop-filter: blur(28px);
+            box-shadow: -20px 0 80px #0005;
+            transform: translateX(102%);
+            visibility: hidden;
+            transition: transform .3s ease, visibility .3s;
+            overflow-y: auto;
+            overscroll-behavior: contain;
+            scrollbar-width: thin;
+            scrollbar-color: #35534e transparent;
+            z-index: 11;
+        }
+
+        .panel.open { transform: translateX(0); visibility: visible; }
+
+        .panel-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 26px;
+        }
+
+        .panel-header h2 { margin: 5px 0 0; font-size: 20px; font-weight: 400; }
+        .panel-header .eyebrow { font-size: 9px; letter-spacing: .23em; }
+        .panel-header .icon-button { width: 38px; height: 38px; }
+
+        .section-title {
+            margin: 24px 0 18px;
+            padding-top: 20px;
+            border-top: 1px solid var(--line);
+            color: #9bb3b7;
+            font-size: 10px;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: .2em;
+        }
+
+        .control { margin-bottom: 21px; }
+
+        .control label {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+            font-size: 12px;
+            color: #c8d6da;
+        }
+
+        output {
+            color: var(--accent);
+            font-size: 11px;
+            font-variant-numeric: tabular-nums;
+        }
+
+        input[type="range"] {
+            display: block;
+            width: 100%;
+            height: 5px;
+            margin: 0;
+            border-radius: 4px;
+            appearance: none;
+            -webkit-appearance: none;
+            background: linear-gradient(to right, #8dcbb4 var(--fill, 50%), #25363e var(--fill, 50%));
+            cursor: pointer;
+            touch-action: pan-y;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            appearance: none;
+            -webkit-appearance: none;
+            width: 17px;
+            height: 17px;
+            background: #daf2e7;
+            border: 3px solid #83b9a5;
+            border-radius: 50%;
+            box-shadow: 0 0 10px #9ee5c522;
+        }
+
+        input[type="range"]::-moz-range-thumb {
+            width: 12px;
+            height: 12px;
+            background: #daf2e7;
+            border: 3px solid #83b9a5;
+            border-radius: 50%;
+        }
+
+        .presets { display: grid; grid-template-columns: repeat(4, 1fr); gap: 9px; }
+
+        .preset {
+            position: relative;
+            height: 40px;
+            border: 2px solid transparent;
+            border-radius: 8px;
+            background: var(--swatch);
+            opacity: .65;
+            transition: opacity .2s, border-color .2s;
+        }
+
+        .preset:hover { opacity: 1; }
+        .preset[aria-pressed="true"] { opacity: 1; border-color: #e4f7ef; }
+        .preset[aria-pressed="true"]::after {
+            content: "";
+            position: absolute;
+            width: 5px;
+            height: 5px;
+            background: white;
+            border-radius: 50%;
+            bottom: 5px;
+            right: 5px;
+        }
+
+        .theme-description {
+            margin: 10px 0 0;
+            color: var(--muted);
+            line-height: 1.6;
+            font-size: 10px;
+            min-height: 32px;
+        }
+
+        .check {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            min-height: 37px;
+            font-size: 12px;
+            color: #c8d6da;
+        }
+
+        .check input { width: 17px; height: 17px; accent-color: var(--accent); }
+
+        select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid var(--line);
+            border-radius: 7px;
+            background: #15252d;
+            color: var(--text);
+            font-size: 12px;
+        }
+
+        .actions { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 23px; }
+
+        .button {
+            min-height: 43px;
+            padding: 10px;
+            border: 1px solid var(--line);
+            border-radius: 8px;
+            background: #172a31;
+            font-size: 11px;
+            transition: background .2s;
+        }
+
+        .button:hover { background: #263e45; }
+        .button.primary { background: #9bdabe; color: #102b23; border-color: transparent; }
+        .button.primary:hover { background: #b8efd6; }
+
+        .panel-note {
+            margin: 20px 0 0;
+            color: #788f97;
+            font-size: 10px;
+            line-height: 1.7;
+        }
+
+        .toast {
+            position: fixed;
+            left: 50%;
+            bottom: max(78px, calc(env(safe-area-inset-bottom) + 60px));
+            transform: translate(-50%, 10px);
+            padding: 12px 20px;
+            background: rgba(11, 27, 34, .94);
+            border: 1px solid var(--line);
+            border-radius: 30px;
+            font-size: 12px;
+            text-align: center;
+            opacity: 0;
+            transition: opacity .25s, transform .25s;
+            pointer-events: none;
+            z-index: 20;
+            max-width: 90vw;
+        }
+
+        .toast.show { opacity: 1; transform: translate(-50%, 0); }
+
+        .fallback {
+            position: fixed;
+            inset: 30% 10% auto;
+            text-align: center;
+            color: #bfd2da;
+            line-height: 1.7;
+        }
+
+        @media (max-width: 600px) {
+            .branding { left: 20px; top: max(22px, env(safe-area-inset-top)); }
+            .branding p { font-size: 9px; max-width: 170px; line-height: 1.6; }
+            .eyebrow { font-size: 8px; }
+            .toolbar { right: 16px; top: max(22px, env(safe-area-inset-top)); gap: 6px; }
+            .icon-button { width: 39px; height: 39px; }
+            #fullscreenBtn { display: none; }
+            .caption { left: 20px; bottom: max(23px, env(safe-area-inset-bottom)); }
+            .caption strong { font-size: 9px; }
+            .caption span { font-size: 9px; }
+            .compass { left: auto; right: 22px; transform: none; bottom: max(24px, env(safe-area-inset-bottom)); }
+            .compass::before, .compass::after { width: 17px; }
+            .keyboard-hint { display: none; }
+        }
+
+        @media (max-width: 380px) {
+            .branding p { display: none; }
+            .toolbar { gap: 4px; }
+            .icon-button { width: 35px; height: 35px; }
+            h1 { font-size: 20px; }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            *, *::before, *::after { transition: none !important; }
+        }
+    </style>
+</head>
+<body>
+    <canvas id="canvas" role="img" aria-label="Animated northern lights flowing above snow-covered Arctic mountains and reflecting in a quiet lake.">
+        Your browser does not support Canvas. Please use a current browser to view this scene.
+    </canvas>
+
+    <header class="branding">
+        <div class="eyebrow">A quiet moment beneath the sky</div>
+        <h1>NORTHLIGHT</h1>
+        <p>Aurora borealis · An imaginary Arctic night</p>
+    </header>
+
+    <nav class="toolbar" aria-label="Scene controls">
+        <button class="icon-button" id="pauseBtn" aria-label="Pause animation" title="Pause / Play (Space)" aria-pressed="false">
+            <svg id="pauseIcon" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14M16 5v14"/></svg>
+        </button>
+        <button class="icon-button" id="captureBtn" aria-label="Save scene as PNG" title="Save image">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 6l1.5-2h5L16 6h4a1 1 0 0 1 1 1v12H3V7a1 1 0 0 1 1-1z"/><circle cx="12" cy="12" r="3.5"/></svg>
+        </button>
+        <button class="icon-button" id="fullscreenBtn" aria-label="Enter fullscreen" title="Fullscreen">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 3H3v5m13-5h5v5M3 16v5h5m13-5v5h-5"/></svg>
+        </button>
+        <button class="icon-button" id="toggleBtn" aria-label="Open scene settings" aria-controls="controlPanel" aria-expanded="false" title="Scene settings (H)">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h7m4 0h5M4 17h3m4 0h9"/><circle cx="13" cy="7" r="2"/><circle cx="9" cy="17" r="2"/></svg>
+        </button>
+    </nav>
+
+    <div class="caption">
+        <strong id="sceneTitle">The green hour</strong>
+        <span>Procedural landscape · No two moments alike</span>
+    </div>
+    <div class="compass" aria-hidden="true">N</div>
+    <div class="keyboard-hint"><kbd>H</kbd> settings &nbsp; <kbd>Space</kbd> pause</div>
+
+    <div class="overlay" id="panelOverlay"></div>
+
+    <aside class="panel" id="controlPanel" role="dialog" aria-modal="true" aria-labelledby="panelTitle" aria-hidden="true" inert>
+        <div class="panel-header">
+            <div>
+                <div class="eyebrow">Make the night your own</div>
+                <h2 id="panelTitle">Scene settings</h2>
+            </div>
+            <button class="icon-button" id="closePanelBtn" aria-label="Close settings" title="Close (Escape)">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>
+            </button>
+        </div>
+
+        <div class="control">
+            <label for="speed">Movement speed <output id="speedValue" for="speed"></output></label>
+            <input type="range" id="speed" min="0.1" max="3" step="0.1">
+        </div>
+        <div class="control">
+            <label for="intensity">Aurora brightness <output id="intensityValue" for="intensity"></output></label>
+            <input type="range" id="intensity" min="20" max="100" step="5">
+        </div>
+        <div class="control">
+            <label for="waveCount">Curtain layers <output id="waveCountValue" for="waveCount"></output></label>
+            <input type="range" id="waveCount" min="2" max="7" step="1">
+        </div>
+        <div class="control">
+            <label for="starDensity">Star density <output id="starDensityValue" for="starDensity"></output></label>
+            <input type="range" id="starDensity" min="50" max="1000" step="25">
+        </div>
+        <div class="control">
+            <label for="exposure">Night exposure <output id="exposureValue" for="exposure"></output></label>
+            <input type="range" id="exposure" min="60" max="140" step="5">
+        </div>
+
+        <h3 class="section-title">Emission palette</h3>
+        <div class="presets" id="presets" role="group" aria-label="Aurora color palettes"></div>
+        <p class="theme-description" id="themeDescription"></p>
+
+        <h3 class="section-title">Atmosphere</h3>
+        <label class="check" for="reflections">Lake reflections <input type="checkbox" id="reflections"></label>
+        <label class="check" for="shootingStars">Occasional meteors <input type="checkbox" id="shootingStars"></label>
+        <label class="check" for="twinkle">Subtle star twinkle <input type="checkbox" id="twinkle"></label>
+
+        <h3 class="section-title">Rendering</h3>
+        <div class="control">
+            <label for="quality">Image quality</label>
+            <select id="quality">
+                <option value="auto">Automatic · Balanced</option>
+                <option value="high">High · More detail</option>
+                <option value="low">Low · Battery friendly</option>
+            </select>
+        </div>
+
+        <div class="actions">
+            <button class="button primary" id="randomize">Discover a scene</button>
+            <button class="button" id="reset">Reset defaults</button>
+        </div>
+
+        <p class="panel-note">
+            Fine light curtains, subtle bloom, atmospheric haze and rippled reflections are drawn locally.
+            Green is the naturalistic default; other palettes include artistic interpretations.
+            Settings are saved on this device.
+        </p>
+    </aside>
+
+    <div class="toast" id="toast" role="status" aria-live="polite"></div>
+    <noscript><p class="fallback">Please enable JavaScript to explore the northern lights.</p></noscript>
+
+    <script>
+    (() => {
+        "use strict";
+
+        const $ = id => document.getElementById(id);
+        const TAU = Math.PI * 2;
+        const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
+        const lerp = (a, b, t) => a + (b - a) * t;
+        const smooth = (a, b, x) => {
+            const t = clamp((x - a) / (b - a), 0, 1);
+            return t * t * (3 - 2 * t);
+        };
+
+        const themes = {
+            classic: {
+                name: "Oxygen green", title: "The green hour",
+                low: [100, 245, 154], mid: [36, 181, 126], high: [147, 77, 158],
+                swatch: "linear-gradient(140deg,#172f3a,#4dbd8d,#b0e3aa)",
+                note: "Naturalistic · Green oxygen emission with a faint violet upper fringe."
+            },
+            purple: {
+                name: "Violet", title: "Violet silence",
+                low: [169, 134, 255], mid: [117, 67, 206], high: [217, 92, 155],
+                swatch: "linear-gradient(140deg,#243659,#8666bb,#d8a6d6)",
+                note: "Artistic · Soft violet curtains and a rose-colored upper glow."
+            },
+            fire: {
+                name: "Crimson", title: "A sky of embers",
+                low: [247, 163, 108], mid: [194, 63, 79], high: [162, 48, 93],
+                swatch: "linear-gradient(140deg,#57223d,#c06361,#f0ba85)",
+                note: "Artistic · Warm amber and crimson, inspired by rare red auroras."
+            },
+            ice: {
+                name: "Ice blue", title: "Beneath the blue",
+                low: [155, 224, 251], mid: [54, 139, 207], high: [115, 110, 190],
+                swatch: "linear-gradient(140deg,#203e6c,#6caed4,#ceeaf0)",
+                note: "Artistic · Pale cyan ribbons against a deep polar sky."
+            },
+            rainbow: {
+                name: "Iridescent", title: "An iridescent night",
+                low: [110, 239, 170], mid: [65, 170, 198], high: [192, 95, 188],
+                swatch: "linear-gradient(140deg,#a278b3,#5cacc1,#a6dbaa)",
+                note: "Artistic · Iridescent green, blue and violet emission layers."
+            },
+            sunset: {
+                name: "Rose", title: "After the last light",
+                low: [234, 157, 195], mid: [165, 80, 141], high: [88, 99, 188],
+                swatch: "linear-gradient(140deg,#424d83,#ac78a1,#ecc1bf)",
+                note: "Artistic · Muted rose light fading into a cool indigo fringe."
+            },
+            ocean: {
+                name: "Teal", title: "The sky meets the sea",
+                low: [113, 230, 215], mid: [41, 163, 157], high: [68, 105, 173],
+                swatch: "linear-gradient(140deg,#193e59,#429b9e,#b1e3d1)",
+                note: "Artistic · Ocean-colored curtains with a luminous turquoise edge."
+            },
+            forest: {
+                name: "Pale green", title: "A northern hush",
+                low: [186, 239, 157], mid: [82, 167, 108], high: [89, 125, 141],
+                swatch: "linear-gradient(140deg,#253f39,#6d9f6d,#c3dbae)",
+                note: "Naturalistic · A softer, less saturated green aurora."
+            }
+        };
+
+        const defaults = {
+            speed: 1,
+            intensity: 70,
+            waveCount: 3,
+            starDensity: 450,
+            exposure: 100,
+            theme: "classic",
+            reflections: true,
+            shootingStars: true,
+            twinkle: true,
+            quality: "auto",
+            seed: 48721
+        };
+
+        const ranges = {
+            speed: [.1, 3, .1],
+            intensity: [20, 100, 5],
+            waveCount: [2, 7, 1],
+            starDensity: [50, 1000, 25],
+            exposure: [60, 140, 5]
+        };
+
+        const storageKey = "northlight.scene.v2";
+
+        function loadState() {
+            const clean = { ...defaults };
+            try {
+                const saved = JSON.parse(localStorage.getItem(storageKey) || "null");
+                if (!saved || typeof saved !== "object") return clean;
+
+                for (const [key, [min, max, step]] of Object.entries(ranges)) {
+                    if (typeof saved[key] === "number" && Number.isFinite(saved[key])) {
+                        clean[key] = Number(clamp(min + Math.round((saved[key] - min) / step) * step, min, max).toFixed(2));
+                    }
+                }
+
+                for (const key of ["reflections", "shootingStars", "twinkle"]) {
+                    if (typeof saved[key] === "boolean") clean[key] = saved[key];
+                }
+
+                if (Object.hasOwn(themes, saved.theme)) clean.theme = saved.theme;
+                if (["auto", "high", "low"].includes(saved.quality)) clean.quality = saved.quality;
+                if (Number.isInteger(saved.seed)) clean.seed = saved.seed >>> 0;
+            } catch (_) { /* Storage may be blocked or unavailable. */ }
+            return clean;
+        }
+
+        let state = loadState();
+        let saveTimer;
+
+        function saveState() {
+            clearTimeout(saveTimer);
+            saveTimer = setTimeout(() => {
+                try { localStorage.setItem(storageKey, JSON.stringify(state)); } catch (_) {}
+            }, 200);
+        }
+
+        function rng(seed) {
+            return () => {
+                seed |= 0;
+                seed = seed + 0x6D2B79F5 | 0;
+                let t = Math.imul(seed ^ seed >>> 15, 1 | seed);
+                t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+                return ((t ^ t >>> 14) >>> 0) / 4294967296;
+            };
+        }
+
+        function hash(n) {
+            const x = Math.sin(n * 127.1 + 311.7) * 43758.5453123;
+            return x - Math.floor(x);
+        }
+
+        function noise(x) {
+            const i = Math.floor(x);
+            const f = x - i;
+            return lerp(hash(i), hash(i + 1), f * f * (3 - 2 * f));
+        }
+
+        function fbm(x) {
+            return noise(x) * .57 + noise(x * 2.03 + 13) * .28 + noise(x * 4.11 + 47) * .15;
+        }
+
+        function makeCanvas() { return document.createElement("canvas"); }
+
+        const canvas = $("canvas");
+        const ctx = canvas.getContext("2d", { alpha: false });
+
+        if (!ctx) {
+            const message = document.createElement("p");
+            message.className = "fallback";
+            message.textContent = "This browser could not start the scene. Please try a current browser with Canvas support.";
+            document.body.appendChild(message);
+            document.querySelectorAll("button").forEach(button => button.disabled = true);
+            return;
+        }
+
+        const sky = makeCanvas();
+        const terrain = makeCanvas();
+        const foreground = makeCanvas();
+        const scene = makeCanvas();
+        const aurora = makeCanvas();
+        const curtain = makeCanvas();
+
+        const skyCtx = sky.getContext("2d");
+        const terrainCtx = terrain.getContext("2d");
+        const foregroundCtx = foreground.getContext("2d");
+        const sceneCtx = scene.getContext("2d", { alpha: false });
+        const auroraCtx = aurora.getContext("2d");
+        const curtainCtx = curtain.getContext("2d");
+
+        let W = 1, H = 1, DPR = 1, AW = 1, AH = 1;
+        let horizon = 1;
+        let stars = [], ripples = [], meteors = [];
+        let time = 18, starTime = 0;
+        let lastFrame = 0, raf = 0;
+        let nextMeteor = 6 + Math.random() * 12;
+        let panelOpen = false;
+        const motionPreference = matchMedia("(prefers-reduced-motion: reduce)");
+        let paused = motionPreference.matches;
+
+        function setupLayer(layer, context) {
+            layer.width = canvas.width;
+            layer.height = canvas.height;
+            context.setTransform(DPR, 0, 0, DPR, 0, 0);
+        }
+
+        function resize() {
+            W = Math.max(1, window.innerWidth);
+            H = Math.max(1, window.innerHeight);
+            horizon = H * .735;
+
+            const maxRatio = state.quality === "high" ? 2 : state.quality === "low" ? 1 : 1.5;
+            const pixelBudget = state.quality === "high" ? 5500000 : state.quality === "low" ? 1400000 : 3000000;
+            DPR = Math.min(window.devicePixelRatio || 1, maxRatio, Math.sqrt(pixelBudget / (W * H)));
+
+            canvas.width = Math.round(W * DPR);
+            canvas.height = Math.round(H * DPR);
+            ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+
+            setupLayer(sky, skyCtx);
+            setupLayer(terrain, terrainCtx);
+            setupLayer(foreground, foregroundCtx);
+            setupLayer(scene, sceneCtx);
+
+            const auroraScale = Math.min(
+                state.quality === "high" ? .85 : state.quality === "low" ? .4 : .6,
+                1250 / W
+            );
+
+            AW = aurora.width = Math.max(1, Math.round(W * auroraScale));
+            AH = aurora.height = Math.max(1, Math.round(H * auroraScale));
+
+            buildSky();
+            buildLandscape();
+            buildStars();
+            buildRipples();
+            requestRender();
+        }
+
+        function buildSky() {
+            const g = skyCtx.createLinearGradient(0, 0, 0, horizon);
+            g.addColorStop(0, "#030812");
+            g.addColorStop(.42, "#091623");
+            g.addColorStop(.76, "#122935");
+            g.addColorStop(1, "#30434b");
+            skyCtx.fillStyle = g;
+            skyCtx.fillRect(0, 0, W, H);
+
+            // Very faint diffuse starlight, not a bright painted nebula.
+            const random = rng(state.seed + 32);
+            skyCtx.save();
+            skyCtx.globalCompositeOperation = "screen";
+            for (let i = 0; i < 34; i++) {
+                const x = W * (i / 33);
+                const y = H * (.08 + i / 33 * .37);
+                const radius = Math.max(W, H) * (.09 + random() * .05);
+                const haze = skyCtx.createRadialGradient(x, y, 0, x, y, radius);
+                haze.addColorStop(0, "rgba(79,95,120,0.011)");
+                haze.addColorStop(1, "rgba(79,95,120,0)");
+                skyCtx.fillStyle = haze;
+                skyCtx.fillRect(x - radius, y - radius, radius * 2, radius * 2);
+            }
+            skyCtx.restore();
+
+            // A stable, faint dust field adds depth without flickering grain.
+            for (let i = 0; i < 1300; i++) {
+                const x = random() * W;
+                const y = random() * horizon;
+                skyCtx.fillStyle = `rgba(187,210,225,${.015 + random() * .045})`;
+                skyCtx.fillRect(x, y, .45, .45);
+            }
+        }
+
+        function buildStars() {
+            const random = rng(state.seed + 991);
+            stars = Array.from({ length: state.starDensity }, () => {
+                const y = random() * H * .72;
+                const bright = Math.pow(random(), 3);
+                return {
+                    x: random() * W,
+                    y,
+                    r: .28 + bright * 1.05,
+                    alpha: (.2 + random() * .65) * (1 - smooth(H * .35, horizon, y) * .72),
+                    phase: random() * TAU,
+                    rate: .45 + random() * 1.3,
+                    warm: random() > .78
+                };
+            });
+        }
+
+        function ridgeY(u, layer) {
+            const seed = state.seed * .013 + layer * 81;
+            const rough = fbm(u * (layer === 0 ? 17 : 12) + seed);
+            const fine = noise(u * 150 + seed) - .5;
+
+            if (layer === 0) {
+                return H * (.674 - rough * .112 + fine * .008);
+            }
+
+            // A lower central opening creates the perspective of an Arctic fjord.
+            const left = Math.exp(-Math.pow((u - .16) / .24, 2));
+            const right = Math.exp(-Math.pow((u - .88) / .22, 2));
+            return H * (.738 - (left + right) * .13 - rough * .044 + fine * .006);
+        }
+
+        function mountainLayer(layer) {
+            const c = terrainCtx;
+            const points = [];
+            const step = Math.max(2, W / 650);
+
+            for (let x = -step; x <= W + step; x += step) {
+                points.push({ x, y: ridgeY(x / W, layer) });
+            }
+
+            c.save();
+            c.beginPath();
+            c.moveTo(-step, horizon + 3);
+            for (const point of points) c.lineTo(point.x, point.y);
+            c.lineTo(W + step, horizon + 3);
+            c.closePath();
+            c.clip();
+
+            const base = c.createLinearGradient(0, H * .51, 0, horizon);
+            base.addColorStop(0, layer ? "#182b37" : "#2b414f");
+            base.addColorStop(1, layer ? "#08151e" : "#1a2b37");
+            c.fillStyle = base;
+            c.fillRect(0, H * .45, W, H * .35);
+
+            // Broken snow line, following the ridges instead of uniform triangles.
+            c.beginPath();
+            points.forEach((point, i) => {
+                if (i === 0) c.moveTo(point.x, point.y);
+                else c.lineTo(point.x, point.y);
+            });
+
+            for (let i = points.length - 1; i >= 0; i--) {
+                const point = points[i];
+                const u = point.x / W;
+                const relief = Math.max(0, horizon - point.y);
+                const depth = relief * (.17 + fbm(u * 49 + layer * 11) * .47);
+                c.lineTo(point.x, point.y + depth);
+            }
+
+            c.closePath();
+            const snow = c.createLinearGradient(0, H * .52, 0, horizon);
+            snow.addColorStop(0, layer ? "#607584" : "#788c97");
+            snow.addColorStop(.6, layer ? "#344b5c" : "#4b616f");
+            snow.addColorStop(1, "#20323f");
+            c.fillStyle = snow;
+            c.globalAlpha = layer ? .62 : .55;
+            c.fill();
+            c.globalAlpha = 1;
+
+            // Small irregular rock faces and shadowed gullies.
+            const random = rng(state.seed + layer * 931);
+            for (let i = 3; i < points.length - 4; i += 3) {
+                const p = points[i];
+                const relief = horizon - p.y;
+                const length = relief * (.35 + random() * .7);
+                const spread = W * (.004 + random() * .016);
+                const direction = random() > .4 ? 1 : -1;
+
+                c.beginPath();
+                c.moveTo(p.x, p.y + 1);
+                c.lineTo(p.x + spread * direction, p.y + length);
+                c.lineTo(p.x - spread * .25, p.y + length * .74);
+                c.closePath();
+                c.fillStyle = random() > .32 ? "rgba(3,14,24,.24)" : "rgba(145,169,179,.09)";
+                c.fill();
+            }
+
+            c.restore();
+        }
+
+        function drawPine(c, x, y, height, random) {
+            c.fillStyle = "#030b10";
+            c.fillRect(x - height * .012, y - height, Math.max(1, height * .024), height);
+            for (let j = 0; j < 8; j++) {
+                const f = j / 8;
+                const top = y - height + height * f * .77;
+                const spread = height * (.045 + f * .18);
+                c.beginPath();
+                c.moveTo(x, top);
+                c.lineTo(x + spread * (.85 + random() * .2), top + height * .24);
+                c.lineTo(x + spread * .19, top + height * .2);
+                c.lineTo(x, top + height * .25);
+                c.lineTo(x - spread, top + height * .24);
+                c.closePath();
+                c.fill();
+            }
+        }
+
+        function buildLandscape() {
+            terrainCtx.clearRect(0, 0, W, H);
+            mountainLayer(0);
+            mountainLayer(1);
+
+            const c = foregroundCtx;
+            c.clearRect(0, 0, W, H);
+            const random = rng(state.seed + 67);
+
+            function shore(side) {
+                const start = side ? W : 0;
+                const sign = side ? -1 : 1;
+                const extent = W * (side ? .35 : .29);
+
+                c.beginPath();
+                c.moveTo(start, H * .82);
+                for (let i = 0; i <= 40; i++) {
+                    const f = i / 40;
+                    const x = start + sign * extent * f;
+                    const y = H * (.83 + Math.pow(f, .55) * .16) + noise(i * .8 + side * 40) * H * .01;
+                    c.lineTo(x, y);
+                }
+                c.lineTo(start + sign * extent, H);
+                c.lineTo(start, H);
+                c.closePath();
+                c.fillStyle = "#040d13";
+                c.fill();
+
+                for (let i = 0; i < 26; i++) {
+                    const f = random() * .8;
+                    const x = start + sign * extent * f;
+                    const y = H * (.835 + Math.pow(f, .55) * .16);
+                    const height = H * (.025 + random() * .095) * (1 - f * .6);
+                    drawPine(c, x, y, height, random);
+                }
+            }
+
+            shore(0);
+            shore(1);
+
+            // A few low rocks at the water's edge.
+            for (let i = 0; i < 16; i++) {
+                const side = random() > .5;
+                const x = side ? W * (.82 + random() * .18) : W * random() * .19;
+                const y = H * (.968 + random() * .032);
+                c.beginPath();
+                c.ellipse(x, y, 4 + random() * W * .017, 2 + random() * H * .007, 0, 0, TAU);
+                c.fillStyle = "#02090d";
+                c.fill();
+            }
+        }
+
+        function buildRipples() {
+            const random = rng(state.seed + 201);
+            ripples = Array.from({ length: 180 }, () => ({
+                x: random() * W,
+                depth: Math.pow(random(), .7),
+                length: 3 + random() * 30,
+                phase: random() * TAU,
+                alpha: .025 + random() * .065
+            }));
+        }
+
+        function buildCurtainTexture() {
+            curtain.width = 16;
+            curtain.height = 512;
+            const color = themes[state.theme];
+            const rgba = (rgb, alpha) => `rgba(${rgb.join(",")},${alpha})`;
+            const g = curtainCtx.createLinearGradient(0, 0, 0, 512);
+
+            g.addColorStop(0, rgba(color.high, 0));
+            g.addColorStop(.13, rgba(color.high, .015));
+            g.addColorStop(.32, rgba(color.high, .065));
+            g.addColorStop(.49, rgba(color.mid, .12));
+            g.addColorStop(.70, rgba(color.mid, .31));
+            g.addColorStop(.86, rgba(color.low, .68));
+            g.addColorStop(.925, rgba(color.low, .88));
+            g.addColorStop(.96, rgba(color.low, .35));
+            g.addColorStop(1, rgba(color.low, 0));
+
+            curtainCtx.fillStyle = g;
+            curtainCtx.fillRect(0, 0, 16, 512);
+        }
+
+        function drawAurora() {
+            const c = auroraCtx;
+            c.setTransform(1, 0, 0, 1, 0, 0);
+            c.clearRect(0, 0, AW, AH);
+            c.globalCompositeOperation = "lighter";
+
+            const t = time * .16;
+            const seedOffset = (state.seed % 1000) * .015;
+            const brightness = state.intensity / 100;
+            const layerBalance = 1 / Math.sqrt(state.waveCount / 3);
+            const step = state.quality === "low" ? 2 : 1.35;
+
+            // Hundreds of fine field-aligned rays make each continuous curtain.
+            // Their lower edge folds coherently; the emission fades upward.
+            for (let layer = state.waveCount - 1; layer >= 0; layer--) {
+                const phase = layer * 1.83 + seedOffset;
+                const depth = layer / Math.max(1, state.waveCount - 1);
+
+                for (let x = -AW * .12; x < AW * 1.12; x += step) {
+                    const u = x / AW;
+                    const advected = u * 6.5 + t * .31 + phase;
+                    const broad = Math.sin(u * 5.2 + t * .52 + phase);
+                    const fold = Math.sin(u * 15.5 - t * .64 + phase * 1.8);
+                    const detail = fbm(u * 21 + t * .26 + phase) - .5;
+
+                    const bottom = AH * (
+                        .385 + depth * .125 +
+                        broad * .075 +
+                        fold * (.019 + .015 * Math.sin(u * 5 + phase)) +
+                        detail * .046
+                    );
+
+                    const height = AH * (
+                        .24 + .12 * noise(advected + 19) +
+                        .07 * (1 - depth)
+                    );
+
+                    const filament = (
+                        .32 + .68 * Math.pow(noise(u * 290 + t * .95 + layer * 39), 1.5)
+                    );
+
+                    const pleats = .50 + .50 * Math.pow(
+                        .5 + .5 * Math.sin(u * 91 + 6 * noise(u * 14 + t * .3) + phase),
+                        2
+                    );
+
+                    const envelope = (
+                        .32 + .68 * smooth(.12, .82, noise(u * 3.8 + t * .12 + phase))
+                    );
+
+                    const edge = smooth(-.12, .08, u) * (1 - smooth(.92, 1.12, u));
+                    const alpha = brightness * layerBalance * filament * pleats * envelope * edge * .72;
+
+                    // Slight lean keeps rays aligned without looking like rigid bars.
+                    const lean = .10 * Math.sin(u * 3.5 + phase + t * .12) - .055;
+                    c.globalAlpha = clamp(alpha, 0, 1);
+                    c.setTransform(1, 0, lean, 1, x - lean * height, bottom - height);
+                    c.drawImage(curtain, 0, 0, 16, 512, 0, 0, step + .65, height);
+                }
+            }
+
+            c.setTransform(1, 0, 0, 1, 0, 0);
+            c.globalAlpha = 1;
+            c.globalCompositeOperation = "source-over";
+        }
+
+        function drawStars(c) {
+            for (const star of stars) {
+                const twinkle = state.twinkle
+                    ? .90 + .10 * Math.sin(starTime * star.rate + star.phase)
+                    : 1;
+
+                const alpha = star.alpha * twinkle;
+                const rgb = star.warm ? "240,221,194" : "205,224,244";
+
+                if (star.r > 1.02) {
+                    c.beginPath();
+                    c.arc(star.x, star.y, star.r * 3.2, 0, TAU);
+                    c.fillStyle = `rgba(${rgb},${alpha * .045})`;
+                    c.fill();
+                }
+
+                c.beginPath();
+                c.arc(star.x, star.y, star.r, 0, TAU);
+                c.fillStyle = `rgba(${rgb},${alpha})`;
+                c.fill();
+            }
+        }
+
+        function updateMeteors(dt) {
+            if (!state.shootingStars) {
+                meteors.length = 0;
+                return;
+            }
+
+            nextMeteor -= dt;
+            if (nextMeteor <= 0) {
+                nextMeteor = 12 + Math.random() * 27;
+                const direction = Math.random() > .5 ? 1 : -1;
+                meteors.push({
+                    x: W * (.2 + Math.random() * .6),
+                    y: H * (.07 + Math.random() * .22),
+                    vx: direction * W * (.21 + Math.random() * .13),
+                    vy: H * .17,
+                    age: 0,
+                    life: .65 + Math.random() * .45
+                });
+            }
+
+            for (const meteor of meteors) {
+                meteor.x += meteor.vx * dt;
+                meteor.y += meteor.vy * dt;
+                meteor.age += dt;
+            }
+            meteors = meteors.filter(meteor => meteor.age < meteor.life);
+        }
+
+        function drawMeteors(c) {
+            for (const meteor of meteors) {
+                const alpha = Math.sin(Math.PI * meteor.age / meteor.life) * .8;
+                const tailX = meteor.x - meteor.vx * .17;
+                const tailY = meteor.y - meteor.vy * .17;
+                const g = c.createLinearGradient(tailX, tailY, meteor.x, meteor.y);
+                g.addColorStop(0, "rgba(190,218,235,0)");
+                g.addColorStop(1, `rgba(224,239,247,${alpha})`);
+
+                c.strokeStyle = g;
+                c.lineWidth = 1.1;
+                c.beginPath();
+                c.moveTo(tailX, tailY);
+                c.lineTo(meteor.x, meteor.y);
+                c.stroke();
+            }
+        }
+
+        function drawScene() {
+            const c = sceneCtx;
+            c.globalCompositeOperation = "source-over";
+            c.globalAlpha = 1;
+            c.drawImage(sky, 0, 0, W, H);
+            drawStars(c);
+            drawAurora();
+
+            c.save();
+            c.globalCompositeOperation = "screen";
+
+            // Low-resolution emission plus a restrained bloom pass.
+            if (state.quality !== "low" && "filter" in c) {
+                c.filter = `blur(${Math.max(7, W * .009)}px)`;
+                c.globalAlpha = .44;
+                c.drawImage(aurora, 0, 0, W, H);
+                c.filter = "none";
+            }
+
+            c.globalAlpha = .95;
+            c.drawImage(aurora, 0, 0, W, H);
+            c.restore();
+
+            drawMeteors(c);
+
+            // Haze stays in front of the distant sky, behind the mountains.
+            const haze = c.createLinearGradient(0, H * .53, 0, horizon);
+            haze.addColorStop(0, "rgba(82,112,118,0)");
+            haze.addColorStop(1, "rgba(82,112,118,.10)");
+            c.fillStyle = haze;
+            c.fillRect(0, H * .53, W, horizon - H * .53);
+            c.drawImage(terrain, 0, 0, W, H);
+        }
+
+        function drawWater() {
+            ctx.fillStyle = "#0b1b24";
+            ctx.fillRect(0, horizon, W, H - horizon);
+
+            if (state.reflections) {
+                ctx.save();
+                ctx.beginPath();
+                ctx.rect(0, horizon, W, H - horizon);
+                ctx.clip();
+
+                // Mirror the actual sky and mountains in narrow displaced strips.
+                const band = state.quality === "low" ? 4 : 2;
+                const stretch = 1.30;
+
+                for (let y = horizon; y < H; y += band) {
+                    const depth = (y - horizon) / (H - horizon);
+                    const sourceY = horizon - (y - horizon) * stretch;
+                    const sourceHeight = band * stretch;
+                    const displacement = (
+                        Math.sin(y * .13 + time * 1.0) +
+                        Math.sin(y * .051 - time * .64) * .65
+                    ) * (.4 + depth * depth * 5);
+
+                    ctx.globalAlpha = .58 - depth * .16;
+                    ctx.drawImage(
+                        scene,
+                        0, Math.max(0, sourceY - sourceHeight) * DPR,
+                        scene.width, sourceHeight * DPR,
+                        displacement - 7, y, W + 14, band + .5
+                    );
+                }
+
+                ctx.restore();
+            }
+
+            const waterShade = ctx.createLinearGradient(0, horizon, 0, H);
+            waterShade.addColorStop(0, "rgba(5,17,24,.23)");
+            waterShade.addColorStop(.45, "rgba(5,16,24,.15)");
+            waterShade.addColorStop(1, "rgba(2,10,17,.55)");
+            ctx.fillStyle = waterShade;
+            ctx.fillRect(0, horizon, W, H - horizon);
+
+            ctx.lineWidth = .65;
+            for (const ripple of ripples) {
+                const y = horizon + ripple.depth * (H - horizon);
+                const drift = Math.sin(time * .42 + ripple.phase) * ripple.depth * 5;
+                const length = ripple.length * (.25 + ripple.depth * 2);
+                ctx.strokeStyle = `rgba(126,171,179,${ripple.alpha * (.35 + ripple.depth * .65)})`;
+                ctx.beginPath();
+                ctx.moveTo(ripple.x + drift, y);
+                ctx.lineTo(ripple.x + drift + length, y);
+                ctx.stroke();
+            }
+        }
+
+        function render() {
+            drawScene();
+
+            ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+            ctx.globalAlpha = 1;
+            ctx.globalCompositeOperation = "source-over";
+            ctx.drawImage(scene, 0, 0, W, H);
+            drawWater();
+            ctx.drawImage(foreground, 0, 0, W, H);
+
+            // Gentle photographic edge falloff.
+            const vignette = ctx.createRadialGradient(
+                W * .5, H * .4, Math.min(W, H) * .18,
+                W * .5, H * .45, Math.max(W, H) * .72
+            );
+            vignette.addColorStop(0, "rgba(0,3,9,0)");
+            vignette.addColorStop(1, "rgba(0,3,9,.48)");
+            ctx.fillStyle = vignette;
+            ctx.fillRect(0, 0, W, H);
+
+            if (state.exposure !== 100) {
+                ctx.save();
+                if (state.exposure < 100) {
+                    ctx.fillStyle = `rgba(0,0,0,${(100 - state.exposure) / 100})`;
+                } else {
+                    ctx.globalCompositeOperation = "screen";
+                    const a = (state.exposure - 100) / 100;
+                    ctx.fillStyle = `rgba(58,83,94,${a * .55})`;
+                }
+                ctx.fillRect(0, 0, W, H);
+                ctx.restore();
+            }
+        }
+
+        // Delta-time animation; no work while the tab is hidden.
+        function frame(timestamp) {
+            raf = 0;
+            if (document.hidden) return;
+
+            const dt = lastFrame ? Math.min((timestamp - lastFrame) / 1000, .05) : 0;
+            lastFrame = timestamp;
+
+            if (!paused) {
+                time += dt * state.speed;
+                starTime += dt;
+                updateMeteors(dt);
+            }
+
+            render();
+            if (!paused) raf = requestAnimationFrame(frame);
+        }
+
+        function requestRender() {
+            if (!raf && !document.hidden) raf = requestAnimationFrame(frame);
+        }
+
+        function updatePauseButton() {
+            $("pauseBtn").setAttribute("aria-pressed", String(paused));
+            $("pauseBtn").setAttribute("aria-label", paused ? "Play animation" : "Pause animation");
+            $("pauseIcon").innerHTML = paused
+                ? '<path d="M8 5l11 7-11 7z"/>'
+                : '<path d="M8 5v14M16 5v14"/>';
+        }
+
+        function setPaused(value) {
+            paused = value;
+            lastFrame = 0;
+            updatePauseButton();
+            requestRender();
+        }
+
+        let toastTimer;
+        function notify(message) {
+            $("toast").textContent = message;
+            $("toast").classList.add("show");
+            clearTimeout(toastTimer);
+            toastTimer = setTimeout(() => $("toast").classList.remove("show"), 2800);
+        }
+
+        function syncUI() {
+            for (const [key, [min, max]] of Object.entries(ranges)) {
+                const input = $(key);
+                input.value = state[key];
+                input.style.setProperty("--fill", `${(state[key] - min) / (max - min) * 100}%`);
+
+                const value = key === "speed" ? state[key].toFixed(1) + "×"
+                    : ["intensity", "exposure"].includes(key) ? state[key] + "%"
+                    : String(state[key]);
+                $(key + "Value").textContent = value;
+            }
+
+            for (const key of ["reflections", "shootingStars", "twinkle"]) {
+                $(key).checked = state[key];
+            }
+
+            $("quality").value = state.quality;
+            document.querySelectorAll(".preset").forEach(button => {
+                button.setAttribute("aria-pressed", String(button.dataset.theme === state.theme));
+            });
+
+            $("themeDescription").textContent = themes[state.theme].note;
+            $("sceneTitle").textContent = themes[state.theme].title;
+        }
+
+        function setPanel(open) {
+            panelOpen = open;
+            const panel = $("controlPanel");
+            panel.classList.toggle("open", open);
+            $("panelOverlay").classList.toggle("open", open);
+            $("toggleBtn").setAttribute("aria-expanded", String(open));
+
+            if (open) {
+                panel.inert = false;
+                panel.setAttribute("aria-hidden", "false");
+                $("closePanelBtn").focus();
+                document.querySelector(".toolbar").inert = true;
+            } else {
+                document.querySelector(".toolbar").inert = false;
+                if (panel.contains(document.activeElement)) $("toggleBtn").focus();
+                panel.inert = true;
+                panel.setAttribute("aria-hidden", "true");
+            }
+        }
+
+        for (const [key, theme] of Object.entries(themes)) {
+            const button = document.createElement("button");
+            button.className = "preset";
+            button.dataset.theme = key;
+            button.style.setProperty("--swatch", theme.swatch);
+            button.title = theme.name;
+            button.setAttribute("aria-label", theme.name);
+            button.setAttribute("aria-pressed", "false");
+            button.addEventListener("click", () => {
+                state.theme = key;
+                buildCurtainTexture();
+                syncUI();
+                saveState();
+                requestRender();
+            });
+            $("presets").appendChild(button);
+        }
+
+        for (const key of Object.keys(ranges)) {
+            $(key).addEventListener("input", event => {
+                state[key] = Number(event.target.value);
+                if (key === "starDensity") buildStars();
+                syncUI();
+                saveState();
+                requestRender();
+            });
+        }
+
+        for (const key of ["reflections", "shootingStars", "twinkle"]) {
+            $(key).addEventListener("change", event => {
+                state[key] = event.target.checked;
+                if (key === "shootingStars" && !state.shootingStars) meteors = [];
+                saveState();
+                requestRender();
+            });
+        }
+
+        $("quality").addEventListener("change", event => {
+            state.quality = event.target.value;
+            saveState();
+            resize();
+        });
+
+        $("randomize").addEventListener("click", () => {
+            // Favor plausible green palettes rather than always choosing fantasy colors.
+            const choices = ["classic", "classic", "forest", "ocean", "ice", "purple", "sunset"];
+            state.theme = choices[Math.floor(Math.random() * choices.length)];
+            state.seed = Math.floor(Math.random() * 1000000);
+            state.speed = Math.round((.4 + Math.random() * 1.1) * 10) / 10;
+            state.intensity = 50 + Math.floor(Math.random() * 10) * 5;
+            state.waveCount = 2 + Math.floor(Math.random() * 4);
+            time = 10 + Math.random() * 100;
+            meteors = [];
+            buildCurtainTexture();
+            syncUI();
+            saveState();
+            resize();
+        });
+
+        $("reset").addEventListener("click", () => {
+            state = { ...defaults };
+            time = 18;
+            starTime = 0;
+            meteors = [];
+            nextMeteor = 8;
+            buildCurtainTexture();
+            syncUI();
+            saveState();
+            resize();
+            notify("Default scene restored");
+        });
+
+        $("toggleBtn").addEventListener("click", () => setPanel(true));
+        $("closePanelBtn").addEventListener("click", () => setPanel(false));
+        $("panelOverlay").addEventListener("click", () => setPanel(false));
+        $("pauseBtn").addEventListener("click", () => setPaused(!paused));
+
+        $("captureBtn").addEventListener("click", () => {
+            const button = $("captureBtn");
+            button.disabled = true;
+
+            try {
+                render();
+                canvas.toBlob(blob => {
+                    button.disabled = false;
+                    if (!blob) {
+                        notify("Could not save the image. Please try again.");
+                        return;
+                    }
+
+                    const url = URL.createObjectURL(blob);
+                    const link = document.createElement("a");
+                    link.download = `northlight-${new Date().toISOString().replace(/[:.]/g, "-")}.png`;
+                    link.href = url;
+                    document.body.appendChild(link);
+                    link.click();
+                    link.remove();
+                    setTimeout(() => URL.revokeObjectURL(url), 60000);
+                    notify("Your night sky is ready to save");
+                }, "image/png");
+            } catch (_) {
+                button.disabled = false;
+                notify("Image export is unavailable in this browser.");
+            }
+        });
+
+        $("fullscreenBtn").disabled = !document.fullscreenEnabled;
+        $("fullscreenBtn").addEventListener("click", async () => {
+            try {
+                if (document.fullscreenElement) await document.exitFullscreen();
+                else await document.documentElement.requestFullscreen();
+            } catch (_) {
+                notify("Fullscreen is unavailable in this browser.");
+            }
+        });
+
+        document.addEventListener("fullscreenchange", () => {
+            $("fullscreenBtn").setAttribute(
+                "aria-label",
+                document.fullscreenElement ? "Exit fullscreen" : "Enter fullscreen"
+            );
+        });
+
+        document.addEventListener("keydown", event => {
+            if (event.key === "Escape" && panelOpen) {
+                event.preventDefault();
+                setPanel(false);
+                return;
+            }
+
+            // Keep keyboard focus inside the open settings dialog.
+            if (event.key === "Tab" && panelOpen) {
+                const focusable = [...$("controlPanel").querySelectorAll(
+                    'button:not([disabled]), input:not([disabled]), select:not([disabled]), [tabindex="0"]'
+                )];
+                const first = focusable[0];
+                const last = focusable[focusable.length - 1];
+
+                if (event.shiftKey && document.activeElement === first) {
+                    event.preventDefault();
+                    last.focus();
+                } else if (!event.shiftKey && document.activeElement === last) {
+                    event.preventDefault();
+                    first.focus();
+                }
+                return;
+            }
+
+            const target = event.target;
+            if (event.ctrlKey || event.metaKey || event.altKey || event.repeat ||
+                target.matches("input, select, textarea") || target.isContentEditable) return;
+
+            if (event.key.toLowerCase() === "h") {
+                event.preventDefault();
+                setPanel(!panelOpen);
+            } else if (event.code === "Space" && !target.closest("button")) {
+                event.preventDefault();
+                setPaused(!paused);
+            }
+        });
+
+        document.addEventListener("visibilitychange", () => {
+            lastFrame = 0;
+            if (document.hidden) {
+                cancelAnimationFrame(raf);
+                raf = 0;
+            } else {
+                requestRender();
+            }
+        });
+
+        motionPreference.addEventListener("change", event => {
+            if (event.matches) setPaused(true);
+        });
+
+        let resizeTimer;
+        window.addEventListener("resize", () => {
+            clearTimeout(resizeTimer);
+            resizeTimer = setTimeout(resize, 100);
+        });
+
+        window.addEventListener("pagehide", () => {
+            clearTimeout(saveTimer);
+            try { localStorage.setItem(storageKey, JSON.stringify(state)); } catch (_) {}
+        });
+
+        buildCurtainTexture();
+        syncUI();
+        updatePauseButton();
+        resize();
+    })();
+    </script>
+</body>
+</html>
