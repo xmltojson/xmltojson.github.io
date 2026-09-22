@@ -1,0 +1,1256 @@
+<!DOCTYPE html>
+<!-- MIT License
+Copyright (c) 2025-2027 Yuliya Kolesnikova <0009-0000-6151-7415@orcid.org>
+-->
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="A relaxing photographic memory game. Explore beautiful places, find matching pairs, and improve your personal best.">
+    <link rel="icon" type="image/x-icon" href="favicon.ico"/>
+    <meta name="theme-color" content="#244b40">
+    <title>Field Notes — A Photographic Memory Game</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Playfair+Display:wght@500;600;700&display=swap" rel="stylesheet">
+
+    <style>
+        :root {
+            color-scheme: light;
+            --background: #f3f1eb;
+            --paper: #fffefb;
+            --ink: #243b33;
+            --muted: #6c756e;
+            --line: #e3e6dc;
+            --accent: #315d4b;
+            --accent-dark: #1b3d30;
+            --accent-soft: #e8eee5;
+            --gold: #ae7b37;
+            --card-back: #315b4c;
+            --card-dark: #193d32;
+            --shadow: 0 12px 34px rgba(35, 49, 38, .07);
+        }
+
+        body[data-theme="ocean"] {
+            --accent: #376479;
+            --accent-dark: #244657;
+            --accent-soft: #e6eef1;
+            --card-back: #376479;
+            --card-dark: #203f50;
+        }
+
+        body[data-theme="plum"] {
+            --accent: #71516b;
+            --accent-dark: #493547;
+            --accent-soft: #eee7ed;
+            --card-back: #71516b;
+            --card-dark: #483044;
+        }
+
+        * { box-sizing: border-box; }
+        [hidden] { display: none !important; }
+
+        body {
+            margin: 0;
+            min-height: 100vh;
+            font-family: "DM Sans", sans-serif;
+            color: var(--ink);
+            background:
+                radial-gradient(ellipse at 10% 0%, #e6eadf 0%, transparent 45%),
+                radial-gradient(ellipse at 100% 90%, #e9e3d6 0%, transparent 40%),
+                var(--background);
+        }
+
+        button, select { font: inherit; }
+        button { cursor: pointer; }
+        button, a, select { -webkit-tap-highlight-color: transparent; }
+        button:disabled { cursor: not-allowed; opacity: .45; }
+        button:focus-visible, select:focus-visible, a:focus-visible {
+            outline: 3px solid var(--gold);
+            outline-offset: 3px;
+        }
+
+        .icon {
+            width: 17px;
+            height: 17px;
+            fill: none;
+            stroke: currentColor;
+            stroke-width: 1.7;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+            flex-shrink: 0;
+        }
+
+        .sr-only {
+            position: absolute;
+            width: 1px;
+            height: 1px;
+            padding: 0;
+            margin: -1px;
+            overflow: hidden;
+            clip: rect(0, 0, 0, 0);
+            white-space: nowrap;
+            border: 0;
+        }
+
+        .shell { width: min(960px, calc(100% - 40px)); margin: auto; }
+
+        .topbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 16px;
+            padding: 18px 0;
+        }
+
+        .brand { display: flex; align-items: center; gap: 10px; }
+        .brand-mark {
+            width: 36px;
+            height: 36px;
+            background: var(--accent);
+            color: #fff;
+            border-radius: 11px;
+            display: grid;
+            place-items: center;
+            box-shadow: 0 4px 10px #244b401a;
+        }
+        .brand-mark .icon { width: 21px; height: 21px; }
+        .brand-name { font-size: 17px; font-weight: 700; letter-spacing: -.6px; }
+        .brand-caption { color: var(--muted); font-size: 10px; margin-top: 1px; letter-spacing: 1.2px; text-transform: uppercase; }
+
+        .theme-control { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--muted); }
+        select {
+            border: 1px solid #d6dcd2;
+            background: var(--paper);
+            color: var(--ink);
+            padding: 7px 24px 7px 10px;
+            border-radius: 8px;
+            font-size: 13px;
+        }
+
+        .hero {
+            min-height: 175px;
+            position: relative;
+            isolation: isolate;
+            overflow: hidden;
+            border-radius: 20px;
+            padding: 28px 32px;
+            color: #fff;
+            display: flex;
+            align-items: center;
+            background: #29483f;
+            box-shadow: var(--shadow);
+        }
+
+        .hero-photo {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            object-position: center 54%;
+            z-index: -2;
+        }
+
+        .hero::after {
+            content: "";
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(90deg, rgba(14, 39, 32, .92), rgba(14, 39, 32, .48) 57%, rgba(14, 39, 32, .12));
+            z-index: -1;
+        }
+
+        .eyebrow { font-size: 9px; text-transform: uppercase; letter-spacing: 2.2px; font-weight: 700; }
+        .hero .eyebrow { color: #d4e3cc; display: flex; align-items: center; gap: 8px; }
+        .hero h1 {
+            font-family: "Playfair Display", Georgia, serif;
+            font-weight: 500;
+            font-size: clamp(27px, 3.4vw, 38px);
+            line-height: 1.18;
+            letter-spacing: -1.1px;
+            margin: 10px 0 9px;
+        }
+        .hero p { font-size: 13px; color: #e0e7e1; line-height: 1.6; margin: 0; max-width: 380px; }
+        .photo-tag {
+            position: absolute;
+            right: 18px;
+            bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 10px;
+            padding: 6px 10px;
+            background: #17362c60;
+            border: 1px solid #ffffff30;
+            border-radius: 24px;
+            backdrop-filter: blur(8px);
+        }
+        .photo-tag .icon { width: 13px; height: 13px; }
+
+        .workspace {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) 230px;
+            gap: 20px;
+            align-items: start;
+            margin-top: 22px;
+        }
+
+        .play-panel {
+            background: var(--paper);
+            border: 1px solid #fff;
+            border-radius: 18px;
+            padding: 20px;
+            box-shadow: var(--shadow);
+            min-width: 0;
+        }
+
+        .section-heading {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+        .section-heading h2 { font-size: 15px; letter-spacing: -.3px; margin: 0 0 4px; }
+        .section-heading p { margin: 0; font-size: 11px; color: var(--muted); }
+        .pill { font-size: 10px; color: var(--accent); background: var(--accent-soft); padding: 6px 9px; border-radius: 18px; white-space: nowrap; }
+
+        .toolbar { display: flex; justify-content: space-between; gap: 10px; align-items: center; flex-wrap: wrap; }
+        .difficulty-selector { display: flex; gap: 3px; padding: 3px; background: #f0f2eb; border-radius: 10px; }
+        .difficulty-btn {
+            border: 0;
+            background: transparent;
+            color: var(--muted);
+            border-radius: 7px;
+            padding: 7px 11px;
+            font-size: 11px;
+            font-weight: 600;
+            transition: background .2s, color .2s;
+        }
+        .difficulty-btn[aria-pressed="true"] {
+            background: var(--paper);
+            color: var(--accent);
+            box-shadow: 0 2px 6px #23372d13;
+        }
+        .difficulty-btn small { margin-left: 3px; font-size: 9px; opacity: .7; }
+
+        .actions { display: flex; gap: 6px; }
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            padding: 8px 11px;
+            min-height: 34px;
+            border: 1px solid var(--line);
+            border-radius: 9px;
+            color: var(--ink);
+            background: var(--paper);
+            font-size: 11px;
+            font-weight: 600;
+            transition: background .2s, transform .2s, box-shadow .2s;
+        }
+        .btn:not(:disabled):hover { background: var(--accent-soft); }
+        .btn-primary { background: var(--accent); color: white; border-color: var(--accent); }
+        .btn-primary:not(:disabled):hover { background: var(--accent-dark); box-shadow: 0 4px 12px #203f5020; }
+        .btn .icon { width: 15px; height: 15px; }
+        .icon-button { width: 34px; padding: 0; }
+
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            margin: 17px 0;
+            padding: 12px 0;
+            border-top: 1px solid var(--line);
+            border-bottom: 1px solid var(--line);
+        }
+        .stat { text-align: center; border-right: 1px solid var(--line); }
+        .stat:last-child { border: 0; }
+        .stat-label { display: flex; justify-content: center; align-items: center; gap: 4px; font-size: 9px; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; }
+        .stat-label .icon { width: 12px; height: 12px; }
+        .stat-value { margin-top: 4px; font-size: 19px; font-weight: 600; font-variant-numeric: tabular-nums; letter-spacing: -.6px; }
+
+        .board-stage {
+            position: relative;
+            border-radius: 13px;
+            padding: 12px;
+            background:
+                repeating-linear-gradient(92deg, transparent 0 55px, #b6a78408 56px 57px),
+                linear-gradient(130deg, #e9e5d9, #f0ede4 50%, #e5e0d2);
+            box-shadow: inset 0 1px 5px #544c3910;
+        }
+
+        .game-board {
+            --columns: 4;
+            display: grid;
+            grid-template-columns: repeat(var(--columns), minmax(0, 1fr));
+            gap: 10px;
+            max-width: 420px;
+            margin: auto;
+        }
+        .game-board.medium { max-width: 360px; }
+        .game-board.hard { --columns: 6; max-width: 520px; gap: 8px; }
+
+        .card {
+            position: relative;
+            display: block;
+            width: 100%;
+            aspect-ratio: 1.05;
+            padding: 0;
+            border: 0;
+            background: transparent;
+            border-radius: 8px;
+            perspective: 900px;
+            touch-action: manipulation;
+        }
+        .card-inner {
+            display: block;
+            width: 100%;
+            height: 100%;
+            position: relative;
+            transform-style: preserve-3d;
+            transition: transform .46s cubic-bezier(.2, .65, .3, 1);
+        }
+        .card.flipped .card-inner { transform: rotateY(180deg); }
+        .card-face {
+            position: absolute;
+            inset: 0;
+            border-radius: 8px;
+            -webkit-backface-visibility: hidden;
+            backface-visibility: hidden;
+            overflow: hidden;
+        }
+
+        .card-back {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            color: #e6ead2;
+            border: 3px solid #fffef0;
+            background:
+                repeating-linear-gradient(45deg, #ffffff04 0 1px, transparent 1px 5px),
+                linear-gradient(140deg, var(--card-back), var(--card-dark));
+            box-shadow: 0 3px 1px #acaa9c, 0 5px 9px #342f2921;
+        }
+        .card-back::before {
+            content: "";
+            position: absolute;
+            inset: 5px;
+            border: 1px solid #e8eadc35;
+            border-radius: 3px;
+        }
+        .card-back .icon { width: 26px; height: 26px; stroke-width: 1.1; }
+        .card-back span { font-size: 6px; letter-spacing: 1.8px; }
+        .card:not(.flipped):hover .card-inner { transform: translateY(-3px) rotate(-1deg); }
+
+        .card-front {
+            transform: rotateY(180deg);
+            background: #e2e7dc;
+            border: 3px solid #fffef8;
+            box-shadow: 0 3px 1px #acaa9c, 0 6px 10px #342f2920;
+        }
+        .card-front img { width: 100%; height: 100%; display: block; object-fit: cover; }
+        .card-front::after {
+            content: "";
+            position: absolute;
+            inset: 45% 0 0;
+            background: linear-gradient(transparent, #122c25b8);
+        }
+        .card-caption {
+            position: absolute;
+            z-index: 1;
+            bottom: 6px;
+            left: 4px;
+            right: 4px;
+            color: white;
+            font-size: clamp(7px, 0.9vw, 10px);
+            font-weight: 600;
+            text-align: center;
+            text-shadow: 0 1px 3px #0009;
+        }
+        .card-front.image-unavailable {
+            background: radial-gradient(circle at 20% 10%, #9bac88, #355648);
+        }
+        .card-front.image-unavailable .card-caption { bottom: 35%; font-size: 11px; }
+        .match-badge {
+            position: absolute;
+            right: 4px;
+            top: 4px;
+            z-index: 2;
+            width: 17px;
+            height: 17px;
+            border-radius: 50%;
+            background: #fffef4;
+            color: var(--accent);
+            display: none;
+            place-items: center;
+            box-shadow: 0 1px 4px #0002;
+        }
+        .match-badge .icon { width: 11px; height: 11px; stroke-width: 2.5; }
+        .card.matched .match-badge { display: grid; }
+        .card.matched .card-front { border-color: #bfd1a9; }
+        .card.matched { cursor: default; }
+
+        .pause-overlay {
+            position: absolute;
+            inset: 0;
+            z-index: 5;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background: #ebece6ed;
+            border-radius: 13px;
+            backdrop-filter: blur(12px);
+            text-align: center;
+            padding: 18px;
+        }
+        .board-stage.is-paused .game-board { visibility: hidden; }
+        .pause-overlay > .icon { width: 30px; height: 30px; color: var(--accent); }
+        .pause-overlay h3 { font-family: "Playfair Display", Georgia, serif; font-size: 23px; margin: 12px 0 4px; }
+        .pause-overlay p { color: var(--muted); font-size: 12px; margin-bottom: 18px; }
+
+        .board-footer { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-top: 14px; }
+        .board-message { color: var(--muted); font-size: 11px; margin: 0; line-height: 1.5; }
+        .hint-button { white-space: nowrap; color: var(--accent); background: var(--accent-soft); border-color: transparent; }
+        .hint-count { padding: 1px 5px; border-radius: 4px; background: #ffffff90; font-size: 9px; }
+
+        .sidebar { display: flex; flex-direction: column; gap: 16px; }
+        .panel { padding: 18px; background: var(--paper); border: 1px solid #fff; border-radius: 15px; box-shadow: var(--shadow); }
+        .panel-title { display: flex; align-items: center; gap: 8px; margin: 0 0 5px; font-size: 13px; }
+        .panel-title .icon { color: var(--gold); width: 16px; height: 16px; }
+        .panel-subtitle { font-size: 10px; color: var(--muted); line-height: 1.6; margin: 0; }
+        .score-list { list-style: none; margin: 13px 0 0; padding: 0; }
+        .score-list li { display: flex; align-items: center; gap: 9px; padding: 10px 0; border-top: 1px solid var(--line); }
+        .score-rank { width: 23px; height: 23px; border-radius: 50%; background: #f4efdf; color: var(--gold); display: grid; place-items: center; font-size: 10px; font-weight: 700; }
+        .score-details { flex: 1; }
+        .score-details strong { display: block; font-size: 12px; }
+        .score-details small { color: var(--muted); font-size: 9px; }
+        .empty-score { text-align: center; padding: 20px 0 6px; color: var(--muted); font-size: 11px; line-height: 1.7; }
+        .empty-score .icon { display: block; margin: 0 auto 8px; color: #b6baa6; width: 26px; height: 26px; }
+
+        .progress-top { display: flex; justify-content: space-between; margin: 15px 0 8px; font-size: 10px; }
+        progress { display: block; width: 100%; height: 5px; border: 0; border-radius: 9px; overflow: hidden; background: var(--accent-soft); accent-color: var(--accent); }
+        progress::-webkit-progress-bar { background: var(--accent-soft); }
+        progress::-webkit-progress-value { background: var(--accent); border-radius: 9px; transition: width .35s; }
+        progress::-moz-progress-bar { background: var(--accent); border-radius: 9px; }
+        .instructions { margin: 13px 0 0; padding-left: 16px; color: var(--muted); font-size: 11px; line-height: 1.6; }
+        .instructions li { padding: 3px 0 3px 2px; }
+        .tip { margin-top: 13px; padding: 10px; border-radius: 9px; background: var(--accent-soft); font-size: 10px; line-height: 1.6; color: var(--accent-dark); }
+
+        .quote-panel { padding: 20px 16px; text-align: center; }
+        .quote-panel .icon { color: var(--accent); margin-bottom: 8px; }
+        .quote-panel p { font-family: "Playfair Display", Georgia, serif; font-size: 16px; line-height: 1.5; margin: 0; color: #68725f; }
+        .quote-panel small { display: block; margin-top: 10px; font-size: 8px; color: var(--muted); letter-spacing: 1.8px; text-transform: uppercase; }
+
+        footer { padding: 20px 0 24px; text-align: center; font-size: 10px; color: var(--muted); line-height: 1.7; }
+        footer a { color: inherit; text-underline-offset: 3px; }
+
+        dialog {
+            width: min(380px, calc(100% - 32px));
+            border: 1px solid white;
+            border-radius: 20px;
+            background: var(--paper);
+            color: var(--ink);
+            padding: 30px;
+            box-shadow: 0 24px 80px #10261f40;
+            text-align: center;
+        }
+        dialog::backdrop { background: #152c246e; backdrop-filter: blur(7px); }
+        .win-icon { width: 60px; height: 60px; border-radius: 50%; background: #f3ecd9; color: var(--gold); margin: 0 auto 16px; display: grid; place-items: center; }
+        .win-icon .icon { width: 29px; height: 29px; }
+        dialog h2 { font-family: "Playfair Display", Georgia, serif; font-size: 28px; font-weight: 500; margin: 0 0 9px; }
+        dialog > p { font-size: 12px; color: var(--muted); line-height: 1.6; }
+        .win-stats { display: grid; grid-template-columns: repeat(3, 1fr); padding: 17px 0; margin: 18px 0; border-block: 1px solid var(--line); }
+        .win-stats strong { display: block; font-size: 19px; }
+        .win-stats span { color: var(--muted); font-size: 10px; }
+        .record { color: var(--accent) !important; font-weight: 700; }
+        .dialog-actions { display: flex; flex-direction: column; gap: 8px; }
+        .dialog-actions .btn { min-height: 40px; }
+
+        /* Custom confirm dialog */
+        .confirm-dialog { text-align: center; }
+        .confirm-icon { width: 54px; height: 54px; border-radius: 50%; background: var(--accent-soft); color: var(--accent); margin: 0 auto 15px; display: grid; place-items: center; }
+        .confirm-icon .icon { width: 26px; height: 26px; }
+        .confirm-dialog h2 { font-family: "Playfair Display", Georgia, serif; font-size: 24px; font-weight: 500; margin: 0 0 9px; }
+        .confirm-dialog p { font-size: 12px; color: var(--muted); line-height: 1.6; margin: 0 0 22px; }
+        .confirm-actions { display: flex; gap: 9px; }
+        .confirm-actions .btn { flex: 1; min-height: 42px; }
+
+        @media (max-width: 950px) {
+            .workspace { grid-template-columns: minmax(0, 1fr) 210px; gap: 16px; }
+            .play-panel { padding: 17px; }
+            .panel { padding: 16px; }
+            .toolbar { justify-content: center; }
+            .game-board { gap: 8px; }
+        }
+        @media (max-width: 760px) {
+            .shell { width: min(560px, calc(100% - 28px)); }
+            .topbar { padding: 16px 0; }
+            .hero { min-height: 175px; padding: 24px; }
+            .hero p { max-width: 300px; font-size: 12px; }
+            .photo-tag { display: none; }
+            .workspace { grid-template-columns: 1fr; margin-top: 18px; }
+            .sidebar { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+            .quote-panel { display: none; }
+            .toolbar { justify-content: space-between; }
+            .card-caption { font-size: 9px; }
+        }
+        @media (max-width: 420px) {
+            .brand-caption { font-size: 8px; letter-spacing: .8px; }
+            .theme-control label { display: none; }
+            .theme-control select { max-width: 90px; font-size: 12px; padding-left: 8px; }
+            .brand-name { font-size: 16px; }
+            .hero { padding: 22px; min-height: 165px; }
+            .hero h1 { font-size: 28px; }
+            .play-panel { padding: 14px 11px; }
+            .toolbar { justify-content: center; }
+            .difficulty-btn { padding: 8px 11px; }
+            .board-stage { padding: 7px; }
+            .game-board { gap: 6px; }
+            .game-board.hard { gap: 5px; }
+            .card-back { border-width: 2px; }
+            .card-back .icon { width: 21px; height: 21px; }
+            .card-back span { font-size: 5px; letter-spacing: 1px; }
+            .hard .card-back span { display: none; }
+            .hard .card-back::before { inset: 3px; }
+            .hard .card-front { border-width: 2px; }
+            .hard .card-caption { font-size: 7px; bottom: 3px; }
+            .sidebar { grid-template-columns: 1fr; }
+            .board-message { font-size: 10px; }
+            .hint-button { padding: 7px; font-size: 10px; }
+            .confirm-actions { flex-direction: column; }
+        }
+        @media (prefers-reduced-motion: reduce) {
+            *, *::before, *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
+        }
+    </style>
+</head>
+<body data-theme="forest">
+    <svg width="0" height="0" aria-hidden="true" style="position:absolute">
+        <defs>
+            <symbol id="i-leaf" viewBox="0 0 24 24">
+                <path d="M20 4C11 2 4 6 4 13a7 7 0 0 0 7 7c7 0 10-7 9-16Z"/>
+                <path d="M3 21 16 8M8 16v-5m0 5h5"/>
+            </symbol>
+            <symbol id="i-refresh" viewBox="0 0 24 24">
+                <path d="M20 7v5h-5M4 17v-5h5"/>
+                <path d="M6 7a7 7 0 0 1 12-1l2 3M4 15l2 3a7 7 0 0 0 12-1"/>
+            </symbol>
+            <symbol id="i-pause" viewBox="0 0 24 24"><path d="M8 5v14M16 5v14"/></symbol>
+            <symbol id="i-play" viewBox="0 0 24 24"><path d="m8 4 12 8-12 8Z"/></symbol>
+            <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></symbol>
+            <symbol id="i-check" viewBox="0 0 24 24"><path d="m5 12 4 4L19 6"/></symbol>
+            <symbol id="i-cards" viewBox="0 0 24 24"><rect x="8" y="6" width="12" height="15" rx="2"/><path d="M5 17H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2"/></symbol>
+            <symbol id="i-star" viewBox="0 0 24 24"><path d="m12 3 2.8 5.7 6.2.9-4.5 4.4 1.1 6.2-5.6-3-5.6 3 1.1-6.2L3 9.6l6.2-.9Z"/></symbol>
+            <symbol id="i-trophy" viewBox="0 0 24 24"><path d="M8 3h8v7a4 4 0 0 1-8 0ZM8 5H4v3a4 4 0 0 0 4 4m8-7h4v3a4 4 0 0 1-4 4m-4 2v6m-4 1h8"/></symbol>
+            <symbol id="i-bulb" viewBox="0 0 24 24"><path d="M9 18h6m-5 3h4M8 14a6 6 0 1 1 8 0c-1 1-1 2-1 2H9s0-1-1-2Z"/></symbol>
+            <symbol id="i-camera" viewBox="0 0 24 24"><path d="M8 5 9 3h6l1 2h4a2 2 0 0 1 2 2v12H2V7a2 2 0 0 1 2-2Z"/><circle cx="12" cy="12" r="4"/></symbol>
+        </defs>
+    </svg>
+
+    <div class="shell">
+        <header class="topbar">
+            <div class="brand">
+                <div class="brand-mark"><svg class="icon" aria-hidden="true"><use href="#i-leaf"/></svg></div>
+                <div>
+                    <div class="brand-name">Field Notes</div>
+                    <div class="brand-caption">A little moment of focus</div>
+                </div>
+            </div>
+            <div class="theme-control">
+                <label for="theme">Card color</label>
+                <select id="theme">
+                    <option value="forest">Forest</option>
+                    <option value="ocean">Ocean</option>
+                    <option value="plum">Plum</option>
+                </select>
+            </div>
+        </header>
+
+        <section class="hero" aria-labelledby="pageTitle">
+            <img class="hero-photo"
+                 src="https://images.unsplash.com/photo-1472396961693-142e6e269027?auto=format&fit=crop&w=1800&q=85"
+                 alt="" fetchpriority="high">
+            <div>
+                <div class="eyebrow"><svg class="icon" aria-hidden="true"><use href="#i-leaf"/></svg> The nature collection</div>
+                <h1 id="pageTitle">Wander. Remember. Repeat.</h1>
+                <p>A fresh perspective on the classic memory game.<br>Turn over a photograph. Find its other half.</p>
+            </div>
+            <div class="photo-tag"><svg class="icon" aria-hidden="true"><use href="#i-camera"/></svg> Real photographs. Quiet discoveries.</div>
+        </section>
+
+        <main class="workspace">
+            <section class="play-panel" aria-labelledby="gameTitle">
+                <div class="section-heading">
+                    <div>
+                        <h2 id="gameTitle">Your daily escape</h2>
+                        <p>Take your time. Every little detail counts.</p>
+                    </div>
+                    <span class="pill" id="pairPill">8 pairs to discover</span>
+                </div>
+
+                <div class="toolbar">
+                    <div class="difficulty-selector" role="group" aria-label="Difficulty">
+                        <button class="difficulty-btn" data-difficulty="easy" aria-pressed="true">Easy <small>8</small></button>
+                        <button class="difficulty-btn" data-difficulty="medium" aria-pressed="false">Medium <small>12</small></button>
+                        <button class="difficulty-btn" data-difficulty="hard" aria-pressed="false">Hard <small>18</small></button>
+                    </div>
+                    <div class="actions">
+                        <button class="btn icon-button" id="pauseGame" aria-label="Pause game" title="Pause game" disabled>
+                            <svg class="icon" aria-hidden="true"><use id="pauseIcon" href="#i-pause"/></svg>
+                        </button>
+                        <button class="btn btn-primary" id="newGame">
+                            <svg class="icon" aria-hidden="true"><use href="#i-refresh"/></svg> New game
+                        </button>
+                    </div>
+                </div>
+
+                <div class="stats" aria-label="Game statistics">
+                    <div class="stat">
+                        <div class="stat-label"><svg class="icon" aria-hidden="true"><use href="#i-cards"/></svg> Moves</div>
+                        <div class="stat-value" id="moves">0</div>
+                    </div>
+                    <div class="stat">
+                        <div class="stat-label"><svg class="icon" aria-hidden="true"><use href="#i-check"/></svg> Pairs</div>
+                        <div class="stat-value" id="matches">0 / 8</div>
+                    </div>
+                    <div class="stat">
+                        <div class="stat-label"><svg class="icon" aria-hidden="true"><use href="#i-clock"/></svg> Time</div>
+                        <div class="stat-value" id="timer">0:00</div>
+                    </div>
+                    <div class="stat">
+                        <div class="stat-label"><svg class="icon" aria-hidden="true"><use href="#i-star"/></svg> Score</div>
+                        <div class="stat-value" id="score">0</div>
+                    </div>
+                </div>
+
+                <div class="board-stage" id="boardStage">
+                    <div class="game-board easy" id="gameBoard" role="group" aria-label="Memory cards"></div>
+                    <div class="pause-overlay" id="pauseOverlay" hidden>
+                        <svg class="icon" aria-hidden="true"><use href="#i-leaf"/></svg>
+                        <h3>A little breather.</h3>
+                        <p>Your photographs will be right here.</p>
+                        <button class="btn btn-primary" id="resumeGame">
+                            <svg class="icon" aria-hidden="true"><use href="#i-play"/></svg> Resume game
+                        </button>
+                    </div>
+                </div>
+
+                <div class="board-footer">
+                    <p class="board-message" id="boardMessage">Flip any photograph to begin.</p>
+                    <button class="btn hint-button" id="hint" title="Reveal a pair briefly. Costs 50 points, down to a minimum of zero.">
+                        <svg class="icon" aria-hidden="true"><use href="#i-bulb"/></svg>
+                        Hint <span class="hint-count" id="hintCount">3 left</span>
+                    </button>
+                </div>
+                <div class="sr-only" id="announcer" role="status" aria-live="polite" aria-atomic="true"></div>
+                <noscript><p>Please enable JavaScript to play this memory game.</p></noscript>
+            </section>
+
+            <aside class="sidebar">
+                <section class="panel">
+                    <h2 class="panel-title"><svg class="icon" aria-hidden="true"><use href="#i-trophy"/></svg> Personal bests</h2>
+                    <p class="panel-subtitle" id="scoreSubtitle">Your best easy games, saved on this device.</p>
+                    <ol class="score-list" id="highScores"></ol>
+                    <div class="empty-score" id="emptyScores">
+                        <svg class="icon" aria-hidden="true"><use href="#i-trophy"/></svg>
+                        A fresh page awaits.<br>Finish a game to leave your mark.
+                    </div>
+                </section>
+
+                <section class="panel">
+                    <h2 class="panel-title"><svg class="icon" aria-hidden="true"><use href="#i-leaf"/></svg> A mindful minute</h2>
+                    <p class="panel-subtitle">Small discoveries, one pair at a time.</p>
+                    <div class="progress-top"><span>Collection complete</span><strong id="progressText">0%</strong></div>
+                    <progress id="progress" value="0" max="8" aria-label="Matching pairs found"></progress>
+                    <ol class="instructions">
+                        <li>Turn over two cards to reveal their photographs.</li>
+                        <li>Find identical images to keep the pair.</li>
+                        <li>Collect every pair to finish your journey.</li>
+                    </ol>
+                    <div class="tip"><strong>A gentle nudge:</strong> Three hints are available. Each reveals a pair for a moment and deducts up to 50 points.</div>
+                </section>
+
+                <div class="quote-panel">
+                    <svg class="icon" aria-hidden="true"><use href="#i-leaf"/></svg>
+                    <p>Less scrolling.<br>More noticing.</p>
+                    <small>Make room for a little wonder</small>
+                </div>
+            </aside>
+        </main>
+
+        <footer>
+            Made for a calmer kind of play · Photography via
+            <a href="https://unsplash.com" target="_blank" rel="noopener noreferrer">Unsplash</a><br>
+            Photographs load online; named cards remain playable if images are unavailable.
+            <span id="storageNotice" hidden><br>Browser storage is unavailable. Progress will last for this visit only.</span>
+        </footer>
+    </div>
+
+    <dialog id="winModal" aria-labelledby="winTitle" aria-describedby="winDescription">
+        <div class="win-icon"><svg class="icon" aria-hidden="true"><use href="#i-trophy"/></svg></div>
+        <div class="eyebrow">Collection complete</div>
+        <h2 id="winTitle">Beautifully remembered.</h2>
+        <p id="winDescription">Every photograph found its partner.<br>Take a moment to enjoy the view.</p>
+        <div class="win-stats">
+            <div><strong id="finalMoves">0</strong><span>moves</span></div>
+            <div><strong id="finalTime">0:00</strong><span>time</span></div>
+            <div><strong id="finalScore">0</strong><span>points</span></div>
+        </div>
+        <p class="record" id="newRecord" hidden>A new personal best. Nicely done!</p>
+        <div class="dialog-actions">
+            <button class="btn btn-primary" id="playAgain" autofocus>Explore again</button>
+            <button class="btn" id="viewBoard">Enjoy the collection</button>
+        </div>
+    </dialog>
+
+    <dialog id="confirmModal" class="confirm-dialog" aria-labelledby="confirmTitle" aria-describedby="confirmMessage">
+        <div class="confirm-icon"><svg class="icon" aria-hidden="true"><use href="#i-refresh"/></svg></div>
+        <h2 id="confirmTitle">Start a new collection?</h2>
+        <p id="confirmMessage">Your current game will be replaced.</p>
+        <div class="confirm-actions">
+            <button class="btn" id="confirmCancel">Keep playing</button>
+            <button class="btn btn-primary" id="confirmOk" autofocus>Start fresh</button>
+        </div>
+    </dialog>
+
+    <script>
+        (() => {
+            "use strict";
+
+            // Fixed image URLs ensure both cards in a pair show the same photograph.
+            const PHOTOS = [
+                { id: "deer", name: "Woodland deer", photo: "photo-1472396961693-142e6e269027" },
+                { id: "mountain", name: "Mountain peak", photo: "photo-1464822759023-fed622ff2c3b" },
+                { id: "lake", name: "Alpine lake", photo: "photo-1470770841072-f978cf4d019e" },
+                { id: "forest", name: "Quiet forest", photo: "photo-1448375240586-882707db888b" },
+                { id: "waterfall", name: "Waterfall", photo: "photo-1432405972618-c60b0225b8f9" },
+                { id: "ocean", name: "Ocean waves", photo: "photo-1518837695005-2083093ee35b" },
+                { id: "desert", name: "Desert dunes", photo: "photo-1509316785289-025f5b846b35" },
+                { id: "flowers", name: "Wildflowers", photo: "photo-1490750967868-88aa4486c946" },
+                { id: "coast", name: "Rocky coast", photo: "photo-1473116763249-2faaef81ccda" },
+                { id: "aurora", name: "Northern lights", photo: "photo-1531366936337-7c912a4589a7" },
+                { id: "leaves", name: "Green leaves", photo: "photo-1441974231531-c6227db76b6e" },
+                { id: "valley", name: "Open valley", photo: "photo-1469474968028-56623f02e42e" },
+                { id: "sunset", name: "Golden horizon", photo: "photo-1470071459604-3b5ec3a7fe05" },
+                { id: "river", name: "River journey", photo: "photo-1439853949212-09789ba454db" },
+                { id: "snow", name: "Snowy wilderness", photo: "photo-1418985991508-e47386d96a71" },
+                { id: "field", name: "Country meadow", photo: "photo-1476231682828-37e571bc172f" },
+                { id: "stars", name: "Starry night", photo: "photo-1462331940025-496dfbfc7564" },
+                { id: "hills", name: "Rolling hills", photo: "photo-1501785888041-af3ef285b470" }
+            ];
+            const PHOTO_MAP = new Map(PHOTOS.map(photo => [photo.id, photo]));
+            const DIFFICULTIES = {
+                easy: { pairs: 8, columns: 4, multiplier: 1 },
+                medium: { pairs: 12, columns: 4, multiplier: 1.5 },
+                hard: { pairs: 18, columns: 6, multiplier: 2 }
+            };
+            const KEYS = {
+                state: "fieldNotes.game.v1",
+                scores: "fieldNotes.scores.v1",
+                theme: "fieldNotes.theme.v1"
+            };
+            const $ = id => document.getElementById(id);
+            const board = $("gameBoard");
+            const modal = $("winModal");
+            const confirmModal = $("confirmModal");
+            const cardElements = [];
+            let state;
+            let lastTick = performance.now();
+            let lastSave = 0;
+
+            function readStorage(key, fallback) {
+                try {
+                    const value = localStorage.getItem(key);
+                    return value === null ? fallback : JSON.parse(value);
+                } catch {
+                    return fallback;
+                }
+            }
+
+            function writeStorage(key, value) {
+                try {
+                    localStorage.setItem(key, JSON.stringify(value));
+                } catch {
+                    $("storageNotice").hidden = false;
+                }
+            }
+
+            function shuffle(items) {
+                const result = [...items];
+                for (let i = result.length - 1; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    [result[i], result[j]] = [result[j], result[i]];
+                }
+                return result;
+            }
+
+            function formatTime(ms) {
+                const seconds = Math.floor(ms / 1000);
+                return `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, "0")}`;
+            }
+
+            function announce(message) {
+                $("announcer").textContent = message;
+            }
+
+            // Custom confirmation dialog replacing native window.confirm.
+            let confirmResolver = null;
+            function customConfirm(title, message) {
+                return new Promise(resolve => {
+                    $("confirmTitle").textContent = title;
+                    $("confirmMessage").textContent = message;
+                    confirmResolver = resolve;
+                    confirmModal.showModal();
+                });
+            }
+
+            function resolveConfirm(result) {
+                if (confirmModal.open) confirmModal.close();
+                if (confirmResolver) {
+                    const resolve = confirmResolver;
+                    confirmResolver = null;
+                    resolve(result);
+                }
+            }
+
+            $("confirmOk").addEventListener("click", () => resolveConfirm(true));
+            $("confirmCancel").addEventListener("click", () => resolveConfirm(false));
+            confirmModal.addEventListener("cancel", event => {
+                event.preventDefault();
+                resolveConfirm(false);
+            });
+            confirmModal.addEventListener("close", () => {
+                if (confirmResolver) resolveConfirm(false);
+            });
+
+            function saveState() {
+                writeStorage(KEYS.state, {
+                    version: 1,
+                    difficulty: state.difficulty,
+                    cards: state.cards,
+                    moves: state.moves,
+                    score: state.score,
+                    elapsed: state.elapsed,
+                    hintsUsed: state.hintsUsed,
+                    started: state.started,
+                    complete: state.complete
+                });
+            }
+
+            function validSavedState(saved) {
+                if (!saved || saved.version !== 1 || !Object.hasOwn(DIFFICULTIES, saved.difficulty)) return false;
+                if (!Array.isArray(saved.cards) || saved.cards.length !== DIFFICULTIES[saved.difficulty].pairs * 2) return false;
+                if (!["moves", "score", "hintsUsed"].every(key => Number.isSafeInteger(saved[key]) && saved[key] >= 0)) return false;
+                if (!Number.isFinite(saved.elapsed) || saved.elapsed < 0 || saved.hintsUsed > 3) return false;
+                if (typeof saved.started !== "boolean" || typeof saved.complete !== "boolean") return false;
+
+                const groups = new Map();
+                for (const card of saved.cards) {
+                    if (!card || !PHOTO_MAP.has(card.photoId) || typeof card.matched !== "boolean") return false;
+                    if (!groups.has(card.photoId)) groups.set(card.photoId, []);
+                    groups.get(card.photoId).push(card.matched);
+                }
+                return [...groups.values()].every(group => group.length === 2 && group[0] === group[1]);
+            }
+
+            function startNewGame(difficulty = state?.difficulty || "easy") {
+                if (modal.open) modal.close();
+                const selection = shuffle(PHOTOS).slice(0, DIFFICULTIES[difficulty].pairs);
+                state = {
+                    difficulty,
+                    cards: shuffle(selection.flatMap(photo => [
+                        { photoId: photo.id, matched: false },
+                        { photoId: photo.id, matched: false }
+                    ])),
+                    selected: [],
+                    hints: [],
+                    matchedPairs: 0,
+                    moves: 0,
+                    score: 0,
+                    elapsed: 0,
+                    hintsUsed: 0,
+                    started: false,
+                    paused: false,
+                    complete: false,
+                    phase: null,
+                    remaining: 0
+                };
+                lastTick = performance.now();
+                renderBoard();
+                updateDisplay();
+                renderHighScores();
+                saveState();
+                announce("New game. Flip any photograph to begin.");
+            }
+
+            async function requestNewGame(difficulty = state.difficulty) {
+                if (state.started && !state.complete) {
+                    const confirmed = await customConfirm(
+                        "Start a new collection?",
+                        "Your current game will be replaced."
+                    );
+                    if (!confirmed) return;
+                }
+                startNewGame(difficulty);
+            }
+
+            function renderBoard() {
+                board.replaceChildren();
+                cardElements.length = 0;
+                board.className = `game-board ${state.difficulty}`;
+
+                state.cards.forEach((card, index) => {
+                    const photo = PHOTO_MAP.get(card.photoId);
+                    const button = document.createElement("button");
+                    button.type = "button";
+                    button.className = "card";
+                    button.innerHTML = `
+                        <span class="card-inner" aria-hidden="true">
+                            <span class="card-face card-back">
+                                <svg class="icon"><use href="#i-leaf"/></svg>
+                                <span>FIELD NOTES</span>
+                            </span>
+                            <span class="card-face card-front">
+                                <img alt="" draggable="false" decoding="async">
+                                <span class="card-caption"></span>
+                                <span class="match-badge"><svg class="icon"><use href="#i-check"/></svg></span>
+                            </span>
+                        </span>`;
+
+                    const image = button.querySelector("img");
+                    image.addEventListener("error", () => {
+                        image.hidden = true;
+                        image.parentElement.classList.add("image-unavailable");
+                    }, { once: true });
+                    image.src = `https://images.unsplash.com/${photo.photo}?auto=format&fit=crop&w=320&h=320&q=85`;
+                    button.querySelector(".card-caption").textContent = photo.name;
+                    button.addEventListener("click", () => flipCard(index));
+                    button.addEventListener("keydown", event => navigateCards(event, index));
+                    board.appendChild(button);
+                    cardElements.push(button);
+                });
+                updateCards();
+            }
+
+            function navigateCards(event, index) {
+                const columns = DIFFICULTIES[state.difficulty].columns;
+                const offsets = { ArrowRight: 1, ArrowLeft: -1, ArrowDown: columns, ArrowUp: -columns };
+                let target;
+                if (Object.hasOwn(offsets, event.key)) target = index + offsets[event.key];
+                else if (event.key === "Home") target = 0;
+                else if (event.key === "End") target = cardElements.length - 1;
+                else return;
+
+                event.preventDefault();
+                target = Math.max(0, Math.min(cardElements.length - 1, target));
+                cardElements[target].focus();
+            }
+
+            function updateCards() {
+                state.cards.forEach((card, index) => {
+                    const revealed = card.matched || state.selected.includes(index) || state.hints.includes(index);
+                    const button = cardElements[index];
+                    button.classList.toggle("flipped", revealed);
+                    button.classList.toggle("matched", card.matched);
+                    button.setAttribute("aria-label",
+                        `Card ${index + 1}: ${revealed ? PHOTO_MAP.get(card.photoId).name : "face down"}${card.matched ? ", matched" : ""}`
+                    );
+                    button.setAttribute("aria-disabled", String(card.matched || revealed || !!state.phase || state.complete));
+                });
+            }
+
+            function ensureStarted() {
+                if (!state.started) {
+                    state.started = true;
+                    lastTick = performance.now();
+                }
+            }
+
+            function flipCard(index) {
+                if (state.paused || state.complete || state.phase) return;
+                const card = state.cards[index];
+                if (card.matched || state.selected.includes(index)) return;
+
+                ensureStarted();
+                state.selected.push(index);
+
+                if (state.selected.length === 2) {
+                    state.moves++;
+                    const [first, second] = state.selected;
+                    if (state.cards[first].photoId === state.cards[second].photoId) {
+                        state.cards[first].matched = true;
+                        state.cards[second].matched = true;
+                        state.matchedPairs++;
+
+                        const config = DIFFICULTIES[state.difficulty];
+                        const efficiencyBonus = Math.max(0, config.pairs * 2 - state.moves) * 5;
+                        const timeBonus = Math.max(0, 90 - Math.floor(state.elapsed / 1000));
+                        state.score += Math.round((100 + efficiencyBonus + timeBonus) * config.multiplier);
+
+                        state.selected = [];
+                        state.phase = state.matchedPairs === config.pairs ? "finish" : "match";
+                        state.remaining = 500;
+                        announce(`A match: ${PHOTO_MAP.get(card.photoId).name}. ${state.matchedPairs} of ${config.pairs} pairs found.`);
+                    } else {
+                        state.phase = "mismatch";
+                        state.remaining = 1150;
+                        announce("Not quite a match. Take another look.");
+                    }
+                } else {
+                    announce(`${PHOTO_MAP.get(card.photoId).name}. Choose another card.`);
+                }
+                updateCards();
+                updateDisplay();
+                saveState();
+            }
+
+            function showHint() {
+                if (state.paused || state.complete || state.phase || state.selected.length || state.hintsUsed >= 3) return;
+
+                const available = state.cards
+                    .map((card, index) => ({ ...card, index }))
+                    .filter(card => !card.matched);
+                if (available.length < 2) return;
+
+                ensureStarted();
+                const chosen = available[Math.floor(Math.random() * available.length)];
+                state.hints = available.filter(card => card.photoId === chosen.photoId).map(card => card.index);
+                state.hintsUsed++;
+                state.score = Math.max(0, state.score - 50);
+                state.phase = "hint";
+                state.remaining = 1600;
+
+                announce(`Hint: ${PHOTO_MAP.get(chosen.photoId).name}, cards ${state.hints.map(index => index + 1).join(" and ")}.`);
+                updateCards();
+                updateDisplay();
+                saveState();
+            }
+
+            function setPaused(paused) {
+                if (!state.started || state.complete || state.phase === "finish") return;
+                state.paused = paused;
+                lastTick = performance.now();
+                updateDisplay();
+                saveState();
+                announce(paused ? "Game paused." : "Game resumed.");
+                if (paused) $("resumeGame").focus();
+                else {
+                    const next = state.cards.findIndex(card => !card.matched);
+                    cardElements[Math.max(0, next)]?.focus();
+                }
+            }
+
+            function updateDisplay() {
+                const pairs = DIFFICULTIES[state.difficulty].pairs;
+                $("moves").textContent = state.moves;
+                $("matches").textContent = `${state.matchedPairs} / ${pairs}`;
+                $("timer").textContent = formatTime(state.elapsed);
+                $("score").textContent = state.score.toLocaleString();
+                $("pairPill").textContent = `${pairs} pairs to discover`;
+                $("hintCount").textContent = `${3 - state.hintsUsed} left`;
+                $("hint").disabled = state.paused || state.complete || !!state.phase || state.selected.length > 0 || state.hintsUsed >= 3;
+
+                $("pauseGame").disabled = !state.started || state.complete || state.phase === "finish";
+                $("pauseGame").setAttribute("aria-label", state.paused ? "Resume game" : "Pause game");
+                $("pauseGame").title = state.paused ? "Resume game" : "Pause game";
+                $("pauseIcon").setAttribute("href", state.paused ? "#i-play" : "#i-pause");
+                $("pauseOverlay").hidden = !state.paused;
+                $("boardStage").classList.toggle("is-paused", state.paused);
+                board.inert = state.paused;
+                board.setAttribute("aria-hidden", String(state.paused));
+
+                $("progress").max = pairs;
+                $("progress").value = state.matchedPairs;
+                $("progressText").textContent = `${Math.round(state.matchedPairs / pairs * 100)}%`;
+
+                document.querySelectorAll(".difficulty-btn").forEach(button => {
+                    button.setAttribute("aria-pressed", String(button.dataset.difficulty === state.difficulty));
+                });
+
+                let message = "Flip any photograph to begin.";
+                if (state.complete) message = "Every pair found. A lovely little achievement.";
+                else if (state.paused) message = "No hurry. Your timer is paused.";
+                else if (state.phase === "hint") message = "A little peek. Remember these two places.";
+                else if (state.phase === "match") message = "A perfect pair. Keep exploring.";
+                else if (state.phase === "finish") message = "Your collection is complete!";
+                else if (state.phase === "mismatch") message = "Look closely. You'll see them again.";
+                else if (state.selected.length) message = "Now find this photograph's partner.";
+                else if (state.started) message = "Take a breath. Find your next pair.";
+                $("boardMessage").textContent = message;
+            }
+
+            // One clock drives play and reveal transitions. Pausing freezes both.
+            // Starting a new game replaces the state, so no old callbacks can alter it.
+            function tick() {
+                const now = performance.now();
+                const delta = now - lastTick;
+                lastTick = now;
+                if (!state || state.paused || !state.started || state.complete) return;
+
+                if (state.phase !== "finish") state.elapsed += delta;
+                $("timer").textContent = formatTime(state.elapsed);
+
+                if (state.phase) {
+                    state.remaining -= delta;
+                    if (state.remaining <= 0) {
+                        const phase = state.phase;
+                        state.phase = null;
+                        state.selected = [];
+                        state.hints = [];
+                        if (phase === "finish") finishGame();
+                        updateCards();
+                        updateDisplay();
+                        saveState();
+                    }
+                }
+                if (now - lastSave >= 5000) {
+                    saveState();
+                    lastSave = now;
+                }
+            }
+
+            function getScores() {
+                const scores = readStorage(KEYS.scores, []);
+                if (!Array.isArray(scores)) return [];
+                return scores.filter(item =>
+                    item && Object.hasOwn(DIFFICULTIES, item.difficulty) &&
+                    Number.isSafeInteger(item.score) && item.score >= 0 &&
+                    Number.isSafeInteger(item.moves) && item.moves >= 0 &&
+                    Number.isFinite(item.elapsed) && item.elapsed >= 0
+                );
+            }
+
+            function finishGame() {
+                state.complete = true;
+                state.paused = false;
+                const scores = getScores();
+                const previous = scores.filter(item => item.difficulty === state.difficulty);
+                const isRecord = previous.length === 0 || state.score > Math.max(...previous.map(item => item.score));
+
+                scores.push({
+                    difficulty: state.difficulty,
+                    score: state.score,
+                    moves: state.moves,
+                    elapsed: state.elapsed
+                });
+
+                const retained = Object.keys(DIFFICULTIES).flatMap(difficulty =>
+                    scores.filter(item => item.difficulty === difficulty)
+                        .sort((a, b) => b.score - a.score || a.elapsed - b.elapsed)
+                        .slice(0, 10)
+                );
+                writeStorage(KEYS.scores, retained);
+
+                $("finalMoves").textContent = state.moves;
+                $("finalTime").textContent = formatTime(state.elapsed);
+                $("finalScore").textContent = state.score.toLocaleString();
+                $("newRecord").hidden = !isRecord;
+                renderHighScores();
+                saveState();
+                announce(`Collection complete! ${state.moves} moves and ${state.score} points.`);
+                modal.showModal();
+            }
+
+            function renderHighScores() {
+                const list = $("highScores");
+                list.replaceChildren();
+                $("scoreSubtitle").textContent = `Your best ${state.difficulty} games, saved on this device.`;
+
+                const scores = getScores()
+                    .filter(item => item.difficulty === state.difficulty)
+                    .sort((a, b) => b.score - a.score || a.elapsed - b.elapsed)
+                    .slice(0, 3);
+
+                $("emptyScores").hidden = scores.length > 0;
+
+                scores.forEach((score, index) => {
+                    const item = document.createElement("li");
+                    const rank = document.createElement("span");
+                    rank.className = "score-rank";
+                    rank.textContent = index + 1;
+
+                    const details = document.createElement("div");
+                    details.className = "score-details";
+                    const value = document.createElement("strong");
+                    value.textContent = `${score.score.toLocaleString()} points`;
+                    const description = document.createElement("small");
+                    description.textContent = `${score.moves} moves · ${formatTime(score.elapsed)}`;
+                    details.append(value, description);
+                    item.append(rank, details);
+                    list.appendChild(item);
+                });
+            }
+
+            $("newGame").addEventListener("click", () => requestNewGame());
+            $("pauseGame").addEventListener("click", () => setPaused(!state.paused));
+            $("resumeGame").addEventListener("click", () => setPaused(false));
+            $("hint").addEventListener("click", showHint);
+
+            document.querySelectorAll(".difficulty-btn").forEach(button => {
+                button.addEventListener("click", () => {
+                    if (button.dataset.difficulty !== state.difficulty) requestNewGame(button.dataset.difficulty);
+                });
+            });
+
+            $("theme").addEventListener("change", event => {
+                document.body.dataset.theme = event.target.value;
+                writeStorage(KEYS.theme, event.target.value);
+            });
+
+            $("playAgain").addEventListener("click", () => {
+                startNewGame();
+                cardElements[0]?.focus();
+            });
+            $("viewBoard").addEventListener("click", () => modal.close());
+            modal.addEventListener("close", () => {
+                if (state.complete) $("newGame").focus();
+            });
+
+            document.addEventListener("visibilitychange", () => {
+                if (document.hidden && state.started && !state.complete) {
+                    if (state.phase === "finish") {
+                        state.phase = null;
+                        finishGame();
+                        updateCards();
+                        updateDisplay();
+                    } else {
+                        setPaused(true);
+                    }
+                }
+            });
+            window.addEventListener("pagehide", saveState);
+
+            const theme = readStorage(KEYS.theme, "forest");
+            if (["forest", "ocean", "plum"].includes(theme)) {
+                document.body.dataset.theme = theme;
+                $("theme").value = theme;
+            }
+
+            const saved = readStorage(KEYS.state, null);
+            if (validSavedState(saved) && !saved.complete && saved.cards.some(card => !card.matched)) {
+                state = {
+                    ...saved,
+                    selected: [],
+                    hints: [],
+                    matchedPairs: saved.cards.filter(card => card.matched).length / 2,
+                    paused: saved.started,
+                    phase: null,
+                    remaining: 0
+                };
+                renderBoard();
+                updateDisplay();
+                renderHighScores();
+                announce(saved.started ? "Your previous game is ready. Resume when you like." : "Flip any photograph to begin.");
+            } else {
+                startNewGame(validSavedState(saved) ? saved.difficulty : "easy");
+            }
+
+            setInterval(tick, 100);
+        })();
+    </script>
+</body>
+</html>
