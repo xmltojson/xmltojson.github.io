@@ -1,0 +1,1837 @@
+<!DOCTYPE html>
+<!-- MIT License
+Copyright (c) 2025-2027 Yuliya Kolesnikova <0009-0000-6151-7415@orcid.org>
+-->
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <link rel="icon" type="image/x-icon" href="favicon.ico"/>
+  <meta name="theme-color" content="#030906">
+  <meta name="description" content="Cinematic Matrix rain with layered depth, phosphor glow, and customizable effects.">
+  <title>Matrix Rain — Digital Atmosphere</title>
+
+  <style>
+    :root {
+      color-scheme: dark;
+      --accent: #62f6a5;
+      --text: #e0eee5;
+      --muted: #8ba496;
+      --border: rgba(149, 211, 172, .16);
+      --panel: rgba(7, 16, 12, .93);
+    }
+
+    * { box-sizing: border-box; }
+
+    html, body {
+      width: 100%;
+      height: 100%;
+      margin: 0;
+    }
+
+    body {
+      overflow: hidden;
+      background: #010403;
+      color: var(--text);
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      font-size: 13px;
+    }
+
+    button, input, select { font: inherit; }
+    button, select, input[type="range"], input[type="color"] { cursor: pointer; }
+    button { color: inherit; }
+    button:disabled, input:disabled { opacity: .45; cursor: not-allowed; }
+    button, input, select { -webkit-tap-highlight-color: transparent; }
+    :focus-visible { outline: 2px solid var(--accent); outline-offset: 4px; }
+    [hidden] { display: none !important; }
+
+    #matrix-canvas {
+      position: fixed;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+
+    .topbar {
+      position: fixed;
+      z-index: 10;
+      inset: max(20px, env(safe-area-inset-top)) 24px auto;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      pointer-events: none;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      text-shadow: 0 2px 14px #000;
+      user-select: none;
+    }
+
+    .brand-mark {
+      width: 34px;
+      height: 34px;
+      display: grid;
+      place-items: center;
+      color: var(--accent);
+      background: rgba(5, 19, 11, .75);
+      border: 1px solid var(--border);
+      border-radius: 9px;
+      font: 20px monospace;
+    }
+
+    .brand strong {
+      display: block;
+      font-size: 12px;
+      font-weight: 650;
+      letter-spacing: 4px;
+    }
+
+    .brand small {
+      display: block;
+      margin-top: 4px;
+      font: 9px ui-monospace, monospace;
+      letter-spacing: 2px;
+      color: var(--muted);
+    }
+
+    .toolbar {
+      display: flex;
+      gap: 8px;
+      pointer-events: auto;
+    }
+
+    .icon-button {
+      width: 40px;
+      height: 40px;
+      display: grid;
+      place-items: center;
+      padding: 0;
+      border: 1px solid var(--border);
+      border-radius: 11px;
+      background: rgba(6, 17, 11, .86);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      transition: background .2s, border-color .2s;
+    }
+
+    .icon-button:hover,
+    .icon-button[aria-expanded="true"] {
+      background: #13291c;
+      border-color: rgba(98, 246, 165, .45);
+      color: var(--accent);
+    }
+
+    svg {
+      width: 18px;
+      height: 18px;
+      fill: none;
+      stroke: currentColor;
+      stroke-width: 1.6;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    .control-panel {
+      position: fixed;
+      z-index: 9;
+      top: max(76px, calc(env(safe-area-inset-top) + 56px));
+      right: 24px;
+      width: 320px;
+      max-height: calc(100dvh - 100px - env(safe-area-inset-top));
+      overflow-y: auto;
+      overscroll-behavior: contain;
+      padding: 23px;
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      background: var(--panel);
+      box-shadow: 0 20px 70px rgba(0, 0, 0, .5), inset 0 1px rgba(255, 255, 255, .035);
+      backdrop-filter: blur(24px);
+      -webkit-backdrop-filter: blur(24px);
+      scrollbar-width: thin;
+      scrollbar-color: #294534 transparent;
+      transition: transform .25s ease, opacity .25s ease, visibility .25s;
+    }
+
+    .control-panel.closed {
+      transform: translateX(18px);
+      opacity: 0;
+      visibility: hidden;
+      pointer-events: none;
+    }
+
+    /* Avoid an opening/closing animation while restoring saved state. */
+    .control-panel.initializing {
+      transition: none;
+    }
+
+    .panel-heading {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: 16px;
+      font-weight: 550;
+      letter-spacing: -.3px;
+    }
+
+    .badge {
+      border: 1px solid rgba(98, 246, 165, .2);
+      border-radius: 4px;
+      color: var(--accent);
+      padding: 3px 5px;
+      font: 9px ui-monospace, monospace;
+      letter-spacing: 1px;
+    }
+
+    .intro {
+      margin: 7px 0 22px;
+      color: var(--muted);
+      font-size: 11px;
+      line-height: 1.6;
+    }
+
+    .section-title {
+      margin: 23px 0 16px;
+      color: #7b9a88;
+      font: 9px ui-monospace, monospace;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .section-title::after {
+      content: "";
+      flex: 1;
+      height: 1px;
+      background: var(--border);
+    }
+
+    .control-group { margin-bottom: 18px; }
+
+    .control-label {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+      font-size: 11px;
+      color: #b8cbbf;
+    }
+
+    output {
+      color: var(--accent);
+      font: 11px ui-monospace, monospace;
+    }
+
+    .help {
+      color: var(--muted);
+      font-size: 10px;
+      line-height: 1.6;
+      margin: 7px 0 0;
+    }
+
+    input[type="range"] {
+      display: block;
+      width: 100%;
+      height: 5px;
+      margin: 14px 0 7px;
+      border-radius: 5px;
+      appearance: none;
+      -webkit-appearance: none;
+      background: linear-gradient(
+        to right,
+        #469668 0%,
+        #469668 var(--fill, 50%),
+        #1b2d22 var(--fill, 50%),
+        #1b2d22 100%
+      );
+    }
+
+    input[type="range"]::-webkit-slider-thumb {
+      appearance: none;
+      -webkit-appearance: none;
+      width: 13px;
+      height: 13px;
+      border-radius: 50%;
+      background: #b3f7cb;
+      border: 2px solid #122a1b;
+      box-shadow: 0 0 0 1px #52986b;
+    }
+
+    input[type="range"]::-moz-range-thumb {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: #b3f7cb;
+      border: 2px solid #122a1b;
+      box-shadow: 0 0 0 1px #52986b;
+    }
+
+    select, input[type="text"] {
+      width: 100%;
+      min-width: 0;
+      padding: 10px 11px;
+      color: var(--text);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: #0b1810;
+      font-size: 11px;
+    }
+
+    select:hover, input[type="text"]:hover { border-color: #3b6049; }
+    input::placeholder { color: #657e6e; }
+
+    .preset-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 6px;
+    }
+
+    .preset-button {
+      border: 1px solid var(--border);
+      border-radius: 7px;
+      background: #0b1810;
+      padding: 9px 3px;
+      font-size: 10px;
+      transition: .2s;
+    }
+
+    .preset-button:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+
+    .color-row {
+      display: flex;
+      gap: 9px;
+      align-items: center;
+    }
+
+    input[type="color"] {
+      width: 37px;
+      height: 30px;
+      padding: 2px;
+      background: #0b1810;
+      border: 1px solid var(--border);
+      border-radius: 7px;
+    }
+
+    .color-presets {
+      display: flex;
+      gap: 8px;
+    }
+
+    .swatch {
+      width: 23px;
+      height: 23px;
+      padding: 0;
+      border: 3px solid #0b1810;
+      border-radius: 50%;
+      background: var(--swatch);
+      box-shadow: 0 0 0 1px transparent;
+    }
+
+    .swatch[aria-pressed="true"] {
+      box-shadow: 0 0 0 1px #c0dfcb;
+    }
+
+    .swatch:hover { transform: scale(1.12); }
+
+    .switch-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+      min-height: 36px;
+      cursor: pointer;
+      font-size: 11px;
+      color: #b8cbbf;
+    }
+
+    .switch-row input {
+      appearance: none;
+      -webkit-appearance: none;
+      position: relative;
+      width: 30px;
+      height: 17px;
+      flex-shrink: 0;
+      margin: 0;
+      background: #24382b;
+      border: 1px solid #3b5143;
+      border-radius: 20px;
+      cursor: pointer;
+      transition: background .2s;
+    }
+
+    .switch-row input::before {
+      content: "";
+      position: absolute;
+      top: 3px;
+      left: 3px;
+      width: 9px;
+      height: 9px;
+      border-radius: 50%;
+      background: #a7bbb0;
+      transition: transform .2s;
+    }
+
+    .switch-row input:checked {
+      background: #245a39;
+      border-color: #3a8b57;
+    }
+
+    .switch-row input:checked::before {
+      transform: translateX(13px);
+      background: #aafac7;
+    }
+
+    .message-row, .actions {
+      display: flex;
+      gap: 8px;
+    }
+
+    .button {
+      padding: 10px 12px;
+      background: #11261a;
+      border: 1px solid #2d4c38;
+      border-radius: 8px;
+      font-size: 11px;
+      transition: background .2s, border-color .2s;
+    }
+
+    .button:hover {
+      background: #1a3524;
+      border-color: #578467;
+    }
+
+    .actions .button { flex: 1; }
+
+    .reset-button {
+      display: block;
+      margin: 14px auto 0;
+      padding: 5px;
+      border: 0;
+      background: none;
+      color: var(--muted);
+      font-size: 10px;
+    }
+
+    .reset-button:hover { color: var(--text); }
+
+    .keyboard-hint {
+      border-top: 1px solid var(--border);
+      padding-top: 17px;
+      margin: 18px 0 0;
+      text-align: center;
+      color: #839f8e;
+      font-size: 9px;
+      line-height: 1.8;
+    }
+
+    kbd {
+      font: inherit;
+      color: #c4d5ca;
+    }
+
+    .footer {
+      position: fixed;
+      bottom: max(20px, env(safe-area-inset-bottom));
+      left: 24px;
+      z-index: 4;
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      color: #95b2a0;
+      font: 9px ui-monospace, monospace;
+      letter-spacing: 1.6px;
+      text-shadow: 0 2px 5px #000;
+      pointer-events: none;
+    }
+
+    .status-dot {
+      width: 5px;
+      height: 5px;
+      border-radius: 50%;
+      background: var(--accent);
+      box-shadow: 0 0 8px #62f6a570;
+    }
+
+    .footer.paused .status-dot {
+      background: #d5b879;
+      box-shadow: none;
+    }
+
+    .toast {
+      position: fixed;
+      z-index: 30;
+      bottom: 50px;
+      left: 50%;
+      max-width: calc(100vw - 32px);
+      transform: translate(-50%, 12px);
+      padding: 11px 17px;
+      border: 1px solid var(--border);
+      border-radius: 9px;
+      background: #0c1e13;
+      box-shadow: 0 8px 30px #0008;
+      color: #c8e6d3;
+      font-size: 12px;
+      text-align: center;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity .2s, transform .2s;
+    }
+
+    .toast.visible {
+      opacity: 1;
+      transform: translate(-50%, 0);
+    }
+
+    .sr-only {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      white-space: nowrap;
+      border: 0;
+    }
+
+    @media (max-width: 600px) {
+      .topbar {
+        left: 14px;
+        right: 14px;
+        top: max(14px, env(safe-area-inset-top));
+      }
+
+      .brand { gap: 8px; }
+      .brand strong { font-size: 10px; letter-spacing: 2px; }
+      .brand small { font-size: 8px; letter-spacing: 1px; }
+      .brand-mark { width: 30px; height: 34px; }
+      .toolbar { gap: 6px; }
+      .icon-button { width: 36px; height: 36px; }
+
+      .control-panel {
+        right: 12px;
+        top: max(66px, calc(env(safe-area-inset-top) + 52px));
+        width: min(320px, calc(100vw - 24px));
+        max-height: calc(100dvh - 86px - env(safe-area-inset-top));
+        padding: 20px;
+      }
+
+      .footer {
+        left: 16px;
+        bottom: max(14px, env(safe-area-inset-bottom));
+        font-size: 8px;
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        transition: none !important;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <canvas
+    id="matrix-canvas"
+    role="img"
+    aria-label="Digital rain with glowing characters falling through layered depth."
+  >
+    Your browser does not support canvas.
+  </canvas>
+
+  <header class="topbar">
+    <div class="brand">
+      <div class="brand-mark" aria-hidden="true">雨</div>
+      <div>
+        <strong>MATRIX RAIN</strong>
+        <small>DIGITAL ATMOSPHERE</small>
+      </div>
+    </div>
+
+    <nav class="toolbar" aria-label="Quick controls">
+      <button
+        class="icon-button"
+        id="quick-pause"
+        type="button"
+        title="Pause (Space)"
+        aria-label="Pause animation"
+      >
+        <svg id="pause-icon" viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M8 5v14M16 5v14"/>
+        </svg>
+      </button>
+
+      <button
+        class="icon-button"
+        id="fullscreen-btn"
+        type="button"
+        title="Fullscreen (F)"
+        aria-label="Enter fullscreen"
+      >
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M8 3H3v5m13-5h5v5M3 16v5h5m13-5v5h-5"/>
+        </svg>
+      </button>
+
+      <!-- Collapsed by default; saved state is restored by JavaScript. -->
+      <button
+        class="icon-button"
+        id="toggle-btn"
+        type="button"
+        title="Show settings (H)"
+        aria-label="Show settings"
+        aria-controls="control-panel"
+        aria-expanded="false"
+      >
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M4 7h8m4 0h4M4 17h3m4 0h9"/>
+          <circle cx="14" cy="7" r="2"/>
+          <circle cx="9" cy="17" r="2"/>
+        </svg>
+      </button>
+    </nav>
+  </header>
+
+  <aside
+    class="control-panel closed initializing"
+    id="control-panel"
+    aria-labelledby="panel-title"
+    aria-hidden="true"
+    inert
+  >
+    <div class="panel-heading">
+      <h1 id="panel-title">Atmosphere</h1>
+      <span class="badge">LIVE</span>
+    </div>
+
+    <p class="intro">Shape the code. Set the mood. Settings save automatically.</p>
+
+    <div class="preset-grid" aria-label="Scene presets">
+      <button class="preset-button" type="button" data-scene="cinematic">Cinematic</button>
+      <button class="preset-button" type="button" data-scene="classic">Classic</button>
+      <button class="preset-button" type="button" data-scene="quiet">Deep focus</button>
+    </div>
+
+    <h2 class="section-title">01 · Motion</h2>
+
+    <div class="control-group">
+      <label class="control-label" for="speed">
+        Rain speed <output id="speed-value" for="speed">50</output>
+      </label>
+      <input type="range" id="speed" min="10" max="120" value="50">
+    </div>
+
+    <div class="control-group">
+      <label class="control-label" for="density">
+        Stream density <output id="density-value" for="density">22</output>
+      </label>
+      <input type="range" id="density" min="10" max="40" value="22">
+    </div>
+
+    <div class="control-group">
+      <label class="control-label" for="font-size">
+        Character size <output id="font-size-value" for="font-size">18 px</output>
+      </label>
+      <input type="range" id="font-size" min="10" max="30" value="18">
+    </div>
+
+    <div class="control-group">
+      <label class="control-label" for="trail">
+        Trail length <output id="trail-value" for="trail">4</output>
+      </label>
+      <input type="range" id="trail" min="1" max="5" value="4">
+    </div>
+
+    <h2 class="section-title">02 · Appearance</h2>
+
+    <div class="control-group">
+      <label class="control-label" for="color-picker">Phosphor color</label>
+
+      <div class="color-row">
+        <input type="color" id="color-picker" value="#39ef82" aria-label="Custom phosphor color">
+
+        <div class="color-presets" aria-label="Color presets">
+          <button class="swatch" type="button" style="--swatch:#39ef82" data-color="#39ef82" aria-label="Phosphor green" aria-pressed="true"></button>
+          <button class="swatch" type="button" style="--swatch:#00ff41" data-color="#00ff41" aria-label="Classic green" aria-pressed="false"></button>
+          <button class="swatch" type="button" style="--swatch:#55dfff" data-color="#55dfff" aria-label="Ice blue" aria-pressed="false"></button>
+          <button class="swatch" type="button" style="--swatch:#b38aff" data-color="#b38aff" aria-label="Ultraviolet" aria-pressed="false"></button>
+          <button class="swatch" type="button" style="--swatch:#ffb857" data-color="#ffb857" aria-label="Amber" aria-pressed="false"></button>
+          <button class="swatch" type="button" style="--swatch:#ff617c" data-color="#ff617c" aria-label="Crimson" aria-pressed="false"></button>
+        </div>
+      </div>
+    </div>
+
+    <div class="control-group">
+      <label class="control-label" for="char-set">Character set</label>
+      <select id="char-set">
+        <option value="matrix">Katakana + numerals</option>
+        <option value="binary">Binary / 01</option>
+        <option value="hex">Hexadecimal</option>
+        <option value="kanji">Japanese Kanji</option>
+        <option value="symbols">Symbols & glyphs</option>
+        <option value="custom">Custom characters</option>
+      </select>
+    </div>
+
+    <div class="control-group" id="custom-message-group" hidden>
+      <label class="control-label" for="custom-message">Custom character pool</label>
+
+      <form class="message-row" id="message-form">
+        <input
+          type="text"
+          id="custom-message"
+          maxlength="50"
+          placeholder="Enter characters…"
+          value="MATRIX"
+          autocomplete="off"
+        >
+        <button class="button" type="submit">Set</button>
+      </form>
+
+      <p class="help">Your text becomes the characters used in the rain.</p>
+    </div>
+
+    <div class="control-group">
+      <label class="control-label" for="exposure">
+        Brightness <output id="exposure-value" for="exposure">100%</output>
+      </label>
+      <input type="range" id="exposure" min="40" max="150" value="100">
+    </div>
+
+    <div class="control-group">
+      <label class="control-label" for="bloom">
+        Bloom intensity <output id="bloom-value" for="bloom">48%</output>
+      </label>
+      <input type="range" id="bloom" min="0" max="100" value="48">
+    </div>
+
+    <label class="switch-row" for="depth">
+      <span>Layered depth</span>
+      <input id="depth" type="checkbox" checked>
+    </label>
+
+    <label class="switch-row" for="glow-effect">
+      <span>Phosphor glow</span>
+      <input id="glow-effect" type="checkbox" checked>
+    </label>
+
+    <label class="switch-row" for="film">
+      <span>Film grain & scanlines</span>
+      <input id="film" type="checkbox" checked>
+    </label>
+
+    <label class="switch-row" for="vignette">
+      <span>Lens vignette</span>
+      <input id="vignette" type="checkbox" checked>
+    </label>
+
+    <label class="switch-row" for="rainbow-mode">
+      <span>Spectrum colors</span>
+      <input id="rainbow-mode" type="checkbox">
+    </label>
+
+    <h2 class="section-title">03 · Output</h2>
+
+    <div class="control-group">
+      <label class="control-label" for="quality">Render quality</label>
+      <select id="quality">
+        <option value="balanced">Balanced · up to 60 fps</option>
+        <option value="high">High definition · up to 60 fps</option>
+        <option value="eco">Low power · up to 30 fps</option>
+      </select>
+    </div>
+
+    <div class="actions">
+      <button class="button" id="pause-btn" type="button">Pause</button>
+      <button class="button" id="screenshot-btn" type="button">Save image</button>
+    </div>
+
+    <button class="reset-button" id="reset-btn" type="button">Restore defaults</button>
+
+    <p class="keyboard-hint">
+      <kbd>SPACE</kbd> pause &nbsp; / &nbsp;
+      <kbd>H</kbd> settings &nbsp; / &nbsp;
+      <kbd>F</kbd> fullscreen
+    </p>
+  </aside>
+
+  <div class="footer" id="footer" aria-hidden="true">
+    <span class="status-dot"></span>
+    <span id="status-text">SIGNAL ACTIVE</span>
+    <span>·</span>
+    <span id="render-info">3 DEPTH LAYERS</span>
+  </div>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+  <p class="sr-only" id="motion-status" aria-live="polite"></p>
+
+  <noscript>
+    <p style="position:fixed;inset:40% 20px auto;text-align:center;z-index:100">
+      Enable JavaScript to experience Matrix Rain.
+    </p>
+  </noscript>
+
+  <script>
+    "use strict";
+
+    const $ = id => document.getElementById(id);
+    const clamp = (value, min, max) => Math.max(min, Math.min(max, value));
+    const random = (min, max) => min + Math.random() * (max - min);
+    const modulo = (value, divisor) => ((value % divisor) + divisor) % divisor;
+
+    class MatrixRain {
+      constructor() {
+        // Keep the existing settings key to preserve previously saved preferences.
+        this.storageKey = "matrixRainCinematic.v2";
+        this.uiStorageKey = "matrixRainCinematic.ui.v1";
+
+        this.defaults = {
+          speed: 50,
+          density: 22,
+          fontSize: 18,
+          trail: 4,
+          color: "#39ef82",
+          charSet: "matrix",
+          customMessage: "MATRIX",
+          exposure: 100,
+          bloom: 48,
+          depth: true,
+          glowEffect: true,
+          film: true,
+          vignette: true,
+          rainbowMode: false,
+          quality: "balanced"
+        };
+
+        this.charSets = {
+          matrix: "ｱｲｳｴｵｶｷｸｹｺｻｼｽｾｿﾀﾁﾂﾃﾄﾅﾆﾇﾈﾉﾊﾋﾌﾍﾎﾏﾐﾑﾒﾓﾔﾕﾖﾗﾘﾙﾚﾛﾜｦﾝ0123456789:・",
+          binary: "01",
+          hex: "0123456789ABCDEF",
+          kanji: "日月火水木金土山川田中村森林海空風雨雪花鳥魚虫石草竹光影夢",
+          symbols: "∆∇□○●◇◆+−=<>:;{}[]/\\*#$%&"
+        };
+
+        this.rangeControls = {
+          speed: ["speed", ""],
+          density: ["density", ""],
+          "font-size": ["fontSize", " px"],
+          trail: ["trail", ""],
+          exposure: ["exposure", "%"],
+          bloom: ["bloom", "%"]
+        };
+
+        this.checkControls = {
+          depth: "depth",
+          "glow-effect": "glowEffect",
+          film: "film",
+          vignette: "vignette",
+          "rainbow-mode": "rainbowMode"
+        };
+
+        this.motionQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
+        this.settings = this.loadSettings();
+
+        const savedUI = this.readStorage(this.uiStorageKey);
+
+        // First visit: settings are collapsed on every screen size.
+        // Later visits: restore the last explicitly saved panel state.
+        this.panelOpen = typeof savedUI.panelOpen === "boolean"
+          ? savedUI.panelOpen
+          : false;
+
+        this.paused = typeof savedUI.paused === "boolean"
+          ? savedUI.paused
+          : this.motionQuery.matches;
+
+        // Respect a current reduced-motion preference on initial load.
+        if (this.motionQuery.matches) this.paused = true;
+
+        this.setPanel(this.panelOpen, false);
+
+        requestAnimationFrame(() => {
+          $("control-panel").classList.remove("initializing");
+        });
+
+        this.canvas = $("matrix-canvas");
+        this.ctx = this.canvas.getContext("2d", { alpha: false });
+
+        if (!this.ctx) {
+          this.notify("Canvas 2D is not available in this browser.");
+          return;
+        }
+
+        this.raf = null;
+        this.resizeFrame = null;
+        this.lastTime = 0;
+        this.time = 0;
+        this.layers = [];
+
+        this.scene = document.createElement("canvas");
+        this.sceneCtx = this.scene.getContext("2d");
+
+        this.glow = document.createElement("canvas");
+        this.glowCtx = this.glow.getContext("2d");
+
+        this.softGlow = document.createElement("canvas");
+        this.softGlowCtx = this.softGlow.getContext("2d");
+
+        this.createGrain();
+        this.applySettingsToUI();
+        this.setupEvents();
+        this.resize();
+        this.updatePauseUI();
+        this.start();
+
+        if (this.motionQuery.matches) {
+          this.notify("Reduced motion enabled. Press Play to start.");
+        }
+
+        if (document.fonts && document.fonts.ready) {
+          document.fonts.ready.then(() => {
+            this.buildAtlases();
+            this.render();
+          });
+        }
+      }
+
+      readStorage(key) {
+        try {
+          const value = JSON.parse(localStorage.getItem(key) || "{}");
+
+          return value && typeof value === "object" && !Array.isArray(value)
+            ? value
+            : {};
+        } catch (_) {
+          // Invalid data or unavailable storage must not break the app.
+          return {};
+        }
+      }
+
+      writeStorage(key, value) {
+        try {
+          localStorage.setItem(key, JSON.stringify(value));
+        } catch (_) {
+          // Continue with in-memory settings if storage is blocked or full.
+        }
+      }
+
+      loadSettings() {
+        const saved = this.readStorage(this.storageKey);
+        const result = { ...this.defaults };
+
+        const ranges = {
+          speed: [10, 120],
+          density: [10, 40],
+          fontSize: [10, 30],
+          trail: [1, 5],
+          exposure: [40, 150],
+          bloom: [0, 100]
+        };
+
+        for (const [key, limits] of Object.entries(ranges)) {
+          if (typeof saved[key] === "number" && Number.isFinite(saved[key])) {
+            result[key] = Math.round(clamp(saved[key], ...limits));
+          }
+        }
+
+        for (const key of [
+          "depth",
+          "glowEffect",
+          "film",
+          "vignette",
+          "rainbowMode"
+        ]) {
+          if (typeof saved[key] === "boolean") result[key] = saved[key];
+        }
+
+        if (typeof saved.color === "string" &&
+            /^#[0-9a-f]{6}$/i.test(saved.color)) {
+          result.color = saved.color.toLowerCase();
+        }
+
+        if (Object.prototype.hasOwnProperty.call(this.charSets, saved.charSet) ||
+            saved.charSet === "custom") {
+          result.charSet = saved.charSet;
+        }
+
+        if (typeof saved.customMessage === "string") {
+          result.customMessage = Array.from(saved.customMessage)
+            .slice(0, 50)
+            .join("")
+            .trim() || "MATRIX";
+        }
+
+        if (["balanced", "high", "eco"].includes(saved.quality)) {
+          result.quality = saved.quality;
+        }
+
+        return result;
+      }
+
+      saveSettings() {
+        // Save immediately so even a reload right after a change restores it.
+        this.writeStorage(this.storageKey, this.settings);
+      }
+
+      saveUIState() {
+        this.writeStorage(this.uiStorageKey, {
+          panelOpen: this.panelOpen,
+          paused: this.paused
+        });
+      }
+
+      saveAllState() {
+        this.saveSettings();
+        this.saveUIState();
+      }
+
+      applySettingsToUI() {
+        for (const [id, [key, suffix]] of Object.entries(this.rangeControls)) {
+          const input = $(id);
+          input.value = this.settings[key];
+          $(id + "-value").textContent = this.settings[key] + suffix;
+
+          const percent = (
+            (Number(input.value) - Number(input.min)) /
+            (Number(input.max) - Number(input.min))
+          ) * 100;
+
+          input.style.setProperty("--fill", percent + "%");
+        }
+
+        for (const [id, key] of Object.entries(this.checkControls)) {
+          $(id).checked = this.settings[key];
+        }
+
+        $("color-picker").value = this.settings.color;
+        $("char-set").value = this.settings.charSet;
+        $("quality").value = this.settings.quality;
+        $("custom-message").value = this.settings.customMessage;
+        $("custom-message-group").hidden = this.settings.charSet !== "custom";
+
+        document.querySelectorAll("[data-color]").forEach(button => {
+          button.setAttribute(
+            "aria-pressed",
+            String(button.dataset.color === this.settings.color)
+          );
+        });
+
+        $("bloom").disabled = !this.settings.glowEffect;
+        $("render-info").textContent = this.settings.depth
+          ? "3 DEPTH LAYERS"
+          : "SINGLE LAYER";
+      }
+
+      setupEvents() {
+        $("toggle-btn").addEventListener("click", () => {
+          this.setPanel(!this.panelOpen);
+        });
+
+        $("quick-pause").addEventListener("click", () => this.togglePause());
+        $("pause-btn").addEventListener("click", () => this.togglePause());
+        $("fullscreen-btn").addEventListener("click", () => this.toggleFullscreen());
+        $("screenshot-btn").addEventListener("click", () => this.screenshot());
+
+        if (!document.documentElement.requestFullscreen) {
+          $("fullscreen-btn").hidden = true;
+        }
+
+        document.addEventListener("fullscreenchange", () => {
+          const active = Boolean(document.fullscreenElement);
+
+          $("fullscreen-btn").setAttribute(
+            "aria-label",
+            active ? "Exit fullscreen" : "Enter fullscreen"
+          );
+
+          $("fullscreen-btn").title = active
+            ? "Exit fullscreen (F)"
+            : "Fullscreen (F)";
+        });
+
+        for (const [id, [key]] of Object.entries(this.rangeControls)) {
+          $(id).addEventListener("input", event => {
+            this.settings[key] = Number(event.target.value);
+
+            if (["density", "fontSize", "trail"].includes(key)) {
+              this.createLayers();
+            }
+
+            this.changed();
+          });
+        }
+
+        for (const [id, key] of Object.entries(this.checkControls)) {
+          $(id).addEventListener("change", event => {
+            this.settings[key] = event.target.checked;
+
+            if (key === "depth") this.createLayers();
+            if (key === "rainbowMode") this.buildAtlases();
+
+            this.changed();
+          });
+        }
+
+        $("color-picker").addEventListener("input", event => {
+          this.setColor(event.target.value);
+        });
+
+        document.querySelectorAll("[data-color]").forEach(button => {
+          button.addEventListener("click", () => {
+            this.setColor(button.dataset.color);
+          });
+        });
+
+        $("char-set").addEventListener("change", event => {
+          this.settings.charSet = event.target.value;
+          this.createLayers();
+          this.changed();
+        });
+
+        $("quality").addEventListener("change", event => {
+          this.settings.quality = event.target.value;
+          this.resize();
+          this.changed();
+        });
+
+        $("message-form").addEventListener("submit", event => {
+          event.preventDefault();
+
+          this.settings.customMessage = $("custom-message").value.trim() || "MATRIX";
+          this.createLayers();
+          this.changed();
+          this.notify("Custom characters applied and saved.");
+        });
+
+        document.querySelectorAll("[data-scene]").forEach(button => {
+          button.addEventListener("click", () => {
+            this.applyPreset(button.dataset.scene);
+          });
+        });
+
+        $("reset-btn").addEventListener("click", () => {
+          this.settings = { ...this.defaults };
+          this.resize();
+          this.changed();
+
+          // Keep the current panel and playback states while resetting visuals.
+          this.saveUIState();
+          this.notify("Default atmosphere restored and saved.");
+        });
+
+        window.addEventListener("resize", () => {
+          if (this.resizeFrame !== null) return;
+
+          this.resizeFrame = requestAnimationFrame(() => {
+            this.resizeFrame = null;
+            this.resize();
+          });
+        });
+
+        document.addEventListener("visibilitychange", () => {
+          if (document.hidden) {
+            this.stop();
+            this.saveAllState();
+          } else {
+            this.start();
+          }
+        });
+
+        window.addEventListener("pagehide", () => {
+          this.stop();
+          this.saveAllState();
+        });
+
+        // Restart correctly when returning through the browser's back/forward cache.
+        window.addEventListener("pageshow", event => {
+          if (event.persisted) this.start();
+        });
+
+        this.motionQuery.addEventListener("change", event => {
+          if (event.matches && !this.paused) {
+            this.togglePause();
+            this.notify("Animation paused for reduced motion.");
+          }
+        });
+
+        document.addEventListener("keydown", event => {
+          if (event.ctrlKey || event.metaKey || event.altKey || event.repeat) {
+            return;
+          }
+
+          if (event.key === "Escape" && this.panelOpen) {
+            this.setPanel(false);
+            return;
+          }
+
+          if (
+            event.target instanceof Element &&
+            event.target.closest("input, select, textarea, button, [contenteditable]")
+          ) {
+            return;
+          }
+
+          if (event.code === "Space") {
+            event.preventDefault();
+            this.togglePause();
+          } else if (event.code === "KeyH") {
+            this.setPanel(!this.panelOpen);
+          } else if (event.code === "KeyF") {
+            this.toggleFullscreen();
+          } else if (event.code === "KeyS") {
+            this.screenshot();
+          }
+        });
+      }
+
+      changed() {
+        this.applySettingsToUI();
+        this.saveSettings();
+        this.render();
+      }
+
+      setColor(color) {
+        this.settings.color = color.toLowerCase();
+        this.buildAtlases();
+        this.changed();
+      }
+
+      setPanel(open, persist = true) {
+        this.panelOpen = Boolean(open);
+
+        const panel = $("control-panel");
+        const toggle = $("toggle-btn");
+
+        if (!this.panelOpen && panel.contains(document.activeElement)) {
+          toggle.focus();
+        }
+
+        panel.classList.toggle("closed", !this.panelOpen);
+        panel.inert = !this.panelOpen;
+        panel.setAttribute("aria-hidden", String(!this.panelOpen));
+
+        toggle.setAttribute("aria-expanded", String(this.panelOpen));
+        toggle.setAttribute(
+          "aria-label",
+          this.panelOpen ? "Hide settings" : "Show settings"
+        );
+        toggle.title = this.panelOpen ? "Hide settings (H)" : "Show settings (H)";
+
+        if (persist) this.saveUIState();
+      }
+
+      applyPreset(name) {
+        const presets = {
+          cinematic: {},
+          classic: {
+            color: "#00ff41",
+            density: 28,
+            fontSize: 16,
+            speed: 65,
+            trail: 5,
+            depth: false,
+            bloom: 28,
+            exposure: 110,
+            film: false
+          },
+          quiet: {
+            color: "#55dfff",
+            density: 16,
+            fontSize: 17,
+            speed: 20,
+            trail: 5,
+            exposure: 68,
+            bloom: 35,
+            film: false
+          }
+        };
+
+        if (!Object.prototype.hasOwnProperty.call(presets, name)) return;
+
+        this.settings = {
+          ...this.defaults,
+          ...presets[name],
+          quality: this.settings.quality
+        };
+
+        this.resize();
+        this.changed();
+
+        this.notify(
+          name === "quiet"
+            ? "Deep focus atmosphere applied and saved."
+            : "Atmosphere applied and saved."
+        );
+      }
+
+      createGrain() {
+        const tile = document.createElement("canvas");
+        tile.width = tile.height = 128;
+
+        const context = tile.getContext("2d");
+        const image = context.createImageData(128, 128);
+
+        for (let i = 0; i < image.data.length; i += 4) {
+          const value = Math.random() * 255;
+
+          image.data[i] = value;
+          image.data[i + 1] = value;
+          image.data[i + 2] = value;
+          image.data[i + 3] = 255;
+        }
+
+        context.putImageData(image, 0, 0);
+        this.grainPattern = this.ctx.createPattern(tile, "repeat");
+      }
+
+      resize() {
+        this.width = Math.max(1, window.innerWidth);
+        this.height = Math.max(1, window.innerHeight);
+
+        const qualityCap = {
+          eco: 1,
+          balanced: 1.5,
+          high: 2
+        }[this.settings.quality];
+
+        const pixelBudget = this.settings.quality === "high"
+          ? 8000000
+          : 4500000;
+
+        this.dpr = Math.max(.5, Math.min(
+          window.devicePixelRatio || 1,
+          qualityCap,
+          Math.sqrt(pixelBudget / (this.width * this.height))
+        ));
+
+        const width = Math.round(this.width * this.dpr);
+        const height = Math.round(this.height * this.dpr);
+
+        this.canvas.width = this.scene.width = width;
+        this.canvas.height = this.scene.height = height;
+
+        this.ctx.setTransform(this.dpr, 0, 0, this.dpr, 0, 0);
+        this.sceneCtx.setTransform(this.dpr, 0, 0, this.dpr, 0, 0);
+
+        this.glow.width = this.softGlow.width = Math.max(
+          1,
+          Math.ceil(this.width / 4)
+        );
+
+        this.glow.height = this.softGlow.height = Math.max(
+          1,
+          Math.ceil(this.height / 4)
+        );
+
+        this.vignetteGradient = this.ctx.createRadialGradient(
+          this.width * .49,
+          this.height * .45,
+          Math.min(this.width, this.height) * .12,
+          this.width * .5,
+          this.height * .5,
+          Math.hypot(this.width, this.height) * .58
+        );
+
+        this.vignetteGradient.addColorStop(0, "rgba(0,0,0,0)");
+        this.vignetteGradient.addColorStop(.5, "rgba(0,0,0,.05)");
+        this.vignetteGradient.addColorStop(1, "rgba(0,0,0,.78)");
+
+        this.createLayers();
+        this.render();
+      }
+
+      getCharacters() {
+        const text = this.settings.charSet === "custom"
+          ? this.settings.customMessage
+          : this.charSets[this.settings.charSet];
+
+        return [
+          ...new Set(
+            Array.from(text || "MATRIX").filter(char => !/\s/u.test(char))
+          )
+        ].slice(0, 100);
+      }
+
+      createLayers() {
+        this.characters = this.getCharacters();
+
+        if (!this.characters.length) {
+          this.characters = Array.from("MATRIX");
+        }
+
+        const specs = this.settings.depth
+          ? [
+              { scale: .65, opacity: .25, speed: .46, coverage: .82 },
+              { scale: .93, opacity: .66, speed: .82, coverage: .80 },
+              { scale: 1.24, opacity: .94, speed: 1.16, coverage: .42 }
+            ]
+          : [
+              { scale: 1, opacity: .85, speed: 1, coverage: .95 }
+            ];
+
+        this.layers = specs.map(spec => {
+          const size = this.settings.fontSize * spec.scale;
+          const step = size * 1.16;
+          const spacing = size * 1.26 * (22 / this.settings.density);
+          const count = Math.ceil(this.width / spacing);
+          const rows = Math.ceil(this.height / step);
+
+          const layer = {
+            ...spec,
+            size,
+            step,
+            rows,
+            streams: []
+          };
+
+          for (let column = 0; column < count; column++) {
+            const cluster = .85 + .15 * Math.sin(
+              column * .39 + spec.scale * 8
+            );
+
+            if (Math.random() > spec.coverage * cluster) continue;
+
+            const length = Math.round(
+              random(10, 32) * (this.settings.trail / 3)
+            );
+
+            const capacity = length + 8;
+            const nodes = Array.from(
+              { length: capacity },
+              () => this.makeNode()
+            );
+
+            layer.streams.push({
+              x: column * spacing + spacing * .5,
+              offset: random(-step * .3, step * .3),
+              head: random(-rows * .35, rows + length * .55),
+              length,
+              capacity,
+              nodes,
+              speed: random(5, 12) * spec.speed,
+              intensity: random(.62, 1),
+              hue: Math.floor(Math.random() * 8),
+              phase: random(0, Math.PI * 2),
+              mutationIn: random(.08, .6)
+            });
+          }
+
+          return layer;
+        });
+
+        this.buildAtlases();
+      }
+
+      makeNode() {
+        return {
+          glyph: Math.floor(Math.random() * this.characters.length),
+          intensity: random(.6, 1),
+          gap: Math.random() < .035
+        };
+      }
+
+      colorRGB(hex) {
+        return [
+          parseInt(hex.slice(1, 3), 16),
+          parseInt(hex.slice(3, 5), 16),
+          parseInt(hex.slice(5, 7), 16)
+        ];
+      }
+
+      spectrumRGB(index) {
+        const hue = (index / 8) * 6;
+        const x = 1 - Math.abs(hue % 2 - 1);
+
+        const combinations = [
+          [1, x, 0],
+          [x, 1, 0],
+          [0, 1, x],
+          [0, x, 1],
+          [x, 0, 1],
+          [1, 0, x]
+        ];
+
+        return combinations[Math.floor(hue)].map(value => {
+          return Math.round(45 + value * 210);
+        });
+      }
+
+      buildAtlases() {
+        if (!this.layers.length) return;
+
+        const colors = this.settings.rainbowMode
+          ? Array.from({ length: 8 }, (_, index) => this.spectrumRGB(index))
+          : [this.colorRGB(this.settings.color)];
+
+        for (const layer of this.layers) {
+          const ratio = Math.min(this.dpr, 1.5);
+          const cell = Math.ceil(layer.size * 1.65);
+          const pixels = Math.ceil(cell * ratio);
+          const columns = 16;
+          const rows = Math.ceil(this.characters.length / columns);
+
+          const atlas = document.createElement("canvas");
+          atlas.width = columns * pixels;
+          atlas.height = rows * pixels * colors.length * 2;
+
+          const context = atlas.getContext("2d");
+          context.textAlign = "center";
+          context.textBaseline = "middle";
+          context.font = `${Math.round(layer.size * ratio)}px "MS Gothic", "Yu Gothic", "Noto Sans Mono CJK JP", monospace`;
+
+          colors.forEach((rgb, colorIndex) => {
+            for (let bright = 0; bright < 2; bright++) {
+              const ink = bright
+                ? rgb.map(value => Math.round(value * .22 + 255 * .78))
+                : rgb;
+
+              context.fillStyle = `rgb(${ink.join(",")})`;
+
+              this.characters.forEach((char, index) => {
+                const x = (index % columns) * pixels + pixels / 2;
+
+                const y = (
+                  Math.floor(index / columns) +
+                  (colorIndex * 2 + bright) * rows
+                ) * pixels + pixels / 2;
+
+                context.fillText(char, x, y, pixels * .88);
+              });
+            }
+          });
+
+          layer.atlas = {
+            canvas: atlas,
+            pixels,
+            cell,
+            rows,
+            columns
+          };
+        }
+      }
+
+      update(dt) {
+        this.time += dt;
+        const speedFactor = this.settings.speed / 50;
+
+        for (const layer of this.layers) {
+          for (const stream of layer.streams) {
+            const previous = Math.floor(stream.head);
+
+            stream.head += stream.speed * speedFactor * dt;
+
+            const current = Math.floor(stream.head);
+
+            // Characters stay on a grid while each illuminated head advances.
+            for (let row = previous + 1; row <= current; row++) {
+              stream.nodes[modulo(row, stream.capacity)] = this.makeNode();
+            }
+
+            stream.mutationIn -= dt;
+
+            if (stream.mutationIn <= 0) {
+              stream.mutationIn = random(.09, .45);
+
+              const row = current - Math.floor(random(0, stream.length));
+              stream.nodes[modulo(row, stream.capacity)] = this.makeNode();
+            }
+
+            if (stream.head - stream.length > layer.rows + 3) {
+              stream.head = -random(3, layer.rows * .7 + 4);
+              stream.speed = random(5, 12) * layer.speed;
+              stream.intensity = random(.62, 1);
+            }
+          }
+        }
+      }
+
+      render() {
+        if (!this.layers.length) return;
+
+        const context = this.sceneCtx;
+        context.clearRect(0, 0, this.width, this.height);
+        context.globalCompositeOperation = "source-over";
+
+        const exposure = this.settings.exposure / 100;
+
+        for (const layer of this.layers) {
+          const atlas = layer.atlas;
+
+          for (const stream of layer.streams) {
+            const headRow = Math.floor(stream.head);
+            const fraction = stream.head - headRow;
+
+            const shimmer = .965 + .035 * Math.sin(
+              this.time * 2.4 + stream.phase
+            );
+
+            const baseAlpha = layer.opacity *
+              stream.intensity *
+              exposure *
+              shimmer;
+
+            const palette = this.settings.rainbowMode ? stream.hue : 0;
+
+            for (let age = stream.length - 1; age >= 0; age--) {
+              const row = headRow - age;
+              const y = row * layer.step + stream.offset;
+
+              if (y < -layer.step || y > this.height + layer.step) continue;
+
+              const node = stream.nodes[modulo(row, stream.capacity)];
+
+              if (node.gap && age > 2) continue;
+
+              const falloff = Math.pow(
+                1 - (age + fraction) / stream.length,
+                1.55
+              );
+
+              let alpha = baseAlpha * falloff * node.intensity;
+              const bright = age < 2;
+
+              if (age === 0) {
+                alpha = baseAlpha * (.55 + fraction * .45);
+              } else if (age === 1) {
+                alpha = baseAlpha * .83;
+              }
+
+              if (alpha < .015) continue;
+
+              const sourceX = (
+                node.glyph % atlas.columns
+              ) * atlas.pixels;
+
+              const sourceY = (
+                Math.floor(node.glyph / atlas.columns) +
+                (palette * 2 + Number(bright)) * atlas.rows
+              ) * atlas.pixels;
+
+              context.globalAlpha = clamp(alpha, 0, 1);
+
+              context.drawImage(
+                atlas.canvas,
+                sourceX,
+                sourceY,
+                atlas.pixels,
+                atlas.pixels,
+                stream.x - atlas.cell / 2,
+                y - atlas.cell / 2,
+                atlas.cell,
+                atlas.cell
+              );
+            }
+          }
+        }
+
+        context.globalAlpha = 1;
+
+        const output = this.ctx;
+        output.globalAlpha = 1;
+        output.globalCompositeOperation = "source-over";
+        output.fillStyle = "#010403";
+        output.fillRect(0, 0, this.width, this.height);
+        output.drawImage(this.scene, 0, 0, this.width, this.height);
+
+        // Low-resolution bloom preserves sharp glyph cores.
+        if (this.settings.glowEffect && this.settings.bloom > 0) {
+          const width = this.glow.width;
+          const height = this.glow.height;
+
+          this.glowCtx.clearRect(0, 0, width, height);
+          this.glowCtx.drawImage(this.scene, 0, 0, width, height);
+
+          this.softGlowCtx.clearRect(0, 0, width, height);
+          this.softGlowCtx.filter = "blur(2.5px)";
+          this.softGlowCtx.drawImage(this.glow, 0, 0);
+          this.softGlowCtx.filter = "none";
+
+          output.globalCompositeOperation = "screen";
+          output.globalAlpha = this.settings.bloom / 100 * .9;
+          output.drawImage(this.softGlow, 0, 0, this.width, this.height);
+
+          output.globalAlpha = this.settings.bloom / 100 * .16;
+          output.drawImage(this.glow, 0, 0, this.width, this.height);
+
+          output.globalCompositeOperation = "source-over";
+          output.globalAlpha = 1;
+        }
+
+        if (this.settings.film) {
+          output.fillStyle = "#000";
+          output.globalAlpha = .11;
+
+          for (let y = 0; y < this.height; y += 3) {
+            output.fillRect(0, y, this.width, .65);
+          }
+
+          output.save();
+
+          const grainFrame = Math.floor(this.time * 12);
+          const offsetX = (grainFrame * 17) % 128;
+          const offsetY = (grainFrame * 29) % 128;
+
+          output.translate(-offsetX, -offsetY);
+          output.globalAlpha = .025;
+          output.fillStyle = this.grainPattern;
+          output.fillRect(0, 0, this.width + 128, this.height + 128);
+
+          output.restore();
+          output.globalAlpha = 1;
+        }
+
+        if (this.settings.vignette) {
+          output.fillStyle = this.vignetteGradient;
+          output.fillRect(0, 0, this.width, this.height);
+        }
+      }
+
+      start() {
+        if (this.paused || document.hidden || this.raf !== null) return;
+
+        this.lastTime = performance.now();
+        this.raf = requestAnimationFrame(time => this.frame(time));
+      }
+
+      stop() {
+        if (this.raf !== null) cancelAnimationFrame(this.raf);
+
+        this.raf = null;
+        this.lastTime = 0;
+      }
+
+      frame(now) {
+        this.raf = null;
+
+        if (this.paused || document.hidden) return;
+
+        const interval = 1000 / (
+          this.settings.quality === "eco" ? 30 : 60
+        );
+
+        const elapsed = now - this.lastTime;
+
+        if (elapsed >= interval - .8) {
+          this.update(Math.min(elapsed / 1000, .1));
+          this.lastTime = now;
+          this.render();
+        }
+
+        this.raf = requestAnimationFrame(time => this.frame(time));
+      }
+
+      togglePause() {
+        this.paused = !this.paused;
+
+        if (this.paused) {
+          this.stop();
+        } else {
+          this.start();
+        }
+
+        this.updatePauseUI();
+        this.saveUIState();
+      }
+
+      updatePauseUI() {
+        const label = this.paused ? "Play" : "Pause";
+
+        $("pause-btn").textContent = label;
+
+        $("quick-pause").setAttribute(
+          "aria-label",
+          this.paused ? "Play animation" : "Pause animation"
+        );
+
+        $("quick-pause").title = `${label} (Space)`;
+
+        $("pause-icon").innerHTML = this.paused
+          ? '<path d="m9 5 10 7-10 7Z"/>'
+          : '<path d="M8 5v14M16 5v14"/>';
+
+        $("status-text").textContent = this.paused
+          ? "SIGNAL PAUSED"
+          : "SIGNAL ACTIVE";
+
+        $("footer").classList.toggle("paused", this.paused);
+
+        $("motion-status").textContent = this.paused
+          ? "Animation paused."
+          : "Animation playing.";
+      }
+
+      async toggleFullscreen() {
+        try {
+          if (document.fullscreenElement) {
+            await document.exitFullscreen();
+          } else if (document.documentElement.requestFullscreen) {
+            await document.documentElement.requestFullscreen();
+          } else {
+            this.notify("Fullscreen is not supported in this browser.");
+          }
+        } catch (_) {
+          this.notify("Fullscreen is unavailable in this environment.");
+        }
+      }
+
+      screenshot() {
+        this.render();
+
+        try {
+          this.canvas.toBlob(blob => {
+            if (!blob) {
+              this.notify("The image could not be created.");
+              return;
+            }
+
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement("a");
+
+            link.href = url;
+            link.download = `matrix-rain-${new Date()
+              .toISOString()
+              .replace(/[:.]/g, "-")}.png`;
+
+            document.body.appendChild(link);
+            link.click();
+            link.remove();
+
+            setTimeout(() => URL.revokeObjectURL(url), 30000);
+            this.notify("PNG image exported without controls.");
+          }, "image/png");
+        } catch (_) {
+          this.notify("Image export is unavailable in this browser.");
+        }
+      }
+
+      notify(message) {
+        const toast = $("toast");
+
+        clearTimeout(this.toastTimer);
+        toast.textContent = message;
+        toast.classList.add("visible");
+
+        this.toastTimer = setTimeout(() => {
+          toast.classList.remove("visible");
+        }, 3200);
+      }
+    }
+
+    const matrix = new MatrixRain();
+  </script>
+</body>
+</html>
