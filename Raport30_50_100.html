@@ -1,0 +1,878 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Генератор рапорту 30 / 50 / 100</title>
+
+<!-- ===== Metadata ===== -->
+<meta name="description" content="Генератор рапорту на виплату додаткової винагороди 30 000 / 50 000 / 100 000 грн військовослужбовцям ДПСУ згідно з наказом МВС №726 та ПКМУ №168. Автоматичний розрахунок діб з урахуванням ВДП, експорт у XLSX та PDF.">
+<meta name="keywords" content="рапорт, 30000, 50000, 100000, додаткова винагорода, ДПСУ, наказ МВС 726, ПКМУ 168, ВДП, XLSX, PDF">
+<meta name="author" content="Report 30/50/100">
+<meta name="application-name" content="Рапорт 30/50/100">
+<meta name="theme-color" content="#0c131b">
+<meta name="color-scheme" content="dark">
+<meta name="robots" content="noindex, nofollow">
+
+<!-- ===== Favicon (inline SVG) ===== -->
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cdefs%3E%3CclipPath id='c'%3E%3Crect width='64' height='64' rx='14'/%3E%3C/clipPath%3E%3C/defs%3E%3Cg clip-path='url(%23c)'%3E%3Crect width='64' height='32' fill='%230057b7'/%3E%3Crect y='32' width='64' height='32' fill='%23ffd500'/%3E%3C/g%3E%3Crect x='17' y='10' width='30' height='44' rx='4' fill='%23ffffff' stroke='%230c131b' stroke-width='3'/%3E%3Cpath d='M23 22h18M23 30h18M23 38h18M23 46h10' stroke='%230c131b' stroke-width='3' stroke-linecap='round'/%3E%3C/svg%3E">
+<link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='32' fill='%230057b7'/%3E%3Crect y='32' width='64' height='32' fill='%23ffd500'/%3E%3Crect x='17' y='10' width='30' height='44' rx='4' fill='%23ffffff' stroke='%230c131b' stroke-width='3'/%3E%3Cpath d='M23 22h18M23 30h18M23 38h18M23 46h10' stroke='%230c131b' stroke-width='3' stroke-linecap='round'/%3E%3C/svg%3E">
+
+<script src="https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/pdfmake@0.2.10/build/pdfmake.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/pdfmake@0.2.10/build/vfs_fonts.js"></script>
+<style>
+:root{
+  --bg:#0c131b; --panel:#121c27; --card:#16212d; --card2:#1c2a39; --line:#263648;
+  --txt:#e6edf3; --muted:#8aa0b6; --acc:#3fb37f; --acc2:#2f8fd8; --warn:#f0b429; --err:#ef5350;
+  --radius:14px;
+}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%}
+body{font-family:"Segoe UI",Roboto,Arial,sans-serif;background:radial-gradient(circle at 15% -10%,#1b3550 0,var(--bg) 55%);color:var(--txt);display:flex;flex-direction:column}
+header{display:flex;align-items:center;gap:14px;padding:12px 22px;border-bottom:1px solid var(--line);background:rgba(12,19,27,.9);backdrop-filter:blur(8px);position:sticky;top:0;z-index:20;flex-wrap:wrap}
+.logo{width:40px;height:40px;border-radius:11px;background:linear-gradient(180deg,#0057b7 0 50%,#ffd500 50% 100%);box-shadow:0 4px 14px rgba(0,0,0,.45);flex:none}
+header h1{font-size:18px;margin:0;letter-spacing:.2px}
+header p{margin:2px 0 0;color:var(--muted);font-size:12px}
+.actions{margin-left:auto;display:flex;gap:8px;flex-wrap:wrap}
+button{border:1px solid var(--line);border-radius:10px;padding:9px 14px;font-weight:600;font-size:13.5px;cursor:pointer;color:#fff;background:var(--card2);transition:transform .12s,filter .12s;display:inline-flex;align-items:center;gap:6px;white-space:nowrap}
+button:hover{transform:translateY(-1px);filter:brightness(1.18)}
+button:active{transform:none}
+button.sm{padding:5px 10px;font-size:12px;border-radius:8px}
+.b-xlsx{background:linear-gradient(135deg,#1e7e4f,#3fb37f);border:0}
+.b-pdf{background:linear-gradient(135deg,#a8241d,#ef5350);border:0}
+.b-ex{background:linear-gradient(135deg,#1f5fa0,#2f8fd8);border:0}
+.layout{display:grid;grid-template-columns:340px minmax(0,1fr);flex:1;min-height:0}
+aside{background:var(--panel);border-right:1px solid var(--line);padding:14px;overflow:auto;max-height:calc(100vh - 65px);position:sticky;top:65px}
+main{padding:18px 22px;overflow:auto;min-width:0}
+@media(max-width:1000px){.layout{grid-template-columns:1fr}aside{position:static;max-height:none;border-right:0;border-bottom:1px solid var(--line)}}
+.acc{background:var(--card);border:1px solid var(--line);border-radius:12px;margin-bottom:10px;overflow:hidden}
+.acc>summary{list-style:none;cursor:pointer;padding:11px 14px;font-weight:600;font-size:13.5px;display:flex;align-items:center;gap:8px;user-select:none}
+.acc>summary::-webkit-details-marker{display:none}
+.acc>summary::after{content:"▸";margin-left:auto;color:var(--muted);transition:transform .15s}
+.acc[open]>summary::after{transform:rotate(90deg)}
+.acc>summary .ic{width:24px;height:24px;border-radius:7px;display:grid;place-items:center;background:var(--card2);font-size:13px}
+.acc .body{padding:0 14px 14px}
+label{display:block;font-size:11.5px;color:var(--muted);margin:10px 0 4px;text-transform:uppercase;letter-spacing:.4px}
+input,textarea,select{width:100%;background:#0b121a;color:var(--txt);border:1px solid var(--line);border-radius:8px;padding:8px 10px;font-size:13px;font-family:inherit}
+input[type=date],input[type=month]{color-scheme:dark}
+textarea{resize:vertical}
+input:focus,textarea:focus{outline:none;border-color:var(--acc2);box-shadow:0 0 0 3px rgba(47,143,216,.2)}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.chk{display:flex;align-items:center;gap:8px;margin-top:12px;font-size:13px;color:var(--txt);text-transform:none;letter-spacing:0}
+.chk input{width:auto;accent-color:var(--acc)}
+.side-foot{display:flex;gap:8px;margin-top:6px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:16px 18px;box-shadow:0 6px 24px rgba(0,0,0,.22);margin-bottom:16px}
+.card-h{display:flex;align-items:center;gap:10px;margin:0 0 12px}
+.card-h h2{font-size:15px;margin:0}
+.card-h .dot{width:9px;height:9px;border-radius:50%;background:var(--acc)}
+.card-h .r{margin-left:auto;display:flex;gap:8px;align-items:center}
+.areas{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+@media(max-width:900px){.areas{grid-template-columns:1fr}}
+.area-h{display:flex;align-items:center;gap:8px;margin-bottom:6px}
+.area-h b{font-size:13px}
+.badge{font-size:11px;padding:2px 8px;border-radius:20px;background:var(--card2);border:1px solid var(--line);color:var(--muted)}
+.area-h .badge{margin-left:auto}
+.areas textarea{min-height:250px;font-family:Consolas,"Courier New",monospace;font-size:12.5px;line-height:1.55;white-space:pre;overflow-x:auto}
+.help{font-size:12px;color:var(--muted);line-height:1.7;margin-top:12px;padding:10px 12px;background:#0f1822;border-radius:10px;border:1px dashed var(--line)}
+.help code{background:#0b121a;padding:1px 6px;border-radius:5px;color:#9fd3ff;font-size:11.5px}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px}
+@media(max-width:900px){.stats{grid-template-columns:repeat(2,1fr)}}
+.stat{background:linear-gradient(160deg,var(--card2),var(--card));border:1px solid var(--line);border-radius:12px;padding:12px 14px;display:flex;align-items:center;gap:12px}
+.stat .i{width:38px;height:38px;border-radius:10px;display:grid;place-items:center;font-size:18px;background:rgba(63,179,127,.15)}
+.stat:nth-child(2) .i{background:rgba(239,83,80,.15)}
+.stat:nth-child(3) .i{background:rgba(47,143,216,.15)}
+.stat:nth-child(4) .i{background:rgba(240,180,41,.15)}
+.stat b{display:block;font-size:20px}
+.stat span{font-size:11.5px;color:var(--muted)}
+.tblWrap{overflow:auto;max-height:340px;border-radius:10px;border:1px solid var(--line)}
+table.parsed{border-collapse:collapse;width:100%;font-size:12.5px}
+table.parsed th{position:sticky;top:0;background:var(--card2);text-align:left;font-weight:600;color:var(--muted);font-size:11.5px;text-transform:uppercase;letter-spacing:.3px}
+table.parsed th,table.parsed td{padding:6px 9px;border-bottom:1px solid var(--line);vertical-align:top}
+table.parsed td.n{text-align:center;font-variant-numeric:tabular-nums}
+table.parsed td.note{white-space:pre-line;color:var(--muted);font-size:11.5px}
+table.parsed tr.grp td{background:#101a24;color:var(--acc2);font-weight:600}
+.st-ok{color:var(--acc)} .st-w{color:var(--warn)} .st-e{color:var(--err)}
+.wmsg{font-size:11px;color:var(--warn)} .wmsg.e{color:var(--err)}
+.empty{color:var(--muted);text-align:center;padding:16px!important}
+.zoom{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--muted)}
+.zoom input{width:120px;accent-color:var(--acc2);padding:0}
+.paperWrap{background:#55616d;border-radius:12px;padding:18px;overflow:hidden}
+.paperScale{transform-origin:top left}
+.paper{background:#fff;color:#000;width:1400px;padding:30px 36px;font-family:"Times New Roman",serif;font-size:11px;box-shadow:0 10px 30px rgba(0,0,0,.4)}
+.paper .addr{margin-left:62%;font-size:13px;white-space:pre-line}
+.paper .ttl{text-align:center;font-weight:bold;font-size:15px;margin:12px 0;color:#d00}
+.paper p{text-indent:24px;margin:4px 0;text-align:justify}
+.paper table{border-collapse:collapse;width:100%;margin-top:8px;table-layout:fixed}
+.paper td,.paper th{border:1px solid #000;padding:2px 3px;text-align:center;vertical-align:middle;white-space:pre-line;font-size:10px;word-wrap:break-word}
+.paper th{font-weight:normal}
+.paper td.basis{font-size:8.5px}
+.paper td.sec{text-align:left;font-weight:bold;border-left:0;border-right:0;padding-top:8px}
+.paper .sign{display:flex;margin-top:22px;font-size:12px}
+.paper .sign .pos{white-space:pre-line;width:40%}
+.paper .sign .nm{margin-left:22%;align-self:flex-end}
+.toast{position:fixed;bottom:22px;right:22px;background:var(--card2);border:1px solid var(--acc);padding:12px 18px;border-radius:10px;opacity:0;transform:translateY(10px);transition:.25s;pointer-events:none;z-index:50;box-shadow:0 8px 24px rgba(0,0,0,.4)}
+.toast.show{opacity:1;transform:none}
+.toast.err{border-color:var(--err)}
+</style>
+</head>
+<body>
+<header>
+  <div class="logo"></div>
+  <div>
+    <h1>Генератор рапорту 30 / 50 / 100</h1>
+    <p>Додаткова винагорода згідно з наказом МВС №726 та ПКМУ №168</p>
+  </div>
+  <div class="actions">
+    <button class="b-ex" id="btnExample">📋 Приклад</button>
+    <button id="btnClear">🧹 Очистити списки</button>
+    <button class="b-xlsx" id="btnXlsx">⬇ XLSX</button>
+    <button class="b-pdf" id="btnPdf">⬇ PDF</button>
+  </div>
+</header>
+
+<div class="layout">
+  <aside>
+    <details class="acc" open>
+      <summary><span class="ic">📅</span>Звітний період</summary>
+      <div class="body">
+        <label>Місяць</label>
+        <input type="month" id="month" data-p>
+        <div class="row2">
+          <div><label>З</label><input type="date" id="pFrom" data-p></div>
+          <div><label>По</label><input type="date" id="pTo" data-p></div>
+        </div>
+        <label class="chk"><input type="checkbox" id="g30on" data-p> Період 30 000 для всіх за замовчуванням</label>
+        <div class="row2">
+          <div><label>30 000 з</label><input type="date" id="g30From" data-p></div>
+          <div><label>30 000 по</label><input type="date" id="g30To" data-p></div>
+        </div>
+        <label class="chk"><input type="checkbox" id="autoNote" data-p checked> Автоматична примітка про ВДП</label>
+        <label class="chk"><input type="checkbox" id="repeatHdr" data-p checked> Повторювати шапку таблиці (PDF / друк XLSX)</label>
+      </div>
+    </details>
+
+    <details class="acc">
+      <summary><span class="ic">✉️</span>Адресат</summary>
+      <div class="body"><textarea id="addressee" rows="4" data-p></textarea></div>
+    </details>
+
+    <details class="acc">
+      <summary><span class="ic">📄</span>Підстави</summary>
+      <div class="body">
+        <label>Підстава (до 100 000)</label>
+        <textarea id="basis100" rows="7" data-p></textarea>
+        <label>Підстава (до 30 000)</label>
+        <textarea id="basis30" rows="4" data-p></textarea>
+        <label>Орган ВУ (до 50 000)</label>
+        <input id="organ" data-p>
+      </div>
+    </details>
+
+    <details class="acc">
+      <summary><span class="ic">✍️</span>Підпис</summary>
+      <div class="body">
+        <label>Посада</label>
+        <textarea id="signPos" rows="5" data-p></textarea>
+        <div class="row2">
+          <div><label>Звання</label><input id="signRank" data-p></div>
+          <div><label>Ім'я ПРІЗВИЩЕ</label><input id="signName" data-p></div>
+        </div>
+      </div>
+    </details>
+
+    <div class="side-foot">
+      <button class="sm" id="btnReset" title="Повернути стандартні адресата, підстави, підпис">↺ Стандартні налаштування</button>
+    </div>
+  </aside>
+
+  <main>
+    <div class="stats">
+      <div class="stat"><div class="i">👥</div><div><b id="sPeople">0</b><span>військовослужбовців</span></div></div>
+      <div class="stat"><div class="i">🔥</div><div><b id="s100">0</b><span>діб «до 100 000»</span></div></div>
+      <div class="stat"><div class="i">🛡️</div><div><b id="s30">0</b><span>діб «до 30 / 50 000»</span></div></div>
+      <div class="stat"><div class="i">₴</div><div><b id="sSum">0</b><span>орієнтовна сума, грн</span></div></div>
+    </div>
+
+    <div class="card">
+      <div class="card-h"><span class="dot"></span><h2>Особовий склад</h2></div>
+      <div class="areas">
+        <div>
+          <div class="area-h"><b>1) Військовослужбовці підрозділу</b>
+            <button class="sm" data-tpl="mainList" title="Додати шаблон рядка">＋</button>
+            <span class="badge" id="cntMain">0</span></div>
+          <textarea id="mainList" data-p spellcheck="false" placeholder="лейтенант МАЛИШ Роман Костянтинович ВДП 15.06.2026 29.06.2026"></textarea>
+        </div>
+        <div>
+          <div class="area-h"><b>4) Приряджені з інших підрозділів</b>
+            <button class="sm" data-tpl="addList" title="Додати шаблон рядка">＋</button>
+            <span class="badge" id="cntAdd">0</span></div>
+          <textarea id="addList" data-p spellcheck="false" placeholder="штаб-сержант КІНДРАТЕНКО Євгеній Володимирович [прим:Вибув 20.06.2026]"></textarea>
+        </div>
+      </div>
+      <div class="help">
+        <b>Формат рядка:</b> <code>звання ПІП [дати ВДП]</code>, наприклад <code>сержант ПЕТРЕНКО Іван Іванович 01.01.2026 18.01.2026</code>.
+        Кілька відпусток: <code>ВДП 01.06.2026-05.06.2026, ВДР 20.06.2026-22.06.2026</code>; один день: <code>ВДП 01.06.2026</code>.<br>
+        <b>Додатково:</b> <code>[30:01.06.2026-05.06.2026]</code> період 30 000 ·
+        <code>[50:…]</code> період 50 000 ·
+        <code>[100:08.06.2026-30.06.2026]</code> власний період 100 000 (прибув/вибув) ·
+        <code>[прим:текст]</code> примітка. Підтримуються роздільники <code>;</code> / Tab (вставка з Excel). Рядки з <code>#</code> ігноруються.
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-h"><span class="dot" style="background:var(--warn)"></span><h2>Розбір даних</h2>
+        <div class="r"><span class="badge" id="warnBadge">0 попереджень</span></div></div>
+      <div class="tblWrap">
+        <table class="parsed">
+          <thead><tr><th>#</th><th>Звання</th><th>ПІП</th><th>30</th><th>50</th><th>100</th><th>Примітка</th><th>Статус</th></tr></thead>
+          <tbody id="parsedBody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-h"><span class="dot" style="background:var(--acc2)"></span><h2>Попередній перегляд</h2>
+        <div class="r zoom">Масштаб <input type="range" id="zoom" min="40" max="150" value="100"><span id="zoomVal">авто</span>
+          <button class="sm" id="zoomFit">↔ По ширині</button></div></div>
+      <div class="paperWrap" id="paperWrap"><div class="paperScale" id="paperScale"><div class="paper" id="preview"></div></div></div>
+    </div>
+  </main>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+/* ================== CONSTANTS ================== */
+const $ = id => document.getElementById(id);
+const DAY = 86400000;
+const MONTHS_LOC = ['січні','лютому','березні','квітні','травні','червні','липні','серпні','вересні','жовтні','листопаді','грудні'];
+const RANKS = ['головний майстер-сержант','старший майстер-сержант','майстер-сержант','штаб-сержант','головний сержант',
+  'старший сержант','молодший сержант','сержант','старший солдат','солдат','старший матрос','матрос',
+  'головний корабельний майстер-старшина','старший майстер-старшина','майстер-старшина','головний старшина','старший старшина','старшина','молодший старшина',
+  'молодший лейтенант','старший лейтенант','лейтенант','капітан-лейтенант','капітан 3 рангу','капітан 2 рангу','капітан 1 рангу','капітан',
+  'майор','підполковник','полковник','бригадний генерал','генерал-майор','генерал-лейтенант','генерал'];
+const LEAVE_TYPES = 'ВДП|ВДР|ВДО|ВДС|ВПС|ЛІК|ВЛК|ВІДП|ВЗ';
+const DATE = '(\\d{1,2}\\.\\d{1,2}\\.\\d{4})';
+const SEP = '(?:\\s*(?:[-–—]|по|до)?\\s*' + DATE + ')?';
+
+const T_INTRO = (m, y) => `На виконання вимог наказу МВС України від 01.09.2023 №726 «Деякі питання виплати військовослужбовцям Державної прикордонної служби України винагород, передбачених постановою Кабінету Міністрів України від 28 лютого 2022 року № 168 «Питання деяких виплат військовослужбовцям, особам рядового і начальницького складу, поліцейським та їх сім’ям під час дії воєнного стану»», представляю дані про участь військовослужбовців у бойових діях або заходах, у виконанні бойових (спеціальних) завдань в ${m} ${y} року та прошу Вас виплатити додаткову винагороду:`;
+const T_100 = 'у розмірі 100000 гривень військовослужбовцям, які беруть безпосередню участь у бойових діях або здійсненні заходів, необхідних для забезпечення оборони України, захисту безпеки населення та інтересів держави у зв’язку з військовою агресією Російської Федерації проти України (далі - бойові дії або заходи), перебуваючи безпосередньо в районах їх здійснення, на тимчасово окупованій Російською Федерацією території України, на території між позиціями сил оборони та позиціями військ держави-агресора, на території держави-агресора, у розрахунку на місяць пропорційно часу участі в таких діях та заходах;';
+const T_50 = 'у розмірі 50000 гривень військовослужбовцям, які виконують бойові (спеціальні) завдання у складі органу військового управління, штабу угруповання військ (сил) або штабу тактичної групи до пункту управління оперативно-стратегічного угруповання військ включно, а також у складі командування та штабу військової частини (зведеного підрозділу) (у тому числі поза районами ведення воєнних (бойових) дій), який здійснює оперативне (бойове) управління військовими частинами та підрозділами, що ведуть воєнні (бойові) дії на лінії бойового зіткнення на відстані виконання бойових (спеціальних) завдань військовою частиною (підрозділом, зокрема зведеним) першого ешелону оборони або наступу (контрнаступу, контратаки), у розрахунку на місяць пропорційно часу виконання таких завдань;';
+const T_30 = 'у розмірі 30000 гривень військовослужбовцям, які здійснюють бойові (спеціальні) завдання в період здійснення заходів, необхідних для забезпечення оборони України, захисту безпеки населення та інтересів держави у зв’язку з військовою агресією Російської Федерації проти України, у розрахунку на місяць пропорційно часу виконання таких завдань;';
+
+const H_BN = 'Період виконання бойових (спеціальних) завданнь згідно з БН (БР)';
+const H_OVU_MAIN = 'Період виконання бойових (спеціальних) завданнь у складі ОВУ відповідно до п.п. 2 п.2 наказу №36';
+const H_OVU_ADD = 'Період виконання бойових (спеціальних) завданнь у складі ОВУ';
+const H_100 = 'Період виконання бойових дії або заходів';
+const H_BASIS = 'Підстава, район виконання завдань';
+
+const DEFAULTS = {
+  addressee: 'Коменданту першої прикордонної комендатури\nшвидкого реагування 11 прикордонного загону\nполковнику Віталію КРОЧАКУ',
+  basis100: 'БР командира 113 обр ТрО №1571/1600 від 01.02.2026, БР начальника 11 прикордонного загону від 10.06.2026 №644-БР-гриф, БН коменданта 1 приккшр №25/7835/26Вн-гриф від 23.05.2026, ЖБД від 22.04.2026 №27 гриф, район бойових (воєних) дій Вовчанська міська територіальна громада, п.п.1 п.3 наказу МВС від 01.09.2023 №726 (у складі резерву прикордонної застави РЕБ та РЕР першої приккшр 11 Прикз), п.п.4 п.3 наказу МВС від 01.09.2023 №726',
+  basis30: 'БР командира 113 обр ТрО №1571/1600 від 01.02.2026, ЖБД від 22.04.2026 №27 гриф, Район виконання завдань Харківська область',
+  organ: '',
+  signPos: 'Начальник прикордонної застави\nрадіоелектронної боротьби та радіотехнічної\nрозвідки першої прикордонної комендатури\nшвидкого реагування 11 прикордонного\nзагону',
+  signRank: 'лейтенант',
+  signName: 'Роман МАЛИШ'
+};
+
+const EXAMPLE_MAIN = `лейтенант МАЛИШ Роман Костянтинович ВДП 15.06.2026 29.06.2026
+штаб-сержант УС Сергій Генадійович [100:08.06.2026-30.06.2026]
+сержант ХАРІТОНОВ Сергій Валерійович [30:04.06.2026-05.06.2026] [100:06.06.2026-30.06.2026]
+старший сержант ГЕРУС Валентин Вікторович [100:19.06.2026-30.06.2026]
+старший солдат ЦИСАРЬ Юрій Юрійович ВДП 20.06.2026-30.06.2026
+старший солдат ДУЖАК Андрій Віталійович ВДР 20.06.2026-30.06.2026
+старший солдат СОЛОВЙОВ Юрій Миколайович ВДП 01.06.2026 [30:02.06.2026-05.06.2026]
+старший солдат ГРОГУЛЬ Віктор Наумович [30:01.06.2026-05.06.2026]
+старший сержант ЗАРІЦЬКИЙ Олександр Олександрович [30:01.06.2026-05.06.2026]
+сержант МАКОВЕЦЬКИЙ Данило Євгенович ВДП 10.06.2026-25.06.2026
+старший солдат КОПАЙГОРОДСЬКИЙ Олег Михайлович [30:01.06.2026-05.06.2026]`;
+const EXAMPLE_ADD = `штаб-сержант КІНДРАТЕНКО Євгеній Володимирович [100:01.06.2026-19.06.2026] [прим:Вибув 20.06.2026 згідно ОС-589 від 18.05.2026]
+старший солдат БОЙКО Іван Валерійович [30:01.06.2026-05.06.2026] [прим:11 ПРИКЗ (приккшр ІП)]
+старший солдат ГОЛОВІН Данил Ігорович [100:03.06.2026-19.06.2026] [прим:Вибув 20.06.2026 згідно ОС-589 від 18.05.2026]
+старший солдат КРАСНІКОВ Микола Васильович ВДП 01.06.2026-18.06.2026 [прим:11 ПРИКЗ (приккшр ІП)]
+штаб-сержант КАЛИНЧУК Олександр Ярославович [30:01.06.2026-05.06.2026] [прим:11 ПРИКЗ (приккшр ІП)]
+старший солдат МІСЮРИН Денис Олексійович [30:01.06.2026-05.06.2026] [прим:11 ПРИКЗ (приккшр ІП)]
+старший солдат КІКТЕНКО Олексій Миколайович [100:01.06.2026-19.06.2026] [прим:Вибув 20.06.2026 згідно ОС-589 від 18.05.2026]
+старший солдат БЄЛКІН Олександр Миколайович [30:01.06.2026-05.06.2026] [прим:11 ПРИКЗ (1 приккшр)]
+молодший сержант МАШТАЛЕР Сергій Олександрович [100:01.06.2026-19.06.2026] [прим:Вибув 20.06.2026 згідно ОС-589 від 18.05.2026]`;
+
+/* ================== DATE UTILS ================== */
+const pad = n => String(n).padStart(2, '0');
+const dn = (y, m, d) => Math.round(Date.UTC(y, m - 1, d) / DAY);
+function fd(n) { const d = new Date(n * DAY); return pad(d.getUTCDate()) + '.' + pad(d.getUTCMonth() + 1) + '.' + d.getUTCFullYear(); }
+function toISO(n) { const d = new Date(n * DAY); return d.getUTCFullYear() + '-' + pad(d.getUTCMonth() + 1) + '-' + pad(d.getUTCDate()); }
+function parseISO(s) { if (!s) return null; const [y, m, d] = s.split('-').map(Number); return (y && m && d) ? dn(y, m, d) : null; }
+function parseDMY(s) {
+  const m = s.match(/(\d{1,2})\.(\d{1,2})\.(\d{4})/); if (!m) return null;
+  const v = dn(+m[3], +m[2], +m[1]);
+  return fd(v) === pad(+m[1]) + '.' + pad(+m[2]) + '.' + m[3] ? v : null;
+}
+function parseRanges(str) {
+  const re = new RegExp(DATE + SEP, 'g'); const out = []; let m;
+  while ((m = re.exec(str))) {
+    const a = parseDMY(m[1]), b = m[2] ? parseDMY(m[2]) : a;
+    if (a != null && b != null) out.push([Math.min(a, b), Math.max(a, b)]);
+  }
+  return out;
+}
+function toSet(ranges, clip) {
+  const s = new Set();
+  for (const [a, b] of ranges) for (let d = Math.max(a, clip[0]); d <= Math.min(b, clip[1]); d++) s.add(d);
+  return s;
+}
+const diff = (a, b) => new Set([...a].filter(x => !b.has(x)));
+function setToRanges(s) {
+  const arr = [...s].sort((x, y) => x - y), r = [];
+  for (const d of arr) { if (r.length && r[r.length - 1][1] === d - 1) r[r.length - 1][1] = d; else r.push([d, d]); }
+  return { starts: r.map(x => fd(x[0])).join('\n'), ends: r.map(x => fd(x[1])).join('\n'), n: arr.length };
+}
+function plDays(n) { const a = n % 10, b = n % 100; if (a === 1 && b !== 11) return 'доба'; if (a >= 2 && a <= 4 && (b < 12 || b > 14)) return 'доби'; return 'діб'; }
+
+/* ================== PARSING ================== */
+const norm = s => s.toLowerCase().replace(/[\s\-–]+/g, ' ').trim();
+const RANKS_N = RANKS.map(r => [norm(r), r]);
+
+function splitRankName(head, warn) {
+  const words = head.split(/\s+/).filter(Boolean);
+  let best = 0, rank = '';
+  for (let k = 1; k <= Math.min(5, words.length); k++) {
+    const f = RANKS_N.find(r => r[0] === norm(words.slice(0, k).join(' ')));
+    if (f) { best = k; rank = f[1]; }
+  }
+  if (!best) { warn('звання не розпізнано, взято перше слово'); return { rank: words[0] || '', name: words.slice(1).join(' ') }; }
+  return { rank, name: words.slice(best).join(' ') };
+}
+
+function parseLine(raw, ln, listName) {
+  let line = raw.trim();
+  if (!line || line.startsWith('#')) return null;
+  const p = { ln, list: listName, notes: [], p30: null, p50: null, p100: null, leaves: [], warns: [] };
+  const warn = (t, e) => p.warns.push({ t, e });
+  line = line.replace(/\[([^\]]*)\]/g, (_, inner) => {
+    const m = inner.match(/^\s*(30|50|100|прим|примітка|п)\s*:\s*([\s\S]*)$/i);
+    if (m && /^\d+$/.test(m[1])) {
+      const r = parseRanges(m[2]);
+      if (!r.length) warn(`некоректні дати у [${inner}]`, true); else p['p' + m[1]] = r;
+    } else p.notes.push((m ? m[2] : inner).trim());
+    return ' ';
+  });
+  let tail;
+  if (/[;\t|]/.test(line)) {
+    const parts = line.split(/[;\t|]/).map(s => s.trim());
+    p.rank = parts[0]; p.name = parts[1] || ''; tail = parts.slice(2).join(' ');
+    const f = RANKS_N.find(r => r[0] === norm(p.rank)); if (f) p.rank = f[1]; else warn('звання не розпізнано');
+  } else {
+    const re = new RegExp('(?:(' + LEAVE_TYPES + ')\\s*:?\\s*)?(?:з\\s+)?' + DATE, 'i');
+    const m = re.exec(line);
+    const idx = m ? m.index : line.length;
+    tail = line.slice(idx);
+    Object.assign(p, splitRankName(line.slice(0, idx).trim(), warn));
+  }
+  const lre = new RegExp('(?:(' + LEAVE_TYPES + ')\\s*:?\\s*)?(?:з\\s+)?' + DATE + SEP, 'gi');
+  let m, lastType = 'ВДП';
+  while ((m = lre.exec(tail))) {
+    const a = parseDMY(m[2]), b = m[3] ? parseDMY(m[3]) : a;
+    if (a == null || b == null) { warn(`некоректна дата: ${m[0]}`, true); continue; }
+    if (m[1]) lastType = m[1].toUpperCase();
+    p.leaves.push({ type: lastType, a: Math.min(a, b), b: Math.max(a, b) });
+  }
+  if (!p.name) warn('не вказано ПІП', true);
+  return p;
+}
+const parseList = (text, name) => text.split(/\r?\n/).map((l, i) => parseLine(l, i + 1, name)).filter(Boolean);
+
+/* ================== CALC ================== */
+function getS() {
+  const v = id => $(id).value;
+  return {
+    period: [parseISO(v('pFrom')), parseISO(v('pTo'))],
+    g30on: $('g30on').checked, g30: [parseISO(v('g30From')), parseISO(v('g30To'))],
+    autoNote: $('autoNote').checked, repeatHdr: $('repeatHdr').checked,
+    addressee: v('addressee'), basis100: v('basis100'), basis30: v('basis30'), organ: v('organ'),
+    signPos: v('signPos'), signRank: v('signRank'), signName: v('signName')
+  };
+}
+
+function compute(p, S) {
+  const P = S.period;
+  const leaveSet = toSet(p.leaves.map(l => [l.a, l.b]), P);
+  const r30 = p.p30 || (S.g30on && S.g30[0] != null && S.g30[1] != null ? [S.g30] : null);
+  const raw30 = r30 ? toSet(r30, P) : new Set();
+  const raw50 = p.p50 ? toSet(p.p50, P) : new Set();
+  const s30 = diff(raw30, leaveSet);
+  const s50 = diff(diff(raw50, leaveSet), raw30);
+  const s100 = diff(diff(diff(toSet(p.p100 || [P], P), leaveSet), raw30), raw50);
+  const notes = [...p.notes];
+  if (S.autoNote) for (const l of p.leaves) {
+    const a = Math.max(l.a, P[0]), b = Math.min(l.b, P[1]);
+    if (a > b) { p.warns.push({ t: `${l.type} ${fd(l.a)}–${fd(l.b)} поза звітним періодом` }); continue; }
+    const n = b - a + 1;
+    notes.push(`${l.type} ${n} ${plDays(n)} з ${fd(a)}`);
+  }
+  const res = { r30: setToRanges(s30), r50: setToRanges(s50), r100: setToRanges(s100), note: notes.join('\n') };
+  if (!res.r30.n && !res.r50.n && !res.r100.n) p.warns.push({ t: 'немає жодного дня до виплати' });
+  return res;
+}
+
+function buildModel() {
+  const S = getS();
+  const ok = S.period[0] != null && S.period[1] != null && S.period[0] <= S.period[1];
+  const main = parseList($('mainList').value, 'Основні');
+  const add = parseList($('addList').value, 'Приряджені');
+  let mDays = 30;
+  if (ok) { const d = new Date(S.period[0] * DAY); mDays = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth() + 1, 0)).getUTCDate(); }
+  let t100 = 0, t30 = 0, t50 = 0, sum = 0;
+  const rowify = list => list.map((p, i) => {
+    const c = ok ? compute(p, S) : { r30: { n: 0 }, r50: { n: 0 }, r100: { n: 0 }, note: '' };
+    p.calc = c;
+    t100 += c.r100.n; t30 += c.r30.n; t50 += c.r50.n;
+    sum += (100000 * c.r100.n + 50000 * c.r50.n + 30000 * c.r30.n) / mDays;
+    return [i + 1, p.rank, p.name,
+      c.r30.starts || '', c.r30.ends || '', c.r30.n || '', c.r30.n ? S.basis30 : '',
+      c.r50.starts || '', c.r50.ends || '', c.r50.n || '', c.r50.n ? S.organ : '',
+      c.r100.starts || '', c.r100.ends || '', c.r100.n || '', c.r100.n ? S.basis100 : '',
+      c.note];
+  });
+  const mainRows = rowify(main), addRows = rowify(add);
+  const d0 = ok ? new Date(S.period[0] * DAY) : new Date();
+  return {
+    S, ok, main, add, mainRows, addRows, t100, t30, t50, sum,
+    monthLoc: MONTHS_LOC[d0.getUTCMonth()], year: d0.getUTCFullYear(), mm: pad(d0.getUTCMonth() + 1)
+  };
+}
+
+/* ================== PREVIEW ================== */
+const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+const PREV_COLS = [2.2, 6, 9, 5.6, 5.6, 3.4, 10.5, 5, 5, 3.4, 5, 5.6, 5.6, 3.4, 18, 9];
+
+function htmlHeader(ovu) {
+  return `<tr><th rowspan="3">№ з/п</th><th rowspan="3">Військове звання</th><th rowspan="3">ПІП</th>
+  <th colspan="4">${H_BN}</th><th colspan="4">${ovu}</th><th colspan="4">${H_100}</th><th rowspan="3">Примітка</th></tr>
+  <tr><th colspan="2">до 30000</th><th rowspan="2">Кількість діб</th><th rowspan="2">${H_BASIS}</th>
+  <th colspan="2">до 50000</th><th rowspan="2">Кількість діб</th><th rowspan="2">Орган ВУ</th>
+  <th colspan="2">до 100000</th><th rowspan="2">Кількість діб</th><th rowspan="2">${H_BASIS}</th></tr>
+  <tr><th>з</th><th>по</th><th>з</th><th>по</th><th>з</th><th>по</th></tr>`;
+}
+function htmlRows(rows) {
+  if (!rows.length) return '<tr>' + '<td>&nbsp;</td>'.repeat(16) + '</tr>';
+  return rows.map(r => '<tr>' + r.map((v, i) => `<td class="${i === 6 || i === 14 ? 'basis' : ''}">${esc(v)}</td>`).join('') + '</tr>').join('');
+}
+function htmlSpecial(title, mid) {
+  return `<tr><td colspan="16" class="sec">${title}</td></tr>
+  <tr><th>№ з/п</th><th>Військове звання</th><th>ПІП</th><th colspan="12">${mid}</th><th>Примітка</th></tr>
+  <tr>${'<td>&nbsp;</td>'.repeat(3)}<td colspan="12"></td><td></td></tr>`;
+}
+
+function renderParsed(M) {
+  const tb = [];
+  let warns = 0;
+  const grp = (title, list) => {
+    tb.push(`<tr class="grp"><td colspan="8">${title} — ${list.length}</td></tr>`);
+    if (!list.length) { tb.push('<tr><td colspan="8" class="empty">немає записів</td></tr>'); return; }
+    list.forEach((p, i) => {
+      const c = p.calc || { r30: { n: 0 }, r50: { n: 0 }, r100: { n: 0 }, note: '' };
+      const hasE = p.warns.some(w => w.e), hasW = p.warns.length > 0;
+      warns += p.warns.length;
+      const st = hasE ? '<span class="st-e">✖ помилка</span>' : hasW ? '<span class="st-w">⚠ увага</span>' : '<span class="st-ok">✔</span>';
+      const msgs = p.warns.map(w => `<div class="wmsg ${w.e ? 'e' : ''}">рядок ${p.ln}: ${esc(w.t)}</div>`).join('');
+      tb.push(`<tr><td class="n">${i + 1}</td><td>${esc(p.rank)}</td><td>${esc(p.name)}</td>
+        <td class="n">${c.r30.n || '–'}</td><td class="n">${c.r50.n || '–'}</td><td class="n"><b>${c.r100.n || '–'}</b></td>
+        <td class="note">${esc(c.note)}</td><td>${st}${msgs}</td></tr>`);
+    });
+  };
+  grp('1) Військовослужбовці підрозділу', M.main);
+  grp('4) Приряджені з інших підрозділів', M.add);
+  if (!M.ok) { tb.unshift('<tr><td colspan="8" class="empty st-e">Некоректний звітний період</td></tr>'); warns++; }
+  $('parsedBody').innerHTML = tb.join('');
+  const wb = $('warnBadge');
+  wb.textContent = warns ? `${warns} попереджень` : 'все гаразд';
+  wb.style.color = warns ? 'var(--warn)' : 'var(--acc)';
+}
+
+function render() {
+  const M = buildModel(), S = M.S;
+  $('sPeople').textContent = M.main.length + M.add.length;
+  $('s100').textContent = M.t100;
+  $('s30').textContent = M.t30 + (M.t50 ? ' / ' + M.t50 : '');
+  $('sSum').textContent = Math.round(M.sum).toLocaleString('uk-UA');
+  $('cntMain').textContent = M.main.length + ' осіб';
+  $('cntAdd').textContent = M.add.length + ' осіб';
+  renderParsed(M);
+
+  const colgroup = '<colgroup>' + PREV_COLS.map(w => `<col style="width:${w}%">`).join('') + '</colgroup>';
+  $('preview').innerHTML = `
+    <div class="addr">${esc(S.addressee)}</div>
+    <div class="ttl">Рапорт</div>
+    <p>${T_INTRO(M.monthLoc, M.year)}</p>
+    <p style="text-indent:0">1) Військовослужбовцям:</p>
+    <p>${T_100}</p><p>${T_50}</p><p>${T_30}</p>
+    <table>${colgroup}
+      ${htmlHeader(H_OVU_MAIN)}
+      ${htmlRows(M.mainRows)}
+      ${htmlSpecial('2) Військовослужбовцям, які загинули/померли:', 'Дата загибелі/смерті')}
+      ${htmlSpecial('3) Щодо виплати військовослужбовцям, які безвісно відсутні, в полоні:', 'Дата обліку, як безвісно відсутній, в полоні')}
+      <tr><td colspan="16" class="sec">4) Військовослужбовці приряджені з інших підрозділів</td></tr>
+      ${htmlHeader(H_OVU_ADD)}
+      ${htmlRows(M.addRows)}
+    </table>
+    <div class="sign"><div class="pos">${esc(S.signPos)}\n${esc(S.signRank)}</div><div class="nm">${esc(S.signName)}</div></div>`;
+  fitPreview();
+}
+
+let zoomAuto = true;
+function fitPreview() {
+  const wrap = $('paperWrap'), sc = $('paperScale'), paper = $('preview');
+  const avail = wrap.clientWidth - 36;
+  const fit = Math.min(1, avail / paper.offsetWidth);
+  const z = zoomAuto ? fit : (+$('zoom').value / 100);
+  sc.style.transform = `scale(${z})`;
+  sc.style.height = (paper.offsetHeight * z) + 'px';
+  sc.style.width = (paper.offsetWidth * z) + 'px';
+  wrap.style.overflowX = zoomAuto ? 'hidden' : 'auto';
+  if (zoomAuto) $('zoom').value = Math.round(fit * 100);
+  $('zoomVal').textContent = zoomAuto ? 'авто' : Math.round(z * 100) + '%';
+}
+
+/* ================== XLSX: TEXT MEASUREMENT ================== */
+const RAPORT_XLSX_TUNE = {
+  widthK: 1.16,
+  lineK: 1.30,
+  padPx: 7,
+  padPt: 4,
+  maxRow: 409
+};
+const XW = [4.5, 13, 18, 10.5, 10.5, 7, 24, 10.5, 10.5, 7, 12, 10.5, 10.5, 7, 34, 18];
+const colPx = c => Math.trunc(XW[c - 1] * 7 + 5);
+const spanPx = (c1, c2) => { let s = 0; for (let c = c1; c <= c2; c++) s += colPx(c); return s; };
+const _mctx = document.createElement('canvas').getContext('2d');
+
+function wrapLines(text, widthPx, sizePt, bold) {
+  const T = RAPORT_XLSX_TUNE;
+  _mctx.font = `${bold ? 'bold ' : ''}${(sizePt * 96 / 72).toFixed(2)}px "Times New Roman", Times, serif`;
+  const avail = Math.max(8, widthPx - T.padPx);
+  const mw = s => _mctx.measureText(s).width * T.widthK;
+  let total = 0;
+  for (const para of String(text ?? '').split('\n')) {
+    const words = para.split(/ +/);
+    let n = 1, line = '';
+    for (const w of words) {
+      if (!line) {
+        line = w;
+        const x = mw(w);
+        if (x > avail) { n += Math.ceil(x / avail) - 1; line = ''; }
+        continue;
+      }
+      const t = line + ' ' + w;
+      if (mw(t) <= avail) line = t;
+      else {
+        n++; line = w;
+        const x = mw(w);
+        if (x > avail) { n += Math.ceil(x / avail) - 1; line = ''; }
+      }
+    }
+    total += n;
+  }
+  return total;
+}
+function needH(text, c1, c2, sizePt, bold) {
+  const T = RAPORT_XLSX_TUNE;
+  if (text == null || text === '') return 0;
+  const lines = wrapLines(text, spanPx(c1, c2), sizePt, bold);
+  return Math.min(T.maxRow, lines * sizePt * T.lineK + T.padPt);
+}
+
+/* ================== XLSX ================== */
+async function exportXlsx() {
+  if (typeof ExcelJS === 'undefined') return toast('ExcelJS не завантажено (перевірте інтернет)', true);
+  const M = buildModel(), S = M.S;
+  const wb = new ExcelJS.Workbook(); wb.creator = 'Report 30/50/100';
+  const ws = wb.addWorksheet('Рапорт', {
+    pageSetup: { paperSize: 9, orientation: 'landscape', fitToPage: true, fitToWidth: 1, fitToHeight: 0, horizontalCentered: true,
+      margins: { left: .3, right: .3, top: .4, bottom: .4, header: .2, footer: .2 } }
+  });
+  ws.columns = XW.map(w => ({ width: w }));
+  const thin = { style: 'thin' }, B = { top: thin, left: thin, bottom: thin, right: thin };
+  const FS = { addr: 12, title: 12, para: 11, hdr: 8, data: 9, basis: 8, note: 9, sec: 10, sign: 11 };
+
+  const set = (r, c, v, o = {}) => {
+    const cell = ws.getCell(r, c); cell.value = v;
+    const font = { name: 'Times New Roman', size: o.size || 9, bold: !!o.bold };
+    if (o.color) font.color = { argb: o.color };
+    cell.font = font;
+    cell.alignment = { wrapText: true, vertical: o.v || 'middle', horizontal: o.h || 'center' };
+    if (o.border) cell.border = B;
+  };
+  const box = (r1, c1, r2, c2) => { for (let r = r1; r <= r2; r++) for (let c = c1; c <= c2; c++) ws.getCell(r, c).border = B; };
+  const mset = (r1, c1, r2, c2, v, o = {}) => { if (r1 !== r2 || c1 !== c2) ws.mergeCells(r1, c1, r2, c2); set(r1, c1, v, o); if (o.border) box(r1, c1, r2, c2); };
+  const height = (r, h) => { ws.getRow(r).height = Math.min(RAPORT_XLSX_TUNE.maxRow, Math.max(h, 12)); };
+
+  let r = 1;
+  for (const l of S.addressee.split('\n')) {
+    mset(r, 10, r, 16, l, { h: 'left', size: FS.addr });
+    height(r, Math.max(16, needH(l, 10, 16, FS.addr)));
+    r++;
+  }
+  height(r, 8); r++;
+  mset(r, 1, r, 16, 'Рапорт', { size: FS.title, color: 'FFFF0000' }); height(r, 20); r++;
+  height(r, 6); r++;
+
+  const para = txt => {
+    const t = '      ' + txt;
+    mset(r, 1, r, 16, t, { h: 'justify', v: 'top', size: FS.para });
+    height(r, needH(t, 1, 16, FS.para));
+    r++;
+  };
+  para(T_INTRO(M.monthLoc, M.year));
+  mset(r, 1, r, 16, '1) Військовослужбовцям:', { h: 'left', size: FS.para }); height(r, FS.para * 1.6); r++;
+  para('  ' + T_100); para('  ' + T_50); para('  ' + T_30);
+  height(r, 6); r++;
+
+  const hb = { border: true, size: FS.hdr };
+  const header = ovu => {
+    const r0 = r;
+    mset(r, 1, r + 2, 1, '№ з/п', hb); mset(r, 2, r + 2, 2, 'Військове звання', hb); mset(r, 3, r + 2, 3, 'ПІП', hb);
+    mset(r, 4, r, 7, H_BN, hb); mset(r, 8, r, 11, ovu, hb); mset(r, 12, r, 15, H_100, hb);
+    mset(r, 16, r + 2, 16, 'Примітка', hb);
+    mset(r + 1, 4, r + 1, 5, 'до 30000', hb); mset(r + 1, 6, r + 2, 6, 'Кількість діб', hb); mset(r + 1, 7, r + 2, 7, H_BASIS, hb);
+    mset(r + 1, 8, r + 1, 9, 'до 50000', hb); mset(r + 1, 10, r + 2, 10, 'Кількість діб', hb); mset(r + 1, 11, r + 2, 11, 'Орган ВУ', hb);
+    mset(r + 1, 12, r + 1, 13, 'до 100000', hb); mset(r + 1, 14, r + 2, 14, 'Кількість діб', hb); mset(r + 1, 15, r + 2, 15, H_BASIS, hb);
+    [4, 5, 8, 9, 12, 13].forEach((c, i) => set(r + 2, c, i % 2 ? 'по' : 'з', hb));
+
+    let h1 = Math.max(needH(H_BN, 4, 7, FS.hdr), needH(ovu, 8, 11, FS.hdr), needH(H_100, 12, 15, FS.hdr), 16);
+    let h2 = Math.max(needH('до 30000', 4, 5, FS.hdr), 15);
+    let h3 = 15;
+    const need2 = Math.max(needH('Кількість діб', 6, 6, FS.hdr), needH(H_BASIS, 7, 7, FS.hdr),
+      needH('Орган ВУ', 11, 11, FS.hdr), needH(H_BASIS, 15, 15, FS.hdr));
+    if (h2 + h3 < need2) h2 = need2 - h3;
+    const need3 = Math.max(needH('№ з/п', 1, 1, FS.hdr), needH('Військове звання', 2, 2, FS.hdr), needH('Примітка', 16, 16, FS.hdr));
+    if (h1 + h2 + h3 < need3) h1 = need3 - h2 - h3;
+    height(r0, h1); height(r0 + 1, h2); height(r0 + 2, h3);
+    r += 3;
+    return r0;
+  };
+
+  const colFont = i => (i === 6 || i === 14) ? FS.basis : (i === 15 ? FS.note : FS.data);
+  const dataRows = rows => {
+    if (!rows.length) rows = [Array(16).fill('')];
+    for (const row of rows) {
+      let h = 20;
+      row.forEach((v, i) => {
+        const size = colFont(i);
+        set(r, i + 1, v === '' ? null : v, { border: true, size });
+        h = Math.max(h, needH(v, i + 1, i + 1, size));
+      });
+      height(r, h);
+      r++;
+    }
+  };
+
+  const sectionTitle = t => { mset(r, 1, r, 16, t, { h: 'left', bold: true, size: FS.sec }); height(r, FS.sec * 1.7); r++; };
+  const special = (title, mid) => {
+    sectionTitle(title);
+    set(r, 1, '№ з/п', hb); set(r, 2, 'Військове звання', hb); set(r, 3, 'ПІП', hb);
+    mset(r, 4, r, 15, mid, hb); set(r, 16, 'Примітка', hb);
+    height(r, Math.max(needH('Військове звання', 2, 2, FS.hdr), needH('№ з/п', 1, 1, FS.hdr), 18)); r++;
+    for (let c = 1; c <= 3; c++) set(r, c, null, hb); mset(r, 4, r, 15, null, hb); set(r, 16, null, hb); height(r, 16); r++;
+  };
+
+  const mainHdr = header(H_OVU_MAIN);
+  dataRows(M.mainRows);
+  special('2) Військовослужбовцям, які загинули/померли:', 'Дата загибелі/смерті');
+  special('3) Щодо виплати військовослужбовцям, які безвісно відсутні, в полоні:', 'Дата обліку, як безвісно відсутній, в полоні');
+  sectionTitle('4) Військовослужбовці приряджені з інших підрозділів');
+  header(H_OVU_ADD);
+  dataRows(M.addRows);
+
+  height(r, 18); r++;
+  const signLines = [...S.signPos.split('\n'), S.signRank];
+  signLines.forEach((l, i) => {
+    mset(r, 2, r, 7, l, { h: 'left', size: FS.sign });
+    if (i === signLines.length - 1) mset(r, 11, r, 14, S.signName, { h: 'left', size: FS.sign });
+    height(r, Math.max(15, needH(l, 2, 7, FS.sign)));
+    r++;
+  });
+
+  ws.pageSetup.printArea = `A1:P${r}`;
+  if (S.repeatHdr) ws.pageSetup.printTitlesRow = `${mainHdr}:${mainHdr + 2}`;
+
+  const buf = await wb.xlsx.writeBuffer();
+  download(new Blob([buf], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' }), `Рапорт_30_50_100_${M.mm}_${M.year}.xlsx`);
+  toast('XLSX сформовано ✔');
+}
+
+/* ================== PDF ================== */
+const PDF_MARGIN = [20, 22, 20, 26];
+const PDF_PAD = 2;
+const PDF_COLS = [16, 40, 62, 38, 38, 26, 78, 36, 36, 26, 36, 38, 38, 26, '*', 60];
+
+function exportPdf() {
+  if (typeof pdfMake === 'undefined') return toast('pdfmake не завантажено (перевірте інтернет)', true);
+  const M = buildModel(), S = M.S;
+
+  const avail = 841.89 - PDF_MARGIN[0] - PDF_MARGIN[2];
+  const fixed = PDF_COLS.filter(w => w !== '*').reduce((a, b) => a + b, 0);
+  const overhead = PDF_COLS.length * PDF_PAD * 2 + (PDF_COLS.length + 1) * 0.5;
+  const widths = (fixed + overhead + 80 > avail)
+    ? PDF_COLS.map(w => w === '*' ? '*' : Math.floor(w * (avail - overhead - 80) / fixed))
+    : PDF_COLS;
+
+  const c = (text, o = {}) => ({ text: String(text ?? ''), fontSize: 6.5, alignment: 'center', margin: [0, 1, 0, 1], ...o });
+  const h = (text, o = {}) => c(text, { fontSize: 5.8, ...o });
+  const E = n => Array.from({ length: n }, () => ({}));
+  const header = ovu => [
+    [h('№ з/п', { rowSpan: 3 }), h('Військове звання', { rowSpan: 3 }), h('ПІП', { rowSpan: 3 }),
+      h(H_BN, { colSpan: 4 }), ...E(3), h(ovu, { colSpan: 4 }), ...E(3), h(H_100, { colSpan: 4 }), ...E(3), h('Примітка', { rowSpan: 3 })],
+    [...E(3), h('до 30000', { colSpan: 2 }), {}, h('Кількість діб', { rowSpan: 2 }), h(H_BASIS, { rowSpan: 2 }),
+      h('до 50000', { colSpan: 2 }), {}, h('Кількість діб', { rowSpan: 2 }), h('Орган ВУ', { rowSpan: 2 }),
+      h('до 100000', { colSpan: 2 }), {}, h('Кількість діб', { rowSpan: 2 }), h(H_BASIS, { rowSpan: 2 }), {}],
+    [...E(3), h('з'), h('по'), {}, {}, h('з'), h('по'), {}, {}, h('з'), h('по'), {}, {}, {}]
+  ];
+  const data = rows => (rows.length ? rows : [Array(16).fill(' ')]).map(r =>
+    r.map((v, i) => c(v, { fontSize: (i === 6 || i === 14) ? 5.3 : (i === 15 ? 6 : 6.5) })));
+  const sec = t => [c(t, { colSpan: 16, alignment: 'left', bold: true, fontSize: 7, margin: [0, 4, 0, 1] }), ...E(15)];
+  const special = (t, mid) => [
+    sec(t),
+    [h('№ з/п'), h('Військове звання'), h('ПІП'), h(mid, { colSpan: 12 }), ...E(11), h('Примітка')],
+    [c(' '), c(' '), c(' '), c(' ', { colSpan: 12 }), ...E(11), c(' ')]
+  ];
+  const layout = {
+    hLineWidth: () => 0.5, vLineWidth: () => 0.5,
+    hLineColor: () => '#000', vLineColor: () => '#000',
+    paddingLeft: () => PDF_PAD, paddingRight: () => PDF_PAD, paddingTop: () => 1, paddingBottom: () => 1
+  };
+  const mkTable = (body, hdr) => ({ table: { widths, body, dontBreakRows: true, headerRows: S.repeatHdr ? hdr : 0 }, layout });
+
+  const mainBody = [
+    ...header(H_OVU_MAIN), ...data(M.mainRows),
+    ...special('2) Військовослужбовцям, які загинули/померли:', 'Дата загибелі/смерті'),
+    ...special('3) Щодо виплати військовослужбовцям, які безвісно відсутні, в полоні:', 'Дата обліку, як безвісно відсутній, в полоні')
+  ];
+  const addBody = [...header(H_OVU_ADD), ...data(M.addRows)];
+
+  const para = t => ({ text: t, fontSize: 8, alignment: 'justify', leadingIndent: 20, margin: [0, 0, 0, 3] });
+  const signLines = S.signPos.split('\n').length;
+
+  const dd = {
+    pageSize: 'A4', pageOrientation: 'landscape', pageMargins: PDF_MARGIN,
+    defaultStyle: { font: 'Roboto', lineHeight: 1.05 },
+    info: {
+      title: `Рапорт 30/50/100 ${M.mm}.${M.year}`,
+      subject: 'Рапорт на виплату додаткової винагороди (наказ МВС №726, ПКМУ №168)',
+      keywords: 'рапорт, 30000, 50000, 100000, додаткова винагорода',
+      creator: 'Генератор рапорту 30/50/100'
+    },
+    footer: (cur, total) => ({ text: total > 1 ? `${cur} / ${total}` : '', alignment: 'right', fontSize: 7, color: '#666', margin: [0, 6, PDF_MARGIN[2], 0] }),
+    content: [
+      { columns: [{ width: '*', text: '' }, { width: 270, text: S.addressee, fontSize: 10 }] },
+      { text: 'Рапорт', alignment: 'center', bold: true, fontSize: 12, color: '#d00000', margin: [0, 10, 0, 8] },
+      para(T_INTRO(M.monthLoc, M.year)),
+      { text: '1) Військовослужбовцям:', fontSize: 8, margin: [0, 0, 0, 3] },
+      para(T_100), para(T_50), para(T_30),
+      { ...mkTable(mainBody, 3), margin: [0, 6, 0, 0] },
+      { text: '4) Військовослужбовці приряджені з інших підро��ділів', bold: true, fontSize: 7, margin: [0, 6, 0, 2] },
+      mkTable(addBody, 3),
+      {
+        unbreakable: true, margin: [30, 22, 0, 0],
+        columns: [
+          { width: 260, text: S.signPos + '\n' + S.signRank, fontSize: 9.5 },
+          { width: 140, text: '' },
+          { width: '*', text: S.signName, fontSize: 9.5, margin: [0, signLines * 11, 0, 0] }
+        ]
+      }
+    ]
+  };
+  pdfMake.createPdf(dd).download(`Рапорт_30_50_100_${M.mm}_${M.year}.pdf`);
+  toast('PDF сформовано ✔');
+}
+
+/* ================== HELPERS ================== */
+function download(blob, name) {
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob); a.download = name;
+  document.body.appendChild(a); a.click();
+  setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 800);
+}
+let toastT;
+function toast(msg, err) {
+  const t = $('toast'); t.textContent = msg; t.classList.toggle('err', !!err); t.classList.add('show');
+  clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove('show'), 2600);
+}
+
+/* ================== STATE ================== */
+const LS_KEY = 'report_30_50_100_v2';
+function save() {
+  const o = {};
+  document.querySelectorAll('[data-p]').forEach(el => o[el.id] = el.type === 'checkbox' ? el.checked : el.value);
+  localStorage.setItem(LS_KEY, JSON.stringify(o));
+}
+function load() {
+  try {
+    const o = JSON.parse(localStorage.getItem(LS_KEY) || 'null');
+    if (!o) return false;
+    for (const k in o) { const el = $(k); if (!el) continue; if (el.type === 'checkbox') el.checked = o[k]; else el.value = o[k]; }
+    return true;
+  } catch { return false; }
+}
+function applyMonth() {
+  const v = $('month').value; if (!v) return;
+  const [y, m] = v.split('-').map(Number);
+  const a = dn(y, m, 1), b = dn(y, m + 1, 1) - 1;
+  $('pFrom').value = toISO(a); $('pTo').value = toISO(b);
+  $('g30From').value = toISO(a); $('g30To').value = toISO(Math.min(a + 4, b));
+}
+function setDefaultTexts() { for (const k in DEFAULTS) $(k).value = DEFAULTS[k]; }
+function setDefaults() {
+  setDefaultTexts();
+  const now = new Date();
+  $('month').value = now.getFullYear() + '-' + pad(now.getMonth() + 1);
+  applyMonth();
+  $('g30on').checked = false; $('autoNote').checked = true; $('repeatHdr').checked = true;
+}
+
+let rT;
+function update() { clearTimeout(rT); rT = setTimeout(() => { render(); save(); }, 150); }
+
+/* ================== INIT ================== */
+if (!load()) setDefaults();
+for (const k in DEFAULTS) if (!$(k).value && k !== 'organ') $(k).value = DEFAULTS[k];
+if (!$('month').value) { const n = new Date(); $('month').value = n.getFullYear() + '-' + pad(n.getMonth() + 1); }
+if (!$('pFrom').value || !$('pTo').value) applyMonth();
+
+document.querySelectorAll('[data-p]').forEach(el => el.addEventListener('input', update));
+$('month').addEventListener('change', () => { applyMonth(); update(); });
+
+$('btnExample').onclick = () => {
+  setDefaultTexts();
+  $('month').value = '2026-06'; applyMonth();
+  $('g30on').checked = false; $('autoNote').checked = true;
+  $('mainList').value = EXAMPLE_MAIN; $('addList').value = EXAMPLE_ADD;
+  update(); toast('Завантажено приклад з PDF');
+};
+$('btnClear').onclick = () => {
+  if (!confirm('Очистити списки особового складу?')) return;
+  $('mainList').value = ''; $('addList').value = ''; update();
+};
+$('btnReset').onclick = () => {
+  if (!confirm('Повернути стандартні адресата, підстави та підпис?')) return;
+  setDefaultTexts(); update(); toast('Стандартні налаштування відновлено');
+};
+document.querySelectorAll('[data-tpl]').forEach(b => b.onclick = () => {
+  const ta = $(b.dataset.tpl);
+  const P = getS().period;
+  const d = P[0] != null ? fd(P[0]) : '01.01.2026';
+  const tpl = `солдат ПРІЗВИЩЕ Ім'я По батькові ВДП ${d} ${d}`;
+  ta.value = ta.value.replace(/\s*$/, '') + (ta.value.trim() ? '\n' : '') + tpl;
+  ta.focus(); update();
+});
+$('btnXlsx').onclick = () => exportXlsx().catch(e => { console.error(e); toast('Помилка XLSX: ' + e.message, true); });
+$('btnPdf').onclick = () => { try { exportPdf(); } catch (e) { console.error(e); toast('Помилка PDF: ' + e.message, true); } };
+
+$('zoom').addEventListener('input', () => { zoomAuto = false; fitPreview(); });
+$('zoomFit').onclick = () => { zoomAuto = true; fitPreview(); };
+window.addEventListener('resize', () => fitPreview());
+
+render();
+</script>
+</body>
+</html>
