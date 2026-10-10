@@ -6,7 +6,7 @@
 <title>Генератор рапорту 30 / 50 / 100</title>
 
 <!-- ===== Metadata ===== -->
-<meta name="description" content="Генератор рапорту на виплату додаткової винагороди 30 000 / 50 000 / 100 000 грн військовослужбовцям ДПСУ згідно з наказом МВС №726 та ПКМУ №168. Автоматичний розрахунок діб з урахуванням ВДП, експорт у XLSX та PDF.">
+<meta name="description" content="Генератор рапорту на виплату додаткової винагороди 30 000 / 50 000 / 100 000 грн військовослужбовцям ДПСУ згідно з наказом МВС №726 та ПКМУ №168. Автоматичний розрахунок діб з урахуванням ВДП, підпис-зображення, експорт у XLSX та PDF.">
 <meta name="keywords" content="рапорт, 30000, 50000, 100000, додаткова винагорода, ДПСУ, наказ МВС 726, ПКМУ 168, ВДП, XLSX, PDF">
 <meta name="author" content="Report 30/50/100">
 <meta name="application-name" content="Рапорт 30/50/100">
@@ -39,6 +39,7 @@ button{border:1px solid var(--line);border-radius:10px;padding:9px 14px;font-wei
 button:hover{transform:translateY(-1px);filter:brightness(1.18)}
 button:active{transform:none}
 button.sm{padding:5px 10px;font-size:12px;border-radius:8px}
+button:disabled{opacity:.45;cursor:not-allowed;transform:none;filter:none}
 .b-xlsx{background:linear-gradient(135deg,#1e7e4f,#3fb37f);border:0}
 .b-pdf{background:linear-gradient(135deg,#a8241d,#ef5350);border:0}
 .b-ex{background:linear-gradient(135deg,#1f5fa0,#2f8fd8);border:0}
@@ -56,12 +57,28 @@ main{padding:18px 22px;overflow:auto;min-width:0}
 label{display:block;font-size:11.5px;color:var(--muted);margin:10px 0 4px;text-transform:uppercase;letter-spacing:.4px}
 input,textarea,select{width:100%;background:#0b121a;color:var(--txt);border:1px solid var(--line);border-radius:8px;padding:8px 10px;font-size:13px;font-family:inherit}
 input[type=date],input[type=month]{color-scheme:dark}
+input[type=range]{padding:0;accent-color:var(--acc2);background:transparent;border:0}
 textarea{resize:vertical}
 input:focus,textarea:focus{outline:none;border-color:var(--acc2);box-shadow:0 0 0 3px rgba(47,143,216,.2)}
 .row2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
 .chk{display:flex;align-items:center;gap:8px;margin-top:12px;font-size:13px;color:var(--txt);text-transform:none;letter-spacing:0}
 .chk input{width:auto;accent-color:var(--acc)}
 .side-foot{display:flex;gap:8px;margin-top:6px}
+/* ---------- signature box ---------- */
+.sigBox{position:relative;border:2px dashed var(--line);border-radius:10px;min-height:96px;display:grid;place-items:center;cursor:pointer;overflow:hidden;transition:border-color .15s,background .15s;
+  background-color:#fff;background-image:linear-gradient(45deg,#e8e8e8 25%,transparent 25%),linear-gradient(-45deg,#e8e8e8 25%,transparent 25%),linear-gradient(45deg,transparent 75%,#e8e8e8 75%),linear-gradient(-45deg,transparent 75%,#e8e8e8 75%);
+  background-size:16px 16px;background-position:0 0,0 8px,8px -8px,-8px 0}
+.sigBox.empty{background:#0b121a}
+.sigBox.drag{border-color:var(--acc2);background:#10233a}
+.sigBox img{max-width:100%;max-height:120px;display:block;padding:6px}
+.sigBox .ph{color:var(--muted);font-size:12px;text-align:center;padding:10px;line-height:1.5}
+.sigBox.has .ph{display:none}
+.sigBox:not(.has) img{display:none}
+.sigTools{display:flex;gap:8px;margin-top:8px;align-items:center}
+.sigTools .info{margin-left:auto;font-size:11px;color:var(--muted)}
+.rng{display:flex;align-items:center;gap:8px}
+.rng span{font-size:12px;color:var(--muted);min-width:48px;text-align:right;font-variant-numeric:tabular-nums}
+/* ---------- cards ---------- */
 .card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:16px 18px;box-shadow:0 6px 24px rgba(0,0,0,.22);margin-bottom:16px}
 .card-h{display:flex;align-items:center;gap:10px;margin:0 0 12px}
 .card-h h2{font-size:15px;margin:0}
@@ -96,7 +113,7 @@ table.parsed tr.grp td{background:#101a24;color:var(--acc2);font-weight:600}
 .wmsg{font-size:11px;color:var(--warn)} .wmsg.e{color:var(--err)}
 .empty{color:var(--muted);text-align:center;padding:16px!important}
 .zoom{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--muted)}
-.zoom input{width:120px;accent-color:var(--acc2);padding:0}
+.zoom input{width:120px}
 .paperWrap{background:#55616d;border-radius:12px;padding:18px;overflow:hidden}
 .paperScale{transform-origin:top left}
 .paper{background:#fff;color:#000;width:1400px;padding:30px 36px;font-family:"Times New Roman",serif;font-size:11px;box-shadow:0 10px 30px rgba(0,0,0,.4)}
@@ -108,9 +125,11 @@ table.parsed tr.grp td{background:#101a24;color:var(--acc2);font-weight:600}
 .paper th{font-weight:normal}
 .paper td.basis{font-size:8.5px}
 .paper td.sec{text-align:left;font-weight:bold;border-left:0;border-right:0;padding-top:8px}
-.paper .sign{display:flex;margin-top:22px;font-size:12px}
-.paper .sign .pos{white-space:pre-line;width:40%}
-.paper .sign .nm{margin-left:22%;align-self:flex-end}
+.paper .sign{display:flex;margin-top:22px;font-size:12px;align-items:flex-end}
+.paper .sign .pos{white-space:pre-line;width:36%}
+.paper .sign .sg{width:24%;display:flex;justify-content:center;align-items:flex-end;min-height:20px}
+.paper .sign .sg img{display:block}
+.paper .sign .nm{margin-left:2%}
 .toast{position:fixed;bottom:22px;right:22px;background:var(--card2);border:1px solid var(--acc);padding:12px 18px;border-radius:10px;opacity:0;transform:translateY(10px);transition:.25s;pointer-events:none;z-index:50;box-shadow:0 8px 24px rgba(0,0,0,.4)}
 .toast.show{opacity:1;transform:none}
 .toast.err{border-color:var(--err)}
@@ -178,6 +197,24 @@ table.parsed tr.grp td{background:#101a24;color:var(--acc2);font-weight:600}
           <div><label>Звання</label><input id="signRank" data-p></div>
           <div><label>Ім'я ПРІЗВИЩЕ</label><input id="signName" data-p></div>
         </div>
+
+        <label>Зображення підпису</label>
+        <div class="sigBox empty" id="sigBox" title="Натисніть або перетягніть зображення">
+          <img id="sigThumb" alt="Підпис">
+          <div class="ph">🖊️ Натисніть або перетягніть<br>PNG / JPG / WEBP з підписом</div>
+          <input type="file" id="sigFile" accept="image/*" hidden>
+        </div>
+        <div class="sigTools">
+          <button class="sm" id="sigPick">📂 Вибрати</button>
+          <button class="sm" id="sigDel" disabled>🗑 Видалити</button>
+          <span class="info" id="sigInfo"></span>
+        </div>
+        <label class="chk"><input type="checkbox" id="sigOn" data-p checked> Додавати підпис у файли</label>
+        <label class="chk"><input type="checkbox" id="sigNoBg" data-p checked> Прибрати білий фон</label>
+        <label>Ширина підпису</label>
+        <div class="rng"><input type="range" id="sigW" min="50" max="280" step="5" value="130" data-p><span id="sigWv">130 px</span></div>
+        <label>Зсув по вертикалі</label>
+        <div class="rng"><input type="range" id="sigDy" min="-40" max="40" step="2" value="0" data-p><span id="sigDyv">0 px</span></div>
       </div>
     </details>
 
@@ -382,6 +419,79 @@ function parseLine(raw, ln, listName) {
 }
 const parseList = (text, name) => text.split(/\r?\n/).map((l, i) => parseLine(l, i + 1, name)).filter(Boolean);
 
+/* ================== SIGNATURE IMAGE ================== */
+const LS_SIG = 'report_30_50_100_sig_v1';
+let sigSrc = null;   // нормалізоване вихідне зображення (data URL PNG)
+let sig = null;      // оброблене: { data, w, h }
+
+const loadImage = url => new Promise((res, rej) => { const i = new Image(); i.onload = () => res(i); i.onerror = () => rej(new Error('Не вдалося відкрити зображення')); i.src = url; });
+const readFile = f => new Promise((res, rej) => { const r = new FileReader(); r.onload = () => res(r.result); r.onerror = () => rej(r.error); r.readAsDataURL(f); });
+
+async function importSig(file) {
+  if (!file || !/^image\//.test(file.type)) return toast('Оберіть файл зображення', true);
+  try {
+    const img = await loadImage(await readFile(file));
+    const MAX = 800;
+    const k = Math.min(1, MAX / Math.max(img.naturalWidth, img.naturalHeight));
+    const cv = document.createElement('canvas');
+    cv.width = Math.max(1, Math.round(img.naturalWidth * k));
+    cv.height = Math.max(1, Math.round(img.naturalHeight * k));
+    cv.getContext('2d').drawImage(img, 0, 0, cv.width, cv.height);
+    sigSrc = cv.toDataURL('image/png');
+    try { localStorage.setItem(LS_SIG, sigSrc); } catch { toast('Підпис завеликий для збереження в браузері — буде діяти до перезавантаження', true); }
+    await processSig();
+    update();
+    toast('Підпис завантажено ✔');
+  } catch (e) { toast(e.message, true); }
+}
+
+async function processSig() {
+  if (!sigSrc) { sig = null; refreshSigUi(); return; }
+  const img = await loadImage(sigSrc);
+  const w = img.naturalWidth, h = img.naturalHeight;
+  const cv = document.createElement('canvas'); cv.width = w; cv.height = h;
+  const ctx = cv.getContext('2d');
+  ctx.drawImage(img, 0, 0);
+  const id = ctx.getImageData(0, 0, w, h), d = id.data;
+  const noBg = $('sigNoBg').checked;
+  let x0 = w, y0 = h, x1 = -1, y1 = -1;
+  for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
+    const i = (y * w + x) * 4;
+    const lum = 0.299 * d[i] + 0.587 * d[i + 1] + 0.114 * d[i + 2];
+    if (noBg) {
+      // білий → прозорий, світло-сірі краї — напівпрозорі
+      if (lum >= 230) d[i + 3] = 0;
+      else if (lum > 170) d[i + 3] = Math.min(d[i + 3], Math.round((230 - lum) / 60 * 255));
+    }
+    const ink = d[i + 3] > 20 && lum < 215;
+    if (ink) { if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y; }
+  }
+  ctx.putImageData(id, 0, 0);
+  // автообрізка порожніх полів
+  let out = cv;
+  if (x1 >= x0 && y1 >= y0) {
+    const m = 4;
+    x0 = Math.max(0, x0 - m); y0 = Math.max(0, y0 - m); x1 = Math.min(w - 1, x1 + m); y1 = Math.min(h - 1, y1 + m);
+    out = document.createElement('canvas'); out.width = x1 - x0 + 1; out.height = y1 - y0 + 1;
+    out.getContext('2d').drawImage(cv, x0, y0, out.width, out.height, 0, 0, out.width, out.height);
+  }
+  sig = { data: out.toDataURL('image/png'), w: out.width, h: out.height };
+  refreshSigUi();
+}
+
+function refreshSigUi() {
+  const box = $('sigBox');
+  box.classList.toggle('has', !!sig);
+  box.classList.toggle('empty', !sig);
+  $('sigThumb').src = sig ? sig.data : '';
+  $('sigDel').disabled = !sig;
+  $('sigInfo').textContent = sig ? `${sig.w}×${sig.h}` : '';
+  $('sigWv').textContent = $('sigW').value + ' px';
+  $('sigDyv').textContent = $('sigDy').value + ' px';
+}
+const sigActive = S => !!(sig && S.sigOn);
+const sigSize = S => { const w = S.sigW; return { w, h: Math.round(w * sig.h / sig.w) }; };
+
 /* ================== CALC ================== */
 function getS() {
   const v = id => $(id).value;
@@ -390,7 +500,8 @@ function getS() {
     g30on: $('g30on').checked, g30: [parseISO(v('g30From')), parseISO(v('g30To'))],
     autoNote: $('autoNote').checked, repeatHdr: $('repeatHdr').checked,
     addressee: v('addressee'), basis100: v('basis100'), basis30: v('basis30'), organ: v('organ'),
-    signPos: v('signPos'), signRank: v('signRank'), signName: v('signName')
+    signPos: v('signPos'), signRank: v('signRank'), signName: v('signName'),
+    sigOn: $('sigOn').checked, sigW: +v('sigW') || 130, sigDy: +v('sigDy') || 0
   };
 }
 
@@ -445,6 +556,7 @@ function buildModel() {
 /* ================== PREVIEW ================== */
 const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 const PREV_COLS = [2.2, 6, 9, 5.6, 5.6, 3.4, 10.5, 5, 5, 3.4, 5, 5.6, 5.6, 3.4, 18, 9];
+const PREV_K = 1400 / 1123;   // ширина «паперу» прев'ю / ширина A4 альбомної в px @96dpi
 
 function htmlHeader(ovu) {
   return `<tr><th rowspan="3">№ з/п</th><th rowspan="3">Військове звання</th><th rowspan="3">ПІП</th>
@@ -498,8 +610,15 @@ function render() {
   $('sSum').textContent = Math.round(M.sum).toLocaleString('uk-UA');
   $('cntMain').textContent = M.main.length + ' осіб';
   $('cntAdd').textContent = M.add.length + ' осіб';
+  $('sigWv').textContent = S.sigW + ' px';
+  $('sigDyv').textContent = S.sigDy + ' px';
   renderParsed(M);
 
+  let sigHtml = '';
+  if (sigActive(S)) {
+    const { w } = sigSize(S);
+    sigHtml = `<img src="${sig.data}" style="width:${Math.round(w * PREV_K)}px;transform:translateY(${Math.round(S.sigDy * PREV_K)}px)" alt="підпис">`;
+  }
   const colgroup = '<colgroup>' + PREV_COLS.map(w => `<col style="width:${w}%">`).join('') + '</colgroup>';
   $('preview').innerHTML = `
     <div class="addr">${esc(S.addressee)}</div>
@@ -516,7 +635,7 @@ function render() {
       ${htmlHeader(H_OVU_ADD)}
       ${htmlRows(M.addRows)}
     </table>
-    <div class="sign"><div class="pos">${esc(S.signPos)}\n${esc(S.signRank)}</div><div class="nm">${esc(S.signName)}</div></div>`;
+    <div class="sign"><div class="pos">${esc(S.signPos)}\n${esc(S.signRank)}</div><div class="sg">${sigHtml}</div><div class="nm">${esc(S.signName)}</div></div>`;
   fitPreview();
 }
 
@@ -536,8 +655,8 @@ function fitPreview() {
 
 /* ================== XLSX: TEXT MEASUREMENT ================== */
 const RAPORT_XLSX_TUNE = {
-  widthK: 1.16,
-  lineK: 1.30,
+  widthK: 1.16,     // запас на різницю рендерингу Excel/браузера
+  lineK: 1.30,      // міжрядковий інтервал Times New Roman
   padPx: 7,
   padPt: 4,
   maxRow: 409
@@ -605,7 +724,8 @@ async function exportXlsx() {
   };
   const box = (r1, c1, r2, c2) => { for (let r = r1; r <= r2; r++) for (let c = c1; c <= c2; c++) ws.getCell(r, c).border = B; };
   const mset = (r1, c1, r2, c2, v, o = {}) => { if (r1 !== r2 || c1 !== c2) ws.mergeCells(r1, c1, r2, c2); set(r1, c1, v, o); if (o.border) box(r1, c1, r2, c2); };
-  const height = (r, h) => { ws.getRow(r).height = Math.min(RAPORT_XLSX_TUNE.maxRow, Math.max(h, 12)); };
+  const rowH = {};
+  const height = (r, h) => { const v = Math.min(RAPORT_XLSX_TUNE.maxRow, Math.max(h, 12)); ws.getRow(r).height = v; rowH[r] = v; };
 
   let r = 1;
   for (const l of S.addressee.split('\n')) {
@@ -684,14 +804,35 @@ async function exportXlsx() {
   header(H_OVU_ADD);
   dataRows(M.addRows);
 
+  /* --- підпис --- */
   height(r, 18); r++;
+  const signStart = r;
   const signLines = [...S.signPos.split('\n'), S.signRank];
   signLines.forEach((l, i) => {
-    mset(r, 2, r, 7, l, { h: 'left', size: FS.sign });
-    if (i === signLines.length - 1) mset(r, 11, r, 14, S.signName, { h: 'left', size: FS.sign });
+    mset(r, 2, r, 5, l, { h: 'left', size: FS.sign });
+    if (i === signLines.length - 1) mset(r, 8, r, 11, S.signName, { h: 'left', size: FS.sign });
     height(r, Math.max(15, needH(l, 2, 7, FS.sign)));
     r++;
   });
+  const rankRow = r - 1;
+
+  /* --- зображення підпису --- */
+  if (sigActive(S)) {
+    const { w, h } = sigSize(S);
+    const imgId = wb.addImage({ base64: sig.data.split(',')[1], extension: 'png' });
+    // Нижній край підпису — на рівні нижньої межі рядка зі званням (+ зсув користувача)
+    const ptToPx = 96 / 72;
+    let bottomPx = (rowH[rankRow] || 15) * ptToPx + S.sigDy;   // від верху рядка зі званням
+    let topPx = bottomPx - h;                                   // може бути від'ємним → піднімаємось вище
+    let row0 = rankRow - 1;                                     // 0-based індекс рядка зі званням
+    while (topPx < 0 && row0 > signStart - 2) {
+      row0--;
+      topPx += (rowH[row0 + 1] || 15) * ptToPx;
+    }
+    const rowFrac = Math.max(0, topPx) / ((rowH[row0 + 1] || 15) * ptToPx);
+    // по горизонталі — між посадою (стовп. B..G) і прізвищем (K..N): стовпець H (0-based 7)
+    ws.addImage(imgId, { tl: { col: 5.15, row: row0 + Math.min(0.95, rowFrac) }, ext: { width: w, height: h }, editAs: 'oneCell' });
+  }
 
   ws.pageSetup.printArea = `A1:P${r}`;
   if (S.repeatHdr) ws.pageSetup.printTitlesRow = `${mainHdr}:${mainHdr + 2}`;
@@ -751,7 +892,26 @@ function exportPdf() {
   const addBody = [...header(H_OVU_ADD), ...data(M.addRows)];
 
   const para = t => ({ text: t, fontSize: 8, alignment: 'justify', leadingIndent: 20, margin: [0, 0, 0, 3] });
-  const signLines = S.signPos.split('\n').length;
+
+  /* --- блок підпису --- */
+  const SIGN_FS = 9.5, LINE_H = SIGN_FS * 1.05 * 1.17;   // висота рядка Roboto з lineHeight 1.05
+  const signLines = S.signPos.split('\n').length + 1;    // + звання
+  const blockH = signLines * LINE_H;
+  let sigCol = { width: 150, text: '' };
+  let nameTop = blockH - LINE_H;
+  if (sigActive(S)) {
+    const { w, h } = sigSize(S);
+    const wPt = w * 0.75, hPt = h * 0.75;               // px → pt
+    const dy = S.sigDy * 0.75;
+    const imgBottom = blockH + dy;                      // низ підпису — по нижньому краю рядка зі званням
+    let top = imgBottom - hPt;
+    let shift = 0;
+    if (top < 0) { shift = -top; top = 0; }             // зображення вище за блок — зсуваємо текст вниз
+    sigCol = { width: Math.max(150, wPt + 10), stack: [{ image: sig.data, width: wPt, alignment: 'center', margin: [0, top, 0, 0] }] };
+    nameTop += shift;
+    var textShift = shift;
+  }
+  const shiftTxt = typeof textShift === 'number' ? textShift : 0;
 
   const dd = {
     pageSize: 'A4', pageOrientation: 'landscape', pageMargins: PDF_MARGIN,
@@ -775,9 +935,9 @@ function exportPdf() {
       {
         unbreakable: true, margin: [30, 22, 0, 0],
         columns: [
-          { width: 260, text: S.signPos + '\n' + S.signRank, fontSize: 9.5 },
-          { width: 140, text: '' },
-          { width: '*', text: S.signName, fontSize: 9.5, margin: [0, signLines * 11, 0, 0] }
+          { width: 260, text: S.signPos + '\n' + S.signRank, fontSize: SIGN_FS, margin: [0, shiftTxt, 0, 0] },
+          sigCol,
+          { width: '*', text: S.signName, fontSize: SIGN_FS, margin: [10, nameTop, 0, 0] }
         ]
       }
     ]
@@ -804,7 +964,7 @@ const LS_KEY = 'report_30_50_100_v2';
 function save() {
   const o = {};
   document.querySelectorAll('[data-p]').forEach(el => o[el.id] = el.type === 'checkbox' ? el.checked : el.value);
-  localStorage.setItem(LS_KEY, JSON.stringify(o));
+  try { localStorage.setItem(LS_KEY, JSON.stringify(o)); } catch {}
 }
 function load() {
   try {
@@ -828,6 +988,7 @@ function setDefaults() {
   $('month').value = now.getFullYear() + '-' + pad(now.getMonth() + 1);
   applyMonth();
   $('g30on').checked = false; $('autoNote').checked = true; $('repeatHdr').checked = true;
+  $('sigOn').checked = true; $('sigNoBg').checked = true; $('sigW').value = 130; $('sigDy').value = 0;
 }
 
 let rT;
@@ -842,6 +1003,7 @@ if (!$('pFrom').value || !$('pTo').value) applyMonth();
 document.querySelectorAll('[data-p]').forEach(el => el.addEventListener('input', update));
 $('month').addEventListener('change', () => { applyMonth(); update(); });
 
+/* ---- кнопки верхньої панелі ---- */
 $('btnExample').onclick = () => {
   setDefaultTexts();
   $('month').value = '2026-06'; applyMonth();
@@ -868,11 +1030,44 @@ document.querySelectorAll('[data-tpl]').forEach(b => b.onclick = () => {
 $('btnXlsx').onclick = () => exportXlsx().catch(e => { console.error(e); toast('Помилка XLSX: ' + e.message, true); });
 $('btnPdf').onclick = () => { try { exportPdf(); } catch (e) { console.error(e); toast('Помилка PDF: ' + e.message, true); } };
 
+/* ---- масштаб прев'ю ---- */
 $('zoom').addEventListener('input', () => { zoomAuto = false; fitPreview(); });
 $('zoomFit').onclick = () => { zoomAuto = true; fitPreview(); };
 window.addEventListener('resize', () => fitPreview());
 
-render();
+/* ---- підпис: вибір файлу, drag & drop, видалення, обробка ---- */
+const sigBox = $('sigBox'), sigFile = $('sigFile');
+sigBox.addEventListener('click', () => sigFile.click());
+$('sigPick').onclick = () => sigFile.click();
+sigFile.addEventListener('change', () => { if (sigFile.files[0]) importSig(sigFile.files[0]); sigFile.value = ''; });
+['dragenter', 'dragover'].forEach(ev => sigBox.addEventListener(ev, e => { e.preventDefault(); sigBox.classList.add('drag'); }));
+['dragleave', 'dragend', 'drop'].forEach(ev => sigBox.addEventListener(ev, e => { e.preventDefault(); sigBox.classList.remove('drag'); }));
+sigBox.addEventListener('drop', e => { const f = e.dataTransfer.files && e.dataTransfer.files[0]; if (f) importSig(f); });
+// вставка підпису з буфера обміну (Ctrl+V), коли відкрита панель підпису
+document.addEventListener('paste', e => {
+  const item = [...(e.clipboardData?.items || [])].find(i => i.type.startsWith('image/'));
+  if (item && document.activeElement?.tagName !== 'TEXTAREA' && document.activeElement?.tagName !== 'INPUT') {
+    e.preventDefault(); importSig(item.getAsFile());
+  }
+});
+$('sigDel').onclick = e => {
+  e.stopPropagation();
+  if (!confirm('Видалити зображення підпису?')) return;
+  sigSrc = null; sig = null;
+  try { localStorage.removeItem(LS_SIG); } catch {}
+  refreshSigUi(); update(); toast('Підпис видалено');
+};
+$('sigNoBg').addEventListener('change', async () => { await processSig(); update(); });
+$('sigW').addEventListener('input', () => { $('sigWv').textContent = $('sigW').value + ' px'; });
+$('sigDy').addEventListener('input', () => { $('sigDyv').textContent = $('sigDy').value + ' px'; });
+
+/* ---- старт ---- */
+(async () => {
+  try { sigSrc = localStorage.getItem(LS_SIG); } catch { sigSrc = null; }
+  if (sigSrc) { try { await processSig(); } catch { sigSrc = null; sig = null; } }
+  refreshSigUi();
+  render();
+})();
 </script>
 </body>
 </html>
