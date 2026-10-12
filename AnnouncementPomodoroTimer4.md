@@ -41,11 +41,11 @@ We're excited to present our Pomodoro Timer Web Application — a beautifully de
 
 🔗 Experience it here: pomodorotimerj.base44.app
 
-📜 Open source under the MIT License — feel free to explore, learn, and share!
-
 Wishing you focused days, productive sessions, and well-earned breaks ahead!
 
 Warm regards,
 Yuliya Kolesnikova
 
 P.S. Hit the play button to start your first pomodoro, or tap the ℹ️ icon to discover the science behind the technique! 🍅✨
+
+#PomodoroTimer #Productivity #TimeManagement #FocusTime #Base44
