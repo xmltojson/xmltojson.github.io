@@ -37,7 +37,7 @@ We're delighted to present our **Interactive Christmas Tree Web Application** �
 • Office & team gatherings
 • Educational coding demonstrations
 
-🔗 Experience it here: https://christmastreej.github.io
+🔗 Experience it here: christmastreej.github.io
 
 Wishing you a magical holiday season filled with warmth, joy, and treasured moments with those you love!
 
@@ -45,3 +45,5 @@ Warm Christmas wishes,
 Yuliya Kolesnikova
 
 P.S. Hit the "🎁 Add Ornament" button and press play to fill your screen with music and decorations! 🎄✨
+
+#ChristmasTree #WebApp #HolidayMagic #JavaScript #WebAudio
