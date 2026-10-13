@@ -39,7 +39,7 @@ a dazzling digital celebration designed to bring festive magic to your screen.
 • Educational coding demonstrations
 • Front-end animation showcases
 
-🔗 Experience it here: https://happynewyear2027.github.io
+🔗 Experience it here: happynewyearj.github.io
 
 📜 Open source under the MIT License - feel free to explore, learn, and share!
 
@@ -49,3 +49,5 @@ Warm New Year wishes,
 Yuliya Kolesnikova 
 
 P.S. Hit the "Celebrate!" button for an extra burst of fireworks, or tap any wish to send sparkles flying! 🎆✨
+
+#NewYear2027 #WebApp #Fireworks #JavaScript #OpenSource
