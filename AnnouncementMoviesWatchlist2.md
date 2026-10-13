@@ -45,3 +45,5 @@ Warm regards,
 Yuliya Kolesnikova
 
 P.S. Press **Ctrl+N** anytime to quickly add a new movie! 🎬✨
+
+#MovieWatchlist #WebApp #MovieLovers #Base44 #JavaScript
