@@ -1,0 +1,1172 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#111425">
+<title>Кубики — 3D Dice Roller</title>
+<style>
+  :root {
+    color-scheme: dark;
+    --bg: #111425;
+    --text: #f5f5ff;
+    --muted: #a4abc7;
+    --accent: #a998ff;
+    --border: rgba(255,255,255,.09);
+    --size: 78px;
+    --half: calc(var(--size) / 2);
+  }
+
+  * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+
+  body {
+    margin: 0;
+    min-height: 100vh;
+    min-height: 100svh;
+    font-family: Inter, ui-sans-serif, system-ui, -apple-system, sans-serif;
+    color: var(--text);
+    background:
+      radial-gradient(ellipse at 12% 0%, #34305b 0, transparent 45%),
+      radial-gradient(ellipse at 100% 100%, #133745 0, transparent 40%),
+      var(--bg);
+  }
+
+  button, input { font: inherit; }
+  button { cursor: pointer; -webkit-tap-highlight-color: transparent; }
+  button:disabled { cursor: default; opacity: .45; }
+  button, input { accent-color: var(--accent); }
+  :focus-visible { outline: 3px solid #bcafff; outline-offset: 4px; }
+
+  .app {
+    width: 100%;
+    max-width: 1280px;
+    margin: auto;
+    padding: 24px 28px 16px;
+  }
+
+  header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 20px;
+  }
+
+  .brand { display: flex; align-items: center; gap: 12px; }
+  .brand-icon {
+    width: 43px;
+    height: 43px;
+    display: grid;
+    place-items: center;
+    flex-shrink: 0;
+    background: linear-gradient(135deg, #c3b6ff, #8574e6);
+    color: #211d3e;
+    border-radius: 14px;
+    box-shadow: 0 6px 25px #a998ff25;
+    transform: rotate(-8deg);
+  }
+  .brand-icon svg { width: 27px; height: 27px; }
+  .brand-name { font-weight: 800; letter-spacing: -.7px; font-size: 21px; }
+  .brand-sub { color: var(--muted); font-size: 11px; margin-top: 2px; }
+
+  /* Compact language switcher: no flags or dropdown. */
+  .language-switch {
+    display: inline-flex;
+    gap: 3px;
+    padding: 4px;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    background: #ffffff04;
+    flex-shrink: 0;
+  }
+  .language-switch button {
+    min-width: 42px;
+    min-height: 34px;
+    padding: 7px 10px;
+    border: 0;
+    border-radius: 8px;
+    background: transparent;
+    color: var(--muted);
+    font-size: 12px;
+    font-weight: 750;
+    transition: background .2s, color .2s;
+  }
+  .language-switch button:hover { color: var(--text); }
+  .language-switch button[aria-pressed="true"] {
+    color: #ded6ff;
+    background: #a998ff24;
+    box-shadow: inset 0 0 0 1px #b7a6ff18;
+  }
+
+  .intro { margin: 25px 0 21px; }
+  .eyebrow {
+    color: #b8aaff;
+    font-size: 10px;
+    font-weight: 800;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+  }
+  h1 {
+    font-size: clamp(30px, 3.7vw, 43px);
+    letter-spacing: -1.6px;
+    line-height: 1.12;
+    margin: 8px 0;
+  }
+  .intro p { color: var(--muted); font-size: 14px; margin: 0; line-height: 1.5; }
+
+  main {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 280px;
+    gap: 20px;
+    min-width: 0;
+  }
+
+  .board {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    border: 1px solid var(--border);
+    border-radius: 26px;
+    overflow: hidden;
+    background: #171c30;
+    box-shadow: 0 24px 80px #0003;
+  }
+
+  .tray {
+    flex: 1;
+    min-height: 330px;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    isolation: isolate;
+    padding: 65px 32px 35px;
+    background:
+      radial-gradient(ellipse at 50% 30%, #35476766, transparent 65%),
+      linear-gradient(150deg, #222c43, #151c2f);
+  }
+  .tray::before {
+    content: "";
+    position: absolute;
+    inset: 13px;
+    border: 1px solid #ffffff08;
+    border-radius: 17px;
+    pointer-events: none;
+  }
+  .tray::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    opacity: .12;
+    background-image: radial-gradient(#dce1ff .6px, transparent .6px);
+    background-size: 7px 7px;
+    mask-image: linear-gradient(transparent, black);
+    pointer-events: none;
+  }
+  .tray-label {
+    position: absolute;
+    top: 27px;
+    left: 29px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: #b9c4db;
+    font-size: 10px;
+    letter-spacing: 1.3px;
+    text-transform: uppercase;
+  }
+  .dot { width: 6px; height: 6px; border-radius: 50%; background: #7ae0c0; }
+  .rolling .dot { animation: pulse .5s infinite alternate; }
+  @keyframes pulse { to { opacity: .25; } }
+
+  .dice-set {
+    width: 100%;
+    max-width: 630px;
+    display: grid;
+    grid-template-columns: repeat(var(--cols, 2), minmax(0, 1fr));
+    justify-items: center;
+    align-items: center;
+    gap: 36px 18px;
+    padding: 10px 0;
+  }
+  .die-slot {
+    position: relative;
+    width: var(--size);
+    height: var(--size);
+    perspective: 650px;
+    perspective-origin: 50% 40%;
+  }
+  .die-slot::after {
+    content: "";
+    position: absolute;
+    width: 110%;
+    height: 27%;
+    left: -5%;
+    bottom: -24px;
+    background: #020715;
+    opacity: .6;
+    filter: blur(9px);
+    border-radius: 50%;
+    z-index: -1;
+  }
+  .die-motion, .die {
+    width: 100%;
+    height: 100%;
+    transform-style: preserve-3d;
+  }
+  .die { position: relative; }
+  .face {
+    position: absolute;
+    inset: 0;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    grid-template-rows: repeat(3, 1fr);
+    padding: 16%;
+    gap: 8%;
+    backface-visibility: hidden;
+    border: 1px solid #fff;
+    border-radius: 15%;
+    background: linear-gradient(145deg, #fffef7, #e7e5df);
+    box-shadow:
+      inset 3px 3px 5px #fff,
+      inset -3px -4px 7px #aaa9a448,
+      0 0 1px #e7e5df;
+  }
+  .face:nth-child(1) { transform: translateZ(var(--half)); }
+  .face:nth-child(2) {
+    transform: rotateY(90deg) translateZ(var(--half));
+    background: linear-gradient(140deg, #eeeee8, #d5d6d2);
+  }
+  .face:nth-child(3) { transform: rotateX(90deg) translateZ(var(--half)); }
+  .face:nth-child(4) { transform: rotateX(-90deg) translateZ(var(--half)); }
+  .face:nth-child(5) {
+    transform: rotateY(-90deg) translateZ(var(--half));
+    background: linear-gradient(145deg, #faf9f2, #ddded9);
+  }
+  .face:nth-child(6) { transform: rotateY(180deg) translateZ(var(--half)); }
+
+  .pip {
+    display: block;
+    border-radius: 50%;
+    background: #252a3c;
+    box-shadow: inset 1px 2px 2px #000a, 0 1px 0 #fff;
+  }
+  .face:nth-child(1) .pip {
+    background: #8b6ee0;
+    box-shadow: inset 1px 2px 2px #3d236b80, 0 1px 0 #fff;
+  }
+
+  /* Result and primary action share one row on desktop. */
+  .board-bottom {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(190px, .85fr);
+    align-items: center;
+    gap: 24px;
+    flex-shrink: 0;
+    padding: 21px 26px;
+    border-top: 1px solid var(--border);
+    background: #ffffff02;
+  }
+  .result {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 16px;
+    min-width: 0;
+  }
+  .result-label { color: var(--muted); font-size: 12px; }
+  .equation {
+    margin-top: 7px;
+    font-size: 14px;
+    letter-spacing: .6px;
+    overflow-wrap: anywhere;
+  }
+  .total {
+    flex-shrink: 0;
+    font-size: 46px;
+    line-height: 1;
+    font-weight: 800;
+    letter-spacing: -2px;
+    color: #c1b3ff;
+  }
+  .roll-button {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 9px;
+    width: 100%;
+    min-height: 52px;
+    border: 0;
+    border-radius: 14px;
+    padding: 13px 15px;
+    font-size: 14px;
+    font-weight: 800;
+    color: #211a3d;
+    background: linear-gradient(105deg, #c3b4ff, #a38bfa);
+    box-shadow: 0 7px 26px #a38bfa26, inset 0 1px 0 #ffffff60;
+    transition: transform .2s, filter .2s;
+  }
+  .roll-button:disabled { cursor: wait; }
+  .roll-button:hover:not(:disabled) { filter: brightness(1.08); transform: translateY(-2px); }
+  .roll-button:active:not(:disabled) { transform: translateY(1px); }
+  .roll-button svg { width: 21px; height: 21px; flex-shrink: 0; }
+  .shortcut { color: var(--muted); text-align: center; font-size: 10px; margin: 9px 0 0; }
+  kbd { font: inherit; border: 1px solid #ffffff24; border-radius: 4px; padding: 1px 5px; }
+
+  aside {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    min-width: 0;
+    min-height: 0;
+  }
+  .card {
+    border: 1px solid var(--border);
+    border-radius: 21px;
+    padding: 20px;
+    background: linear-gradient(140deg, #ffffff06, #ffffff02);
+    min-width: 0;
+  }
+  .settings-card { flex-shrink: 0; }
+  .card h2 { margin: 0 0 16px; font-size: 14px; letter-spacing: -.2px; }
+  .field-label { color: var(--muted); font-size: 12px; }
+  .stepper {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: #0c102233;
+    border: 1px solid var(--border);
+    padding: 6px;
+    border-radius: 13px;
+    margin: 9px 0;
+  }
+  .stepper button {
+    width: 35px;
+    height: 35px;
+    border: none;
+    border-radius: 9px;
+    background: #ffffff0b;
+    color: var(--text);
+    font-size: 22px;
+  }
+  .stepper button:hover:not(:disabled) { background: #ffffff18; }
+  .stepper output { font-size: 21px; font-weight: 750; }
+  input[type="range"] { display: block; width: 100%; margin: 10px 0 0; cursor: pointer; }
+  .range-labels { display: flex; justify-content: space-between; color: var(--muted); font-size: 10px; margin-top: 4px; }
+
+  .sound-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-top: 15px;
+    padding-top: 13px;
+    border-top: 1px solid var(--border);
+    font-size: 12px;
+    cursor: pointer;
+  }
+  .switch {
+    appearance: none;
+    width: 38px;
+    height: 22px;
+    margin: 0;
+    border-radius: 20px;
+    background: #ffffff20;
+    position: relative;
+    cursor: pointer;
+    flex-shrink: 0;
+  }
+  .switch::before {
+    content: "";
+    width: 16px;
+    height: 16px;
+    position: absolute;
+    left: 3px;
+    top: 3px;
+    border-radius: 50%;
+    background: white;
+    transition: transform .2s;
+  }
+  .switch:checked { background: #9882eb; }
+  .switch:checked::before { transform: translateX(16px); }
+
+  .history-card { flex: 1; min-height: 0; display: flex; flex-direction: column; }
+  .history-heading {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 13px;
+    gap: 8px;
+    flex-shrink: 0;
+  }
+  .history-heading h2 { margin: 0; }
+  .clear { border: 0; background: transparent; color: var(--muted); font-size: 11px; padding: 5px 0 5px 5px; }
+  .clear:hover:not(:disabled) { color: var(--text); }
+  .history-scroll {
+    min-height: 0;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    scrollbar-width: thin;
+    scrollbar-color: #645b8d transparent;
+    padding-right: 3px;
+  }
+  .history-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+  .history-item { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+  .history-values { display: flex; flex-wrap: wrap; gap: 3px; }
+  .mini-die {
+    width: 20px;
+    height: 22px;
+    display: grid;
+    place-items: center;
+    background: #ffffff09;
+    border: 1px solid #ffffff08;
+    border-radius: 5px;
+    font-size: 10px;
+    color: #cad0e4;
+  }
+  .history-sum { font-weight: 750; color: #bcb0f4; font-size: 13px; }
+  .empty { color: var(--muted); font-size: 12px; line-height: 1.6; margin: 0; }
+  .note { flex-shrink: 0; color: var(--muted); font-size: 10px; line-height: 1.5; padding: 0 5px; margin: 0; }
+
+  footer { text-align: center; color: #8189a7; font-size: 10px; margin-top: 16px; }
+  .sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0,0,0,0);
+    white-space: nowrap;
+    border: 0;
+  }
+
+  /* Viewport-height desktop shell. Only long history scrolls internally. */
+  @media (min-width: 761px) and (min-height: 540px) {
+    .app {
+      height: 100vh;
+      height: 100dvh;
+      display: grid;
+      grid-template-rows: auto auto minmax(0, 1fr) auto;
+      padding-top: clamp(16px, 2.6vh, 30px);
+      padding-bottom: 14px;
+    }
+    main, .board { min-height: 0; }
+    .tray { min-height: 0; }
+    :root { --size: clamp(48px, 9vh, 88px); }
+    .dice-set { gap: clamp(25px, 4vh, 42px) 18px; }
+    .intro { margin: clamp(14px, 2.5vh, 28px) 0 clamp(14px, 2.3vh, 24px); }
+  }
+
+  @media (min-width: 761px) and (max-height: 720px) {
+    .app { padding-inline: 22px; }
+    .brand-icon { width: 36px; height: 36px; border-radius: 11px; }
+    .brand-name { font-size: 19px; }
+    .brand-sub { display: none; }
+    h1 { font-size: 32px; margin-block: 6px; }
+    .intro p { font-size: 12px; }
+    .eyebrow { font-size: 9px; }
+    main { gap: 16px; grid-template-columns: minmax(0, 1fr) 260px; }
+    aside { gap: 11px; }
+    .card { padding: 15px 17px; border-radius: 18px; }
+    .card h2 { margin-bottom: 12px; }
+    .history-heading h2 { margin: 0; }
+    .history-heading { margin-bottom: 9px; }
+    .stepper { margin-block: 7px; padding: 4px; }
+    .stepper button { width: 30px; height: 30px; }
+    .sound-row { margin-top: 10px; padding-top: 10px; }
+    .board-bottom { padding: 15px 21px; gap: 18px; }
+    .total { font-size: 39px; }
+    .roll-button { min-height: 46px; font-size: 13px; }
+    .tray { padding: 53px 26px 28px; }
+    .tray-label { top: 24px; left: 27px; }
+    footer { margin-top: 11px; }
+  }
+
+  @media (min-width: 761px) and (max-width: 1000px) {
+    :root { --size: clamp(45px, 6.2vw, 65px); }
+    main { grid-template-columns: minmax(0, 1fr) 250px; gap: 15px; }
+    .board-bottom { grid-template-columns: minmax(0, 1fr) minmax(155px, 1fr); gap: 15px; padding-inline: 18px; }
+    .equation { font-size: 12px; letter-spacing: 0; }
+    .result { gap: 9px; }
+    .total { font-size: 36px; }
+    .roll-button { padding-inline: 10px; font-size: 12px; }
+    .dice-set { gap: 30px 14px; }
+    .tray { padding-inline: 22px; }
+  }
+
+  /* Portrait and narrow screens use natural document scrolling. */
+  @media (max-width: 760px) {
+    :root { --size: clamp(52px, 9vw, 70px); }
+    .app { padding: 20px 16px; }
+    .brand-sub { display: none; }
+    .brand-name { font-size: 20px; }
+    .brand-icon { width: 39px; height: 39px; border-radius: 12px; }
+    .intro { margin: 24px 0 20px; }
+    .intro p { font-size: 13px; }
+    main { grid-template-columns: 1fr; gap: 15px; }
+    .tray { min-height: 310px; padding-inline: 25px; }
+    .dice-set { max-width: 500px; }
+    aside { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; align-items: stretch; }
+    .card { padding: 18px; border-radius: 19px; }
+    .history-scroll { max-height: 190px; }
+    .note { grid-column: 1 / -1; }
+    .board-bottom { padding: 19px 23px; }
+    .shortcut { display: none; }
+    .stepper button { width: 40px; height: 40px; }
+    footer { margin-top: 23px; }
+  }
+
+  @media (max-width: 480px) {
+    .board-bottom { grid-template-columns: 1fr; gap: 18px; }
+    .total { font-size: 43px; }
+    .equation { font-size: 14px; }
+    .roll-button { font-size: 15px; min-height: 52px; }
+    .tray { min-height: 300px; }
+    .card { padding: 15px; }
+    .history-heading { align-items: baseline; flex-wrap: wrap; gap: 3px; }
+    .history-heading h2 { font-size: 13px; }
+    .history-scroll { max-height: 205px; }
+    .dice-set { gap: 34px 12px; }
+  }
+
+  @media (max-width: 370px) {
+    aside { grid-template-columns: 1fr; }
+    .dice-set { grid-template-columns: repeat(min(var(--cols), 3), minmax(0, 1fr)); }
+    .brand { gap: 9px; }
+    .brand-name { font-size: 18px; }
+    .language-switch button { min-width: 37px; }
+    .tray { padding-inline: 23px; }
+  }
+
+  /* Short landscape screens retain access to everything via normal scrolling. */
+  @media (orientation: landscape) and (max-height: 539px) {
+    :root { --size: 48px; }
+    .app { padding: 14px 20px; }
+    .intro { margin: 15px 0; }
+    h1 { font-size: 28px; }
+    .intro p { font-size: 12px; }
+    .tray { min-height: 245px; padding: 54px 23px 28px; }
+    .board-bottom { padding: 15px 18px; }
+    .total { font-size: 35px; }
+    .dice-set { gap: 28px 14px; }
+    .history-scroll { max-height: 115px; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation: none !important;
+      transition: none !important;
+    }
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <div class="brand">
+      <div class="brand-icon" aria-hidden="true">
+        <svg viewBox="0 0 32 32" fill="none">
+          <rect x="4" y="4" width="24" height="24" rx="6" stroke="currentColor" stroke-width="2"/>
+          <g fill="currentColor">
+            <circle cx="11" cy="11" r="2"/>
+            <circle cx="21" cy="11" r="2"/>
+            <circle cx="16" cy="16" r="2"/>
+            <circle cx="11" cy="21" r="2"/>
+            <circle cx="21" cy="21" r="2"/>
+          </g>
+        </svg>
+      </div>
+      <div>
+        <div class="brand-name" data-i18n="brand">Кубики</div>
+        <div class="brand-sub" data-i18n="brandSub">Трохи магії випадковості</div>
+      </div>
+    </div>
+
+    <div class="language-switch" id="languageSwitch" role="group" aria-label="Мова">
+      <button type="button" data-lang="uk" lang="uk" aria-label="Українська" aria-pressed="true">УК</button>
+      <button type="button" data-lang="en" lang="en" aria-label="English" aria-pressed="false">EN</button>
+    </div>
+  </header>
+
+  <section class="intro">
+    <div class="eyebrow" data-i18n="eyebrow">3D генератор випадковостей</div>
+    <h1 data-i18n="title">Нехай доля вирішить.</h1>
+    <p data-i18n="subtitle">Обирайте кубики, кидайте та ловіть свій щасливий момент.</p>
+  </section>
+
+  <main>
+    <section class="board" id="board" aria-label="Ігрове поле">
+      <div class="tray">
+        <div class="tray-label">
+          <span class="dot"></span>
+          <span id="trayStatus">Готові до кидка</span>
+        </div>
+        <div id="diceSet" class="dice-set"></div>
+      </div>
+
+      <div class="board-bottom">
+        <div class="result">
+          <div>
+            <div class="result-label" data-i18n="total">Загальна сума</div>
+            <div class="equation" id="equation"></div>
+          </div>
+          <div class="total" id="total"></div>
+        </div>
+
+        <div class="action-area">
+          <button type="button" class="roll-button" id="roll">
+            <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <rect x="4" y="4" width="16" height="16" rx="4" stroke="currentColor" stroke-width="1.8" transform="rotate(-12 12 12)"/>
+              <circle cx="8" cy="9" r="1.3" fill="currentColor"/>
+              <circle cx="12" cy="12" r="1.3" fill="currentColor"/>
+              <circle cx="16" cy="15" r="1.3" fill="currentColor"/>
+            </svg>
+            <span id="rollText">Кинути кубики</span>
+          </button>
+          <p class="shortcut">
+            <span data-i18n="shortcut">Або натисніть</span> <kbd>Space</kbd>
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <aside>
+      <section class="card settings-card">
+        <h2 data-i18n="settings">Ваш кидок</h2>
+        <label class="field-label" for="count" data-i18n="number">Кількість кубиків</label>
+        <div class="stepper">
+          <button type="button" id="minus" aria-label="Менше кубиків">−</button>
+          <output id="countOutput" for="count">2</output>
+          <button type="button" id="plus" aria-label="Більше кубиків">+</button>
+        </div>
+        <input id="count" type="range" min="1" max="8" value="2">
+        <div class="range-labels" aria-hidden="true"><span>1</span><span>8</span></div>
+        <label class="sound-row">
+          <span data-i18n="sound">Звук кубиків</span>
+          <input id="sound" type="checkbox" class="switch">
+        </label>
+      </section>
+
+      <section class="card history-card">
+        <div class="history-heading">
+          <h2 id="historyTitle" data-i18n="history">Останні кидки</h2>
+          <button type="button" class="clear" id="clear" data-i18n="clear">Очистити</button>
+        </div>
+        <div class="history-scroll" id="historyScroll" tabindex="0" role="region" aria-labelledby="historyTitle">
+          <ol class="history-list" id="history"></ol>
+          <p class="empty" id="empty" data-i18n="empty">Тут з’явиться історія ваших кидків. Почнімо?</p>
+        </div>
+      </section>
+
+      <p class="note" id="storageNote"></p>
+    </aside>
+  </main>
+
+  <footer data-i18n="footer">Для настільних ігор, великих рішень і маленьких пригод.</footer>
+  <div class="sr-only" id="announcement" role="status" aria-live="polite" aria-atomic="true"></div>
+</div>
+
+<script>
+(() => {
+  "use strict";
+
+  const STORAGE_KEY = "dice-studio-v1";
+  const $ = id => document.getElementById(id);
+
+  const translations = {
+    uk: {
+      brand: "Кубики",
+      brandSub: "Трохи магії випадковості",
+      eyebrow: "3D генератор випадковостей",
+      title: "Нехай доля вирішить.",
+      subtitle: "Обирайте кубики, кидайте та ловіть свій щасливий момент.",
+      total: "Загальна сума",
+      settings: "Ваш кидок",
+      number: "Кількість кубиків",
+      sound: "Звук кубиків",
+      history: "Останні кидки",
+      clear: "Очистити",
+      empty: "Тут з’явиться історія ваших кидків. Почнімо?",
+      shortcut: "Або натисніть",
+      footer: "Для настільних ігор, великих рішень і маленьких пригод.",
+      ready: "Готові до кидка",
+      rolling: "Кубики котяться…",
+      roll: "Кинути кубики",
+      saved: "Налаштування та останні 8 кидків зберігаються на цьому пристрої.",
+      unavailable: "Сховище недоступне. Дані зберігаються лише до закриття сторінки.",
+      language: "Мова",
+      fewer: "Менше кубиків",
+      more: "Більше кубиків",
+      board: "Ігрове поле",
+      die: "Кубик",
+      result: "Результат",
+      cleared: "Історію очищено."
+    },
+    en: {
+      brand: "Dice Studio",
+      brandSub: "A little magic of chance",
+      eyebrow: "3D random magic",
+      title: "Let fate take the wheel.",
+      subtitle: "Pick your dice, give them a roll, and find your lucky moment.",
+      total: "Total score",
+      settings: "Your roll",
+      number: "Number of dice",
+      sound: "Dice sounds",
+      history: "Recent rolls",
+      clear: "Clear",
+      empty: "Your recent rolls will appear here. Ready to begin?",
+      shortcut: "Or press",
+      footer: "For board games, big decisions, and little adventures.",
+      ready: "Ready to roll",
+      rolling: "Rolling the dice…",
+      roll: "Roll the dice",
+      saved: "Your settings and last 8 rolls are saved on this device.",
+      unavailable: "Storage is unavailable. Data lasts only until this page closes.",
+      language: "Language",
+      fewer: "Fewer dice",
+      more: "More dice",
+      board: "Dice tray",
+      die: "Die",
+      result: "Result",
+      cleared: "History cleared."
+    }
+  };
+
+  const validValues = values =>
+    Array.isArray(values) &&
+    values.length >= 1 &&
+    values.length <= 8 &&
+    values.every(value => Number.isInteger(value) && value >= 1 && value <= 6);
+
+  let storageAvailable = true;
+  let stored = {};
+
+  try {
+    const parsed = JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}");
+    if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
+      stored = parsed;
+    }
+  } catch {
+    storageAvailable = false;
+  }
+
+  const count = Number.isInteger(stored.count) && stored.count >= 1 && stored.count <= 8
+    ? stored.count
+    : 2;
+
+  const state = {
+    lang: stored.lang === "en" ? "en" : "uk",
+    count,
+    sound: stored.sound === true,
+    values: validValues(stored.values) && stored.values.length === count
+      ? stored.values
+      : Array(count).fill(1),
+    history: Array.isArray(stored.history)
+      ? stored.history.filter(validValues).slice(0, 8)
+      : []
+  };
+
+  let rolling = false;
+  let audioContext;
+  const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
+  const t = key => translations[state.lang][key];
+  const sum = values => values.reduce((total, value) => total + value, 0);
+
+  function save() {
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+      storageAvailable = true;
+    } catch {
+      storageAvailable = false;
+    }
+    $("storageNote").textContent = t(storageAvailable ? "saved" : "unavailable");
+  }
+
+  const patterns = [
+    [5],
+    [1, 9],
+    [1, 5, 9],
+    [1, 3, 7, 9],
+    [1, 3, 5, 7, 9],
+    [1, 3, 4, 6, 7, 9]
+  ];
+
+  const orientations = {
+    1: [0, 0],
+    2: [0, -90],
+    3: [-90, 0],
+    4: [90, 0],
+    5: [0, 90],
+    6: [0, 180]
+  };
+
+  function transform(x, y) {
+    return `rotateX(-13deg) rotateY(17deg) rotateX(${x}deg) rotateY(${y}deg)`;
+  }
+
+  function renderDice() {
+    const container = $("diceSet");
+    container.replaceChildren();
+    container.style.setProperty("--cols", Math.min(state.count, 4));
+
+    state.values.forEach((value, index) => {
+      const slot = document.createElement("div");
+      slot.className = "die-slot";
+      slot.setAttribute("role", "img");
+      slot.setAttribute("aria-label", `${t("die")} ${index + 1}: ${value}`);
+
+      const motion = document.createElement("div");
+      motion.className = "die-motion";
+
+      const die = document.createElement("div");
+      die.className = "die";
+      die.setAttribute("aria-hidden", "true");
+      die.style.transform = transform(...orientations[value]);
+
+      patterns.forEach(pattern => {
+        const face = document.createElement("div");
+        face.className = "face";
+
+        pattern.forEach(position => {
+          const pip = document.createElement("span");
+          pip.className = "pip";
+          pip.style.gridRow = Math.ceil(position / 3);
+          pip.style.gridColumn = (position - 1) % 3 + 1;
+          face.append(pip);
+        });
+
+        die.append(face);
+      });
+
+      motion.append(die);
+      slot.append(motion);
+      container.append(slot);
+    });
+  }
+
+  function renderHistory() {
+    $("history").replaceChildren();
+    $("empty").hidden = state.history.length > 0;
+    $("clear").disabled = !state.history.length || rolling;
+
+    state.history.forEach(values => {
+      const row = document.createElement("li");
+      row.className = "history-item";
+      row.setAttribute("aria-label", `${values.join(" + ")} = ${sum(values)}`);
+
+      const chips = document.createElement("div");
+      chips.className = "history-values";
+      chips.setAttribute("aria-hidden", "true");
+
+      values.forEach(value => {
+        const chip = document.createElement("span");
+        chip.className = "mini-die";
+        chip.textContent = value;
+        chips.append(chip);
+      });
+
+      const total = document.createElement("span");
+      total.className = "history-sum";
+      total.textContent = sum(values);
+      total.setAttribute("aria-hidden", "true");
+
+      row.append(chips, total);
+      $("history").append(row);
+    });
+  }
+
+  function renderControls() {
+    $("count").value = state.count;
+    $("countOutput").textContent = state.count;
+    $("sound").checked = state.sound;
+    $("minus").disabled = rolling || state.count <= 1;
+    $("plus").disabled = rolling || state.count >= 8;
+    $("count").disabled = rolling;
+    $("roll").disabled = rolling;
+    $("clear").disabled = rolling || !state.history.length;
+    $("rollText").textContent = t(rolling ? "rolling" : "roll");
+    $("trayStatus").textContent = t(rolling ? "rolling" : "ready");
+    $("board").classList.toggle("rolling", rolling);
+    $("diceSet").setAttribute("aria-busy", String(rolling));
+  }
+
+  function renderResult() {
+    $("equation").textContent = state.values.join(" + ");
+    $("total").textContent = sum(state.values);
+  }
+
+  function localize() {
+    document.documentElement.lang = state.lang;
+    document.title = `${t("brand")} — 3D Dice Roller`;
+
+    document.querySelectorAll("[data-i18n]").forEach(element => {
+      element.textContent = t(element.dataset.i18n);
+    });
+
+    document.querySelectorAll("[data-lang]").forEach(button => {
+      button.setAttribute("aria-pressed", String(button.dataset.lang === state.lang));
+    });
+
+    $("languageSwitch").setAttribute("aria-label", t("language"));
+    $("minus").setAttribute("aria-label", t("fewer"));
+    $("plus").setAttribute("aria-label", t("more"));
+    $("board").setAttribute("aria-label", t("board"));
+    $("storageNote").textContent = t(storageAvailable ? "saved" : "unavailable");
+
+    document.querySelectorAll(".die-slot").forEach((slot, index) => {
+      slot.setAttribute("aria-label", `${t("die")} ${index + 1}: ${state.values[index]}`);
+    });
+
+    renderControls();
+    renderHistory();
+  }
+
+  function changeCount(next) {
+    if (rolling) return;
+
+    state.count = Math.max(1, Math.min(8, next));
+    state.values = Array.from(
+      { length: state.count },
+      (_, index) => state.values[index] || 1
+    );
+
+    renderDice();
+    renderControls();
+    renderResult();
+    save();
+  }
+
+  // Rejection sampling prevents modulo bias.
+  function randomDie() {
+    if (globalThis.crypto?.getRandomValues) {
+      const buffer = new Uint32Array(1);
+      const limit = 4294967292;
+      do {
+        globalThis.crypto.getRandomValues(buffer);
+      } while (buffer[0] >= limit);
+      return buffer[0] % 6 + 1;
+    }
+    return Math.floor(Math.random() * 6) + 1;
+  }
+
+  function prepareAudio() {
+    if (!state.sound) return;
+
+    try {
+      const Audio = window.AudioContext || window.webkitAudioContext;
+      if (!Audio) return;
+      audioContext ||= new Audio();
+
+      if (audioContext.state === "suspended") {
+        audioContext.resume().catch(() => {});
+      }
+    } catch {}
+  }
+
+  function clack(strength = 1) {
+    if (!state.sound || !audioContext || audioContext.state !== "running") return;
+
+    try {
+      const duration = .065;
+      const buffer = audioContext.createBuffer(
+        1,
+        Math.ceil(audioContext.sampleRate * duration),
+        audioContext.sampleRate
+      );
+
+      const samples = buffer.getChannelData(0);
+      for (let index = 0; index < samples.length; index++) {
+        samples[index] =
+          (Math.random() * 2 - 1) * Math.pow(1 - index / samples.length, 3);
+      }
+
+      const source = audioContext.createBufferSource();
+      const filter = audioContext.createBiquadFilter();
+      const gain = audioContext.createGain();
+
+      source.buffer = buffer;
+      filter.type = "bandpass";
+      filter.frequency.value = 650 + Math.random() * 1100;
+      filter.Q.value = .7;
+      gain.gain.value = .3 * strength;
+
+      source.connect(filter);
+      filter.connect(gain);
+      gain.connect(audioContext.destination);
+
+      source.onended = () => {
+        source.disconnect();
+        filter.disconnect();
+        gain.disconnect();
+      };
+
+      source.start();
+    } catch {}
+  }
+
+  async function roll() {
+    if (rolling) return;
+
+    rolling = true;
+    prepareAudio();
+    renderControls();
+    $("announcement").textContent = t("rolling");
+
+    const nextValues = Array.from({ length: state.count }, randomDie);
+    const timers = [];
+    const animations = [];
+    const dice = [...document.querySelectorAll(".die")];
+    const shouldAnimate =
+      !reducedMotion.matches && typeof dice[0]?.animate === "function";
+
+    try {
+      if (shouldAnimate) {
+        [0, 130, 290, 490, 740, 1000].forEach((delay, index) => {
+          timers.push(setTimeout(() => clack(1 - index * .1), delay));
+        });
+
+        dice.forEach((die, index) => {
+          const [startX, startY] = orientations[state.values[index]];
+          const [endX, endY] = orientations[nextValues[index]];
+          const x = endX + 720 + (index % 2) * 360;
+          const y = endY + 720;
+          const duration = 1250 + index * 65;
+          const direction = index % 2 ? -1 : 1;
+
+          // Scale the bounce to the responsive dice size.
+          const lift = Math.min(40, die.getBoundingClientRect().height * .43);
+
+          const spin = die.animate([
+            { transform: transform(startX, startY), offset: 0 },
+            { transform: transform(x - 430, y - 330), offset: .43 },
+            { transform: transform(x - 100, y - 75), offset: .75 },
+            { transform: transform(x + 9, y - 5), offset: .90 },
+            { transform: transform(x, y), offset: 1 }
+          ], {
+            duration,
+            easing: "cubic-bezier(.2,.65,.3,1)",
+            fill: "forwards"
+          });
+
+          animations.push(spin);
+
+          const bounce = die.parentElement.animate([
+            {
+              transform: "translate3d(0,0,0) rotateZ(0deg)",
+              offset: 0
+            },
+            {
+              transform: `translate3d(${direction * 10}px,-${lift}px,0) rotateZ(${direction * 14}deg)`,
+              offset: .25
+            },
+            {
+              transform: `translate3d(${-direction * 6}px,0,0) rotateZ(${-direction * 7}deg)`,
+              offset: .57
+            },
+            {
+              transform: `translate3d(${direction * 3}px,-${lift * .32}px,0) rotateZ(${direction * 4}deg)`,
+              offset: .73
+            },
+            {
+              transform: "translate3d(0,0,0) rotateZ(-2deg)",
+              offset: .89
+            },
+            {
+              transform: "translate3d(0,0,0) rotateZ(0deg)",
+              offset: 1
+            }
+          ], {
+            duration,
+            easing: "ease-in-out",
+            fill: "forwards"
+          });
+
+          animations.push(bounce);
+        });
+
+        await Promise.all(
+          animations.map(animation => animation.finished.catch(() => {}))
+        );
+      } else {
+        clack(.7);
+        await new Promise(resolve => setTimeout(resolve, 100));
+      }
+    } catch {
+      // Still show a valid result if animation support fails.
+    } finally {
+      timers.forEach(clearTimeout);
+      animations.forEach(animation => animation.cancel());
+
+      state.values = nextValues;
+      state.history.unshift([...nextValues]);
+      state.history = state.history.slice(0, 8);
+      rolling = false;
+
+      renderDice();
+      renderResult();
+      renderHistory();
+      renderControls();
+      $("historyScroll").scrollTop = 0;
+      save();
+
+      $("announcement").textContent =
+        `${t("result")}: ${nextValues.join(", ")}. ${t("total")}: ${sum(nextValues)}.`;
+    }
+  }
+
+  $("roll").addEventListener("click", roll);
+  $("minus").addEventListener("click", () => changeCount(state.count - 1));
+  $("plus").addEventListener("click", () => changeCount(state.count + 1));
+
+  $("count").addEventListener("input", event => {
+    changeCount(Number(event.target.value));
+  });
+
+  $("sound").addEventListener("change", event => {
+    state.sound = event.target.checked;
+    prepareAudio();
+    save();
+  });
+
+  document.querySelectorAll("[data-lang]").forEach(button => {
+    button.addEventListener("click", () => {
+      state.lang = button.dataset.lang;
+      localize();
+      save();
+    });
+  });
+
+  $("clear").addEventListener("click", () => {
+    if (rolling) return;
+    state.history = [];
+    renderHistory();
+    save();
+    $("announcement").textContent = t("cleared");
+  });
+
+  document.addEventListener("keydown", event => {
+    const interactive = event.target instanceof Element &&
+      event.target.closest("button, input, select, textarea, a, [contenteditable], [tabindex]");
+
+    if (
+      event.code === "Space" &&
+      !interactive &&
+      !event.altKey &&
+      !event.ctrlKey &&
+      !event.metaKey
+    ) {
+      event.preventDefault();
+      if (!event.repeat) roll();
+    }
+  });
+
+  renderDice();
+  renderResult();
+  localize();
+  save();
+})();
+</script>
+</body>
+</html>
