@@ -2,7 +2,7 @@
 <html lang="uk">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Генератор графіку «Служба»</title>
 <meta name="description" content="Генератор місячного графіку служби: автоматичний розподіл особового складу по позиціях (ЗУЛУ, БЕСТЛА, ГАЛА, ЮТА, Водій) з точною кількістю осіб на позиції, урахуванням ротації, відпусток (ВДП), відряджень (ВДР) та прирядженого складу. Експорт у XLSX та PDF.">
 <meta name="keywords" content="графік служби, ротація, розподіл, ВДП, ВДР, ПРИРЯДЖЕННІ, xlsx, pdf">
@@ -20,22 +20,25 @@
     --accent:#2563eb; --accent2:#16a34a; --danger:#dc2626; --warn:#f59e0b;
   }
   *{box-sizing:border-box}
+  html{-webkit-text-size-adjust:100%}
   body{margin:0;font-family:"Segoe UI",Roboto,Arial,sans-serif;background:#eef2f7;color:#0f172a}
+  body.modal-open{overflow:hidden}
   header{background:linear-gradient(120deg,#0f172a,#1e3a8a 60%,#166534);color:#fff;padding:18px 28px;display:flex;align-items:center;gap:16px;flex-wrap:wrap}
   header h1{margin:0;font-size:22px;letter-spacing:.5px}
   header .sub{opacity:.75;font-size:13px}
   header .actions{margin-left:auto;display:flex;gap:10px;flex-wrap:wrap}
   main{padding:20px 28px;display:flex;flex-direction:column;gap:18px}
-  .card{background:var(--card);border-radius:14px;box-shadow:0 4px 18px rgba(15,23,42,.07);padding:18px 20px}
-  .card h2{margin:0 0 12px;font-size:16px;display:flex;align-items:center;gap:8px}
+  .card{background:var(--card);border-radius:14px;box-shadow:0 4px 18px rgba(15,23,42,.07);padding:18px 20px;min-width:0}
+  .card h2{margin:0 0 12px;font-size:16px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
   .card h2 .badge{background:#e0e7ff;color:#3730a3;border-radius:20px;padding:2px 10px;font-size:12px;font-weight:600}
   .row{display:flex;gap:16px;flex-wrap:wrap;align-items:flex-end}
-  label.f{display:flex;flex-direction:column;font-size:12px;color:var(--muted);gap:4px}
-  input,select,textarea{font:inherit;border:1px solid var(--line);border-radius:8px;padding:7px 9px;background:#f8fafc;color:#0f172a}
+  label.f{display:flex;flex-direction:column;font-size:12px;color:var(--muted);gap:4px;min-width:0}
+  input,select,textarea{font:inherit;border:1px solid var(--line);border-radius:8px;padding:7px 9px;background:#f8fafc;color:#0f172a;max-width:100%}
   input:focus,select:focus,textarea:focus{outline:2px solid #93c5fd;border-color:#93c5fd;background:#fff}
-  textarea{width:100%;min-height:230px;font-family:Consolas,"Courier New",monospace;font-size:12.5px;line-height:1.45;resize:vertical;white-space:pre}
-  .btn{border:none;border-radius:9px;padding:9px 16px;font-weight:600;cursor:pointer;font-size:14px;display:inline-flex;align-items:center;gap:6px;transition:.15s}
+  textarea{width:100%;min-height:230px;font-family:Consolas,"Courier New",monospace;font-size:12.5px;line-height:1.45;resize:vertical;white-space:pre;overflow-x:auto}
+  .btn{border:none;border-radius:9px;padding:9px 16px;font-weight:600;cursor:pointer;font-size:14px;display:inline-flex;align-items:center;justify-content:center;gap:6px;transition:.15s}
   .btn:hover{transform:translateY(-1px);filter:brightness(1.07)}
+  .btn:focus-visible{outline:3px solid #93c5fd;outline-offset:2px}
   .btn.primary{background:var(--accent);color:#fff}
   .btn.green{background:var(--accent2);color:#fff}
   .btn.red{background:#b91c1c;color:#fff}
@@ -43,7 +46,6 @@
   .btn.sm{padding:5px 10px;font-size:12px}
   .grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:18px}
   .grid2{display:grid;grid-template-columns:3fr 2fr;gap:18px}
-  @media(max-width:1100px){.grid3,.grid2{grid-template-columns:1fr}}
   table.cfg{border-collapse:collapse;width:100%;font-size:13px}
   table.cfg th{font-size:11px;color:var(--muted);text-align:left;padding:4px 6px;border-bottom:1px solid var(--line)}
   table.cfg td{padding:4px 6px;border-bottom:1px solid #f1f5f9}
@@ -51,16 +53,19 @@
   table.cfg input[type=text]{width:130px}
   table.cfg input[type=color]{width:42px;height:30px;padding:2px}
   .hint{font-size:12px;color:var(--muted);line-height:1.5}
-  .hint code{background:#f1f5f9;padding:1px 5px;border-radius:4px;color:#0f172a}
+  .hint code{background:#f1f5f9;padding:1px 5px;border-radius:4px;color:#0f172a;word-break:break-word}
+  details.help{margin:8px 0 10px}
+  details.help summary{cursor:pointer;font-size:12px;font-weight:600;color:var(--accent);padding:4px 0;user-select:none}
+  details.help[open] summary{margin-bottom:4px}
   .totals{margin-top:8px;font-size:13px;padding:6px 10px;border-radius:8px;background:#f1f5f9}
   .totals.bad{background:#fee2e2;color:#991b1b}
   .totals.good{background:#dcfce7;color:#166534}
-  #msgs div{font-size:13px;padding:5px 10px;border-radius:6px;margin:3px 0}
+  #msgs div{font-size:13px;padding:5px 10px;border-radius:6px;margin:3px 0;word-break:break-word}
   #msgs .err{background:#fee2e2;color:#991b1b}
   #msgs .warn{background:#fef3c7;color:#92400e}
   #msgs .ok{background:#dcfce7;color:#166534}
   .preview-wrap{display:flex;gap:16px;align-items:flex-start}
-  .scroll{overflow:auto;max-height:75vh;border:1px solid var(--line);border-radius:10px;flex:1}
+  .scroll{overflow:auto;max-height:75vh;border:1px solid var(--line);border-radius:10px;flex:1;min-width:0;-webkit-overflow-scrolling:touch}
   table.sch{border-collapse:separate;border-spacing:0;font-size:11px}
   table.sch th,table.sch td{border-right:1px solid #cbd5e1;border-bottom:1px solid #cbd5e1;padding:3px 4px;text-align:center;white-space:nowrap}
   table.sch thead th{position:sticky;top:0;background:#f1f5f9;z-index:2;font-weight:600}
@@ -72,7 +77,7 @@
   table.sch td.c:hover{outline:2px solid #2563eb;outline-offset:-2px}
   table.sch td.c.manual{box-shadow:inset 0 0 0 2px #7c3aed}
   table.sch tr.sec td{background:#fce4d6;font-weight:700;text-align:left;position:static}
-  table.sch tr.sec td.name{background:#fce4d6}
+  table.sch tr.sec td.name{background:#fce4d6;position:sticky}
   .summary{min-width:340px;border:1px solid var(--line);border-radius:10px;overflow:hidden}
   .summary h3{margin:0;padding:8px 12px;background:#1e3a8a;color:#fff;font-size:14px}
   .summary table{border-collapse:collapse;width:100%;font-size:12px}
@@ -83,6 +88,7 @@
   .legend span{padding:3px 10px;border-radius:6px;font-size:12px;font-weight:600;border:1px solid #cbd5e1}
   table.cov{border-collapse:collapse;font-size:11px;margin-top:10px}
   table.cov td,table.cov th{border:1px solid #e2e8f0;padding:2px 4px;text-align:center;min-width:30px}
+  table.cov th:first-child{position:sticky;left:0;background:#fff;white-space:nowrap;z-index:1}
   table.cov td.bad{background:#fee2e2;color:#991b1b;font-weight:700}
   table.cov td.good{background:#dcfce7;color:#166534}
   table.cov td.over{background:#dbeafe;color:#1e40af;font-weight:700}
@@ -90,11 +96,112 @@
   #popup .t{font-size:12px;color:var(--muted);margin-bottom:6px}
   #popup .opts{display:flex;flex-wrap:wrap;gap:5px}
   #popup button{border:1px solid #cbd5e1;border-radius:6px;padding:4px 8px;cursor:pointer;font-weight:600;font-size:12px}
+  #popup .close{display:none}
   .stat{display:flex;gap:10px;flex-wrap:wrap}
-  .stat div{background:#f8fafc;border:1px solid var(--line);border-radius:10px;padding:8px 14px;font-size:12px;color:var(--muted)}
+  .stat div{background:#f8fafc;border:1px solid var(--line);border-radius:10px;padding:8px 14px;font-size:12px;color:var(--muted);flex:0 0 auto}
   .stat div.bad{background:#fee2e2;border-color:#fecaca}
   .stat div.over{background:#dbeafe;border-color:#bfdbfe}
   .stat b{display:block;font-size:18px;color:#0f172a}
+
+  /* ---------- Custom modal dialog ---------- */
+  .modal-overlay{position:fixed;inset:0;background:rgba(15,23,42,.55);backdrop-filter:blur(3px);
+    display:none;align-items:center;justify-content:center;z-index:200;padding:16px}
+  .modal-overlay.show{display:flex;animation:mFade .15s ease-out}
+  .modal{background:#fff;border-radius:16px;width:100%;max-width:440px;padding:22px 22px 18px;
+    box-shadow:0 20px 50px rgba(15,23,42,.35);animation:mPop .18s ease-out}
+  .modal-head{display:flex;align-items:center;gap:12px;margin-bottom:10px}
+  .modal-ico{width:44px;height:44px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:22px;flex:0 0 auto;background:#e0e7ff}
+  .modal.danger .modal-ico{background:#fee2e2}
+  .modal.info .modal-ico{background:#dbeafe}
+  .modal.error .modal-ico{background:#fee2e2}
+  .modal h3{margin:0;font-size:17px;line-height:1.3}
+  .modal p{margin:0 0 18px;font-size:14px;line-height:1.55;color:#334155;white-space:pre-line}
+  .modal-actions{display:flex;gap:10px;justify-content:flex-end}
+  .modal-actions .btn{min-width:110px}
+  .modal-actions .btn.danger{background:#dc2626;color:#fff}
+  @keyframes mFade{from{opacity:0}to{opacity:1}}
+  @keyframes mPop{from{opacity:0;transform:translateY(10px) scale(.97)}to{opacity:1;transform:none}}
+  @keyframes mSlide{from{transform:translateY(100%)}to{transform:none}}
+
+  /* ---------- Tablet ---------- */
+  @media(max-width:1100px){
+    .grid3,.grid2{grid-template-columns:1fr}
+    .preview-wrap{flex-direction:column;align-items:stretch}
+    .summary{min-width:0;width:100%}
+  }
+  @media(max-width:900px){
+    header{padding:14px 16px}
+    main{padding:14px 12px;gap:12px}
+    .card{padding:14px 14px;border-radius:12px}
+    table.sch td.name,table.sch th.name{min-width:200px}
+  }
+
+  /* ---------- Phone ---------- */
+  @media(max-width:640px){
+    body{padding-bottom:calc(72px + env(safe-area-inset-bottom))}
+    header{gap:6px}
+    header h1{font-size:18px}
+    header .sub{font-size:12px}
+    header .actions{position:fixed;left:0;right:0;bottom:0;margin:0;z-index:50;
+      display:grid;grid-template-columns:repeat(3,1fr);gap:8px;
+      background:rgba(15,23,42,.96);backdrop-filter:blur(6px);
+      padding:8px 10px calc(8px + env(safe-area-inset-bottom));box-shadow:0 -4px 16px rgba(0,0,0,.25)}
+    header .actions .btn{padding:12px 6px;font-size:14px}
+    main{padding:10px 8px;gap:10px}
+    .card{padding:12px 12px}
+    .card h2{font-size:15px}
+
+    input,select,textarea{font-size:16px}
+    textarea{min-height:180px;font-size:14px}
+
+    .row{display:grid;grid-template-columns:1fr 1fr;gap:10px;align-items:end}
+    .row label.f input,.row label.f select{width:100%!important}
+    .row .btn{width:100%;padding:10px 8px}
+
+    table.cfg,table.cfg tbody{display:block;width:100%}
+    table.cfg tr.hdr{display:none}
+    table.cfg tr{display:grid;grid-template-columns:1fr 1fr;gap:8px;border:1px solid var(--line);border-radius:10px;padding:10px;margin-bottom:8px;background:#fbfdff}
+    table.cfg td{display:flex;flex-direction:column;gap:3px;border:none;padding:0;min-width:0}
+    table.cfg td::before{content:attr(data-label);font-size:11px;color:var(--muted)}
+    table.cfg td.full{grid-column:1 / -1}
+    table.cfg td.act{flex-direction:row;justify-content:flex-end;align-items:flex-end}
+    table.cfg td.act::before{content:none}
+    table.cfg td.chk{flex-direction:row;align-items:center;gap:8px}
+    table.cfg td.chk input{width:22px;height:22px}
+    table.cfg input[type=text],table.cfg input[type=number]{width:100%}
+    table.cfg input[type=color]{width:100%;height:38px}
+    #stTable tr{grid-template-columns:1fr 70px auto}
+    .btn.sm{padding:8px 12px;font-size:13px}
+
+    .scroll{max-height:65vh}
+    table.sch{font-size:10px}
+    table.sch th,table.sch td{padding:4px 3px}
+    table.sch td.name,table.sch th.name{min-width:130px;max-width:150px;white-space:normal;line-height:1.2;font-size:10px}
+    table.sch td.c{min-width:42px}
+    .stat{flex-wrap:nowrap;overflow-x:auto;padding-bottom:4px;-webkit-overflow-scrolling:touch}
+    .stat div{padding:6px 10px}
+    .stat b{font-size:16px}
+    .legend span{font-size:11px;padding:3px 8px}
+    .summary td{padding:5px 6px}
+
+    #popup.sheet{left:0!important;right:0;top:auto!important;bottom:0;max-width:none;width:100%;
+      border-radius:16px 16px 0 0;padding:14px 14px calc(14px + env(safe-area-inset-bottom));
+      max-height:60vh;overflow:auto;box-shadow:0 -10px 30px rgba(0,0,0,.3)}
+    #popup.sheet .t{font-size:13px}
+    #popup.sheet button{padding:10px 12px;font-size:14px}
+    #popup.sheet .close{display:block;position:absolute;right:10px;top:8px;border:none;background:#e2e8f0;border-radius:50%;width:32px;height:32px;padding:0;font-size:16px}
+
+    /* modal as bottom sheet */
+    .modal-overlay{align-items:flex-end;padding:0}
+    .modal{max-width:none;border-radius:18px 18px 0 0;padding:20px 16px calc(16px + env(safe-area-inset-bottom));animation:mSlide .2s ease-out}
+    .modal-actions{display:grid;grid-template-columns:1fr 1fr}
+    .modal-actions.single{grid-template-columns:1fr}
+    .modal-actions .btn{min-width:0;padding:13px 10px;font-size:15px}
+  }
+  @media(max-width:380px){
+    .row{grid-template-columns:1fr}
+    header .actions .btn{font-size:13px}
+  }
 </style>
 </head>
 <body>
@@ -115,8 +222,8 @@
     <h2>Параметри</h2>
     <div class="row">
       <label class="f">Місяць<select id="month"></select></label>
-      <label class="f">Рік<input type="number" id="year" min="2020" max="2100" style="width:90px"></label>
-      <label class="f">Дні наступного місяця<input type="number" id="extra" min="0" max="10" style="width:90px"></label>
+      <label class="f">Рік<input type="number" id="year" min="2020" max="2100" style="width:90px" inputmode="numeric"></label>
+      <label class="f">Дні наступного місяця<input type="number" id="extra" min="0" max="10" style="width:90px" inputmode="numeric"></label>
       <label class="f">Станом на (дата зведення)<input type="date" id="repDate"></label>
       <label class="f">Підпис секції 1<input type="text" id="lblHead" placeholder="(без підпису)"></label>
       <label class="f">Підпис секції 2<input type="text" id="lblMain" placeholder="(без підпису)"></label>
@@ -133,12 +240,15 @@
       <table class="cfg" id="posTable"></table>
       <button class="btn ghost sm" id="addPos" style="margin-top:8px">+ Додати позицію</button>
       <div class="totals" id="totals"></div>
-      <div class="hint" style="margin-top:8px">
-        <b>Кількість осіб</b>: точна кількість людей на позиції щодня. Автоматичний розподіл ніколи не ставить більше, а всі зайві отримують <b>РЗ</b>. Значення <code>0</code> означає, що позиція не заповнюється.
-        <b>Ротація</b>: скільки днів поспіль людина стоїть на позиції перед заміною.
-        <b>Лише вказаним</b>: на позицію потрапляють тільки ті, у кого вона прямо вказана в полі локацій.
-        Ручні правки та примусові події (наприклад, <code>ЗУЛУ 01.06-09.06</code>) виконуються завжди. Якщо через них позиція переповнюється, з'являється попередження.
-      </div>
+      <details class="help" open>
+        <summary>ℹ️ Пояснення параметрів</summary>
+        <div class="hint">
+          <b>Кількість осіб</b>: точна кількість людей на позиції щодня. Автоматичний розподіл ніколи не ставить більше, а всі зайві отримують <b>РЗ</b>. Значення <code>0</code> означає, що позиція не заповнюється.
+          <b>Ротація</b>: скільки днів поспіль людина стоїть на позиції перед заміною.
+          <b>Лише вказаним</b>: на позицію потрапляють тільки ті, у кого вона прямо вказана в полі локацій.
+          Ручні правки та примусові події (наприклад, <code>ЗУЛУ 01.06-09.06</code>) виконуються завжди. Якщо через них позиція переповнюється, з'являється попередження.
+        </div>
+      </details>
     </div>
     <div class="card">
       <h2>Статуси</h2>
@@ -150,15 +260,18 @@
 
   <section class="card">
     <h2>Особовий склад</h2>
-    <div class="hint" style="margin-bottom:10px">
-      Формат рядка: <code>ПІП | позивний | номер | локації | події</code><br>
-      <b>Локації</b> через кому, наприклад <code>ГАЛА, ЗУЛУ</code>. Перша локація вважається бажаною. Префікс <code>!</code> означає постійне закріплення в межах кількості осіб, наприклад <code>!Водій</code>. Якщо поле порожнє, підходить будь-яка позиція без обмеження.<br>
-      <b>Події</b> розділяються <code>;</code>. Приклади: <code>ВДП 15.06-30.06</code>, <code>ВДР 01.06-07.06, 25.06-28.06</code>, <code>ВИБУВ 20.06</code> (з цієї дати до кінця), <code>ПРИБУВ 10.06</code> (до цієї дати клітинки порожні), <code>ЗУЛУ 01.06-09.06</code> (примусове призначення). Рядки, що починаються з <code>#</code>, ігноруються.
-    </div>
+    <details class="help" open>
+      <summary>ℹ️ Формат рядка</summary>
+      <div class="hint">
+        <code>ПІП | позивний | номер | локації | події</code><br>
+        <b>Локації</b> через кому, наприклад <code>ГАЛА, ЗУЛУ</code>. Перша локація вважається бажаною. Префікс <code>!</code> означає постійне закріплення в межах кількості осіб, наприклад <code>!Водій</code>. Якщо поле порожнє, підходить будь-яка позиція без обмеження.<br>
+        <b>Події</b> розділяються <code>;</code>. Приклади: <code>ВДП 15.06-30.06</code>, <code>ВДР 01.06-07.06, 25.06-28.06</code>, <code>ВИБУВ 20.06</code> (з цієї дати до кінця), <code>ПРИБУВ 10.06</code> (до цієї дати клітинки порожні), <code>ЗУЛУ 01.06-09.06</code> (примусове призначення). Рядки, що починаються з <code>#</code>, ігноруються.
+      </div>
+    </details>
     <div class="grid3">
-      <label class="f">1. Керівництво (не ротуються: РЗ або вказана локація, якщо є місце)<textarea id="taHead"></textarea></label>
-      <label class="f">2. Основний склад<textarea id="taMain"></textarea></label>
-      <label class="f">3. ПРИРЯДЖЕННІ<textarea id="taPr"></textarea></label>
+      <label class="f">1. Керівництво (не ротуються: РЗ або вказана локація, якщо є місце)<textarea id="taHead" spellcheck="false"></textarea></label>
+      <label class="f">2. Основний склад<textarea id="taMain" spellcheck="false"></textarea></label>
+      <label class="f">3. ПРИРЯДЖЕННІ<textarea id="taPr" spellcheck="false"></textarea></label>
     </div>
   </section>
 
@@ -167,8 +280,8 @@
     <div id="msgs"></div>
   </section>
 
-  <section class="card">
-    <h2>Попередній перегляд <span class="badge">клік по клітинці дозволяє змінити значення вручну</span></h2>
+  <section class="card" id="previewCard">
+    <h2>Попередній перегляд <span class="badge">натисніть на клітинку, щоб змінити значення</span></h2>
     <div class="stat" id="stats"></div>
     <div class="legend" id="legend"></div>
     <div class="preview-wrap">
@@ -182,11 +295,27 @@
 
 <div id="popup"></div>
 
+<!-- Custom modal dialog -->
+<div class="modal-overlay" id="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle" aria-describedby="modalMsg">
+  <div class="modal" id="modalBox">
+    <div class="modal-head">
+      <div class="modal-ico" id="modalIco">❓</div>
+      <h3 id="modalTitle"></h3>
+    </div>
+    <p id="modalMsg"></p>
+    <div class="modal-actions" id="modalActions">
+      <button class="btn ghost" id="modalCancel" type="button">Скасувати</button>
+      <button class="btn primary" id="modalOk" type="button">Підтвердити</button>
+    </div>
+  </div>
+</div>
+
 <script>
 /* ===================== CONSTANTS & DEFAULTS ===================== */
 const MONTHS=['СІЧЕНЬ','ЛЮТИЙ','БЕРЕЗЕНЬ','КВІТЕНЬ','ТРАВЕНЬ','ЧЕРВЕНЬ','ЛИПЕНЬ','СЕРПЕНЬ','ВЕРЕСЕНЬ','ЖОВТЕНЬ','ЛИСТОПАД','ГРУДЕНЬ'];
 const MABBR=['січ','лют','бер','кві','тра','чер','лип','сер','вер','жов','лис','гру'];
 const STORE='sluzhba_generator_v1';
+const isPhone=()=>window.matchMedia('(max-width:640px)').matches;
 
 const DEF_POS=[
   {name:'ЗУЛУ',count:3,rot:14,color:'#FFFFFF',restricted:false},
@@ -232,6 +361,65 @@ const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&g
 const ser=(y,m,d)=>Math.round(Date.UTC(y,m-1,d)/864e5);
 const fromSer=s=>new Date(s*864e5);
 const pad=n=>String(n).padStart(2,'0');
+
+/* ===================== CUSTOM DIALOG ===================== */
+/**
+ * showDialog({title, message, icon, okText, cancelText, variant:'confirm'|'danger'|'info'|'error', alertOnly})
+ * Returns Promise<boolean>: true = confirmed, false = cancelled.
+ */
+let modalBusy=null;
+function showDialog(opts={}){
+  const {title='Підтвердження',message='',icon,okText='Підтвердити',cancelText='Скасувати',
+         variant='confirm',alertOnly=false}=opts;
+  // if a dialog is already open, close it as cancelled
+  if(modalBusy) modalBusy(false);
+  return new Promise(resolve=>{
+    const ov=$('modal'), box=$('modalBox'), ok=$('modalOk'), cancel=$('modalCancel'), acts=$('modalActions');
+    const icons={confirm:'❓',danger:'⚠️',info:'ℹ️',error:'⛔'};
+    box.className='modal '+variant;
+    $('modalIco').textContent=icon||icons[variant]||'❓';
+    $('modalTitle').textContent=title;
+    $('modalMsg').textContent=message;
+    ok.textContent=okText;
+    ok.className='btn '+(variant==='danger'?'danger':'primary');
+    cancel.textContent=cancelText;
+    cancel.style.display=alertOnly?'none':'';
+    acts.classList.toggle('single',alertOnly);
+
+    const prevFocus=document.activeElement;
+    closePopup();
+    ov.classList.add('show');
+    document.body.classList.add('modal-open');
+    setTimeout(()=>ok.focus(),30);
+
+    const finish=val=>{
+      ov.classList.remove('show');
+      document.body.classList.remove('modal-open');
+      ok.onclick=cancel.onclick=ov.onclick=null;
+      document.removeEventListener('keydown',onKey,true);
+      modalBusy=null;
+      if(prevFocus&&prevFocus.focus) prevFocus.focus();
+      resolve(val);
+    };
+    const onKey=e=>{
+      if(e.key==='Escape'){e.preventDefault();e.stopPropagation();finish(alertOnly);}
+      else if(e.key==='Enter'){e.preventDefault();e.stopPropagation();finish(true);}
+      else if(e.key==='Tab'){ // simple focus trap
+        const f=[cancel,ok].filter(b=>b.style.display!=='none');
+        const i=f.indexOf(document.activeElement);
+        e.preventDefault();
+        f[(i+(e.shiftKey?-1:1)+f.length)%f.length].focus();
+      }
+    };
+    ok.onclick=e=>{e.stopPropagation();finish(true);};
+    cancel.onclick=e=>{e.stopPropagation();finish(false);};
+    ov.onclick=e=>{if(e.target===ov) finish(alertOnly);};
+    document.addEventListener('keydown',onKey,true);
+    modalBusy=finish;
+  });
+}
+const confirmDialog=opts=>showDialog({variant:'confirm',...opts});
+const alertDialog=opts=>showDialog({variant:'info',okText:'Зрозуміло',alertOnly:true,...opts});
 
 /* ===================== STORAGE ===================== */
 function save(){
@@ -289,14 +477,14 @@ function colorOf(code){
 /* ===================== CONFIG TABLES ===================== */
 function renderCfg(){
   const pt=$('posTable');
-  pt.innerHTML=`<tr><th>Назва</th><th>Кількість осіб</th><th>Ротація, днів</th><th>Колір</th><th>Лише вказаним</th><th></th></tr>`+
+  pt.innerHTML=`<tr class="hdr"><th>Назва</th><th>Кількість осіб</th><th>Ротація, днів</th><th>Колір</th><th>Лише вказаним</th><th></th></tr>`+
    state.positions.map((p,i)=>`<tr>
-    <td><input type="text" data-k="name" data-i="${i}" value="${esc(p.name)}"></td>
-    <td><input type="number" min="0" step="1" data-k="count" data-i="${i}" value="${p.count}" title="Точна кількість осіб на позиції щодня"></td>
-    <td><input type="number" min="1" step="1" data-k="rot" data-i="${i}" value="${p.rot}"></td>
-    <td><input type="color" data-k="color" data-i="${i}" value="${p.color}"></td>
-    <td style="text-align:center"><input type="checkbox" data-k="restricted" data-i="${i}" ${p.restricted?'checked':''}></td>
-    <td><button class="btn ghost sm" data-del="${i}">✕</button></td></tr>`).join('');
+    <td class="full" data-label="Назва"><input type="text" data-k="name" data-i="${i}" value="${esc(p.name)}"></td>
+    <td data-label="Кількість осіб"><input type="number" min="0" step="1" inputmode="numeric" data-k="count" data-i="${i}" value="${p.count}" title="Точна кількість осіб на позиції щодня"></td>
+    <td data-label="Ротація, днів"><input type="number" min="1" step="1" inputmode="numeric" data-k="rot" data-i="${i}" value="${p.rot}"></td>
+    <td data-label="Колір"><input type="color" data-k="color" data-i="${i}" value="${p.color}"></td>
+    <td class="chk" data-label="Лише вказаним" style="text-align:center"><input type="checkbox" data-k="restricted" data-i="${i}" ${p.restricted?'checked':''}></td>
+    <td class="act full"><button class="btn ghost sm" data-del="${i}" title="Видалити">✕</button></td></tr>`).join('');
   pt.querySelectorAll('input').forEach(inp=>inp.addEventListener('change',e=>{
     const i=+e.target.dataset.i,k=e.target.dataset.k;
     let v=e.target.type==='checkbox'?e.target.checked:e.target.value;
@@ -309,11 +497,11 @@ function renderCfg(){
   pt.querySelectorAll('[data-del]').forEach(b=>b.onclick=()=>{state.positions.splice(+b.dataset.del,1);renderCfg();save();generate();});
 
   const st=$('stTable');
-  st.innerHTML=`<tr><th>Код</th><th>Колір</th><th></th></tr>`+
+  st.innerHTML=`<tr class="hdr"><th>Код</th><th>Колір</th><th></th></tr>`+
    state.statuses.map((s,i)=>`<tr>
-    <td><input type="text" data-k="code" data-i="${i}" value="${esc(s.code)}" ${s.code==='РЗ'?'readonly':''}></td>
-    <td><input type="color" data-k="color" data-i="${i}" value="${s.color}"></td>
-    <td>${s.code==='РЗ'?'':`<button class="btn ghost sm" data-del="${i}">✕</button>`}</td></tr>`).join('');
+    <td data-label="Код"><input type="text" data-k="code" data-i="${i}" value="${esc(s.code)}" ${s.code==='РЗ'?'readonly':''}></td>
+    <td data-label="Колір"><input type="color" data-k="color" data-i="${i}" value="${s.color}"></td>
+    <td class="act">${s.code==='РЗ'?'':`<button class="btn ghost sm" data-del="${i}" title="Видалити">✕</button>`}</td></tr>`).join('');
   st.querySelectorAll('input').forEach(inp=>inp.addEventListener('change',e=>{
     const i=+e.target.dataset.i,k=e.target.dataset.k;
     state.statuses[i][k]=k==='code'?e.target.value.trim().toUpperCase():e.target.value; save(); generate();
@@ -567,31 +755,41 @@ function render(){
 }
 
 /* ===================== POPUP EDIT ===================== */
+function closePopup(){const p=$('popup');p.style.display='none';p.classList.remove('sheet');}
 function openPopup(e,si,wi,d){
   e.stopPropagation();
   const S=state.schedule, w=S.sections[si].list[wi], s=S.days[d].s, k=keyOf(w,s);
   const codes=[...S.P.map(p=>p.name),...state.statuses.map(x=>x.code)];
   const pop=$('popup');
   const occ=name=>S.sections.reduce((a,sec)=>a+sec.list.filter(x=>x.cells[d]===name).length,0);
-  pop.innerHTML=`<div class="t"><b>${esc(displayName(w))}</b><br>${S.days[d].label}${w.manual[d]?' · ручна правка':''}</div><div class="opts">`+
+  pop.innerHTML=`<button class="close" data-c="__close" aria-label="Закрити">✕</button>
+    <div class="t"><b>${esc(displayName(w))}</b><br>${S.days[d].label}${w.manual[d]?' · ручна правка':''}</div><div class="opts">`+
     codes.map(c=>{const p=S.P.find(p=>p.name===c);
       const lbl=p?`${esc(c)} ${occ(c)}/${p.count}`:esc(c);
       return `<button data-c="${esc(c)}" style="background:${colorOf(c)};color:${textColor(colorOf(c))}">${lbl}</button>`;}).join('')+
     `<button data-c="__empty" style="background:#fff">(порожньо)</button><button data-c="__auto" style="background:#e0e7ff">↺ Авто</button></div>`;
   pop.style.display='block';
-  const x=Math.min(e.clientX,window.innerWidth-pop.offsetWidth-10),
-        y=Math.min(e.clientY+10,window.innerHeight-pop.offsetHeight-10);
-  pop.style.left=Math.max(5,x)+'px'; pop.style.top=Math.max(5,y)+'px';
+  if(isPhone()){
+    pop.classList.add('sheet');
+    pop.style.left='';pop.style.top='';
+  } else {
+    pop.classList.remove('sheet');
+    const x=Math.min(e.clientX,window.innerWidth-pop.offsetWidth-10),
+          y=Math.min(e.clientY+10,window.innerHeight-pop.offsetHeight-10);
+    pop.style.left=Math.max(5,x)+'px'; pop.style.top=Math.max(5,y)+'px';
+  }
   pop.querySelectorAll('button').forEach(b=>b.onclick=ev=>{
     ev.stopPropagation();
     const c=b.dataset.c;
+    if(c==='__close'){closePopup();return;}
     if(c==='__auto') delete state.overrides[k];
     else state.overrides[k]=(c==='__empty')?'':c;
-    pop.style.display='none'; save(); generate();
+    closePopup(); save(); generate();
   });
 }
-document.addEventListener('click',e=>{if(!$('popup').contains(e.target)) $('popup').style.display='none';});
-document.addEventListener('keydown',e=>{if(e.key==='Escape') $('popup').style.display='none';});
+document.addEventListener('click',e=>{if(!$('popup').contains(e.target)) closePopup();});
+document.addEventListener('keydown',e=>{if(e.key==='Escape') closePopup();});
+window.addEventListener('resize',closePopup);
 
 /* ===================== XLSX EXPORT ===================== */
 const argb=hex=>'FF'+(hex||'#FFFFFF').replace('#','').toUpperCase();
@@ -755,6 +953,9 @@ function init(){
   load(false);
   renderCfg();
 
+  // collapse long help blocks on phones
+  if(isPhone()) document.querySelectorAll('details.help').forEach(d=>d.open=false);
+
   let tmr=null;
   const debounced=()=>{clearTimeout(tmr);tmr=setTimeout(()=>{save();generate();},400);};
   ['taHead','taMain','taPr','lblHead','lblMain','lblPr'].forEach(id=>$(id).addEventListener('input',debounced));
@@ -767,13 +968,46 @@ function init(){
     save();generate();
   });
 
-  $('btnGen').onclick=()=>{save();generate();};
-  $('btnXlsx').onclick=()=>exportXlsx().catch(e=>alert('Помилка XLSX: '+e.message));
-  $('btnPdf').onclick=()=>{try{exportPdf();}catch(e){alert('Помилка PDF: '+e.message);}};
+  $('btnGen').onclick=()=>{
+    save();generate();
+    if(isPhone()) $('previewCard').scrollIntoView({behavior:'smooth',block:'start'});
+  };
+  $('btnXlsx').onclick=()=>exportXlsx().catch(e=>alertDialog({
+    variant:'error',title:'Помилка експорту XLSX',
+    message:'Не вдалося сформувати файл XLSX.\n'+(e&&e.message?e.message:e)
+  }));
+  $('btnPdf').onclick=()=>{
+    try{exportPdf();}
+    catch(e){alertDialog({variant:'error',title:'Помилка експорту PDF',
+      message:'Не вдалося сформувати файл PDF.\n'+(e&&e.message?e.message:e)});}
+  };
   $('addPos').onclick=()=>{state.positions.push({name:'НОВА',count:1,rot:14,color:'#FFFFFF',restricted:false});renderCfg();save();generate();};
   $('addSt').onclick=()=>{state.statuses.push({code:'НОВИЙ',color:'#D9D9D9'});renderCfg();save();generate();};
-  $('btnResetOv').onclick=()=>{if(confirm('Видалити всі ручні правки?')){state.overrides={};save();generate();}};
-  $('btnResetAll').onclick=()=>{if(confirm('Скинути всі дані до прикладу?')){localStorage.removeItem(STORE);load(true);renderCfg();save();generate();}};
+
+  $('btnResetOv').onclick=async e=>{
+    e.stopPropagation();
+    const n=Object.keys(state.overrides).length;
+    if(!n){
+      await alertDialog({title:'Ручних правок немає',message:'У графіку немає ручних змін, тому скидати нічого.'});
+      return;
+    }
+    const ok=await confirmDialog({
+      variant:'danger',title:'Скинути ручні правки?',
+      message:`Буде видалено ручних правок: ${n}.\nГрафік буде перераховано автоматично.`,
+      okText:'Скинути',cancelText:'Скасувати'
+    });
+    if(ok){state.overrides={};save();generate();}
+  };
+
+  $('btnResetAll').onclick=async e=>{
+    e.stopPropagation();
+    const ok=await confirmDialog({
+      variant:'danger',title:'Скинути все до прикладу?',
+      message:'Усі введені дані, налаштування позицій і статусів, а також ручні правки буде замінено умовним прикладом.\nЦю дію неможливо скасувати.',
+      okText:'Скинути все',cancelText:'Скасувати'
+    });
+    if(ok){localStorage.removeItem(STORE);load(true);renderCfg();save();generate();}
+  };
 
   generate();
 }
