@@ -7,7 +7,6 @@ I'm excited to share my latest project — a beautiful **Color Palette Generator
 🎁 WHAT'S INSIDE:
 
 🎨 Smart Harmonies — Analogous, Complementary, Triadic, Tetradic, Monochromatic & Random schemes
-🌍 Bilingual Interface — Ukrainian 🇺🇦 & English support
 🔒 Color Locking — Lock your favorite colors while regenerating the rest
 📱 Flexible Layout — Horizontal or vertical palette orientation
 🎯 Base Color Picker — Build palettes around any color you choose
