@@ -44,6 +44,6 @@ Whether you're building a brand, styling a website, or exploring color combinati
 Warm regards,
 Yuliya Kolesnikova
 
-P.S. Press the Spacebar or hit "🔄 Згенерувати / Generate" to discover endless color combinations — and don't forget to lock your favorites! 🎨🚀
+P.S. Press the Spacebar or hit "🔄 Generate" to discover endless color combinations — and don't forget to lock your favorites! 🎨🚀
 
 #ColorPalette #WebDevelopment #DesignTools #Ukraine #TechTools #Base44 #JavaScript #UIDesign #Productivity
