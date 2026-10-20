@@ -2,7 +2,7 @@
 <html lang="uk">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Генератор рапорту 30 / 50 / 100</title>
 
 <!-- ===== Metadata ===== -->
@@ -13,6 +13,9 @@
 <meta name="theme-color" content="#0c131b">
 <meta name="color-scheme" content="dark">
 <meta name="robots" content="noindex, nofollow">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 
 <!-- ===== Favicon (inline SVG) ===== -->
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cdefs%3E%3CclipPath id='c'%3E%3Crect width='64' height='64' rx='14'/%3E%3C/clipPath%3E%3C/defs%3E%3Cg clip-path='url(%23c)'%3E%3Crect width='64' height='32' fill='%230057b7'/%3E%3Crect y='32' width='64' height='32' fill='%23ffd500'/%3E%3C/g%3E%3Crect x='17' y='10' width='30' height='44' rx='4' fill='%23ffffff' stroke='%230c131b' stroke-width='3'/%3E%3Cpath d='M23 22h18M23 30h18M23 38h18M23 46h10' stroke='%230c131b' stroke-width='3' stroke-linecap='round'/%3E%3C/svg%3E">
@@ -25,30 +28,47 @@
 :root{
   --bg:#0c131b; --panel:#121c27; --card:#16212d; --card2:#1c2a39; --line:#263648;
   --txt:#e6edf3; --muted:#8aa0b6; --acc:#3fb37f; --acc2:#2f8fd8; --warn:#f0b429; --err:#ef5350;
-  --radius:14px;
+  --radius:14px; --hdrH:65px;
+  --safeB:env(safe-area-inset-bottom,0px);
 }
 *{box-sizing:border-box}
-html,body{margin:0;height:100%}
-body{font-family:"Segoe UI",Roboto,Arial,sans-serif;background:radial-gradient(circle at 15% -10%,#1b3550 0,var(--bg) 55%);color:var(--txt);display:flex;flex-direction:column}
-header{display:flex;align-items:center;gap:14px;padding:12px 22px;border-bottom:1px solid var(--line);background:rgba(12,19,27,.9);backdrop-filter:blur(8px);position:sticky;top:0;z-index:20;flex-wrap:wrap}
+html,body{margin:0;min-height:100%}
+body{font-family:"Segoe UI",Roboto,Arial,sans-serif;background:radial-gradient(circle at 15% -10%,#1b3550 0,var(--bg) 55%) fixed;color:var(--txt);display:flex;flex-direction:column;-webkit-text-size-adjust:100%}
+body.lock{overflow:hidden}
+
+/* ---------- header ---------- */
+header{display:flex;align-items:center;gap:14px;padding:12px 22px;border-bottom:1px solid var(--line);background:rgba(12,19,27,.92);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);position:sticky;top:0;z-index:30;min-height:var(--hdrH)}
 .logo{width:40px;height:40px;border-radius:11px;background:linear-gradient(180deg,#0057b7 0 50%,#ffd500 50% 100%);box-shadow:0 4px 14px rgba(0,0,0,.45);flex:none}
-header h1{font-size:18px;margin:0;letter-spacing:.2px}
+.brand{min-width:0}
+header h1{font-size:18px;margin:0;letter-spacing:.2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 header p{margin:2px 0 0;color:var(--muted);font-size:12px}
+.menuBtn{display:none;margin-left:auto}
 .actions{margin-left:auto;display:flex;gap:8px;flex-wrap:wrap}
-button{border:1px solid var(--line);border-radius:10px;padding:9px 14px;font-weight:600;font-size:13.5px;cursor:pointer;color:#fff;background:var(--card2);transition:transform .12s,filter .12s;display:inline-flex;align-items:center;gap:6px;white-space:nowrap}
+
+button{border:1px solid var(--line);border-radius:10px;padding:9px 14px;font-weight:600;font-size:13.5px;cursor:pointer;color:#fff;background:var(--card2);transition:transform .12s,filter .12s;display:inline-flex;align-items:center;justify-content:center;gap:6px;white-space:nowrap;font-family:inherit;-webkit-tap-highlight-color:transparent}
 button:hover{transform:translateY(-1px);filter:brightness(1.18)}
-button:active{transform:none}
+button:active{transform:none;filter:brightness(.95)}
+button:focus-visible{outline:2px solid var(--acc2);outline-offset:2px}
 button.sm{padding:5px 10px;font-size:12px;border-radius:8px}
 button:disabled{opacity:.45;cursor:not-allowed;transform:none;filter:none}
+button.icon{width:40px;height:40px;padding:0;font-size:18px}
 .b-xlsx{background:linear-gradient(135deg,#1e7e4f,#3fb37f);border:0}
 .b-pdf{background:linear-gradient(135deg,#a8241d,#ef5350);border:0}
 .b-ex{background:linear-gradient(135deg,#1f5fa0,#2f8fd8);border:0}
+.b-danger{background:linear-gradient(135deg,#a8241d,#ef5350);border:0}
+
+/* ---------- layout ---------- */
 .layout{display:grid;grid-template-columns:340px minmax(0,1fr);flex:1;min-height:0}
-aside{background:var(--panel);border-right:1px solid var(--line);padding:14px;overflow:auto;max-height:calc(100vh - 65px);position:sticky;top:65px}
-main{padding:18px 22px;overflow:auto;min-width:0}
-@media(max-width:1000px){.layout{grid-template-columns:1fr}aside{position:static;max-height:none;border-right:0;border-bottom:1px solid var(--line)}}
+aside{background:var(--panel);border-right:1px solid var(--line);padding:14px;overflow:auto;max-height:calc(100vh - var(--hdrH));position:sticky;top:var(--hdrH);overscroll-behavior:contain}
+.side-head{display:none;align-items:center;gap:10px;margin:0 0 12px}
+.side-head b{font-size:15px}
+.side-head button{margin-left:auto}
+.backdrop{display:none}
+main{padding:18px 22px;min-width:0}
+
+/* ---------- sidebar accordion ---------- */
 .acc{background:var(--card);border:1px solid var(--line);border-radius:12px;margin-bottom:10px;overflow:hidden}
-.acc>summary{list-style:none;cursor:pointer;padding:11px 14px;font-weight:600;font-size:13.5px;display:flex;align-items:center;gap:8px;user-select:none}
+.acc>summary{list-style:none;cursor:pointer;padding:12px 14px;font-weight:600;font-size:13.5px;display:flex;align-items:center;gap:8px;user-select:none}
 .acc>summary::-webkit-details-marker{display:none}
 .acc>summary::after{content:"▸";margin-left:auto;color:var(--muted);transition:transform .15s}
 .acc[open]>summary::after{transform:rotate(90deg)}
@@ -56,14 +76,15 @@ main{padding:18px 22px;overflow:auto;min-width:0}
 .acc .body{padding:0 14px 14px}
 label{display:block;font-size:11.5px;color:var(--muted);margin:10px 0 4px;text-transform:uppercase;letter-spacing:.4px}
 input,textarea,select{width:100%;background:#0b121a;color:var(--txt);border:1px solid var(--line);border-radius:8px;padding:8px 10px;font-size:13px;font-family:inherit}
-input[type=date],input[type=month]{color-scheme:dark}
+input[type=date],input[type=month]{color-scheme:dark;min-height:36px}
 input[type=range]{padding:0;accent-color:var(--acc2);background:transparent;border:0}
 textarea{resize:vertical}
 input:focus,textarea:focus{outline:none;border-color:var(--acc2);box-shadow:0 0 0 3px rgba(47,143,216,.2)}
 .row2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
-.chk{display:flex;align-items:center;gap:8px;margin-top:12px;font-size:13px;color:var(--txt);text-transform:none;letter-spacing:0}
-.chk input{width:auto;accent-color:var(--acc)}
-.side-foot{display:flex;gap:8px;margin-top:6px}
+.chk{display:flex;align-items:center;gap:8px;margin-top:12px;font-size:13px;color:var(--txt);text-transform:none;letter-spacing:0;cursor:pointer}
+.chk input{width:18px;height:18px;flex:none;accent-color:var(--acc)}
+.side-foot{display:flex;gap:8px;margin-top:6px;flex-wrap:wrap}
+
 /* ---------- signature box ---------- */
 .sigBox{position:relative;border:2px dashed var(--line);border-radius:10px;min-height:96px;display:grid;place-items:center;cursor:pointer;overflow:hidden;transition:border-color .15s,background .15s;
   background-color:#fff;background-image:linear-gradient(45deg,#e8e8e8 25%,transparent 25%),linear-gradient(-45deg,#e8e8e8 25%,transparent 25%),linear-gradient(45deg,transparent 75%,#e8e8e8 75%),linear-gradient(-45deg,transparent 75%,#e8e8e8 75%);
@@ -74,37 +95,40 @@ input:focus,textarea:focus{outline:none;border-color:var(--acc2);box-shadow:0 0 
 .sigBox .ph{color:var(--muted);font-size:12px;text-align:center;padding:10px;line-height:1.5}
 .sigBox.has .ph{display:none}
 .sigBox:not(.has) img{display:none}
-.sigTools{display:flex;gap:8px;margin-top:8px;align-items:center}
+.sigTools{display:flex;gap:8px;margin-top:8px;align-items:center;flex-wrap:wrap}
 .sigTools .info{margin-left:auto;font-size:11px;color:var(--muted)}
 .rng{display:flex;align-items:center;gap:8px}
 .rng span{font-size:12px;color:var(--muted);min-width:48px;text-align:right;font-variant-numeric:tabular-nums}
+
 /* ---------- cards ---------- */
 .card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:16px 18px;box-shadow:0 6px 24px rgba(0,0,0,.22);margin-bottom:16px}
-.card-h{display:flex;align-items:center;gap:10px;margin:0 0 12px}
+.card-h{display:flex;align-items:center;gap:10px;margin:0 0 12px;flex-wrap:wrap}
 .card-h h2{font-size:15px;margin:0}
 .card-h .dot{width:9px;height:9px;border-radius:50%;background:var(--acc)}
-.card-h .r{margin-left:auto;display:flex;gap:8px;align-items:center}
+.card-h .r{margin-left:auto;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
 .areas{display:grid;grid-template-columns:1fr 1fr;gap:16px}
-@media(max-width:900px){.areas{grid-template-columns:1fr}}
 .area-h{display:flex;align-items:center;gap:8px;margin-bottom:6px}
 .area-h b{font-size:13px}
-.badge{font-size:11px;padding:2px 8px;border-radius:20px;background:var(--card2);border:1px solid var(--line);color:var(--muted)}
+.badge{font-size:11px;padding:2px 8px;border-radius:20px;background:var(--card2);border:1px solid var(--line);color:var(--muted);white-space:nowrap}
 .area-h .badge{margin-left:auto}
 .areas textarea{min-height:250px;font-family:Consolas,"Courier New",monospace;font-size:12.5px;line-height:1.55;white-space:pre;overflow-x:auto}
 .help{font-size:12px;color:var(--muted);line-height:1.7;margin-top:12px;padding:10px 12px;background:#0f1822;border-radius:10px;border:1px dashed var(--line)}
-.help code{background:#0b121a;padding:1px 6px;border-radius:5px;color:#9fd3ff;font-size:11.5px}
+.help code{background:#0b121a;padding:1px 6px;border-radius:5px;color:#9fd3ff;font-size:11.5px;word-break:break-word}
+
+/* ---------- stats ---------- */
 .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px}
-@media(max-width:900px){.stats{grid-template-columns:repeat(2,1fr)}}
-.stat{background:linear-gradient(160deg,var(--card2),var(--card));border:1px solid var(--line);border-radius:12px;padding:12px 14px;display:flex;align-items:center;gap:12px}
-.stat .i{width:38px;height:38px;border-radius:10px;display:grid;place-items:center;font-size:18px;background:rgba(63,179,127,.15)}
+.stat{background:linear-gradient(160deg,var(--card2),var(--card));border:1px solid var(--line);border-radius:12px;padding:12px 14px;display:flex;align-items:center;gap:12px;min-width:0}
+.stat .i{width:38px;height:38px;border-radius:10px;display:grid;place-items:center;font-size:18px;background:rgba(63,179,127,.15);flex:none}
 .stat:nth-child(2) .i{background:rgba(239,83,80,.15)}
 .stat:nth-child(3) .i{background:rgba(47,143,216,.15)}
 .stat:nth-child(4) .i{background:rgba(240,180,41,.15)}
-.stat b{display:block;font-size:20px}
+.stat b{display:block;font-size:20px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .stat span{font-size:11.5px;color:var(--muted)}
-.tblWrap{overflow:auto;max-height:340px;border-radius:10px;border:1px solid var(--line)}
+
+/* ---------- parsed table ---------- */
+.tblWrap{overflow:auto;max-height:340px;border-radius:10px;border:1px solid var(--line);-webkit-overflow-scrolling:touch}
 table.parsed{border-collapse:collapse;width:100%;font-size:12.5px}
-table.parsed th{position:sticky;top:0;background:var(--card2);text-align:left;font-weight:600;color:var(--muted);font-size:11.5px;text-transform:uppercase;letter-spacing:.3px}
+table.parsed th{position:sticky;top:0;background:var(--card2);text-align:left;font-weight:600;color:var(--muted);font-size:11.5px;text-transform:uppercase;letter-spacing:.3px;z-index:1}
 table.parsed th,table.parsed td{padding:6px 9px;border-bottom:1px solid var(--line);vertical-align:top}
 table.parsed td.n{text-align:center;font-variant-numeric:tabular-nums}
 table.parsed td.note{white-space:pre-line;color:var(--muted);font-size:11.5px}
@@ -112,6 +136,8 @@ table.parsed tr.grp td{background:#101a24;color:var(--acc2);font-weight:600}
 .st-ok{color:var(--acc)} .st-w{color:var(--warn)} .st-e{color:var(--err)}
 .wmsg{font-size:11px;color:var(--warn)} .wmsg.e{color:var(--err)}
 .empty{color:var(--muted);text-align:center;padding:16px!important}
+
+/* ---------- preview ---------- */
 .zoom{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--muted)}
 .zoom input{width:120px}
 .paperWrap{background:#55616d;border-radius:12px;padding:18px;overflow:hidden}
@@ -130,41 +156,123 @@ table.parsed tr.grp td{background:#101a24;color:var(--acc2);font-weight:600}
 .paper .sign .sg{width:24%;display:flex;justify-content:center;align-items:flex-end;min-height:20px}
 .paper .sign .sg img{display:block}
 .paper .sign .nm{margin-left:2%}
-.toast{position:fixed;bottom:22px;right:22px;background:var(--card2);border:1px solid var(--acc);padding:12px 18px;border-radius:10px;opacity:0;transform:translateY(10px);transition:.25s;pointer-events:none;z-index:50;box-shadow:0 8px 24px rgba(0,0,0,.4)}
+
+/* ---------- toast ---------- */
+.toast{position:fixed;bottom:calc(22px + var(--safeB));right:22px;max-width:calc(100% - 44px);background:var(--card2);border:1px solid var(--acc);padding:12px 18px;border-radius:10px;opacity:0;transform:translateY(10px);transition:.25s;pointer-events:none;z-index:70;box-shadow:0 8px 24px rgba(0,0,0,.4);font-size:14px}
 .toast.show{opacity:1;transform:none}
 .toast.err{border-color:var(--err)}
+
+/* ---------- modal ---------- */
+.modal{position:fixed;inset:0;z-index:80;display:grid;place-items:center;padding:16px;background:rgba(5,10,15,.62);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);opacity:0;transition:opacity .18s}
+.modal[hidden]{display:none}
+.modal.show{opacity:1}
+.modal-box{width:min(420px,100%);background:var(--card);border:1px solid var(--line);border-radius:16px;padding:22px 22px 18px;box-shadow:0 20px 60px rgba(0,0,0,.55);transform:translateY(12px) scale(.97);transition:transform .18s;text-align:center}
+.modal.show .modal-box{transform:none}
+.m-ic{width:54px;height:54px;border-radius:50%;margin:0 auto 12px;display:grid;place-items:center;font-size:26px;background:rgba(240,180,41,.14)}
+.m-ic.danger{background:rgba(239,83,80,.15)}
+.m-ic.info{background:rgba(47,143,216,.15)}
+.modal-box h3{margin:0 0 8px;font-size:17px}
+.modal-box p{margin:0 0 18px;color:var(--muted);font-size:14px;line-height:1.55;white-space:pre-line}
+.m-actions{display:flex;gap:10px;justify-content:center}
+.m-actions button{flex:1;max-width:180px;padding:11px 14px;font-size:14px}
+
+/* ================= RESPONSIVE ================= */
+@media (max-width:1100px){
+  .stats{grid-template-columns:repeat(2,1fr)}
+}
+@media (max-width:1000px){
+  .layout{grid-template-columns:1fr}
+  .menuBtn{display:inline-flex}
+  .actions{margin-left:0}
+  aside{position:fixed;top:0;left:0;bottom:0;width:min(370px,90vw);max-height:none;z-index:60;transform:translateX(-105%);transition:transform .25s ease;box-shadow:12px 0 40px rgba(0,0,0,.5);padding-bottom:calc(14px + var(--safeB))}
+  body.side-open aside{transform:none}
+  .side-head{display:flex}
+  .backdrop{display:block;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:55;opacity:0;pointer-events:none;transition:opacity .25s}
+  body.side-open .backdrop{opacity:1;pointer-events:auto}
+  .areas{grid-template-columns:1fr}
+}
+@media (max-width:640px){
+  :root{--hdrH:56px}
+  header{padding:8px 12px;gap:10px}
+  .logo{width:34px;height:34px;border-radius:9px}
+  header h1{font-size:15px}
+  header p{display:none}
+  /* нижня панель дій */
+  .actions{position:fixed;left:0;right:0;bottom:0;z-index:50;display:grid;grid-template-columns:repeat(4,1fr);gap:6px;padding:8px 8px calc(8px + var(--safeB));background:rgba(12,19,27,.96);border-top:1px solid var(--line);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
+  .actions button{flex-direction:column;gap:2px;padding:7px 4px;font-size:11px;border-radius:10px;min-height:50px}
+  .actions button .ic{font-size:18px}
+  main{padding:12px 10px calc(84px + var(--safeB))}
+  .card{padding:12px;border-radius:12px;margin-bottom:12px}
+  .stats{gap:8px;margin-bottom:12px}
+  .stat{padding:10px;gap:8px}
+  .stat .i{width:32px;height:32px;font-size:15px}
+  .stat b{font-size:17px}
+  .stat span{font-size:10.5px}
+  input,textarea,select{font-size:16px}           /* iOS не збільшує сторінку */
+  .areas textarea{min-height:190px;font-size:14px}
+  .help{font-size:11.5px}
+  .zoom input{width:90px}
+  .paperWrap{padding:8px;border-radius:10px}
+  .toast{left:12px;right:12px;max-width:none;bottom:calc(76px + var(--safeB));text-align:center}
+  /* таблиця розбору → картки */
+  .tblWrap{max-height:none;border:0}
+  table.parsed thead{display:none}
+  table.parsed,table.parsed tbody,table.parsed tr,table.parsed td{display:block;width:100%}
+  table.parsed tr{border:1px solid var(--line);border-radius:10px;margin-bottom:8px;padding:8px 10px;background:#121c27}
+  table.parsed tr.grp{border:0;background:none;padding:6px 2px;margin:6px 0 4px}
+  table.parsed tr.grp td{background:none;padding:0}
+  table.parsed td{border:0;padding:3px 0;display:flex;gap:10px;align-items:flex-start}
+  table.parsed td.n{text-align:left}
+  table.parsed td[data-label]::before{content:attr(data-label);flex:none;width:78px;color:var(--muted);font-size:10.5px;text-transform:uppercase;letter-spacing:.3px;padding-top:2px}
+  table.parsed td.st{flex-direction:column;gap:2px}
+  table.parsed td.st::before{display:none}
+  .modal{align-items:end;padding:0}
+  .modal-box{width:100%;border-radius:18px 18px 0 0;padding:22px 18px calc(18px + var(--safeB));transform:translateY(40px)}
+}
+@media (max-width:380px){
+  .stats{grid-template-columns:1fr 1fr}
+  .stat .i{display:none}
+  .row2{grid-template-columns:1fr}
+}
+@media (hover:none){
+  button:hover{transform:none;filter:none}
+}
 </style>
 </head>
 <body>
 <header>
   <div class="logo"></div>
-  <div>
+  <div class="brand">
     <h1>Генератор рапорту 30 / 50 / 100</h1>
     <p>Додаткова винагорода згідно з наказом МВС №726 та ПКМУ №168</p>
   </div>
+  <button class="icon menuBtn" id="menuBtn" aria-label="Налаштування" title="Налаштування">☰</button>
   <div class="actions">
-    <button class="b-ex" id="btnExample">📋 Приклад</button>
-    <button id="btnClear">🧹 Очистити списки</button>
-    <button class="b-xlsx" id="btnXlsx">⬇ XLSX</button>
-    <button class="b-pdf" id="btnPdf">⬇ PDF</button>
+    <button class="b-ex" id="btnExample"><span class="ic">📋</span><span class="lbl">Приклад</span></button>
+    <button id="btnClear"><span class="ic">🧹</span><span class="lbl">Очистити</span></button>
+    <button class="b-xlsx" id="btnXlsx"><span class="ic">⬇</span><span class="lbl">XLSX</span></button>
+    <button class="b-pdf" id="btnPdf"><span class="ic">⬇</span><span class="lbl">PDF</span></button>
   </div>
 </header>
 
 <div class="layout">
-  <aside>
+  <div class="backdrop" id="backdrop"></div>
+  <aside id="side" aria-label="Налаштування">
+    <div class="side-head"><b>⚙️ Налаштування</b><button class="icon" id="sideClose" aria-label="Закрити">✕</button></div>
+
     <details class="acc" open>
       <summary><span class="ic">📅</span>Звітний період</summary>
       <div class="body">
-        <label>Місяць</label>
+        <label for="month">Місяць</label>
         <input type="month" id="month" data-p>
         <div class="row2">
-          <div><label>З</label><input type="date" id="pFrom" data-p></div>
-          <div><label>По</label><input type="date" id="pTo" data-p></div>
+          <div><label for="pFrom">З</label><input type="date" id="pFrom" data-p></div>
+          <div><label for="pTo">По</label><input type="date" id="pTo" data-p></div>
         </div>
         <label class="chk"><input type="checkbox" id="g30on" data-p> Період 30 000 для всіх за замовчуванням</label>
         <div class="row2">
-          <div><label>30 000 з</label><input type="date" id="g30From" data-p></div>
-          <div><label>30 000 по</label><input type="date" id="g30To" data-p></div>
+          <div><label for="g30From">30 000 з</label><input type="date" id="g30From" data-p></div>
+          <div><label for="g30To">30 000 по</label><input type="date" id="g30To" data-p></div>
         </div>
         <label class="chk"><input type="checkbox" id="autoNote" data-p checked> Автоматична примітка про ВДП</label>
         <label class="chk"><input type="checkbox" id="repeatHdr" data-p checked> Повторювати шапку таблиці (PDF / друк XLSX)</label>
@@ -179,11 +287,11 @@ table.parsed tr.grp td{background:#101a24;color:var(--acc2);font-weight:600}
     <details class="acc">
       <summary><span class="ic">📄</span>Підстави</summary>
       <div class="body">
-        <label>Підстава (до 100 000)</label>
+        <label for="basis100">Підстава (до 100 000)</label>
         <textarea id="basis100" rows="7" data-p></textarea>
-        <label>Підстава (до 30 000)</label>
+        <label for="basis30">Підстава (до 30 000)</label>
         <textarea id="basis30" rows="4" data-p></textarea>
-        <label>Орган ВУ (до 50 000)</label>
+        <label for="organ">Орган ВУ (до 50 000)</label>
         <input id="organ" data-p>
       </div>
     </details>
@@ -191,11 +299,11 @@ table.parsed tr.grp td{background:#101a24;color:var(--acc2);font-weight:600}
     <details class="acc">
       <summary><span class="ic">✍️</span>Підпис</summary>
       <div class="body">
-        <label>Посада</label>
+        <label for="signPos">Посада</label>
         <textarea id="signPos" rows="5" data-p></textarea>
         <div class="row2">
-          <div><label>Звання</label><input id="signRank" data-p></div>
-          <div><label>Ім'я ПРІЗВИЩЕ</label><input id="signName" data-p></div>
+          <div><label for="signRank">Звання</label><input id="signRank" data-p></div>
+          <div><label for="signName">Ім'я ПРІЗВИЩЕ</label><input id="signName" data-p></div>
         </div>
 
         <label>Зображення підпису</label>
@@ -211,9 +319,9 @@ table.parsed tr.grp td{background:#101a24;color:var(--acc2);font-weight:600}
         </div>
         <label class="chk"><input type="checkbox" id="sigOn" data-p checked> Додавати підпис у файли</label>
         <label class="chk"><input type="checkbox" id="sigNoBg" data-p checked> Прибрати білий фон</label>
-        <label>Ширина підпису</label>
+        <label for="sigW">Ширина підпису</label>
         <div class="rng"><input type="range" id="sigW" min="50" max="280" step="5" value="130" data-p><span id="sigWv">130 px</span></div>
-        <label>Зсув по вертикалі</label>
+        <label for="sigDy">Зсув по вертикалі</label>
         <div class="rng"><input type="range" id="sigDy" min="-40" max="40" step="2" value="0" data-p><span id="sigDyv">0 px</span></div>
       </div>
     </details>
@@ -236,15 +344,15 @@ table.parsed tr.grp td{background:#101a24;color:var(--acc2);font-weight:600}
       <div class="areas">
         <div>
           <div class="area-h"><b>1) Військовослужбовці підрозділу</b>
-            <button class="sm" data-tpl="mainList" title="Додати шаблон рядка">＋</button>
+            <button class="sm" data-tpl="mainList" title="Додати шаблон рядка" aria-label="Додати шаблон рядка">＋</button>
             <span class="badge" id="cntMain">0</span></div>
-          <textarea id="mainList" data-p spellcheck="false" placeholder="лейтенант МАЛИШ Роман Костянтинович ВДП 15.06.2026 29.06.2026"></textarea>
+          <textarea id="mainList" data-p spellcheck="false" autocapitalize="off" autocomplete="off" placeholder="лейтенант МАЛИШ Роман Костянтинович ВДП 15.06.2026 29.06.2026"></textarea>
         </div>
         <div>
           <div class="area-h"><b>4) Приряджені з інших підрозділів</b>
-            <button class="sm" data-tpl="addList" title="Додати шаблон рядка">＋</button>
+            <button class="sm" data-tpl="addList" title="Додати шаблон рядка" aria-label="Додати шаблон рядка">＋</button>
             <span class="badge" id="cntAdd">0</span></div>
-          <textarea id="addList" data-p spellcheck="false" placeholder="штаб-сержант КІНДРАТЕНКО Євгеній Володимирович [прим:Вибув 20.06.2026]"></textarea>
+          <textarea id="addList" data-p spellcheck="false" autocapitalize="off" autocomplete="off" placeholder="штаб-сержант КІНДРАТЕНКО Євгеній Володимирович [прим:Вибув 20.06.2026]"></textarea>
         </div>
       </div>
       <div class="help">
@@ -270,13 +378,26 @@ table.parsed tr.grp td{background:#101a24;color:var(--acc2);font-weight:600}
 
     <div class="card">
       <div class="card-h"><span class="dot" style="background:var(--acc2)"></span><h2>Попередній перегляд</h2>
-        <div class="r zoom">Масштаб <input type="range" id="zoom" min="40" max="150" value="100"><span id="zoomVal">авто</span>
+        <div class="r zoom">Масштаб <input type="range" id="zoom" min="20" max="150" value="100" aria-label="Масштаб"><span id="zoomVal">авто</span>
           <button class="sm" id="zoomFit">↔ По ширині</button></div></div>
       <div class="paperWrap" id="paperWrap"><div class="paperScale" id="paperScale"><div class="paper" id="preview"></div></div></div>
     </div>
   </main>
 </div>
-<div class="toast" id="toast"></div>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<div class="modal" id="modal" hidden>
+  <div class="modal-box" role="dialog" aria-modal="true" aria-labelledby="mTitle" aria-describedby="mText">
+    <div class="m-ic" id="mIcon">⚠️</div>
+    <h3 id="mTitle"></h3>
+    <p id="mText"></p>
+    <div class="m-actions">
+      <button id="mCancel">Скасувати</button>
+      <button id="mOk" class="b-ex">OK</button>
+    </div>
+  </div>
+</div>
 
 <script>
 /* ================== CONSTANTS ================== */
@@ -333,6 +454,58 @@ const EXAMPLE_ADD = `штаб-сержант КІНДРАТЕНКО Євгені
 старший солдат КІКТЕНКО Олексій Миколайович [100:01.06.2026-19.06.2026] [прим:Вибув 20.06.2026 згідно ОС-589 від 18.05.2026]
 старший солдат БЄЛКІН Олександр Миколайович [30:01.06.2026-05.06.2026] [прим:11 ПРИКЗ (1 приккшр)]
 молодший сержант МАШТАЛЕР Сергій Олександрович [100:01.06.2026-19.06.2026] [прим:Вибув 20.06.2026 згідно ОС-589 від 18.05.2026]`;
+
+/* ================== POPUP (замість confirm/alert) ================== */
+let modalTimer = null;
+function popup({ title, text = '', icon = '⚠️', kind = 'warn', ok = 'OK', cancel = 'Скасувати', danger = false }) {
+  return new Promise(resolve => {
+    const m = $('modal'), bOk = $('mOk'), bC = $('mCancel'), ic = $('mIcon');
+    clearTimeout(modalTimer);
+    ic.textContent = icon;
+    ic.className = 'm-ic' + (kind === 'danger' ? ' danger' : kind === 'info' ? ' info' : '');
+    $('mTitle').textContent = title;
+    $('mText').textContent = text;
+    $('mText').hidden = !text;
+    bOk.textContent = ok;
+    bOk.className = danger ? 'b-danger' : 'b-ex';
+    bC.hidden = !cancel;
+    if (cancel) bC.textContent = cancel;
+    const prevFocus = document.activeElement;
+    m.hidden = false;
+    document.body.classList.add('lock');
+    requestAnimationFrame(() => m.classList.add('show'));
+
+    const close = val => {
+      document.removeEventListener('keydown', onKey, true);
+      bOk.onclick = bC.onclick = m.onclick = null;
+      m.classList.remove('show');
+      modalTimer = setTimeout(() => {
+        m.hidden = true;
+        if (!document.body.classList.contains('side-open')) document.body.classList.remove('lock');
+      }, 180);
+      if (prevFocus && prevFocus.focus) prevFocus.focus({ preventScroll: true });
+      resolve(val);
+    };
+    const onKey = e => {
+      if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); close(false); }
+      else if (e.key === 'Enter') { e.preventDefault(); e.stopPropagation(); close(document.activeElement === bC ? false : true); }
+      else if (e.key === 'Tab') {
+        const btns = [bC, bOk].filter(b => !b.hidden);
+        const i = btns.indexOf(document.activeElement);
+        e.preventDefault();
+        btns[(i + (e.shiftKey ? -1 : 1) + btns.length) % btns.length].focus();
+      }
+    };
+    document.addEventListener('keydown', onKey, true);
+    bOk.onclick = () => close(true);
+    bC.onclick = () => close(false);
+    m.onclick = e => { if (e.target === m) close(false); };
+    setTimeout(() => bOk.focus({ preventScroll: true }), 40);
+  });
+}
+const confirmBox = (title, text, opts = {}) => popup({ title, text, ...opts });
+const alertBox = (title, text, opts = {}) => popup({ title, text, icon: 'ℹ️', kind: 'info', cancel: null, ok: 'Зрозуміло', ...opts });
+const errorBox = (title, text) => popup({ title, text, icon: '⛔', kind: 'danger', cancel: null, ok: 'Закрити' });
 
 /* ================== DATE UTILS ================== */
 const pad = n => String(n).padStart(2, '0');
@@ -428,7 +601,7 @@ const loadImage = url => new Promise((res, rej) => { const i = new Image(); i.on
 const readFile = f => new Promise((res, rej) => { const r = new FileReader(); r.onload = () => res(r.result); r.onerror = () => rej(r.error); r.readAsDataURL(f); });
 
 async function importSig(file) {
-  if (!file || !/^image\//.test(file.type)) return toast('Оберіть файл зображення', true);
+  if (!file || !/^image\//.test(file.type)) return errorBox('Невірний файл', 'Оберіть файл зображення у форматі PNG, JPG або WEBP.');
   try {
     const img = await loadImage(await readFile(file));
     const MAX = 800;
@@ -438,11 +611,13 @@ async function importSig(file) {
     cv.height = Math.max(1, Math.round(img.naturalHeight * k));
     cv.getContext('2d').drawImage(img, 0, 0, cv.width, cv.height);
     sigSrc = cv.toDataURL('image/png');
-    try { localStorage.setItem(LS_SIG, sigSrc); } catch { toast('Підпис завеликий для збереження в браузері — буде діяти до перезавантаження', true); }
+    let stored = true;
+    try { localStorage.setItem(LS_SIG, sigSrc); } catch { stored = false; }
     await processSig();
     update();
-    toast('Підпис завантажено ✔');
-  } catch (e) { toast(e.message, true); }
+    if (stored) toast('Підпис завантажено ✔');
+    else alertBox('Підпис не збережено', 'Зображення завелике для збереження в браузері. Підпис діятиме до перезавантаження сторінки.');
+  } catch (e) { errorBox('Помилка зображення', e.message); }
 }
 
 async function processSig() {
@@ -459,7 +634,6 @@ async function processSig() {
     const i = (y * w + x) * 4;
     const lum = 0.299 * d[i] + 0.587 * d[i + 1] + 0.114 * d[i + 2];
     if (noBg) {
-      // білий → прозорий, світло-сірі краї — напівпрозорі
       if (lum >= 230) d[i + 3] = 0;
       else if (lum > 170) d[i + 3] = Math.min(d[i + 3], Math.round((230 - lum) / 60 * 255));
     }
@@ -467,7 +641,6 @@ async function processSig() {
     if (ink) { if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y; }
   }
   ctx.putImageData(id, 0, 0);
-  // автообрізка порожніх полів
   let out = cv;
   if (x1 >= x0 && y1 >= y0) {
     const m = 4;
@@ -546,9 +719,11 @@ function buildModel() {
       c.note];
   });
   const mainRows = rowify(main), addRows = rowify(add);
+  const all = [...main, ...add];
+  const errors = all.filter(p => p.warns.some(w => w.e)).length;
   const d0 = ok ? new Date(S.period[0] * DAY) : new Date();
   return {
-    S, ok, main, add, mainRows, addRows, t100, t30, t50, sum,
+    S, ok, main, add, mainRows, addRows, t100, t30, t50, sum, errors,
     monthLoc: MONTHS_LOC[d0.getUTCMonth()], year: d0.getUTCFullYear(), mm: pad(d0.getUTCMonth() + 1)
   };
 }
@@ -556,7 +731,7 @@ function buildModel() {
 /* ================== PREVIEW ================== */
 const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 const PREV_COLS = [2.2, 6, 9, 5.6, 5.6, 3.4, 10.5, 5, 5, 3.4, 5, 5.6, 5.6, 3.4, 18, 9];
-const PREV_K = 1400 / 1123;   // ширина «паперу» прев'ю / ширина A4 альбомної в px @96dpi
+const PREV_K = 1400 / 1123;
 
 function htmlHeader(ovu) {
   return `<tr><th rowspan="3">№ з/п</th><th rowspan="3">Військове звання</th><th rowspan="3">ПІП</th>
@@ -586,11 +761,11 @@ function renderParsed(M) {
       const c = p.calc || { r30: { n: 0 }, r50: { n: 0 }, r100: { n: 0 }, note: '' };
       const hasE = p.warns.some(w => w.e), hasW = p.warns.length > 0;
       warns += p.warns.length;
-      const st = hasE ? '<span class="st-e">✖ помилка</span>' : hasW ? '<span class="st-w">⚠ увага</span>' : '<span class="st-ok">✔</span>';
+      const st = hasE ? '<span class="st-e">✖ помилка</span>' : hasW ? '<span class="st-w">⚠ увага</span>' : '<span class="st-ok">✔ гаразд</span>';
       const msgs = p.warns.map(w => `<div class="wmsg ${w.e ? 'e' : ''}">рядок ${p.ln}: ${esc(w.t)}</div>`).join('');
-      tb.push(`<tr><td class="n">${i + 1}</td><td>${esc(p.rank)}</td><td>${esc(p.name)}</td>
-        <td class="n">${c.r30.n || '–'}</td><td class="n">${c.r50.n || '–'}</td><td class="n"><b>${c.r100.n || '–'}</b></td>
-        <td class="note">${esc(c.note)}</td><td>${st}${msgs}</td></tr>`);
+      tb.push(`<tr><td class="n" data-label="№">${i + 1}</td><td data-label="Звання">${esc(p.rank)}</td><td data-label="ПІП"><b>${esc(p.name)}</b></td>
+        <td class="n" data-label="30 000">${c.r30.n || '–'}</td><td class="n" data-label="50 000">${c.r50.n || '–'}</td><td class="n" data-label="100 000"><b>${c.r100.n || '–'}</b></td>
+        <td class="note" data-label="Примітка">${esc(c.note) || '–'}</td><td class="st">${st}${msgs}</td></tr>`);
     });
   };
   grp('1) Військовослужбовці підрозділу', M.main);
@@ -642,7 +817,8 @@ function render() {
 let zoomAuto = true;
 function fitPreview() {
   const wrap = $('paperWrap'), sc = $('paperScale'), paper = $('preview');
-  const avail = wrap.clientWidth - 36;
+  const cs = getComputedStyle(wrap);
+  const avail = wrap.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight);
   const fit = Math.min(1, avail / paper.offsetWidth);
   const z = zoomAuto ? fit : (+$('zoom').value / 100);
   sc.style.transform = `scale(${z})`;
@@ -655,7 +831,7 @@ function fitPreview() {
 
 /* ================== XLSX: TEXT MEASUREMENT ================== */
 const RAPORT_XLSX_TUNE = {
-  widthK: 1.16,     // запас на різницю рендерингу Excel/браузера
+  widthK: 1.20,     // запас на різницю рендерингу Excel/браузера
   lineK: 1.30,      // міжрядковий інтервал Times New Roman
   padPx: 7,
   padPt: 4,
@@ -701,10 +877,30 @@ function needH(text, c1, c2, sizePt, bold) {
   return Math.min(T.maxRow, lines * sizePt * T.lineK + T.padPt);
 }
 
+/* ================== PRE-EXPORT CHECK ================== */
+async function preExport(kind) {
+  const libOk = kind === 'xlsx' ? typeof ExcelJS !== 'undefined' : typeof pdfMake !== 'undefined';
+  if (!libOk) {
+    await errorBox('Бібліотеку не завантажено', `Не вдалося завантажити модуль ${kind.toUpperCase()}. Перевірте підключення до інтернету та оновіть сторінку.`);
+    return null;
+  }
+  const M = buildModel();
+  if (!M.ok) { await errorBox('Некоректний період', 'Вкажіть правильні дати звітного періоду в налаштуваннях.'); return null; }
+  if (!M.main.length && !M.add.length) {
+    const go = await confirmBox('Списки порожні', 'Не додано жодного військовослужбовця. Сформувати порожній рапорт?', { ok: 'Сформувати' });
+    if (!go) return null;
+  }
+  if (M.errors) {
+    const go = await confirmBox('Є помилки в даних', `Рядків з по��илками: ${M.errors}. Перевірте блок «Розбір даних». Все одно сформувати ${kind.toUpperCase()}?`, { ok: 'Сформувати', cancel: 'Перевірити' });
+    if (!go) { document.querySelector('.tblWrap').scrollIntoView({ behavior: 'smooth', block: 'center' }); return null; }
+  }
+  return M;
+}
+
 /* ================== XLSX ================== */
 async function exportXlsx() {
-  if (typeof ExcelJS === 'undefined') return toast('ExcelJS не завантажено (перевірте інтернет)', true);
-  const M = buildModel(), S = M.S;
+  const M = await preExport('xlsx'); if (!M) return;
+  const S = M.S;
   const wb = new ExcelJS.Workbook(); wb.creator = 'Report 30/50/100';
   const ws = wb.addWorksheet('Рапорт', {
     pageSetup: { paperSize: 9, orientation: 'landscape', fitToPage: true, fitToWidth: 1, fitToHeight: 0, horizontalCentered: true,
@@ -728,15 +924,18 @@ async function exportXlsx() {
   const height = (r, h) => { const v = Math.min(RAPORT_XLSX_TUNE.maxRow, Math.max(h, 12)); ws.getRow(r).height = v; rowH[r] = v; };
 
   let r = 1;
+  /* --- адресат --- */
   for (const l of S.addressee.split('\n')) {
     mset(r, 10, r, 16, l, { h: 'left', size: FS.addr });
     height(r, Math.max(16, needH(l, 10, 16, FS.addr)));
     r++;
   }
   height(r, 8); r++;
+  /* --- заголовок --- */
   mset(r, 1, r, 16, 'Рапорт', { size: FS.title, color: 'FFFF0000' }); height(r, 20); r++;
   height(r, 6); r++;
 
+  /* --- абзаци --- */
   const para = txt => {
     const t = '      ' + txt;
     mset(r, 1, r, 16, t, { h: 'justify', v: 'top', size: FS.para });
@@ -748,6 +947,7 @@ async function exportXlsx() {
   para('  ' + T_100); para('  ' + T_50); para('  ' + T_30);
   height(r, 6); r++;
 
+  /* --- шапка таблиці --- */
   const hb = { border: true, size: FS.hdr };
   const header = ovu => {
     const r0 = r;
@@ -761,7 +961,7 @@ async function exportXlsx() {
 
     let h1 = Math.max(needH(H_BN, 4, 7, FS.hdr), needH(ovu, 8, 11, FS.hdr), needH(H_100, 12, 15, FS.hdr), 16);
     let h2 = Math.max(needH('до 30000', 4, 5, FS.hdr), 15);
-    let h3 = 15;
+    const h3 = 15;
     const need2 = Math.max(needH('Кількість діб', 6, 6, FS.hdr), needH(H_BASIS, 7, 7, FS.hdr),
       needH('Орган ВУ', 11, 11, FS.hdr), needH(H_BASIS, 15, 15, FS.hdr));
     if (h2 + h3 < need2) h2 = need2 - h3;
@@ -772,6 +972,7 @@ async function exportXlsx() {
     return r0;
   };
 
+  /* --- рядки даних --- */
   const colFont = i => (i === 6 || i === 14) ? FS.basis : (i === 15 ? FS.note : FS.data);
   const dataRows = rows => {
     if (!rows.length) rows = [Array(16).fill('')];
@@ -787,13 +988,15 @@ async function exportXlsx() {
     }
   };
 
+  /* --- розділи 2, 3 --- */
   const sectionTitle = t => { mset(r, 1, r, 16, t, { h: 'left', bold: true, size: FS.sec }); height(r, FS.sec * 1.7); r++; };
   const special = (title, mid) => {
     sectionTitle(title);
     set(r, 1, '№ з/п', hb); set(r, 2, 'Військове звання', hb); set(r, 3, 'ПІП', hb);
     mset(r, 4, r, 15, mid, hb); set(r, 16, 'Примітка', hb);
     height(r, Math.max(needH('Військове звання', 2, 2, FS.hdr), needH('№ з/п', 1, 1, FS.hdr), 18)); r++;
-    for (let c = 1; c <= 3; c++) set(r, c, null, hb); mset(r, 4, r, 15, null, hb); set(r, 16, null, hb); height(r, 16); r++;
+    for (let c = 1; c <= 3; c++) set(r, c, null, hb);
+    mset(r, 4, r, 15, null, hb); set(r, 16, null, hb); height(r, 16); r++;
   };
 
   const mainHdr = header(H_OVU_MAIN);
@@ -809,7 +1012,7 @@ async function exportXlsx() {
   const signStart = r;
   const signLines = [...S.signPos.split('\n'), S.signRank];
   signLines.forEach((l, i) => {
-    mset(r, 2, r, 5, l, { h: 'left', size: FS.sign });
+    mset(r, 2, r, 7, l, { h: 'left', size: FS.sign });
     if (i === signLines.length - 1) mset(r, 8, r, 11, S.signName, { h: 'left', size: FS.sign });
     height(r, Math.max(15, needH(l, 2, 7, FS.sign)));
     r++;
@@ -820,17 +1023,15 @@ async function exportXlsx() {
   if (sigActive(S)) {
     const { w, h } = sigSize(S);
     const imgId = wb.addImage({ base64: sig.data.split(',')[1], extension: 'png' });
-    // Нижній край підпису — на рівні нижньої межі рядка зі званням (+ зсув користувача)
     const ptToPx = 96 / 72;
-    let bottomPx = (rowH[rankRow] || 15) * ptToPx + S.sigDy;   // від верху рядка зі званням
-    let topPx = bottomPx - h;                                   // може бути від'ємним → піднімаємось вище
-    let row0 = rankRow - 1;                                     // 0-based індекс рядка зі званням
+    // нижній край підпису — по нижній межі рядка зі званням (+ зсув користувача)
+    let topPx = (rowH[rankRow] || 15) * ptToPx + S.sigDy - h;
+    let row0 = rankRow - 1;                                   // 0-based індекс рядка зі званням
     while (topPx < 0 && row0 > signStart - 2) {
       row0--;
       topPx += (rowH[row0 + 1] || 15) * ptToPx;
     }
     const rowFrac = Math.max(0, topPx) / ((rowH[row0 + 1] || 15) * ptToPx);
-    // по горизонталі — між посадою (стовп. B..G) і прізвищем (K..N): стовпець H (0-based 7)
     ws.addImage(imgId, { tl: { col: 5.15, row: row0 + Math.min(0.95, rowFrac) }, ext: { width: w, height: h }, editAs: 'oneCell' });
   }
 
@@ -847,9 +1048,9 @@ const PDF_MARGIN = [20, 22, 20, 26];
 const PDF_PAD = 2;
 const PDF_COLS = [16, 40, 62, 38, 38, 26, 78, 36, 36, 26, 36, 38, 38, 26, '*', 60];
 
-function exportPdf() {
-  if (typeof pdfMake === 'undefined') return toast('pdfmake не завантажено (перевірте інтернет)', true);
-  const M = buildModel(), S = M.S;
+async function exportPdf() {
+  const M = await preExport('pdf'); if (!M) return;
+  const S = M.S;
 
   const avail = 841.89 - PDF_MARGIN[0] - PDF_MARGIN[2];
   const fixed = PDF_COLS.filter(w => w !== '*').reduce((a, b) => a + b, 0);
@@ -890,28 +1091,23 @@ function exportPdf() {
     ...special('3) Щодо виплати військовослужбовцям, які безвісно відсутні, в полоні:', 'Дата обліку, як безвісно відсутній, в полоні')
   ];
   const addBody = [...header(H_OVU_ADD), ...data(M.addRows)];
-
   const para = t => ({ text: t, fontSize: 8, alignment: 'justify', leadingIndent: 20, margin: [0, 0, 0, 3] });
 
   /* --- блок підпису --- */
-  const SIGN_FS = 9.5, LINE_H = SIGN_FS * 1.05 * 1.17;   // висота рядка Roboto з lineHeight 1.05
-  const signLines = S.signPos.split('\n').length + 1;    // + звання
-  const blockH = signLines * LINE_H;
+  const SIGN_FS = 9.5, LINE_H = SIGN_FS * 1.05 * 1.17;
+  const signLineCount = S.signPos.split('\n').length + 1;   // + звання
+  const blockH = signLineCount * LINE_H;
   let sigCol = { width: 150, text: '' };
   let nameTop = blockH - LINE_H;
+  let textShift = 0;
   if (sigActive(S)) {
-    const { w, h } = sigSize(S);
-    const wPt = w * 0.75, hPt = h * 0.75;               // px → pt
-    const dy = S.sigDy * 0.75;
-    const imgBottom = blockH + dy;                      // низ підпису — по нижньому краю рядка зі званням
-    let top = imgBottom - hPt;
-    let shift = 0;
-    if (top < 0) { shift = -top; top = 0; }             // зображення вище за блок — зсуваємо текст вниз
+    const { w, h: hh } = sigSize(S);
+    const wPt = w * 0.75, hPt = hh * 0.75;
+    let top = blockH + S.sigDy * 0.75 - hPt;               // низ підпису — по рядку зі званням
+    if (top < 0) { textShift = -top; top = 0; }            // підпис вищий за блок — зсуваємо текст униз
     sigCol = { width: Math.max(150, wPt + 10), stack: [{ image: sig.data, width: wPt, alignment: 'center', margin: [0, top, 0, 0] }] };
-    nameTop += shift;
-    var textShift = shift;
+    nameTop += textShift;
   }
-  const shiftTxt = typeof textShift === 'number' ? textShift : 0;
 
   const dd = {
     pageSize: 'A4', pageOrientation: 'landscape', pageMargins: PDF_MARGIN,
@@ -935,7 +1131,7 @@ function exportPdf() {
       {
         unbreakable: true, margin: [30, 22, 0, 0],
         columns: [
-          { width: 260, text: S.signPos + '\n' + S.signRank, fontSize: SIGN_FS, margin: [0, shiftTxt, 0, 0] },
+          { width: 260, text: S.signPos + '\n' + S.signRank, fontSize: SIGN_FS, margin: [0, textShift, 0, 0] },
           sigCol,
           { width: '*', text: S.signName, fontSize: SIGN_FS, margin: [10, nameTop, 0, 0] }
         ]
@@ -994,6 +1190,33 @@ function setDefaults() {
 let rT;
 function update() { clearTimeout(rT); rT = setTimeout(() => { render(); save(); }, 150); }
 
+/* ================== DRAWER (мобільне меню налаштувань) ================== */
+const isDrawer = () => window.matchMedia('(max-width:1000px)').matches;
+const modalOpen = () => !$('modal').hidden;
+function openSide() { document.body.classList.add('side-open', 'lock'); setTimeout(() => $('sideClose').focus({ preventScroll: true }), 260); }
+function closeSide() {
+  if (!document.body.classList.contains('side-open')) return;
+  document.body.classList.remove('side-open');
+  if (!modalOpen()) document.body.classList.remove('lock');
+  $('menuBtn').focus({ preventScroll: true });
+}
+$('menuBtn').onclick = openSide;
+$('sideClose').onclick = closeSide;
+$('backdrop').onclick = closeSide;
+document.addEventListener('keydown', e => { if (e.key === 'Escape' && !modalOpen()) closeSide(); });
+window.matchMedia('(max-width:1000px)').addEventListener('change', e => { if (!e.matches) closeSide(); });
+// свайп вліво закриває меню
+(() => {
+  const side = $('side'); let x0 = null, y0 = null;
+  side.addEventListener('touchstart', e => { if (!isDrawer()) return; x0 = e.touches[0].clientX; y0 = e.touches[0].clientY; }, { passive: true });
+  side.addEventListener('touchmove', e => {
+    if (x0 == null) return;
+    const dx = e.touches[0].clientX - x0, dy = e.touches[0].clientY - y0;
+    if (dx < -70 && Math.abs(dy) < 50) { x0 = null; closeSide(); }
+  }, { passive: true });
+  side.addEventListener('touchend', () => { x0 = null; }, { passive: true });
+})();
+
 /* ================== INIT ================== */
 if (!load()) setDefaults();
 for (const k in DEFAULTS) if (!$(k).value && k !== 'organ') $(k).value = DEFAULTS[k];
@@ -1003,20 +1226,27 @@ if (!$('pFrom').value || !$('pTo').value) applyMonth();
 document.querySelectorAll('[data-p]').forEach(el => el.addEventListener('input', update));
 $('month').addEventListener('change', () => { applyMonth(); update(); });
 
-/* ---- кнопки верхньої панелі ---- */
-$('btnExample').onclick = () => {
+/* ---- кнопки дій ---- */
+$('btnExample').onclick = async () => {
+  if ($('mainList').value.trim() || $('addList').value.trim()) {
+    const ok = await confirmBox('Завантажити приклад?', 'Поточні списки особового складу та налаштування будуть замінені даними прикладу.', { ok: 'Завантажити' });
+    if (!ok) return;
+  }
   setDefaultTexts();
   $('month').value = '2026-06'; applyMonth();
   $('g30on').checked = false; $('autoNote').checked = true;
   $('mainList').value = EXAMPLE_MAIN; $('addList').value = EXAMPLE_ADD;
   update(); toast('Завантажено приклад з PDF');
 };
-$('btnClear').onclick = () => {
-  if (!confirm('Очистити списки особового складу?')) return;
-  $('mainList').value = ''; $('addList').value = ''; update();
+$('btnClear').onclick = async () => {
+  if (!$('mainList').value.trim() && !$('addList').value.trim()) return toast('Списки вже порожні');
+  const ok = await confirmBox('Очистити списки?', 'Обидва списки особового складу буде видалено. Цю дію не можна скасувати.', { icon: '🧹', kind: 'danger', ok: 'Очистити', danger: true });
+  if (!ok) return;
+  $('mainList').value = ''; $('addList').value = ''; update(); toast('Списки очищено');
 };
-$('btnReset').onclick = () => {
-  if (!confirm('Повернути стандартні адресата, підстави та підпис?')) return;
+$('btnReset').onclick = async () => {
+  const ok = await confirmBox('Стандартні налаштування', 'Повернути стандартні тексти адресата, підстав та підпису? Списки особового складу і зображення підпису залишаться.', { icon: '↺', ok: 'Повернути' });
+  if (!ok) return;
   setDefaultTexts(); update(); toast('Стандартні налаштування відновлено');
 };
 document.querySelectorAll('[data-tpl]').forEach(b => b.onclick = () => {
@@ -1027,15 +1257,15 @@ document.querySelectorAll('[data-tpl]').forEach(b => b.onclick = () => {
   ta.value = ta.value.replace(/\s*$/, '') + (ta.value.trim() ? '\n' : '') + tpl;
   ta.focus(); update();
 });
-$('btnXlsx').onclick = () => exportXlsx().catch(e => { console.error(e); toast('Помилка XLSX: ' + e.message, true); });
-$('btnPdf').onclick = () => { try { exportPdf(); } catch (e) { console.error(e); toast('Помилка PDF: ' + e.message, true); } };
+$('btnXlsx').onclick = () => exportXlsx().catch(e => { console.error(e); errorBox('Помилка формування XLSX', e.message); });
+$('btnPdf').onclick = () => exportPdf().catch(e => { console.error(e); errorBox('Помилка формування PDF', e.message); });
 
 /* ---- масштаб прев'ю ---- */
 $('zoom').addEventListener('input', () => { zoomAuto = false; fitPreview(); });
 $('zoomFit').onclick = () => { zoomAuto = true; fitPreview(); };
-window.addEventListener('resize', () => fitPreview());
+let rzT; window.addEventListener('resize', () => { clearTimeout(rzT); rzT = setTimeout(fitPreview, 80); });
 
-/* ---- підпис: вибір файлу, drag & drop, видалення, обробка ---- */
+/* ---- підпис ---- */
 const sigBox = $('sigBox'), sigFile = $('sigFile');
 sigBox.addEventListener('click', () => sigFile.click());
 $('sigPick').onclick = () => sigFile.click();
@@ -1043,16 +1273,15 @@ sigFile.addEventListener('change', () => { if (sigFile.files[0]) importSig(sigFi
 ['dragenter', 'dragover'].forEach(ev => sigBox.addEventListener(ev, e => { e.preventDefault(); sigBox.classList.add('drag'); }));
 ['dragleave', 'dragend', 'drop'].forEach(ev => sigBox.addEventListener(ev, e => { e.preventDefault(); sigBox.classList.remove('drag'); }));
 sigBox.addEventListener('drop', e => { const f = e.dataTransfer.files && e.dataTransfer.files[0]; if (f) importSig(f); });
-// вставка підпису з буфера обміну (Ctrl+V), коли відкрита панель підпису
 document.addEventListener('paste', e => {
   const item = [...(e.clipboardData?.items || [])].find(i => i.type.startsWith('image/'));
-  if (item && document.activeElement?.tagName !== 'TEXTAREA' && document.activeElement?.tagName !== 'INPUT') {
-    e.preventDefault(); importSig(item.getAsFile());
-  }
+  const tag = document.activeElement?.tagName;
+  if (item && tag !== 'TEXTAREA' && tag !== 'INPUT') { e.preventDefault(); importSig(item.getAsFile()); }
 });
-$('sigDel').onclick = e => {
+$('sigDel').onclick = async e => {
   e.stopPropagation();
-  if (!confirm('Видалити зображення підпису?')) return;
+  const ok = await confirmBox('Видалити підпис?', 'Зображення підпису буде видалено з цього браузера.', { icon: '🗑', kind: 'danger', ok: 'Видалити', danger: true });
+  if (!ok) return;
   sigSrc = null; sig = null;
   try { localStorage.removeItem(LS_SIG); } catch {}
   refreshSigUi(); update(); toast('Підпис видалено');
