@@ -1,0 +1,734 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Bewerbungs-Generator</title>
+<style>
+:root{--bg:#f3f5fb;--ink:#1b2234;--muted:#6a7389;--line:#dde2ee;--accent:#2f5bea;--danger:#d23b3b;--ok:#1f9d63}
+*{box-sizing:border-box}
+html,body{margin:0;-webkit-text-size-adjust:100%}
+body{font:15px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;background:var(--bg);color:var(--ink);overflow-x:hidden}
+button,input,select,textarea{font:inherit;color:inherit}
+.top{position:sticky;top:0;z-index:20;display:flex;justify-content:space-between;align-items:center;gap:10px;padding:8px 16px;background:rgba(255,255,255,.94);backdrop-filter:blur(8px);border-bottom:1px solid var(--line)}
+.brand{display:flex;gap:10px;align-items:center;min-width:0}
+.logo{flex:none;width:36px;height:36px;border-radius:10px;background:linear-gradient(135deg,#2f5bea,#7a4bff);color:#fff;display:grid;place-items:center;font-weight:700;font-size:19px}
+.brand b{display:block;font-size:16px;white-space:nowrap}
+.brand small{color:var(--muted);display:block;font-size:12.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.top-actions{display:flex;gap:6px;align-items:center;flex:none}
+.layout{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:20px;max-width:1500px;margin:0 auto;padding:18px}
+.layout>*{min-width:0}
+.card{background:#fff;border:1px solid var(--line);border-radius:14px;padding:16px;margin-bottom:14px}
+.card h2{margin:0 0 12px;font-size:16px;display:flex;align-items:center;gap:8px}
+.card h2 .n{flex:none;width:24px;height:24px;border-radius:50%;background:var(--accent);color:#fff;font-size:13px;display:grid;place-items:center}
+.hint{color:var(--muted);font-size:13px;margin:-6px 0 10px}
+.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.grid .full{grid-column:1/-1}
+.grid.g2{grid-template-columns:1fr 1fr}
+label{display:block;font-size:13px;color:var(--muted);min-width:0}
+label>span{display:block;margin-bottom:4px}
+label.req>span::after{content:" *";color:var(--danger)}
+input,select,textarea{width:100%;min-width:0;padding:9px 11px;border:1px solid var(--line);border-radius:9px;background:#fff;outline:none}
+input[type=month],input[type=date]{min-height:40px}
+textarea{resize:vertical;min-height:70px}
+input:focus,select:focus,textarea:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(47,91,234,.15)}
+.invalid{border-color:var(--danger)!important;box-shadow:0 0 0 3px rgba(210,59,59,.15)!important}
+input:disabled{background:#f1f3f8}
+.check{display:flex;gap:8px;align-items:flex-start;font-size:13.5px;color:var(--ink)}
+.check input{width:auto;margin-top:3px;flex:none}
+.entry{border:1px dashed var(--line);border-radius:12px;padding:12px;margin-bottom:12px;background:#fafbff}
+.entry-head{display:flex;justify-content:space-between;margin-bottom:8px;font-size:13px}
+.btn{border:1px solid var(--line);background:#fff;border-radius:10px;padding:8px 14px;cursor:pointer;display:inline-flex;gap:6px;align-items:center;justify-content:center;min-height:38px}
+.btn:hover{border-color:var(--accent);color:var(--accent)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:600}
+.btn.primary:hover{background:#2447c4;color:#fff}
+.btn.big{padding:13px 18px;font-size:16px;width:100%;min-height:48px}
+.btn.busy{background:#46506b;border-color:#46506b}
+.link{background:none;border:0;padding:4px 0;cursor:pointer;color:var(--accent);font-size:13px}
+.link.danger{color:var(--danger)}
+.spinner{width:16px;height:16px;border:2px solid rgba(255,255,255,.5);border-top-color:#fff;border-radius:50%;animation:sp .7s linear infinite;flex:none}
+@keyframes sp{to{transform:rotate(360deg)}}
+.photo-row{display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+.photo-row input[type=file]{flex:1 1 180px;width:auto;padding:6px}
+.photo-prev{width:60px;height:80px;border-radius:8px;border:1px solid var(--line);background:#f1f3f8 center/cover;flex:none}
+.retention{font-size:12.5px;color:var(--muted);margin:10px 2px 0;display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.col-preview{position:sticky;top:64px;align-self:start}
+.tabs{display:flex;gap:6px;margin-bottom:10px}
+.tab{padding:8px 14px;border-radius:999px;border:1px solid var(--line);background:#fff;cursor:pointer}
+.tab.active{background:var(--ink);color:#fff;border-color:var(--ink)}
+.dl-bar{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px}
+.dl-bar select{width:auto;flex:1 1 150px}
+.preview-box{position:relative;border:1px solid var(--line);border-radius:14px;background:#dfe3ee;overflow:hidden}
+.preview-scroll{max-height:calc(100vh - 200px);min-height:420px;overflow:auto;padding:14px}
+.empty{display:grid;place-items:center;text-align:center;color:var(--muted);min-height:380px;padding:20px}
+.paper-wrap{position:relative;overflow:hidden;box-shadow:0 4px 18px rgba(20,30,60,.18);background:#fff}
+.paper{width:794px;min-height:1123px;background:#fff;color:#111;padding:76px 76px 76px 94px;font:14px/1.38 Arial,Helvetica,sans-serif;transform-origin:0 0}
+.locked .paper{filter:blur(3.5px);user-select:none;pointer-events:none}
+.lock-overlay{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none;padding:14px}
+.lock-card{pointer-events:auto;background:#fff;border-radius:16px;padding:20px;max-width:330px;text-align:center;box-shadow:0 10px 40px rgba(20,30,60,.3)}
+.lock-card h3{margin:6px 0}.lock-card p{margin:0 0 14px;color:var(--muted);font-size:13.5px}
+.p-sender,.p-recipient{margin-bottom:34px}.p-date{text-align:right;margin-bottom:22px}.p-subject{font-weight:700;margin-bottom:18px}
+.paper p{margin:0 0 11px}.p-close{margin:6px 0 46px!important}.p-encl{font-size:13px;margin-top:26px}
+.cv-photo{float:right;width:132px;height:176px;object-fit:cover;margin:0 0 10px 18px}
+.paper h1{font-size:28px;margin:0 0 18px}.paper section{display:flow-root;margin-bottom:14px}
+.paper h3{font-size:16px;margin:0 0 8px;padding-bottom:3px;border-bottom:1px solid #111}
+.cv-row{display:grid;grid-template-columns:170px 1fr;gap:8px;margin-bottom:8px;font-size:13.8px}
+.cv-row ul{margin:3px 0 0;padding:0;list-style:none}.cv-row li{padding-left:14px;position:relative}.cv-row li::before{content:"–";position:absolute;left:0}
+.cv-sign{margin-top:30px}
+dialog{border:0;border-radius:16px;padding:0;max-width:520px;width:calc(100% - 24px);box-shadow:0 20px 60px rgba(20,30,60,.35)}
+dialog::backdrop{background:rgba(15,20,40,.5)}
+.dlg{padding:18px}.dlg h3{margin:0 0 12px}.dlg .row{margin-bottom:12px}
+.dlg .foot{display:flex;justify-content:flex-end;gap:8px;margin-top:16px;flex-wrap:wrap}
+.pw{display:flex;gap:6px}
+#toasts{position:fixed;right:16px;bottom:16px;display:flex;flex-direction:column;gap:8px;z-index:100;max-width:380px}
+.toast{background:var(--ink);color:#fff;padding:10px 14px;border-radius:10px;box-shadow:0 6px 20px rgba(0,0,0,.25);font-size:14px;word-break:break-word}
+.toast.err{background:var(--danger)}.toast.ok{background:var(--ok)}
+.small{font-size:12.5px;color:var(--muted)}.hidden{display:none!important}
+@media(max-width:1000px){.layout{grid-template-columns:1fr;padding:12px;gap:8px}.col-preview{position:static}.preview-scroll{max-height:none;min-height:300px}.brand small{display:none}}
+@media(max-width:600px){
+  body{font-size:16px}.top{padding:6px 10px}.layout{padding:8px}
+  .card{padding:12px;border-radius:12px;margin-bottom:10px}
+  .grid{grid-template-columns:1fr;gap:10px}.grid.g2{grid-template-columns:1fr 1fr}
+  input,select,textarea{font-size:16px;padding:10px 11px}.btn{min-height:44px}
+  #btnSettings .lbl{display:none}#uiLang{max-width:110px}
+  .preview-scroll{padding:6px}.dl-bar .btn{flex:1 1 40%}.dl-bar select{flex:1 1 100%}.tab{flex:1;text-align:center}
+  .entry{padding:10px}#toasts{left:10px;right:10px;bottom:10px;max-width:none}
+  .retention{flex-direction:column}dialog{width:calc(100% - 16px)}.dlg .foot .btn{flex:1}
+}
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="brand"><div class="logo">B</div><div><b data-i18n="appTitle"></b><small data-i18n="tagline"></small></div></div>
+  <div class="top-actions">
+    <select id="uiLang" style="width:auto" aria-label="Language"><option value="uk">Українська</option><option value="en">English</option><option value="de">Deutsch</option></select>
+    <button class="btn" id="btnSettings" type="button" data-i18n-aria="settings">⚙<span class="lbl" data-i18n="settings"></span></button>
+  </div>
+</header>
+
+<main class="layout">
+<form id="form" autocomplete="off" novalidate>
+  <section class="card">
+    <h2><span class="n">1</span><span data-i18n="secTarget"></span></h2>
+    <div class="grid">
+      <label class="req"><span data-i18n="jobType"></span><select data-k="jobType"><option value="Minijob" data-i18n="jobMinijob"></option><option value="Ausbildung" data-i18n="jobAusbildung"></option><option value="Vollzeit" data-i18n="jobVollzeit"></option></select></label>
+      <label class="req"><span data-i18n="jobTitle"></span><input data-k="jobTitle" data-i18n-ph="jobTitlePh"></label>
+      <label class="req"><span data-i18n="company"></span><input data-k="company"></label>
+      <label><span data-i18n="companyContact"></span><input data-k="companyContact" data-i18n-ph="companyContactPh"></label>
+      <label class="full"><span data-i18n="companyAddress"></span><input data-k="companyAddress" data-i18n-ph="companyAddressPh"></label>
+      <label class="full"><span data-i18n="startDate"></span><input data-k="startDate" data-i18n-ph="startDatePh"></label>
+      <label class="full"><span data-i18n="notes"></span><textarea data-k="notes" data-i18n-ph="notesPh"></textarea></label>
+    </div>
+  </section>
+  <section class="card">
+    <h2><span class="n">2</span><span data-i18n="secPersonal"></span></h2>
+    <div class="grid">
+      <label class="req"><span data-i18n="firstName"></span><input data-k="firstName"></label>
+      <label class="req"><span data-i18n="lastName"></span><input data-k="lastName"></label>
+      <label><span data-i18n="birthDate"></span><input type="date" data-k="birthDate"></label>
+      <label><span data-i18n="birthPlace"></span><input data-k="birthPlace"></label>
+      <label><span data-i18n="nationality"></span><input data-k="nationality"></label>
+      <label><span data-i18n="phone"></span><input type="tel" data-k="phone"></label>
+      <label class="full"><span data-i18n="email"></span><input type="email" data-k="email"></label>
+      <label class="full"><span data-i18n="street"></span><input data-k="street"></label>
+      <label><span data-i18n="zip"></span><input data-k="zip" inputmode="numeric"></label>
+      <label class="req"><span data-i18n="city"></span><input data-k="city"></label>
+      <div class="full">
+        <span class="small" data-i18n="photo"></span>
+        <div class="photo-row"><div class="photo-prev" id="photoPrev"></div><input type="file" id="photoInput" accept="image/*"><button type="button" class="link danger hidden" id="photoRemove" data-i18n="photoRemove"></button></div>
+        <div class="small" data-i18n="photoHint"></div>
+      </div>
+    </div>
+  </section>
+  <section class="card">
+    <h2><span class="n">3</span><span data-i18n="secExperience"></span></h2>
+    <div class="hint" data-i18n="secExperienceHint"></div>
+    <div id="expList"></div>
+    <button type="button" class="btn" data-act="add" data-list="experience">+ <span data-i18n="addExperience"></span></button>
+  </section>
+  <section class="card">
+    <h2><span class="n">4</span><span data-i18n="secEducation"></span></h2>
+    <div id="eduList"></div>
+    <button type="button" class="btn" data-act="add" data-list="education">+ <span data-i18n="addEducation"></span></button>
+  </section>
+  <section class="card">
+    <h2><span class="n">5</span><span data-i18n="secLanguages"></span></h2>
+    <div id="langList"></div>
+    <button type="button" class="btn" data-act="add" data-list="languages">+ <span data-i18n="addLanguage"></span></button>
+  </section>
+  <section class="card">
+    <h2><span class="n">6</span><span data-i18n="secSkills"></span></h2>
+    <div class="grid">
+      <label class="full"><span data-i18n="skills"></span><textarea data-k="skills" data-i18n-ph="skillsPh"></textarea></label>
+      <label class="full"><span data-i18n="interests"></span><textarea data-k="interests" data-i18n-ph="interestsPh" style="min-height:50px"></textarea></label>
+    </div>
+  </section>
+  <section class="card">
+    <label class="check"><input type="checkbox" data-k="consent"><span data-i18n="consent"></span></label>
+    <div style="height:14px"></div>
+    <button type="button" class="btn primary big" id="btnGenerate"><span id="genLabel"></span></button>
+    <div class="retention"><span id="retentionInfo"></span><button type="button" class="link danger" id="btnDelete" data-i18n="deleteData"></button></div>
+  </section>
+</form>
+
+<aside class="col-preview" id="previewCol">
+  <div class="tabs hidden" id="tabs"><button type="button" class="tab" data-tab="letter">Anschreiben</button><button type="button" class="tab" data-tab="cv">Lebenslauf</button></div>
+  <div class="dl-bar hidden" id="dlBar">
+    <select id="dlParts"><option value="both" data-i18n="docsAll"></option><option value="letter" data-i18n="docsLetter"></option><option value="cv" data-i18n="docsCv"></option></select>
+    <button type="button" class="btn primary" id="btnPdf">⬇ PDF</button>
+    <button type="button" class="btn" id="btnDocx">⬇ DOCX</button>
+  </div>
+  <div class="preview-box">
+    <div class="preview-scroll" id="stage"></div>
+    <div class="lock-overlay hidden" id="lockOverlay"><div class="lock-card"><div style="font-size:28px">🔒</div><h3 data-i18n="lockedTitle"></h3><p data-i18n="lockedText"></p><button type="button" class="btn primary" id="btnUnlock" data-i18n="unlock"></button></div></div>
+  </div>
+</aside>
+</main>
+
+<dialog id="settingsDlg"><div class="dlg">
+  <h3 data-i18n="settingsTitle"></h3>
+  <div class="row"><label><span data-i18n="apiKey"></span><div class="pw"><input type="password" id="setKey" autocomplete="off" spellcheck="false"><button type="button" class="btn" id="setShow">👁</button></div></label><div class="small" data-i18n="apiKeyHint"></div></div>
+  <div class="row"><label><span data-i18n="model"></span><input id="setModel" list="modelList" spellcheck="false" autocapitalize="off"></label>
+    <datalist id="modelList"><option value="gemini-3.8-flash"><option value="gemini-3.8-pro"><option value="gemini-2.5-flash"><option value="gemini-2.5-pro"></datalist>
+    <div class="small" data-i18n="modelHint"></div></div>
+  <div class="foot"><button type="button" class="btn" id="setClear" data-i18n="clearKey"></button><button type="button" class="btn primary" id="setSave" data-i18n="save"></button></div>
+</div></dialog>
+
+<dialog id="unlockDlg"><div class="dlg">
+  <h3 data-i18n="unlockTitle"></h3><p data-i18n="unlockText"></p>
+  <div id="payBox" class="hidden"><p><a class="btn primary" id="payLink" target="_blank" rel="noopener" data-i18n="payGo"></a></p>
+    <label><span data-i18n="codeLabel"></span><div class="pw"><input id="codeInput" autocomplete="off"><button type="button" class="btn" id="codeApply" data-i18n="codeApply"></button></div></label></div>
+  <div class="foot"><button type="button" class="btn" id="unlockCancel" data-i18n="cancel"></button><button type="button" class="btn primary" id="unlockDemoBtn" data-i18n="unlockDemo"></button></div>
+</div></dialog>
+
+<div id="toasts"></div>
+<script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+<script>
+(()=>{
+'use strict';
+// Payment hook: empty paymentUrl = demo unlock. Otherwise list SHA-256 hashes of valid codes (verify server-side in production).
+const CONFIG={paymentUrl:'',codeHashes:[]};
+const DEFAULT_MODEL='gemini-3.8-flash',TIMEOUT_MS=120000;
+const LS_SETTINGS='bewerbung.settings.v1',LS_DATA='bewerbung.data.v1';
+const RETENTION_MS=30*24*3600*1000;
+const LANGS=['uk','en','de'];
+const LOCALES={uk:'uk-UA',en:'en-GB',de:'de-DE'};
+// docx UMD builds, tried in order (lazy-loaded, with fallbacks)
+const DOCX_URLS=['https://cdn.jsdelivr.net/npm/docx@7.8.2/build/index.js','https://unpkg.com/docx@7.8.2/build/index.js','https://cdn.jsdelivr.net/npm/docx@8.5.0/build/index.js'];
+
+const I18N={
+uk:{appTitle:'Bewerbungs-Generator',tagline:'Німецький лист і резюме за кілька хвилин',settings:'Налаштування',settingsTitle:'Налаштування Gemini',apiKey:'API-ключ Gemini',apiKeyHint:'Зберігається лише в цьому браузері (Google AI Studio).',model:'Модель',modelHint:'Будь-яка назва моделі Gemini, напр. gemini-3.8-flash',save:'Зберегти',clearKey:'Видалити ключ',
+secTarget:'Бажана робота',jobType:'Тип зайнятості',jobMinijob:'Minijob (підробіток)',jobAusbildung:'Ausbildung (навчання)',jobVollzeit:'Vollzeit (повна зайнятість)',jobTitle:'Посада / професія',jobTitlePh:'напр. Verkäufer/in',company:'Компанія',companyContact:'Контактна особа',companyContactPh:'напр. Frau Müller',companyAddress:'Адреса компанії (необов’язково)',companyAddressPh:'Вулиця, індекс, місто',startDate:'Бажана дата початку',startDatePh:'01.09.2025 або ab sofort',notes:'Доповнення до листа',notesPh:'Чому ця компанія, графік, сильні сторони…',
+secPersonal:'Особисті дані',firstName:'Ім’я',lastName:'Прізвище',birthDate:'Дата народження',birthPlace:'Місце народження',nationality:'Громадянство',street:'Вулиця та будинок',zip:'Індекс',city:'Місто',phone:'Телефон',email:'E-mail',photo:'Фото (необов’язково)',photoHint:'Фото зберігається лише в браузері й не надсилається до Gemini.',photoRemove:'Видалити фото',
+secExperience:'Досвід роботи',secExperienceHint:'Підробітки та практика теж підходять. Пишіть українською, англійською або німецькою.',addExperience:'Додати місце роботи',position:'Посада',employer:'Роботодавець',location:'Місто',from:'З',to:'По',current:'по теперішній час',description:'Що ви робили',descriptionPh:'Обов’язки, досягнення',entry:'Запис',
+secEducation:'Освіта',addEducation:'Додати освіту',institution:'Навчальний заклад',degree:'Спеціальність / диплом',details:'Подробиці',
+secLanguages:'Знання мов',addLanguage:'Додати мову',language:'Мова',level:'Рівень',native:'Рідна',
+secSkills:'Навички та інтереси',skills:'Навички',skillsPh:'Комп’ютер, права, касова програма…',interests:'Інтереси / хобі',interestsPh:'Спорт, музика…',
+remove:'Видалити',consent:'Я погоджуюсь на надсилання введених даних до Google Gemini API (з моїм ключем) для створення документів.',generate:'Створити документи',regenerate:'Створити знову',generating:'Створюю…',sec:'с',cancelHint:'скасувати',deleteData:'Видалити всі мої дані',deleteConfirm:'Видалити всі збережені дані та документи?',retention:'Дані зберігаються лише у вашому браузері й будуть видалені {date} (через 30 днів).',retentionNone:'Дані зберігаються лише в браузері й видаляються через 30 днів після першого збереження.',expiredToast:'Термін зберігання (30 днів) минув — дані видалено.',dataDeleted:'Дані видалено.',
+previewEmpty:'Тут з’явиться попередній перегляд документів.',lockedTitle:'Перегляд розмито',lockedText:'Розблокуйте, щоб читати текст і завантажити PDF або DOCX.',unlock:'Розблокувати',unlockTitle:'Розблокувати документи',unlockText:'Після оплати відкриється чіткий текст і завантаження PDF та DOCX.',unlockDemo:'Розблокувати (демо)',payGo:'Перейти до оплати',codeLabel:'Код після оплати',codeApply:'Застосувати',codeBad:'Невірний код.',unlockedToast:'Документи розблоковано.',docsAll:'Лист + резюме',docsLetter:'Лише лист',docsCv:'Лише резюме',cancel:'Скасувати',
+errKey:'Вкажіть API-ключ Gemini в налаштуваннях.',errRequired:'Заповніть обов’язкові поля.',errConsent:'Підтвердьте згоду на надсилання даних.',errApi:'Помилка Gemini',errModel:'Модель не знайдено або недоступна. Перевірте назву моделі в налаштуваннях:',errTimeout:'Gemini не відповів вчасно. Спробуйте ще раз або оберіть іншу модель.',errParse:'Не вдалося розібрати відповідь моделі. Спробуйте ще раз.',errNetwork:'Немає з’єднання з Gemini API.',errLibs:'Не вдалося завантажити бібліотеку експорту. Перевірте інтернет і спробуйте ще раз.',errExport:'Помилка експорту',errImage:'Не вдалося завантажити зображення.',cancelled:'Скасовано.',done:'Документи готові!'},
+en:{appTitle:'Bewerbungs-Generator',tagline:'German cover letter & CV in minutes',settings:'Settings',settingsTitle:'Gemini settings',apiKey:'Gemini API key',apiKeyHint:'Stored only in this browser (Google AI Studio).',model:'Model',modelHint:'Any Gemini model name, e.g. gemini-3.8-flash',save:'Save',clearKey:'Remove key',
+secTarget:'Target job',jobType:'Job type',jobMinijob:'Minijob (part-time)',jobAusbildung:'Ausbildung (apprenticeship)',jobVollzeit:'Vollzeit (full-time)',jobTitle:'Job title / profession',jobTitlePh:'e.g. Verkäufer/in',company:'Company',companyContact:'Contact person',companyContactPh:'e.g. Frau Müller',companyAddress:'Company address (optional)',companyAddressPh:'Street, ZIP, city',startDate:'Desired start date',startDatePh:'01.09.2025 or ab sofort',notes:'Additions for the letter',notesPh:'Why this company, hours, strengths…',
+secPersonal:'Personal data',firstName:'First name',lastName:'Last name',birthDate:'Date of birth',birthPlace:'Place of birth',nationality:'Nationality',street:'Street and number',zip:'ZIP code',city:'City',phone:'Phone',email:'E-mail',photo:'Photo (optional)',photoHint:'The photo stays in your browser and is not sent to Gemini.',photoRemove:'Remove photo',
+secExperience:'Work experience',secExperienceHint:'Side jobs and internships count too. Write in Ukrainian, English or German.',addExperience:'Add job',position:'Position',employer:'Employer',location:'City',from:'From',to:'To',current:'until today',description:'What did you do',descriptionPh:'Tasks, achievements',entry:'Entry',
+secEducation:'Education',addEducation:'Add education',institution:'Institution',degree:'Subject / degree',details:'Details',
+secLanguages:'Language skills',addLanguage:'Add language',language:'Language',level:'Level',native:'Native',
+secSkills:'Skills & interests',skills:'Skills',skillsPh:'Computer skills, driving licence, POS…',interests:'Interests / hobbies',interestsPh:'Sports, music…',
+remove:'Remove',consent:'I agree that the entered data is sent to the Google Gemini API (using my key) to create the documents.',generate:'Generate documents',regenerate:'Regenerate',generating:'Generating…',sec:'s',cancelHint:'cancel',deleteData:'Delete all my data',deleteConfirm:'Delete all saved data and documents?',retention:'Data stays in your browser only and is deleted automatically on {date} (30 days).',retentionNone:'Data stays in your browser only and is deleted automatically 30 days after first save.',expiredToast:'The 30-day retention period ended — your data was deleted.',dataDeleted:'Data deleted.',
+previewEmpty:'A preview of your documents will appear here.',lockedTitle:'Preview is blurred',lockedText:'Unlock to read the text and download PDF or DOCX.',unlock:'Unlock',unlockTitle:'Unlock documents',unlockText:'Payment reveals the clear text and enables PDF and DOCX download.',unlockDemo:'Unlock (demo)',payGo:'Go to payment',codeLabel:'Code received after payment',codeApply:'Apply',codeBad:'Invalid code.',unlockedToast:'Documents unlocked.',docsAll:'Letter + CV',docsLetter:'Letter only',docsCv:'CV only',cancel:'Cancel',
+errKey:'Please enter your Gemini API key in the settings.',errRequired:'Please fill in the required fields.',errConsent:'Please confirm the data transfer consent.',errApi:'Gemini error',errModel:'Model not found or unavailable. Check the model name in settings:',errTimeout:'Gemini did not respond in time. Try again or choose another model.',errParse:'Could not parse the model response. Please try again.',errNetwork:'Cannot reach the Gemini API.',errLibs:'Could not load the export library. Check your connection and try again.',errExport:'Export error',errImage:'Could not load the image.',cancelled:'Cancelled.',done:'Documents are ready!'},
+de:{appTitle:'Bewerbungs-Generator',tagline:'Anschreiben und Lebenslauf in Minuten',settings:'Einstellungen',settingsTitle:'Gemini-Einstellungen',apiKey:'Gemini-API-Schlüssel',apiKeyHint:'Wird nur in diesem Browser gespeichert (Google AI Studio).',model:'Modell',modelHint:'Beliebiger Gemini-Modellname, z. B. gemini-3.8-flash',save:'Speichern',clearKey:'Schlüssel entfernen',
+secTarget:'Zielstelle',jobType:'Art der Stelle',jobMinijob:'Minijob',jobAusbildung:'Ausbildung',jobVollzeit:'Vollzeit',jobTitle:'Stelle / Beruf',jobTitlePh:'z. B. Verkäufer/in',company:'Unternehmen',companyContact:'Ansprechpartner',companyContactPh:'z. B. Frau Müller',companyAddress:'Adresse (optional)',companyAddressPh:'Straße, PLZ, Ort',startDate:'Eintrittstermin',startDatePh:'01.09.2025 oder ab sofort',notes:'Ergänzungen fürs Anschreiben',notesPh:'Warum dieses Unternehmen, Arbeitszeiten, Stärken…',
+secPersonal:'Persönliche Daten',firstName:'Vorname',lastName:'Nachname',birthDate:'Geburtsdatum',birthPlace:'Geburtsort',nationality:'Staatsangehörigkeit',street:'Straße und Hausnummer',zip:'PLZ',city:'Ort',phone:'Telefon',email:'E-Mail',photo:'Foto (optional)',photoHint:'Das Foto bleibt im Browser und wird nicht an Gemini gesendet.',photoRemove:'Foto entfernen',
+secExperience:'Berufserfahrung',secExperienceHint:'Auch Nebenjobs und Praktika zählen. Schreiben Sie auf Ukrainisch, Englisch oder Deutsch.',addExperience:'Station hinzufügen',position:'Position',employer:'Arbeitgeber',location:'Ort',from:'Von',to:'Bis',current:'bis heute',description:'Was haben Sie gemacht?',descriptionPh:'Aufgaben, Erfolge',entry:'Eintrag',
+secEducation:'Ausbildung',addEducation:'Ausbildung hinzufügen',institution:'Einrichtung',degree:'Fach / Abschluss',details:'Details',
+secLanguages:'Sprachkenntnisse',addLanguage:'Sprache hinzufügen',language:'Sprache',level:'Niveau',native:'Muttersprache',
+secSkills:'Kenntnisse & Interessen',skills:'Kenntnisse',skillsPh:'EDV, Führerschein, Kassensystem…',interests:'Interessen / Hobbys',interestsPh:'Sport, Musik…',
+remove:'Entfernen',consent:'Ich bin einverstanden, dass die Daten zur Erstellung der Dokumente an die Google-Gemini-API (mit meinem Schlüssel) gesendet werden.',generate:'Dokumente erstellen',regenerate:'Neu erstellen',generating:'Wird erstellt…',sec:'s',cancelHint:'abbrechen',deleteData:'Alle meine Daten löschen',deleteConfirm:'Alle gespeicherten Daten und Dokumente löschen?',retention:'Daten bleiben nur in Ihrem Browser und werden am {date} automatisch gelöscht (30 Tage).',retentionNone:'Daten bleiben nur in Ihrem Browser und werden 30 Tage nach dem ersten Speichern gelöscht.',expiredToast:'Die Speicherfrist von 30 Tagen ist abgelaufen – Daten gelöscht.',dataDeleted:'Daten gelöscht.',
+previewEmpty:'Hier erscheint die Vorschau Ihrer Dokumente.',lockedTitle:'Vorschau unscharf',lockedText:'Freischalten, um den Text zu lesen und PDF oder DOCX zu laden.',unlock:'Freischalten',unlockTitle:'Dokumente freischalten',unlockText:'Nach der Zahlung sehen Sie den Klartext und können PDF und DOCX laden.',unlockDemo:'Freischalten (Demo)',payGo:'Zur Zahlung',codeLabel:'Code nach der Zahlung',codeApply:'Einlösen',codeBad:'Ungültiger Code.',unlockedToast:'Dokumente freigeschaltet.',docsAll:'Anschreiben + Lebenslauf',docsLetter:'Nur Anschreiben',docsCv:'Nur Lebenslauf',cancel:'Abbrechen',
+errKey:'Bitte Gemini-API-Schlüssel in den Einstellungen eintragen.',errRequired:'Bitte Pflichtfelder ausfüllen.',errConsent:'Bitte der Datenübermittlung zustimmen.',errApi:'Gemini-Fehler',errModel:'Modell nicht gefunden oder nicht verfügbar. Modellname in den Einstellungen prüfen:',errTimeout:'Gemini hat nicht rechtzeitig geantwortet. Erneut versuchen oder anderes Modell wählen.',errParse:'Die Antwort konnte nicht gelesen werden. Bitte erneut versuchen.',errNetwork:'Keine Verbindung zur Gemini-API.',errLibs:'Die Export-Bibliothek konnte nicht geladen werden. Verbindung prüfen und erneut versuchen.',errExport:'Exportfehler',errImage:'Das Bild konnte nicht geladen werden.',cancelled:'Abgebrochen.',done:'Dokumente sind fertig!'}
+};
+
+/* ---------- helpers ---------- */
+const $=(s,r=document)=>r.querySelector(s),$$=(s,r=document)=>[...r.querySelectorAll(s)];
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const uid=()=>Math.random().toString(36).slice(2,9);
+const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+const debounce=(fn,ms)=>{let h;return(...a)=>{clearTimeout(h);h=setTimeout(()=>fn(...a),ms);};};
+const nextFrame=()=>new Promise(r=>requestAnimationFrame(()=>setTimeout(r,0)));
+function guessLang(){const l=(navigator.language||'').slice(0,2).toLowerCase();return l==='de'?'de':l==='en'?'en':'uk';}
+let settings={uiLang:guessLang(),apiKey:'',model:DEFAULT_MODEL};
+try{Object.assign(settings,JSON.parse(localStorage.getItem(LS_SETTINGS)||'{}'));}catch{}
+if(!LANGS.includes(settings.uiLang))settings.uiLang='uk';
+if(!settings.model||settings.model==='gemini-2.5-flash')settings.model=DEFAULT_MODEL;
+const saveSettings=()=>{try{localStorage.setItem(LS_SETTINGS,JSON.stringify(settings));}catch{}};
+function t(k,v){let s=I18N[settings.uiLang][k]??I18N.en[k]??k;if(v)for(const x in v)s=s.replace(`{${x}}`,v[x]);return s;}
+function applyI18n(){
+  $$('[data-i18n]').forEach(el=>el.textContent=t(el.dataset.i18n));
+  $$('[data-i18n-ph]').forEach(el=>el.placeholder=t(el.dataset.i18nPh));
+  $$('[data-i18n-aria]').forEach(el=>el.setAttribute('aria-label',t(el.dataset.i18nAria)));
+  document.documentElement.lang=settings.uiLang;document.title=t('appTitle');$('#uiLang').value=settings.uiLang;
+}
+function toast(msg,type=''){const d=document.createElement('div');d.className='toast '+type;d.textContent=msg;$('#toasts').appendChild(d);setTimeout(()=>d.remove(),type==='err'?8000:3500);}
+
+/* ---------- state ---------- */
+const blankExp=()=>({id:uid(),from:'',to:'',current:false,position:'',employer:'',city:'',description:''});
+const blankEdu=()=>({id:uid(),from:'',to:'',institution:'',degree:'',city:'',details:''});
+const blankLang=()=>({id:uid(),language:'',level:'B1'});
+const defaultForm=()=>({jobType:'Minijob',jobTitle:'',company:'',companyContact:'',companyAddress:'',startDate:'',notes:'',firstName:'',lastName:'',birthDate:'',birthPlace:'',nationality:'',street:'',zip:'',city:'',phone:'',email:'',photo:'',experience:[],education:[blankEdu()],languages:[blankLang()],skills:'',interests:'',consent:false});
+const freshData=()=>({createdAt:null,updatedAt:null,form:defaultForm(),result:null,unlocked:false,tab:'letter'});
+let data=freshData();
+function purgeStorage(){try{localStorage.removeItem(LS_DATA);}catch{}data=freshData();}
+function loadData(){
+  try{
+    const raw=localStorage.getItem(LS_DATA);if(!raw)return;
+    const d=JSON.parse(raw),age=Date.now()-d.createdAt;
+    if(!d.createdAt||age>RETENTION_MS||age<-86400000){purgeStorage();toast(t('expiredToast'));return;}
+    data=Object.assign(freshData(),d);data.form=Object.assign(defaultForm(),d.form||{});
+  }catch{purgeStorage();}
+}
+function saveData(){
+  if(!data.createdAt)data.createdAt=Date.now(); // 30 days count from first save, never extended
+  data.updatedAt=Date.now();
+  try{localStorage.setItem(LS_DATA,JSON.stringify(data));}catch(e){console.warn(e);}
+  updateRetention();
+}
+const saveSoon=debounce(saveData,300);
+function checkExpiry(){if(data.createdAt&&Date.now()-data.createdAt>RETENTION_MS){purgeStorage();refreshAll();toast(t('expiredToast'));}}
+function updateRetention(){
+  $('#retentionInfo').textContent=data.createdAt?t('retention',{date:new Date(data.createdAt+RETENTION_MS).toLocaleDateString(LOCALES[settings.uiLang])}):t('retentionNone');
+}
+
+/* ---------- form ---------- */
+const LEVELS=['native','C2','C1','B2','B1','A2','A1'];
+function fld(list,i,f,label,val,o={}){
+  const a=`data-list="${list}" data-i="${i}" data-f="${f}"`;
+  const c=o.area?`<textarea ${a} placeholder="${esc(o.ph||'')}">${esc(val)}</textarea>`
+    :`<input ${a} type="${o.type||'text'}" value="${esc(val)}" ${o.disabled?'disabled':''}>`;
+  return `<label class="${o.full?'full':''}"><span>${esc(label)}</span>${c}</label>`;
+}
+const head=(list,i)=>`<div class="entry-head"><b>${esc(t('entry'))} ${i+1}</b><button type="button" class="link danger" data-act="remove" data-list="${list}" data-i="${i}">${esc(t('remove'))}</button></div>`;
+function renderLists(){
+  const f=data.form;
+  $('#expList').innerHTML=f.experience.map((e,i)=>`<div class="entry">${head('experience',i)}<div class="grid">
+    <div class="grid g2 full">${fld('experience',i,'from',t('from'),e.from,{type:'month'})}${fld('experience',i,'to',t('to'),e.to,{type:'month',disabled:e.current})}</div>
+    <label class="check full"><input type="checkbox" data-list="experience" data-i="${i}" data-f="current" ${e.current?'checked':''}><span>${esc(t('current'))}</span></label>
+    ${fld('experience',i,'position',t('position'),e.position)}${fld('experience',i,'employer',t('employer'),e.employer)}
+    ${fld('experience',i,'city',t('location'),e.city,{full:true})}
+    ${fld('experience',i,'description',t('description'),e.description,{area:true,full:true,ph:t('descriptionPh')})}</div></div>`).join('');
+  $('#eduList').innerHTML=f.education.map((e,i)=>`<div class="entry">${head('education',i)}<div class="grid">
+    <div class="grid g2 full">${fld('education',i,'from',t('from'),e.from,{type:'month'})}${fld('education',i,'to',t('to'),e.to,{type:'month'})}</div>
+    ${fld('education',i,'institution',t('institution'),e.institution)}${fld('education',i,'degree',t('degree'),e.degree)}
+    ${fld('education',i,'city',t('location'),e.city,{full:true})}${fld('education',i,'details',t('details'),e.details,{area:true,full:true})}</div></div>`).join('');
+  $('#langList').innerHTML=f.languages.map((l,i)=>`<div class="entry">${head('languages',i)}<div class="grid g2">
+    ${fld('languages',i,'language',t('language'),l.language)}
+    <label><span>${esc(t('level'))}</span><select data-list="languages" data-i="${i}" data-f="level">${LEVELS.map(v=>`<option value="${v}" ${l.level===v?'selected':''}>${v==='native'?esc(t('native')):v}</option>`).join('')}</select></label></div></div>`).join('');
+}
+function syncForm(){
+  $$('[data-k]').forEach(el=>{const v=data.form[el.dataset.k];if(el.type==='checkbox')el.checked=!!v;else el.value=v??'';});
+  updatePhoto();
+}
+function updatePhoto(){const p=data.form.photo;$('#photoPrev').style.backgroundImage=p?`url(${p})`:'';$('#photoRemove').classList.toggle('hidden',!p);}
+function onField(e){
+  const el=e.target;
+  if(el.dataset.k){data.form[el.dataset.k]=el.type==='checkbox'?el.checked:el.value;el.classList.remove('invalid');saveSoon();}
+  else if(el.dataset.list){
+    const it=data.form[el.dataset.list][+el.dataset.i];if(!it)return;
+    if(el.type==='checkbox'){it[el.dataset.f]=el.checked;if(e.type==='change')renderLists();}else it[el.dataset.f]=el.value;
+    saveSoon();
+  }
+}
+const formEl=$('#form');
+formEl.addEventListener('input',onField);formEl.addEventListener('change',onField);
+formEl.addEventListener('submit',e=>e.preventDefault());
+formEl.addEventListener('click',e=>{
+  const b=e.target.closest('[data-act]');if(!b)return;const list=b.dataset.list;
+  if(b.dataset.act==='add')data.form[list].push({experience:blankExp,education:blankEdu,languages:blankLang}[list]());
+  else data.form[list].splice(+b.dataset.i,1);
+  renderLists();saveSoon();
+});
+function processPhoto(file){
+  return new Promise((res,rej)=>{
+    const img=new Image(),url=URL.createObjectURL(file);
+    img.onload=()=>{const W=300,H=400,c=document.createElement('canvas');c.width=W;c.height=H;const g=c.getContext('2d');g.fillStyle='#fff';g.fillRect(0,0,W,H);
+      const s=Math.max(W/img.width,H/img.height),w=img.width*s,h=img.height*s;g.drawImage(img,(W-w)/2,(H-h)/2,w,h);URL.revokeObjectURL(url);res(c.toDataURL('image/jpeg',.85));};
+    img.onerror=()=>rej(new Error('image'));img.src=url;
+  });
+}
+$('#photoInput').addEventListener('change',async e=>{
+  const f=e.target.files[0];if(!f)return;
+  try{data.form.photo=await processPhoto(f);updatePhoto();saveSoon();}catch{toast(t('errImage'),'err');}
+  e.target.value='';
+});
+$('#photoRemove').addEventListener('click',()=>{data.form.photo='';updatePhoto();saveSoon();});
+
+/* ---------- Gemini ---------- */
+const SYSTEM=`You are an expert German HR writer who creates application documents (Anschreiben and tabellarischer Lebenslauf) in correct, natural, professional German following DIN 5008.
+The applicant's input may be Ukrainian, English or German. Translate ALL content into German. Transliterate Cyrillic names, streets and cities into Latin letters using German conventions (e.g. Олександр -> Oleksandr, Харків -> Charkiw).
+Rules:
+- Never invent facts: no employers, positions, dates, diplomas, grades, numbers or skills that are not in the input. You may describe typical tasks of a stated position in modest, plausible wording.
+- No placeholders like [Name] or XXX. If information is missing, leave it out.
+- Do not mention age, religion or marital status.
+- Return ONLY one valid JSON object (no markdown) matching exactly the schema from the user.`;
+const GUIDE={
+  Minijob:'Minijob: emphasise reliability, flexibility, availability (use hours/days from the notes if given), quick learning, friendly manner and relevant experience. Do not mention salary.',
+  Ausbildung:'Ausbildung: emphasise motivation for the profession and company, school education, strengths, willingness to learn, teamwork. With little work experience, highlight school, internships and hobbies. Subject: "Bewerbung um einen Ausbildungsplatz als ...".',
+  Vollzeit:'Vollzeitstelle: emphasise qualifications, relevant experience and concrete contribution to the employer. Mention earliest start / notice period only if given.'
+};
+const SCHEMA=`{"personal":{"fullName":"","street":"","zip":"","city":"","phone":"","email":"","birthDate":"DD.MM.YYYY","birthPlace":"","nationality":"(German, e.g. ukrainisch)"},
+"recipient":{"lines":["Company name","z. Hd. contact person (only if given)","Street","ZIP City (only what is known)"]},
+"letter":{"subject":"","salutation":"Sehr geehrte Damen und Herren, (personal only if gender is clear)","paragraphs":["3-4 paragraphs, 200-260 words in total"],"closing":"Mit freundlichen Grüßen"},
+"cv":{"experience":[{"period":"MM/YYYY – MM/YYYY or MM/YYYY – heute","title":"","employer":"","location":"","bullets":["2-4 short points"]}],
+"education":[{"period":"","degree":"","institution":"","location":"","details":["optional"]}],
+"languages":[{"language":"German name","level":"Muttersprache | Grundkenntnisse (A1) | Grundkenntnisse (A2) | Gute Kenntnisse (B1) | Gute Kenntnisse (B2) | Fließend (C1) | Verhandlungssicher (C2)"}],
+"skills":[{"label":"e.g. EDV-Kenntnisse, Führerschein","value":""}],"interests":"comma separated or empty"}}`;
+const fmtDate=v=>/^\d{4}-\d{2}-\d{2}$/.test(v||'')?v.split('-').reverse().join('.'):(v||'');
+const fmtMonth=v=>/^\d{4}-\d{2}$/.test(v||'')?v.slice(5)+'/'+v.slice(0,4):(v||'');
+function buildPrompt(f){
+  const p={
+    applicant:{firstName:f.firstName,lastName:f.lastName,birthDate:fmtDate(f.birthDate),birthPlace:f.birthPlace,nationality:f.nationality,street:f.street,zip:f.zip,city:f.city,phone:f.phone,email:f.email},
+    target:{type:f.jobType,jobTitle:f.jobTitle,company:f.company,contactPerson:f.companyContact,companyAddress:f.companyAddress,earliestStart:f.startDate,notesFromApplicant:f.notes},
+    experience:f.experience.filter(e=>e.position||e.employer).map(e=>({from:fmtMonth(e.from),to:e.current?'heute':fmtMonth(e.to),position:e.position,employer:e.employer,city:e.city,description:e.description})),
+    education:f.education.filter(e=>e.institution||e.degree).map(e=>({from:fmtMonth(e.from),to:fmtMonth(e.to),institution:e.institution,degree:e.degree,city:e.city,details:e.details})),
+    languages:f.languages.filter(l=>l.language.trim()).map(l=>({language:l.language,level:l.level==='native'?'native speaker':l.level})),
+    skills:f.skills,interests:f.interests};
+  return `Create a German Anschreiben and a tabellarischer Lebenslauf.
+Job type guidance: ${GUIDE[f.jobType]||''}
+Newest entries first. Keep given dates exactly (MM/YYYY). The letter must fit on one A4 page, be personal and concrete, use formal "Sie".
+Return JSON in exactly this structure:
+${SCHEMA}
+
+APPLICANT DATA:
+${JSON.stringify(p)}`;
+}
+function parseJson(txt){
+  const s=txt.trim().replace(/^```(?:json)?/i,'').replace(/```$/,'').trim(),a=s.indexOf('{'),b=s.lastIndexOf('}');
+  if(a<0||b<a)throw new Error(t('errParse'));
+  try{return JSON.parse(s.slice(a,b+1));}catch{throw new Error(t('errParse'));}
+}
+let abortCtl=null,userCancelled=false;
+async function callGemini(f){
+  const model=(settings.model||'').trim().replace(/^models\//,'')||DEFAULT_MODEL;
+  const url=`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`;
+  const prompt=buildPrompt(f);
+  let lean=false;
+  for(let attempt=0;attempt<4;attempt++){
+    const body=lean?{contents:[{role:'user',parts:[{text:SYSTEM+'\n\n'+prompt}]}],generationConfig:{temperature:.6}}
+      :{systemInstruction:{parts:[{text:SYSTEM}]},contents:[{role:'user',parts:[{text:prompt}]}],generationConfig:{temperature:.6,responseMimeType:'application/json'}};
+    abortCtl=new AbortController();
+    let timedOut=false;const timer=setTimeout(()=>{timedOut=true;abortCtl.abort();},TIMEOUT_MS);
+    let res,j;
+    try{
+      res=await fetch(url,{method:'POST',signal:abortCtl.signal,headers:{'Content-Type':'application/json','x-goog-api-key':settings.apiKey.trim()},body:JSON.stringify(body)});
+      j=await res.json().catch(()=>({}));
+    }catch(e){
+      clearTimeout(timer);
+      if(userCancelled)throw new Error(t('cancelled'));
+      if(timedOut)throw new Error(t('errTimeout'));
+      throw new Error(t('errNetwork'));
+    }
+    clearTimeout(timer);
+    if(!res.ok){
+      const msg=(j.error&&j.error.message)||('HTTP '+res.status);
+      if(res.status===404)throw new Error(`$${t('errModel')} $${model}`);
+      if(res.status===400&&!lean&&/json|instruction|mime/i.test(msg)){lean=true;continue;}
+      if([429,500,503].includes(res.status)&&attempt<3){await sleep(1500*(attempt+1));continue;}
+      throw new Error(`$${t('errApi')}: $${msg}`);
+    }
+    const text=(((j.candidates||[])[0]||{}).content?.parts||[]).filter(p=>!p.thought).map(p=>p.text||'').join('');
+    if(!text)throw new Error(`$${t('errApi')}: $${(j.promptFeedback&&j.promptFeedback.blockReason)||'empty response'}`);
+    const ai=parseJson(text);
+    if(!ai.letter||!Array.isArray(ai.letter.paragraphs)||!ai.letter.paragraphs.length)throw new Error(t('errParse'));
+    return ai;
+  }
+  throw new Error(t('errApi'));
+}
+
+/* ---------- document model ---------- */
+const CYR={а:'a',б:'b',в:'w',г:'h',ґ:'g',д:'d',е:'e',є:'je',ж:'sch',з:'s',и:'y',і:'i',ї:'ji',й:'j',к:'k',л:'l',м:'m',н:'n',о:'o',п:'p',р:'r',с:'s',т:'t',у:'u',ф:'f',х:'ch',ц:'z',ч:'tsch',ш:'sch',щ:'schtsch',ь:'',ю:'ju',я:'ja'};
+const translit=s=>String(s).replace(/[А-ЩЬЮЯҐЄІЇа-щьюяґєії]/g,c=>{const l=c.toLowerCase(),m=CYR[l]??'';return c===l?m:m.charAt(0).toUpperCase()+m.slice(1);});
+const slug=s=>translit(s).replace(/[^A-Za-z0-9]+/g,'_').replace(/^_+|_+$/g,'');
+function buildDoc(f,ai){
+  const S=x=>x==null?'':String(x).trim(),A=x=>Array.isArray(x)?x:[];
+  const P=ai.personal||{},Lt=ai.letter||{},CV=ai.cv||{};
+  const fullName=S(P.fullName)||`$${f.firstName} $${f.lastName}`.trim();
+  const street=S(P.street)||f.street.trim(),zip=S(P.zip)||f.zip.trim(),city=S(P.city)||f.city.trim();
+  const zipCity=`$${zip} $${city}`.trim(),phone=S(P.phone)||f.phone.trim(),email=S(P.email)||f.email.trim();
+  const bd=S(P.birthDate)||fmtDate(f.birthDate),bp=S(P.birthPlace)||f.birthPlace.trim(),nat=S(P.nationality)||f.nationality.trim();
+  const today=new Date().toLocaleDateString('de-DE',{day:'2-digit',month:'2-digit',year:'numeric'});
+  const dateLine=(city?city+', den ':'')+today;
+  const recip=A(ai.recipient&&ai.recipient.lines).map(S).filter(Boolean);
+  const letter={senderLines:[fullName,street,zipCity,phone,email].filter(Boolean),recipientLines:recip.length?recip:[f.company],dateLine,
+    subject:S(Lt.subject)||`Bewerbung als ${f.jobTitle}`,salutation:S(Lt.salutation)||'Sehr geehrte Damen und Herren,',
+    paragraphs:A(Lt.paragraphs).map(S).filter(Boolean),closing:S(Lt.closing)||'Mit freundlichen Grüßen',signatureName:fullName,enclosure:'Anlage: Lebenslauf'};
+  const sections=[];
+  const rows=[['Name',fullName],['Anschrift',[street,zipCity].filter(Boolean).join(', ')],['Telefon',phone],['E-Mail',email],['Geburtsdatum/-ort',[bd,bp&&('in '+bp)].filter(Boolean).join(' ')],['Staatsangehörigkeit',nat]].filter(r=>r[1]);
+  sections.push({heading:'Persönliche Daten',items:rows.map(([l,v])=>({left:l,leftFixed:true,title:v}))});
+  const exp=A(CV.experience).map(e=>({left:S(e.period),title:S(e.title),bold:true,sub:[S(e.employer),S(e.location)].filter(Boolean).join(', '),bullets:A(e.bullets).map(S).filter(Boolean)})).filter(i=>i.title||i.sub);
+  if(exp.length)sections.push({heading:'Berufserfahrung',items:exp});
+  const edu=A(CV.education).map(e=>({left:S(e.period),title:S(e.degree)||S(e.institution),bold:true,sub:(S(e.degree)?[S(e.institution),S(e.location)]:[S(e.location)]).filter(Boolean).join(', '),bullets:A(e.details).map(S).filter(Boolean)})).filter(i=>i.title);
+  if(edu.length)sections.push({heading:f.jobType==='Ausbildung'?'Schulbildung und Ausbildung':'Ausbildung',items:edu});
+  const know=[];
+  A(CV.languages).filter(l=>S(l.language)).forEach((l,i)=>know.push({left:i?'':'Sprachen',leftFixed:true,title:S(l.language)+(S(l.level)?': '+S(l.level):'')}));
+  A(CV.skills).filter(s=>S(s.value)).forEach(s=>know.push({left:S(s.label),title:S(s.value)}));
+  if(know.length)sections.push({heading:'Sprachen und Kenntnisse',items:know});
+  if(S(CV.interests))sections.push({heading:'Interessen',items:[{left:'',title:S(CV.interests)}]});
+  return{letter,cv:{sections,dateLine,name:fullName},photo:f.photo||'',fileBase:`Bewerbung_$${slug(f.lastName)||'Lebenslauf'}_$${slug(f.company)||'Firma'}`};
+}
+
+/* ---------- preview ---------- */
+const PL='abcdefghijklmnoprstuwz',PU='ABCDEFGHJKLMNOPRSTUWZ';
+const maskText=s=>String(s).replace(/[a-zäöüß]/g,()=>PL[Math.random()*PL.length|0]).replace(/[A-ZÄÖÜ]/g,()=>PU[Math.random()*PU.length|0]).replace(/\d/g,()=>String(Math.random()*10|0));
+function letterHtml(d,m){
+  const L=d.letter,X=s=>esc(m?maskText(s):s);
+  return `<div class="p-sender">$${L.senderLines.map((l,i)=>i?`<div>$${X(l)}</div>`:`<div><b>${X(l)}</b></div>`).join('')}</div>
+<div class="p-recipient">$${L.recipientLines.map(l=>`<div>$${X(l)}</div>`).join('')}</div>
+<div class="p-date">$${X(L.dateLine)}</div><div class="p-subject">$${X(L.subject)}</div><p>${X(L.salutation)}</p>
+$${L.paragraphs.map(p=>`<p>$${X(p)}</p>`).join('')}<p class="p-close">$${esc(L.closing)}</p><p>$${X(L.signatureName)}</p><div class="p-encl">${esc(L.enclosure)}</div>`;
+}
+function cvHtml(d,m){
+  const X=(s,fx)=>esc(m&&!fx?maskText(s):s);
+  return `$${d.photo?`<img class="cv-photo" alt="" src="$${d.photo}">`:''}<h1>Lebenslauf</h1>
+$${d.cv.sections.map(sec=>`<section><h3>$${esc(sec.heading)}</h3>$${sec.items.map(it=>`<div class="cv-row"><div>$${X(it.left||'',it.leftFixed)}</div><div>
+$${it.title?(it.bold?`<b>$${X(it.title)}</b>`:`<div>$${X(it.title)}</div>`):''}$${it.sub?`<div>${X(it.sub)}</div>`:''}
+$${it.bullets&&it.bullets.length?`<ul>$${it.bullets.map(b=>`<li>${X(b)}</li>`).join('')}</ul>`:''}</div></div>`).join('')}</section>`).join('')}
+<div class="cv-sign">$${X(d.cv.dateLine)}<br><br><br>$${X(d.cv.name)}</div>`;
+}
+function fitPapers(){
+  $$$('.paper-wrap').forEach(w=>{const p=$$('.paper',w),s=Math.min(1,w.clientWidth/794);p.style.transform=`scale(${s})`;w.style.height=Math.ceil(p.offsetHeight*s)+'px';});
+}
+window.addEventListener('resize',debounce(fitPapers,100));
+window.addEventListener('orientationchange',()=>setTimeout(fitPapers,250));
+function renderPreview(){
+  const has=!!data.result;
+  $$('#tabs').classList.toggle('hidden',!has);$$('#dlBar').classList.toggle('hidden',!has);
+  const stage=$$('#stage'),ov=$$('#lockOverlay');
+  if(!has){stage.innerHTML=`<div class="empty">${esc(t('previewEmpty'))}</div>`;ov.classList.add('hidden');return;}
+  $$('.tab').forEach(b=>b.classList.toggle('active',b.dataset.tab===data.tab));
+  const m=!data.unlocked;
+  stage.innerHTML=`<div class="paper-wrap $${m?'locked':''}"><div class="paper">$${data.tab==='cv'?cvHtml(data.result,m):letterHtml(data.result,m)}</div></div>`;
+  ov.classList.toggle('hidden',!m);fitPapers();
+}
+$$('.tab').forEach(b=>b.addEventListener('click',()=>{data.tab=b.dataset.tab;saveSoon();renderPreview();}));
+
+/* ---------- generate ---------- */
+let busy=false,tick=null,startedAt=0;
+function setGenUi(){
+  $('#btnGenerate').classList.toggle('busy',busy);
+  $$('#genLabel').innerHTML=busy?`<span class="spinner"></span> $${esc(t('generating'))} $${Math.floor((Date.now()-startedAt)/1000)}$${esc(t('sec'))} · ${esc(t('cancelHint'))}`:esc(data.result?t('regenerate'):t('generate'));
+}
+function validate(){
+  const f=data.form;$$('.invalid').forEach(x=>x.classList.remove('invalid'));
+  const miss=['firstName','lastName','city','jobTitle','company'].filter(k=>!String(f[k]||'').trim());
+  if(miss.length){miss.forEach(k=>$$(`[data-k="$${k}"]`).classList.add('invalid'));$$(`[data-k="$${miss[0]}"]`).scrollIntoView({behavior:'smooth',block:'center'});toast(t('errRequired'),'err');return false;}
+  if(!f.consent){$('[data-k="consent"]').scrollIntoView({behavior:'smooth',block:'center'});toast(t('errConsent'),'err');return false;}
+  if(!settings.apiKey.trim()){toast(t('errKey'),'err');openSettings();return false;}
+  return true;
+}
+async function generate(){
+  if(busy){userCancelled=true;if(abortCtl)abortCtl.abort();return;}
+  if(!validate())return;
+  busy=true;userCancelled=false;startedAt=Date.now();setGenUi();
+  tick=setInterval(setGenUi,1000);
+  await nextFrame();
+  try{
+    const ai=await callGemini(data.form);
+    data.result=buildDoc(data.form,ai);data.tab='letter';
+    saveData();busy=false;clearInterval(tick);setGenUi();renderPreview();
+    toast(t('done'),'ok');
+    if(innerWidth<=1000)$('#previewCol').scrollIntoView({behavior:'smooth'});
+  }catch(e){toast(e.message||String(e),'err');}
+  finally{busy=false;clearInterval(tick);abortCtl=null;setGenUi();}
+}
+$('#btnGenerate').addEventListener('click',generate);
+
+/* ---------- settings / delete / unlock ---------- */
+const sDlg=$$('#settingsDlg'),uDlg=$$('#unlockDlg');
+function openSettings(){$$('#setKey').value=settings.apiKey;$$('#setModel').value=settings.model;$('#setKey').type='password';sDlg.showModal();}
+$('#btnSettings').addEventListener('click',openSettings);
+$$('#setShow').addEventListener('click',()=>{const k=$$('#setKey');k.type=k.type==='password'?'text':'password';});
+$$('#setSave').addEventListener('click',()=>{settings.apiKey=$$('#setKey').value.trim();settings.model=$('#setModel').value.trim()||DEFAULT_MODEL;saveSettings();sDlg.close();});
+$$('#setClear').addEventListener('click',()=>{settings.apiKey='';$$('#setKey').value='';saveSettings();});
+$('#uiLang').addEventListener('change',e=>{settings.uiLang=e.target.value;saveSettings();applyI18n();renderLists();renderPreview();updateRetention();setGenUi();});
+$('#btnDelete').addEventListener('click',()=>{if(!confirm(t('deleteConfirm')))return;purgeStorage();refreshAll();toast(t('dataDeleted'),'ok');});
+function openUnlock(){const pay=!!CONFIG.paymentUrl;$$('#payBox').classList.toggle('hidden',!pay);$$('#unlockDemoBtn').classList.toggle('hidden',pay);$('#payLink').href=CONFIG.paymentUrl||'#';uDlg.showModal();}
+function doUnlock(){data.unlocked=true;saveData();if(uDlg.open)uDlg.close();renderPreview();toast(t('unlockedToast'),'ok');}
+const sha256=async s=>[...new Uint8Array(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(s)))].map(x=>x.toString(16).padStart(2,'0')).join('');
+$('#btnUnlock').addEventListener('click',openUnlock);
+$('#unlockCancel').addEventListener('click',()=>uDlg.close());
+$('#unlockDemoBtn').addEventListener('click',doUnlock);
+$('#codeApply').addEventListener('click',async()=>{
+  const c=$('#codeInput').value.trim();
+  try{(c&&CONFIG.codeHashes.includes(await sha256(c)))?doUnlock():toast(t('codeBad'),'err');}catch{toast(t('codeBad'),'err');}
+});
+
+/* ---------- export ---------- */
+function download(blob,name){const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),5000);}
+const pdfSafe=s=>translit(String(s??'')).replace(/[–—‑]/g,'-').replace(/[„“”«»]/g,'"').replace(/[‘’‚]/g,"'").replace(/…/g,'...').replace(/[•·]/g,'-').replace(/€/g,'EUR').replace(/[^\x20-\x7E\xA0-\xFF]/g,'?');
+function buildPdf(doc,parts){
+  const{jsPDF}=window.jspdf,pdf=new jsPDF({unit:'mm',format:'a4',compress:true});
+  const ML=25,MR=20,TOP=20,BOT=20,PW=210,PH=297,W=PW-ML-MR,PT=.3528,BS=10.5;let y=TOP;
+  const setF=(s,b)=>{pdf.setFont('helvetica',b?'bold':'normal');pdf.setFontSize(s);};
+  const lh=s=>s*PT*1.32,wrap=(str,s,b,w)=>{setF(s,b);return pdf.splitTextToSize(pdfSafe(str),w);};
+  const newPage=()=>{pdf.addPage();y=TOP;};
+  function write(str,o={}){
+    const s=o.size||BS,b=!!o.bold,x=o.x??ML,w=o.width||W,h=lh(s);
+    wrap(str,s,b,w).forEach(l=>{if(y+h>PH-BOT)newPage();setF(s,b);if(o.align==='right')pdf.text(l,x+w,y+s*PT,{align:'right'});else pdf.text(l,x,y+s*PT);y+=h;});
+    y+=o.after||0;
+  }
+  function letter(){
+    const L=doc.letter;
+    L.senderLines.forEach((l,i)=>write(l,{bold:i===0,size:i===0?12:10}));
+    y=Math.max(y+8,48);L.recipientLines.forEach(l=>write(l));y+=8;
+    write(L.dateLine,{align:'right',after:8});write(L.subject,{bold:true,after:5});write(L.salutation,{after:3});
+    L.paragraphs.forEach(p=>write(p,{after:3.5}));write(L.closing,{after:14});write(L.signatureName,{after:8});write(L.enclosure,{size:9.5});
+  }
+  function cv(){
+    const pw=35,ph=45,LC=45;let phB=0;
+    write('Lebenslauf',{size:20,bold:true,after:4});
+    if(doc.photo){try{pdf.addImage(doc.photo,'JPEG',PW-MR-pw,TOP,pw,ph);phB=TOP+ph+3;}catch(e){console.warn(e);}}
+    const curW=()=>y<phB?W-pw-6:W;
+    doc.cv.sections.forEach(sec=>{
+      y+=3;if(y+22>PH-BOT)newPage();
+      write(sec.heading,{size:12,bold:true,width:curW()});
+      pdf.setDrawColor(0);pdf.setLineWidth(.3);pdf.line(ML,y-.5,ML+curW(),y-.5);y+=2.5;
+      sec.items.forEach(it=>{
+        const rw=curW()-LC-2,bl=[];
+        if(it.title)bl.push({ls:wrap(it.title,BS,!!it.bold,rw),bold:!!it.bold,x:ML+LC});
+        if(it.sub)bl.push({ls:wrap(it.sub,BS,false,rw),bold:false,x:ML+LC});
+        (it.bullets||[]).forEach(b=>bl.push({ls:wrap(b,BS,false,rw-4),bold:false,x:ML+LC+4,mark:true}));
+        const total=bl.reduce((a,b)=>a+b.ls.length*lh(BS),0);
+        if(y+Math.min(total,20)>PH-BOT)newPage();
+        const sy=y,sp=pdf.internal.getNumberOfPages(),leftLs=it.left?wrap(it.left,BS,false,LC-3):[];
+        setF(BS,false);leftLs.forEach((l,k)=>pdf.text(l,ML,sy+BS*PT+k*lh(BS)));
+        bl.forEach(b=>b.ls.forEach((l,k)=>{if(y+lh(BS)>PH-BOT)newPage();setF(BS,b.bold);if(b.mark&&k===0)pdf.text('-',b.x-3,y+BS*PT);pdf.text(l,b.x,y+BS*PT);y+=lh(BS);}));
+        if(pdf.internal.getNumberOfPages()===sp)y=Math.max(y,sy+leftLs.length*lh(BS));
+        y+=2;
+      });
+    });
+    y+=8;if(y+30>PH-BOT)newPage();
+    write(doc.cv.dateLine,{after:14});write(doc.cv.name);
+  }
+  if(parts!=='cv')letter();
+  if(parts!=='letter'){if(parts!=='cv')newPage();cv();}
+  pdf.save(doc.fileBase+'.pdf');
+}
+
+/* ---------- DOCX (lazy-loaded library with CDN fallbacks) ---------- */
+function loadScript(u){
+  return new Promise((res,rej)=>{
+    const s=document.createElement('script');s.src=u;s.async=true;
+    s.onload=res;s.onerror=()=>{s.remove();rej(new Error('load failed: '+u));};
+    document.head.appendChild(s);
+  });
+}
+let docxPromise=null;
+function ensureDocx(){
+  if(window.docx&&window.docx.Document)return Promise.resolve(window.docx);
+  if(!docxPromise)docxPromise=(async()=>{
+    for(const u of DOCX_URLS){
+      try{await loadScript(u);if(window.docx&&window.docx.Document&&window.docx.Packer)return window.docx;}catch(e){console.warn(e.message);}
+    }
+    docxPromise=null;throw new Error(t('errLibs'));
+  })();
+  return docxPromise;
+}
+// strip characters that are illegal in XML / Word (control chars) and line breaks
+const clean=s=>String(s??'').replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\uFFFE\uFFFF]/g,'').replace(/[\r\n\t]+/g,' ');
+
+async function buildDocx(doc,parts){
+  const D=await ensureDocx(),F='Arial';
+  const run=(tx,o={})=>new D.TextRun({text:clean(tx),font:F,size:o.size||21,bold:!!o.bold});
+  const para=(tx,o={})=>{
+    const opt={children:[run(tx,o)],spacing:{before:o.before||0,after:o.after||0,line:276}};
+    if(o.align)opt.alignment=o.align;
+    if(o.indent)opt.indent=o.indent;
+    return new D.Paragraph(opt);
+  };
+  const none={style:D.BorderStyle.NONE,size:0,color:'FFFFFF'};
+  const noBorders={top:none,bottom:none,left:none,right:none,insideHorizontal:none,insideVertical:none};
+  const cellBorders={top:none,bottom:none,left:none,right:none};
+  const cell=(w,children)=>new D.TableCell({width:{size:w,type:D.WidthType.DXA},borders:cellBorders,children});
+  const table=(rows,cols)=>new D.Table({width:{size:9354,type:D.WidthType.DXA},columnWidths:cols,borders:noBorders,rows});
+
+  function letter(){
+    const L=doc.letter,c=[];
+    L.senderLines.forEach((l,i)=>c.push(para(l,{bold:i===0,size:i===0?24:20})));
+    L.recipientLines.forEach((l,i)=>c.push(para(l,{before:i===0?1100:0})));
+    c.push(para(L.dateLine,{align:D.AlignmentType.RIGHT,before:480,after:360}));
+    c.push(para(L.subject,{bold:true,after:260}));
+    c.push(para(L.salutation,{after:200}));
+    L.paragraphs.forEach(p=>c.push(para(p,{after:200})));
+    c.push(para(L.closing,{before:100,after:700}));
+    c.push(para(L.signatureName,{after:300}));
+    c.push(para(L.enclosure,{size:19}));
+    return c;
+  }
+  function itemRow(it){
+    const rc=[];
+    if(it.title)rc.push(para(it.title,{bold:!!it.bold}));
+    if(it.sub)rc.push(para(it.sub));
+    (it.bullets||[]).forEach(b=>rc.push(para('– '+b,{indent:{left:284,hanging:284}})));
+    if(!rc.length)rc.push(para(' '));
+    rc.push(para(' ',{size:8})); // small spacing under every row
+    return new D.TableRow({children:[cell(2550,[para(it.left||' ')]),cell(6804,rc)]});
+  }
+  function photoParagraph(){
+    try{
+      const b=atob(doc.photo.split(',')[1]),bytes=new Uint8Array(b.length);
+      for(let i=0;i<b.length;i++)bytes[i]=b.charCodeAt(i);
+      return new D.Paragraph({alignment:D.AlignmentType.RIGHT,children:[new D.ImageRun({data:bytes,type:'jpg',transformation:{width:132,height:176}})]});
+    }catch(e){console.warn('photo skipped',e);return null;}
+  }
+  function cv(){
+    const c=[],pp=doc.photo?photoParagraph():null;
+    if(pp){
+      c.push(table([new D.TableRow({children:[cell(6500,[para('Lebenslauf',{bold:true,size:40})]),cell(2854,[pp])]})],[6500,2854]));
+    }else c.push(para('Lebenslauf',{bold:true,size:40,after:120}));
+    doc.cv.sections.forEach(sec=>{
+      c.push(new D.Paragraph({children:[run(sec.heading,{bold:true,size:24})],keepNext:true,spacing:{before:300,after:120},
+        border:{bottom:{style:D.BorderStyle.SINGLE,size:6,color:'000000',space:2}}}));
+      c.push(table(sec.items.map(itemRow),[2550,6804]));
+    });
+    c.push(para(doc.cv.dateLine,{before:500}));
+    c.push(para(doc.cv.name,{before:700}));
+    return c;
+  }
+  const props={page:{size:{width:11906,height:16838},margin:{top:1134,bottom:1134,left:1417,right:1134}}};
+  const sections=[];
+  if(parts!=='cv')sections.push({properties:props,children:letter()});
+  if(parts!=='letter')sections.push({properties:props,children:cv()});
+  const d=new D.Document({creator:'Bewerbungs-Generator',title:doc.fileBase,
+    styles:{default:{document:{run:{font:F,size:21}}}},sections});
+  const blob=await D.Packer.toBlob(d);
+  download(new Blob([blob],{type:'application/vnd.openxmlformats-officedocument.wordprocessingml.document'}),doc.fileBase+'.docx');
+}
+
+$('#btnPdf').addEventListener('click',()=>{
+  if(!data.result)return;
+  if(!data.unlocked)return openUnlock();
+  if(!window.jspdf)return toast(t('errLibs'),'err');
+  try{buildPdf(data.result,$('#dlParts').value);}
+  catch(e){console.error(e);toast(`${t('errExport')}: ${e.message||e}`,'err');}
+});
+
+$('#btnDocx').addEventListener('click',async()=>{
+  if(!data.result)return;
+  if(!data.unlocked)return openUnlock();
+  const b=$('#btnDocx');b.disabled=true;
+  try{await buildDocx(data.result,$('#dlParts').value);}
+  catch(e){console.error(e);toast(`${t('errExport')}: ${e.message||e}`,'err');}
+  finally{b.disabled=false;}
+});
+
+/* ---------- init ---------- */
+function refreshAll(){applyI18n();syncForm();renderLists();renderPreview();updateRetention();setGenUi();}
+loadData();
+refreshAll();
+ensureDocx().catch(()=>{});   // preload the DOCX library in the background
+setInterval(checkExpiry,60000);
+document.addEventListener('visibilitychange',()=>{if(!document.hidden)checkExpiry();});
+})();
+</script>
+</body>
+</html>
