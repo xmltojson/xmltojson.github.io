@@ -896,6 +896,26 @@ header {
 
 .live-toggle.on { background: var(--primary); color: white; border-color: var(--primary); }
 
+/* Save-to-history checkbox */
+.live-check {
+  display: inline-flex; align-items: center; gap: 6px;
+  font-size: 13px; font-weight: 600; color: var(--text);
+  cursor: pointer; user-select: none;
+  padding: 8px 12px;
+  background: #f9fafb; border: 1px solid var(--border);
+  border-radius: 20px;
+  transition: all 0.2s;
+}
+
+.live-check input[type="checkbox"] {
+  width: 16px; height: 16px;
+  margin: 0;
+  cursor: pointer;
+  accent-color: var(--primary);
+}
+
+.live-check.checked { background: #f0f4ff; border-color: var(--primary); color: var(--primary); }
+
 .live-conv-log {
   margin-top: 20px;
 }
@@ -1098,6 +1118,10 @@ header {
         <div class="live-options">
           <label class="live-toggle on" id="liveAutoSpeakToggle">🔊 Автоозвучення</label>
           <label class="live-toggle on" id="liveContinuousToggle">🔁 Безперервно</label>
+          <label class="live-check" id="liveSaveHistoryLabel" title="Зберігати голосові діалоги у вкладці «Історія»">
+            <input type="checkbox" id="liveSaveHistoryChk">
+            📚 Зберігати в історію
+          </label>
         </div>
 
         <div class="live-panels">
@@ -1487,7 +1511,7 @@ function setPreviewFromBlob(blob) {
   document.getElementById('photoPreview').src = url;
 }
 
-const LIMITS = { translate: 20, scan: 15 };
+const LIMITS = { translate: 20, scan: 15, voiceTranslate: 50 };
 
 const LANG_NAMES = { uk: 'Ukrainian', en: 'English', pl: 'Polish', de: 'German', cs: 'Czech' };
 const TESSERACT_LANGS = { uk: 'ukr', en: 'eng', pl: 'pol', de: 'deu', cs: 'ces' };
@@ -1556,6 +1580,7 @@ let state = {
   // Live S2S settings:
   liveSrcLang: 'uk', liveTgtLang: 'en',
   liveAutoSpeak: true, liveContinuous: true,
+  liveSaveHistory: false, // save voice dialogs to history (off by default)
   // Custom phrase system:
   customCategories: [], // [{ id, label }]
   customPhrases: {},    // { categoryId: [ {uk,en,pl,de,cs}, ... ] }
@@ -1568,7 +1593,7 @@ let scansCache = [];
 // Live conversation log (not persisted)
 let liveLog = [];
 
-let usage = { date: '', translate: 0, scan: 0 };
+let usage = { date: '', translate: 0, scan: 0, voiceTranslate: 0 };
 
 function todayStr() {
   const d = new Date();
@@ -1632,6 +1657,7 @@ function loadState() {
       if (!Array.isArray(state.history)) state.history = [];
       if (!Array.isArray(state.customCategories)) state.customCategories = [];
       if (!state.customPhrases || typeof state.customPhrases !== 'object') state.customPhrases = {};
+      if (typeof state.liveSaveHistory !== 'boolean') state.liveSaveHistory = false;
     }
   } catch(e) { console.error(e); }
 }
@@ -1649,7 +1675,7 @@ function loadUsage() {
       if (parsed.date === todayStr()) {
         usage = { ...usage, ...parsed };
       } else {
-        usage = { date: todayStr(), translate: 0, scan: 0 };
+        usage = { date: todayStr(), translate: 0, scan: 0, voiceTranslate: 0 };
         saveUsage();
       }
     } else {
@@ -1658,7 +1684,7 @@ function loadUsage() {
     }
   } catch(e) {
     console.error(e);
-    usage = { date: todayStr(), translate: 0, scan: 0 };
+    usage = { date: todayStr(), translate: 0, scan: 0, voiceTranslate: 0 };
   }
 }
 
@@ -1668,7 +1694,7 @@ function saveUsage() {
 
 function checkRollover() {
   if (usage.date !== todayStr()) {
-    usage = { date: todayStr(), translate: 0, scan: 0 };
+    usage = { date: todayStr(), translate: 0, scan: 0, voiceTranslate: 0 };
     saveUsage();
   }
 }
@@ -1789,8 +1815,10 @@ async function confirmModal(title, body, { icon = 'question', okLabel = 'Так'
 }
 
 async function limitReachedModal(type) {
-  const label = type === 'translate' ? 'перекладів' : 'сканувань';
-  const icon = type === 'translate' ? '📝' : '📷';
+  const LABELS = { translate: 'перекладів', scan: 'сканувань', voiceTranslate: 'голосових перекладів' };
+  const ICONS = { translate: '📝', scan: '📷', voiceTranslate: '🗣️' };
+  const label = LABELS[type] || 'запитів';
+  const icon = ICONS[type] || 'ℹ️';
   const max = LIMITS[type];
   await alertModal(
     'Денний ліміт досягнуто',
@@ -2203,6 +2231,7 @@ async function restoreFromZip(file) {
       if (!Array.isArray(state.history)) state.history = [];
       if (!Array.isArray(state.customCategories)) state.customCategories = [];
       if (!state.customPhrases || typeof state.customPhrases !== 'object') state.customPhrases = {};
+      if (typeof state.liveSaveHistory !== 'boolean') state.liveSaveHistory = false;
       saveState();
     }
 
@@ -2443,17 +2472,6 @@ const TTS = (() => {
       try {
         try { window.speechSynthesis.resume(); } catch(e) {}
         window.speechSynthesis.speak(u);
-
-        const keepAlive = setInterval(() => {
-          if (currentToken !== myToken || !window.speechSynthesis.speaking) {
-            clearInterval(keepAlive);
-            return;
-          }
-          try {
-            window.speechSynthesis.pause();
-            window.speechSynthesis.resume();
-          } catch(e) {}
-        }, 10000);
       } catch (err) {
         console.error('TTS speak failed:', err);
         showToast('Помилка озвучення', 'error');
@@ -3223,11 +3241,12 @@ const LiveS2S = (() => {
     let translation = '';
     let provider = '—';
 
-    if (!canUse('translate')) {
+    // Separate daily counter for voice-to-voice API calls
+    if (!canUse('voiceTranslate')) {
       processing = false;
       updateMicButton();
-      await limitReachedModal('translate');
-      setStatus('Ліміт перекладів вичерпано');
+      await limitReachedModal('voiceTranslate');
+      setStatus('Ліміт голосових перекладів вичерпано');
       manualStop = true;
       return;
     }
@@ -3236,7 +3255,7 @@ const LiveS2S = (() => {
       const res = await translate(text, state.liveSrcLang, state.liveTgtLang);
       translation = res.translation;
       provider = res.provider;
-      incrementUsage('translate');
+      incrementUsage('voiceTranslate');
     } catch (e) {
       console.error(e);
       processing = false;
@@ -3252,14 +3271,16 @@ const LiveS2S = (() => {
     tel.innerHTML = escapeHtml(translation);
     tel.classList.remove('interim');
 
-    // Add to history & conversation log
-    state.history.unshift({
-      src: text, tgt: translation,
-      srcLang: state.liveSrcLang, tgtLang: state.liveTgtLang,
-      context: 'live', time: Date.now(),
-    });
-    if (state.history.length > 200) state.history = state.history.slice(0, 200);
-    saveState();
+    // Add to history only if the user opted in
+    if (state.liveSaveHistory) {
+      state.history.unshift({
+        src: text, tgt: translation,
+        srcLang: state.liveSrcLang, tgtLang: state.liveTgtLang,
+        context: 'live', time: Date.now(),
+      });
+      if (state.history.length > 200) state.history = state.history.slice(0, 200);
+      saveState();
+    }
 
     liveLog.unshift({
       src: text, tgt: translation,
@@ -3386,6 +3407,10 @@ const LiveS2S = (() => {
     const c = document.getElementById('liveContinuousToggle');
     if (a) a.classList.toggle('on', !!state.liveAutoSpeak);
     if (c) c.classList.toggle('on', !!state.liveContinuous);
+    const chk = document.getElementById('liveSaveHistoryChk');
+    const lbl = document.getElementById('liveSaveHistoryLabel');
+    if (chk) chk.checked = !!state.liveSaveHistory;
+    if (lbl) lbl.classList.toggle('checked', !!state.liveSaveHistory);
   }
 
   function bind() {
@@ -3418,6 +3443,17 @@ const LiveS2S = (() => {
       state.liveContinuous = !state.liveContinuous;
       updateToggles();
       saveState();
+    };
+
+    // Save voice dialogs to history (checkbox, unchecked by default)
+    const saveChk = document.getElementById('liveSaveHistoryChk');
+    if (saveChk) saveChk.onchange = (e) => {
+      state.liveSaveHistory = !!e.target.checked;
+      updateToggles();
+      saveState();
+      showToast(state.liveSaveHistory
+        ? 'Голосові діалоги зберігатимуться в історії 📚'
+        : 'Голосові діалоги не зберігаються в історії', 'success');
     };
 
     const replay = document.getElementById('liveReplayBtn');
