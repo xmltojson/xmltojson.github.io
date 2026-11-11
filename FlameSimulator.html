@@ -1,0 +1,1623 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#100c09">
+<meta name="description" content="Затишний симулятор каміна з плавним полум’ям, жаром та іскрами. Налаштування, мова та стан вікна зберігаються автоматично.">
+<title>Вогнище — Симулятор каміна</title>
+
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%2318100c'/%3E%3Cpath d='M35 7C39 22 23 25 27 36c5-2 8-9 8-9 10 8 16 15 12 24-5 12-25 12-31 0C8 36 25 24 35 7Z' fill='%23ff912f'/%3E%3Cpath d='M33 34c2 8-10 11-6 19 3 5 11 3 12-2 1-6-3-11-6-17Z' fill='%23ffe4a1'/%3E%3C/svg%3E">
+
+<style>
+  :root {
+    color-scheme: dark;
+    --text: #f5eadf;
+    --muted: #a49180;
+    --accent: #ffb36b;
+    --border: #ffffff15;
+  }
+
+  * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+
+  html {
+    height: 100%;
+    background: #100c09;
+  }
+
+  body {
+    margin: 0;
+    min-height: 100%;
+    color: var(--text);
+    font-family: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+    background:
+      radial-gradient(ellipse at 50% 50%, #58291026, transparent 70%),
+      #100c09;
+  }
+
+  body.modal-open { overflow: hidden; }
+  button, input { font: inherit; }
+  button { color: inherit; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+  button:focus-visible, input:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 4px;
+  }
+  svg { display: block; width: 20px; height: 20px; }
+
+  .app {
+    width: min(1480px, 100%);
+    height: 100vh;
+    height: 100dvh;
+    min-height: 280px;
+    margin: auto;
+    padding:
+      max(22px, env(safe-area-inset-top))
+      max(24px, env(safe-area-inset-right))
+      max(18px, env(safe-area-inset-bottom))
+      max(24px, env(safe-area-inset-left));
+    display: grid;
+    grid-template-rows: auto minmax(0, 1fr) auto;
+    gap: 19px;
+  }
+
+  header, .brand, .header-actions, .languages, .status, footer {
+    display: flex;
+    align-items: center;
+  }
+
+  header { justify-content: space-between; gap: 16px; }
+  .brand { gap: 12px; }
+
+  .brand-icon {
+    display: grid;
+    place-items: center;
+    flex: 0 0 auto;
+    width: 43px;
+    height: 47px;
+    border: 1px solid #ffad5d25;
+    border-radius: 14px;
+    color: var(--accent);
+    background: linear-gradient(145deg, #ff982019, #ff982003);
+  }
+  .brand-icon svg { width: 25px; height: 25px; }
+  h1 { margin: 0 0 3px; font-size: 22px; font-weight: 650; letter-spacing: -.6px; }
+  .subtitle { margin: 0; color: var(--muted); font-size: 12px; }
+  .header-actions { gap: 22px; }
+  .languages { gap: 4px; color: #6d5948; font-size: 12px; }
+  .languages button {
+    padding: 10px 7px;
+    border: 0;
+    background: transparent;
+    color: var(--muted);
+    font-size: 12px;
+    font-weight: 700;
+  }
+  .languages button[aria-pressed="true"] { color: var(--accent); }
+
+  .settings-button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 9px;
+    min-height: 42px;
+    padding: 10px 15px;
+    border: 1px solid #e9ae7330;
+    border-radius: 11px;
+    background: #ffad5d09;
+    font-size: 12px;
+    transition: background .2s;
+  }
+  .settings-button svg { width: 17px; height: 17px; }
+  .settings-button:hover { background: #ffad5d19; }
+
+  /*
+    The available stage is measured in JS. The fireplace always fits inside it
+    at its original aspect ratio: no stretching or cropping after rotation.
+  */
+  .stage {
+    min-width: 0;
+    min-height: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .fireplace {
+    position: relative;
+    flex: none;
+    overflow: hidden;
+    width: 100%;
+    aspect-ratio: 16 / 9;
+    border-radius: 17px;
+    background: #030201;
+    box-shadow:
+      0 0 0 1px #82522b40,
+      0 25px 90px #0008,
+      0 0 95px #ec641008;
+  }
+
+  #canvas {
+    display: block;
+    width: 100%;
+    height: 100%;
+  }
+
+  .scene-label {
+    position: absolute;
+    top: 20px;
+    left: 22px;
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    padding: 9px 12px;
+    border: 1px solid #ffffff15;
+    border-radius: 100px;
+    background: #150d0980;
+    backdrop-filter: blur(10px);
+    color: #deccb6;
+    font-size: 10px;
+    letter-spacing: 1.6px;
+    text-transform: uppercase;
+    pointer-events: none;
+  }
+  .dot {
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    background: #ffb35b;
+    box-shadow: 0 0 9px #ffb35b;
+  }
+
+  .scene-actions {
+    position: absolute;
+    right: 18px;
+    bottom: 18px;
+    display: flex;
+    gap: 8px;
+  }
+
+  .icon-button {
+    display: grid;
+    place-items: center;
+    flex-shrink: 0;
+    width: 42px;
+    height: 42px;
+    padding: 0;
+    border: 1px solid #ffffff26;
+    border-radius: 11px;
+    background: #150e0ab3;
+    backdrop-filter: blur(10px);
+    transition: background .2s;
+  }
+  .icon-button:hover { background: #684022b3; }
+
+  .pause-badge {
+    position: absolute;
+    inset: 0;
+    display: grid;
+    place-items: center;
+    pointer-events: none;
+  }
+  .pause-badge span {
+    padding: 12px 22px;
+    border: 1px solid #ffffff20;
+    border-radius: 100px;
+    background: #130d0bc9;
+    backdrop-filter: blur(10px);
+    font-size: 13px;
+  }
+
+  footer {
+    justify-content: space-between;
+    gap: 18px;
+    color: var(--muted);
+    font-size: 11px;
+    line-height: 1.5;
+  }
+  .status { gap: 7px; color: #8e7c6c; font-size: 10px; }
+  .status svg { width: 13px; height: 13px; color: #b29779; flex-shrink: 0; }
+
+  .notice {
+    position: fixed;
+    z-index: 10;
+    left: 50%;
+    bottom: max(20px, env(safe-area-inset-bottom));
+    transform: translateX(-50%);
+    max-width: calc(100% - 32px);
+    margin: 0;
+    padding: 12px 18px;
+    border: 1px solid #e9ae7330;
+    border-radius: 12px;
+    background: #23180ff2;
+    box-shadow: 0 8px 35px #0008;
+    color: #e3bb94;
+    font-size: 12px;
+    text-align: center;
+  }
+
+  dialog {
+    width: min(460px, calc(100vw - 28px));
+    max-height: calc(100vh - 28px);
+    max-height: calc(100dvh - 28px));
+    margin: auto;
+    padding: 0;
+    overflow: hidden;
+    color: var(--text);
+    border: 1px solid #ffc38b29;
+    border-radius: 21px;
+    background:
+      radial-gradient(ellipse at 20% 0, #a05b2020, transparent 65%),
+      #1b1511;
+    box-shadow: 0 35px 120px #000b;
+  }
+
+  /* Separate rule also supports browsers that reject dynamic viewport units. */
+  @supports (height: 100dvh) {
+    dialog { max-height: calc(100dvh - 28px); }
+  }
+
+  dialog[open] {
+    display: flex;
+    flex-direction: column;
+    animation: enter .18s ease-out;
+  }
+  dialog::backdrop {
+    background: #060402aa;
+    backdrop-filter: blur(7px);
+  }
+  @keyframes enter {
+    from { opacity: 0; transform: translateY(7px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .dialog-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    flex-shrink: 0;
+    gap: 16px;
+    padding: 25px 25px 21px;
+    border-bottom: 1px solid var(--border);
+  }
+  .eyebrow {
+    margin: 0 0 8px;
+    color: #b99573;
+    font-size: 9px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+  }
+  h2 { margin: 0; font-size: 23px; font-weight: 600; letter-spacing: -.5px; }
+  .dialog-description { margin: 8px 0 0; color: var(--muted); font-size: 12px; line-height: 1.6; }
+  .close-button { width: 34px; height: 34px; border-color: #ffffff12; background: #ffffff04; }
+  .close-button svg { width: 17px; height: 17px; }
+
+  .dialog-body {
+    min-height: 0;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    padding: 24px 25px;
+    scrollbar-width: thin;
+    scrollbar-color: #755037 transparent;
+  }
+  .control + .control { margin-top: 26px; }
+  .control-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 16px;
+    font-size: 13px;
+  }
+  output {
+    min-width: 50px;
+    padding: 4px 7px;
+    border: 1px solid #ffae5817;
+    border-radius: 6px;
+    color: var(--accent);
+    background: #ffae5808;
+    font-size: 11px;
+    text-align: center;
+    font-variant-numeric: tabular-nums;
+  }
+
+  input[type="range"] {
+    display: block;
+    appearance: none;
+    width: 100%;
+    height: 5px;
+    margin: 11px 0;
+    border-radius: 5px;
+    background: linear-gradient(to right, #e69953 var(--fill), #44362a var(--fill));
+    cursor: pointer;
+    touch-action: pan-y;
+  }
+  input[type="range"]::-webkit-slider-thumb {
+    appearance: none;
+    width: 16px;
+    height: 16px;
+    border: 2px solid #372213;
+    border-radius: 50%;
+    background: #ffc18a;
+    box-shadow: 0 0 0 1px #ffbc7160;
+  }
+  input[type="range"]::-moz-range-thumb {
+    width: 12px;
+    height: 12px;
+    border: 2px solid #372213;
+    border-radius: 50%;
+    background: #ffc18a;
+  }
+  .range-ends {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 12px;
+    color: #8f7d6c;
+    font-size: 10px;
+  }
+
+  .toggle-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 20px;
+    margin-top: 27px;
+    padding-top: 22px;
+    border-top: 1px solid var(--border);
+    cursor: pointer;
+  }
+  .toggle-title { display: block; font-size: 13px; }
+  .toggle-description { display: block; margin-top: 5px; color: var(--muted); font-size: 11px; }
+  .switch { position: relative; width: 38px; height: 22px; flex-shrink: 0; }
+  .switch input { position: absolute; width: 100%; height: 100%; margin: 0; opacity: 0; }
+  .switch-track {
+    display: block;
+    width: 100%;
+    height: 100%;
+    border-radius: 20px;
+    background: #49372b;
+    transition: background .2s;
+  }
+  .switch-track::after {
+    content: "";
+    position: absolute;
+    top: 3px;
+    left: 3px;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: #f8dcc0;
+    transition: transform .2s;
+  }
+  .switch input:checked + .switch-track { background: #b76a2e; }
+  .switch input:checked + .switch-track::after { transform: translateX(16px); }
+  .switch input:focus-visible + .switch-track { outline: 2px solid var(--accent); outline-offset: 4px; }
+
+  .dialog-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-shrink: 0;
+    gap: 15px;
+    padding: 17px 25px;
+    border-top: 1px solid var(--border);
+    background: #00000013;
+  }
+  .reset {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    padding: 8px 0;
+    border: 0;
+    background: none;
+    color: var(--muted);
+    font-size: 11px;
+  }
+  .reset svg { width: 14px; height: 14px; }
+  .reset:hover { color: var(--accent); }
+  .done {
+    min-height: 40px;
+    padding: 9px 22px;
+    border: 1px solid #ffc38b35;
+    border-radius: 9px;
+    background: #ffae6517;
+    color: #ffd3aa;
+    font-size: 12px;
+  }
+  .done:hover { background: #ffae6527; }
+
+  @media (max-width: 600px) {
+    .app {
+      padding-right: max(14px, env(safe-area-inset-right));
+      padding-left: max(14px, env(safe-area-inset-left));
+      gap: 14px;
+    }
+    .brand { gap: 9px; }
+    .brand-icon { width: 35px; height: 40px; }
+    h1 { font-size: 19px; }
+    .subtitle { font-size: 10px; }
+    .header-actions { gap: 9px; }
+    .settings-button { padding: 10px; }
+    .settings-button span { display: none; }
+    .languages button { padding: 9px 4px; font-size: 11px; }
+    .fireplace { border-radius: 12px; }
+    .scene-label { top: 12px; left: 12px; font-size: 8px; padding: 7px 9px; }
+    .scene-actions { right: 11px; bottom: 11px; gap: 6px; }
+    .icon-button { width: 38px; height: 38px; }
+    footer { flex-direction: column; align-items: flex-start; gap: 7px; font-size: 10px; }
+  }
+
+  /* Compact landscape layout keeps the entire fire and controls on screen. */
+  @media (orientation: landscape) and (max-height: 600px) {
+    .app {
+      min-height: 220px;
+      padding-top: max(8px, env(safe-area-inset-top));
+      padding-bottom: max(8px, env(safe-area-inset-bottom));
+      padding-left: max(14px, env(safe-area-inset-left));
+      padding-right: max(14px, env(safe-area-inset-right));
+      grid-template-rows: auto minmax(0, 1fr);
+      gap: 9px;
+    }
+    footer, .subtitle { display: none; }
+    .brand-icon { width: 31px; height: 33px; border-radius: 10px; }
+    .brand-icon svg { width: 20px; height: 20px; }
+    h1 { margin: 0; font-size: 17px; }
+    .settings-button { min-height: 33px; padding: 7px 12px; }
+    .languages button { padding: 7px; }
+    .scene-label { top: 10px; left: 12px; font-size: 8px; padding: 6px 9px; }
+    .scene-actions { right: 11px; bottom: 11px; }
+    .icon-button { width: 35px; height: 35px; border-radius: 9px; }
+
+    dialog { width: min(700px, calc(100vw - 40px)); }
+    .dialog-header { padding: 14px 20px; }
+    .eyebrow { display: none; }
+    h2 { font-size: 19px; }
+    .dialog-description { margin-top: 4px; font-size: 11px; }
+    .dialog-body {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      align-items: start;
+      gap: 20px 27px;
+      padding: 17px 21px;
+    }
+    .control + .control { margin-top: 0; }
+    .control-head { margin-bottom: 12px; font-size: 12px; }
+    .toggle-row { margin: 0; padding-top: 4px; border: 0; align-self: center; }
+    .dialog-footer { padding: 10px 20px; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation: none !important;
+      transition: none !important;
+    }
+  }
+</style>
+</head>
+
+<body>
+<main class="app">
+  <header>
+    <div class="brand">
+      <div class="brand-icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4">
+          <path d="M13 2c1 5-4 6-3 10 2-1 3-3 3-3 4 3 6 5 6 8a7 7 0 0 1-14 0c0-5 5-7 8-15Z"/>
+          <path d="M12 15c-3 3-3 6 0 6s3-3 0-6Z"/>
+        </svg>
+      </div>
+      <div>
+        <h1 data-i18n="title">Вогнище</h1>
+        <p class="subtitle" data-i18n="subtitle">Трохи тепла. Мить спокою.</p>
+      </div>
+    </div>
+
+    <div class="header-actions">
+      <nav class="languages" id="languages" aria-label="Мова">
+        <button type="button" data-lang="uk" aria-label="Українська">UK</button>
+        <span aria-hidden="true">|</span>
+        <button type="button" data-lang="en" aria-label="English">EN</button>
+      </nav>
+      <button
+        class="settings-button"
+        id="openSettings"
+        type="button"
+        aria-haspopup="dialog"
+        aria-controls="settingsDialog"
+      >
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
+          <path d="M4 7h7m4 0h5M4 17h3m4 0h9"/>
+          <circle cx="13" cy="7" r="2"/>
+          <circle cx="9" cy="17" r="2"/>
+        </svg>
+        <span data-i18n="settings">Налаштування</span>
+      </button>
+    </div>
+  </header>
+
+  <div class="stage" id="stage">
+    <section class="fireplace" id="scene" aria-label="Анімований камін">
+      <canvas id="canvas" aria-hidden="true"></canvas>
+
+      <div class="scene-label">
+        <span class="dot"></span>
+        <span data-i18n="sceneTitle">Вечір біля каміна</span>
+      </div>
+
+      <div class="pause-badge" id="pauseBadge" hidden>
+        <span data-i18n="paused">На паузі</span>
+      </div>
+
+      <div class="scene-actions">
+        <button class="icon-button" id="pause" type="button">
+          <svg id="pauseIcon" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"></svg>
+        </button>
+        <button class="icon-button" id="fullscreen" type="button">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
+            <path d="M8 4H4v4m12-4h4v4M4 16v4h4m12-4v4h-4"/>
+          </svg>
+        </button>
+      </div>
+    </section>
+  </div>
+
+  <footer>
+    <span data-i18n="footer">Нікуди не поспішайте. Просто побудьте біля вогню.</span>
+    <span class="status">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true">
+        <path d="m5 12 4 4L19 6"/>
+      </svg>
+      <span id="saveText" role="status"></span>
+    </span>
+  </footer>
+</main>
+
+<p class="notice" id="notice" role="status" hidden></p>
+
+<dialog id="settingsDialog" aria-labelledby="settingsTitle" aria-describedby="settingsDescription">
+  <div class="dialog-header">
+    <div>
+      <p class="eyebrow" data-i18n="personalize">Ваш особистий камін</p>
+      <h2 id="settingsTitle" data-i18n="settings">Налаштування</h2>
+      <p class="dialog-description" id="settingsDescription" data-i18n="settingsDescription">
+        Налаштуйте полум’я під свій настрій.
+      </p>
+    </div>
+    <button class="icon-button close-button" id="closeSettings" type="button" autofocus>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true">
+        <path d="m6 6 12 12M18 6 6 18"/>
+      </svg>
+    </button>
+  </div>
+
+  <div class="dialog-body">
+    <div class="control">
+      <div class="control-head">
+        <label for="intensity" data-i18n="intensity">Сила полум’я</label>
+        <output id="intensityValue" for="intensity"></output>
+      </div>
+      <input id="intensity" type="range" min="15" max="100" step="1">
+      <div class="range-ends">
+        <span data-i18n="gentle">Тихе</span>
+        <span data-i18n="roaring">Яскраве</span>
+      </div>
+    </div>
+
+    <div class="control">
+      <div class="control-head">
+        <label for="speed" data-i18n="speed">Швидкість</label>
+        <output id="speedValue" for="speed"></output>
+      </div>
+      <input id="speed" type="range" min="25" max="200" step="5">
+      <div class="range-ends">
+        <span data-i18n="slow">Повільно</span>
+        <span data-i18n="fast">Швидко</span>
+      </div>
+    </div>
+
+    <div class="control">
+      <div class="control-head">
+        <label for="wind" data-i18n="wind">Вітер</label>
+        <output id="windValue" for="wind"></output>
+      </div>
+      <input id="wind" type="range" min="-100" max="100" step="5">
+      <div class="range-ends">
+        <span data-i18n="left">Ліворуч</span>
+        <span data-i18n="right">Праворуч</span>
+      </div>
+    </div>
+
+    <label class="toggle-row" for="embers">
+      <span>
+        <span class="toggle-title" data-i18n="embers">Іскри</span>
+        <span class="toggle-description" data-i18n="embersDescription">Маленькі вогники над полум’ям</span>
+      </span>
+      <span class="switch">
+        <input id="embers" type="checkbox">
+        <span class="switch-track"></span>
+      </span>
+    </label>
+  </div>
+
+  <div class="dialog-footer">
+    <button class="reset" id="reset" type="button">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true">
+        <path d="M3 11a9 9 0 1 1 2 7M3 4v7h7"/>
+      </svg>
+      <span data-i18n="reset">Скинути</span>
+    </button>
+    <button class="done" id="done" type="button" data-i18n="done">Готово</button>
+  </div>
+</dialog>
+
+<script>
+(() => {
+  "use strict";
+
+  const $ = id => document.getElementById(id);
+  const KEY = "hearth-flame-settings-v1";
+  const reducedMotion = matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  const defaults = {
+    lang: "uk",
+    intensity: 78,
+    speed: 85,
+    wind: 0,
+    embers: true,
+    paused: reducedMotion,
+    settingsOpen: false
+  };
+
+  const words = {
+    uk: {
+      title: "Вогнище",
+      pageTitle: "Вогнище — Симулятор каміна",
+      description: "Затишний симулятор каміна з плавним полум’ям, жаром та іскрами. Налаштування, мова та стан вікна зберігаються автоматично.",
+      subtitle: "Трохи тепла. Мить спокою.",
+      sceneTitle: "Вечір біля каміна",
+      settings: "Налаштування",
+      personalize: "Ваш особистий камін",
+      settingsDescription: "Налаштуйте полум’я під свій настрій.",
+      intensity: "Сила полум’я",
+      gentle: "Тихе",
+      roaring: "Яскраве",
+      speed: "Швидкість",
+      slow: "Повільно",
+      fast: "Швидк��",
+      wind: "Вітер",
+      left: "Ліворуч",
+      right: "Праворуч",
+      calm: "Штиль",
+      embers: "Іскри",
+      embersDescription: "Маленькі вогники над полум’ям",
+      reset: "Скинути",
+      done: "Готово",
+      close: "Закрити налаштування",
+      paused: "На паузі",
+      pause: "Призупинити",
+      play: "Продовжити",
+      fullscreen: "На весь екран",
+      exitFullscreen: "Вийти з повного екрана",
+      footer: "Нікуди не поспішайте. Просто побудьте біля вогню.",
+      saved: "Налаштування та стан вікна збережено",
+      unsaved: "Збереження в цьому браузері недоступне",
+      scene: "Анімований камін",
+      language: "Мова",
+      fullscreenError: "Повноекранний режим зараз недоступний."
+    },
+    en: {
+      title: "Hearth",
+      pageTitle: "Hearth — Fireplace Simulator",
+      description: "A cozy fireplace simulator with smooth flames, glowing coals, and sparks. Your settings, language, and popup state are saved automatically.",
+      subtitle: "A little warmth. A moment of calm.",
+      sceneTitle: "An evening by the fire",
+      settings: "Settings",
+      personalize: "Your personal fireplace",
+      settingsDescription: "Adjust the flames to suit your mood.",
+      intensity: "Flame intensity",
+      gentle: "Gentle",
+      roaring: "Roaring",
+      speed: "Speed",
+      slow: "Slow",
+      fast: "Fast",
+      wind: "Wind",
+      left: "Left",
+      right: "Right",
+      calm: "Still",
+      embers: "Sparks",
+      embersDescription: "Little glowing embers above the flames",
+      reset: "Reset",
+      done: "Done",
+      close: "Close settings",
+      paused: "Paused",
+      pause: "Pause",
+      play: "Resume",
+      fullscreen: "Enter fullscreen",
+      exitFullscreen: "Exit fullscreen",
+      footer: "No rush. Just a quiet moment by the fire.",
+      saved: "Settings and window state saved",
+      unsaved: "Storage is unavailable in this browser",
+      scene: "Animated fireplace",
+      language: "Language",
+      fullscreenError: "Fullscreen is currently unavailable."
+    }
+  };
+
+  let state = { ...defaults };
+  let storageOK = true;
+
+  try {
+    const saved = JSON.parse(localStorage.getItem(KEY) || "null");
+    if (saved && typeof saved === "object") {
+      if (saved.lang === "uk" || saved.lang === "en") state.lang = saved.lang;
+
+      for (const [key, min, max, step] of [
+        ["intensity", 15, 100, 1],
+        ["speed", 25, 200, 5],
+        ["wind", -100, 100, 5]
+      ]) {
+        if (typeof saved[key] === "number" && Number.isFinite(saved[key])) {
+          const value = Math.max(min, Math.min(max, saved[key]));
+          state[key] = min + Math.round((value - min) / step) * step;
+        }
+      }
+
+      for (const key of ["embers", "paused", "settingsOpen"]) {
+        if (typeof saved[key] === "boolean") state[key] = saved[key];
+      }
+    }
+  } catch {
+    // Corrupt JSON or unavailable storage must not prevent rendering.
+  }
+
+  const t = key => words[state.lang][key];
+  const dialog = $("settingsDialog");
+
+  let dirty = true;
+  let raf = 0;
+  let lastTime = 0;
+  let simulationTime = 12.4;
+  let noticeTimer;
+  let noticeKey = "";
+
+  function save() {
+    try {
+      localStorage.setItem(KEY, JSON.stringify(state));
+      storageOK = true;
+    } catch {
+      storageOK = false;
+    }
+    $("saveText").textContent = t(storageOK ? "saved" : "unsaved");
+  }
+
+  function setButtonLabel(id, key) {
+    $(id).title = t(key);
+    $(id).setAttribute("aria-label", t(key));
+  }
+
+  function updateUI() {
+    document.documentElement.lang = state.lang;
+    document.title = t("pageTitle");
+    document.querySelector('meta[name="description"]').content = t("description");
+
+    document.querySelectorAll("[data-i18n]").forEach(el => {
+      el.textContent = t(el.dataset.i18n);
+    });
+    document.querySelectorAll("[data-lang]").forEach(button => {
+      button.setAttribute("aria-pressed", String(button.dataset.lang === state.lang));
+    });
+
+    for (const key of ["intensity", "speed", "wind"]) {
+      const input = $(key);
+      input.value = state[key];
+      const fill = (state[key] - Number(input.min)) /
+        (Number(input.max) - Number(input.min)) * 100;
+      input.style.setProperty("--fill", `${fill}%`);
+    }
+
+    $("intensityValue").textContent = `${state.intensity}%`;
+    $("speedValue").textContent = (state.speed / 100).toLocaleString(
+      state.lang === "uk" ? "uk-UA" : "en-US",
+      { minimumFractionDigits: 2, maximumFractionDigits: 2 }
+    ) + "×";
+    $("windValue").textContent = state.wind === 0
+      ? t("calm")
+      : `${state.wind < 0 ? "←" : "→"} ${Math.abs(state.wind)}%`;
+
+    $("wind").setAttribute("aria-valuetext", state.wind === 0
+      ? t("calm")
+      : `${t(state.wind < 0 ? "left" : "right")} ${Math.abs(state.wind)}%`);
+
+    $("embers").checked = state.embers;
+    $("pauseBadge").hidden = !state.paused;
+    $("pause").setAttribute("aria-pressed", String(state.paused));
+    $("pauseIcon").innerHTML = state.paused
+      ? '<path d="m8 4 12 8-12 8z"/>'
+      : '<path d="M7 5h3v14H7zm7 0h3v14h-3z"/>';
+
+    setButtonLabel("pause", state.paused ? "play" : "pause");
+    setButtonLabel("fullscreen", document.fullscreenElement ? "exitFullscreen" : "fullscreen");
+    setButtonLabel("openSettings", "settings");
+    setButtonLabel("closeSettings", "close");
+
+    $("scene").setAttribute("aria-label", t("scene"));
+    $("languages").setAttribute("aria-label", t("language"));
+    $("openSettings").setAttribute("aria-expanded", String(state.settingsOpen));
+    $("saveText").textContent = t(storageOK ? "saved" : "unsaved");
+
+    if (noticeKey) $("notice").textContent = t(noticeKey);
+  }
+
+  function invalidate() {
+    dirty = true;
+    if (!raf && !document.hidden) {
+      lastTime = performance.now();
+      raf = requestAnimationFrame(frame);
+    }
+  }
+
+  function change(patch) {
+    Object.assign(state, patch);
+    updateUI();
+    save();
+    invalidate();
+  }
+
+  document.querySelectorAll("[data-lang]").forEach(button => {
+    button.addEventListener("click", () => change({ lang: button.dataset.lang }));
+  });
+
+  for (const key of ["intensity", "speed", "wind"]) {
+    $(key).addEventListener("input", event => {
+      change({ [key]: Number(event.target.value) });
+    });
+  }
+
+  $("embers").addEventListener("change", event => change({ embers: event.target.checked }));
+  $("pause").addEventListener("click", () => change({ paused: !state.paused }));
+
+  $("reset").addEventListener("click", () => {
+    change({ ...defaults, lang: state.lang, settingsOpen: dialog.open });
+  });
+
+  function openSettings() {
+    if (!dialog.open) dialog.showModal();
+    document.body.classList.add("modal-open");
+    change({ settingsOpen: true });
+  }
+
+  function closeSettings() {
+    if (dialog.open) dialog.close();
+    document.body.classList.remove("modal-open");
+    change({ settingsOpen: false });
+    $("openSettings").focus({ preventScroll: true });
+  }
+
+  $("openSettings").addEventListener("click", openSettings);
+  $("closeSettings").addEventListener("click", closeSettings);
+  $("done").addEventListener("click", closeSettings);
+
+  dialog.addEventListener("cancel", event => {
+    event.preventDefault();
+    closeSettings();
+  });
+
+  dialog.addEventListener("close", () => {
+    if (!dialog.open) {
+      document.body.classList.remove("modal-open");
+      if (state.settingsOpen) change({ settingsOpen: false });
+    }
+  });
+
+  let backdropStart = false;
+
+  function outsideDialog(event) {
+    const rect = dialog.getBoundingClientRect();
+    return event.clientX < rect.left || event.clientX > rect.right ||
+      event.clientY < rect.top || event.clientY > rect.bottom;
+  }
+
+  dialog.addEventListener("pointerdown", event => {
+    backdropStart = event.target === dialog && outsideDialog(event);
+  });
+
+  dialog.addEventListener("click", event => {
+    if (backdropStart && event.target === dialog && outsideDialog(event)) {
+      closeSettings();
+    }
+    backdropStart = false;
+  });
+
+  function showNotice(key) {
+    clearTimeout(noticeTimer);
+    noticeKey = key;
+    $("notice").textContent = t(key);
+    $("notice").hidden = false;
+    noticeTimer = setTimeout(() => {
+      $("notice").hidden = true;
+      noticeKey = "";
+    }, 4500);
+  }
+
+  $("fullscreen").addEventListener("click", async () => {
+    try {
+      if (document.fullscreenElement) {
+        await document.exitFullscreen();
+      } else if (document.documentElement.requestFullscreen) {
+        await document.documentElement.requestFullscreen();
+      } else {
+        throw new Error("Fullscreen unavailable");
+      }
+    } catch {
+      showNotice("fullscreenError");
+    }
+  });
+
+  document.addEventListener("fullscreenchange", () => {
+    updateUI();
+    fitScene();
+  });
+
+  /* ============================================================
+     Canvas 2D only.
+
+     All animated flames are complete, continuously curved shapes.
+     No WebGL, horizontal image strips, pixel feedback, or partially
+     updated frames. Static textures are cached separately.
+  ============================================================ */
+
+  const W = 1440;
+  const H = 810;
+  const TAU = Math.PI * 2;
+
+  const canvas = $("canvas");
+  const ctx = canvas.getContext("2d", { alpha: false });
+
+  function makeCanvas(width, height) {
+    const surface = document.createElement("canvas");
+    surface.width = width;
+    surface.height = height;
+    return surface;
+  }
+
+  const background = makeCanvas(W, H);
+  const foreground = makeCanvas(W, H);
+  const overlay = makeCanvas(W, H);
+
+  // A moderately sized transparent flame surface provides soft edges.
+  const flames = makeCanvas(1152, 648);
+  const fireCtx = flames.getContext("2d");
+
+  let seed = 1;
+
+  function random() {
+    seed = (Math.imul(seed, 1664525) + 1013904223) | 0;
+    return (seed >>> 0) / 4294967296;
+  }
+
+  function hash(n) {
+    const value = Math.sin(n * 127.1 + 311.7) * 43758.5453123;
+    return value - Math.floor(value);
+  }
+
+  // Continuous value noise with smooth first and second derivatives.
+  function noise(x) {
+    const i = Math.floor(x);
+    const f = x - i;
+    const s = f * f * f * (f * (f * 6 - 15) + 10);
+    return hash(i) * (1 - s) + hash(i + 1) * s;
+  }
+
+  function radial(context, x, y, rx, ry, stops) {
+    context.save();
+    context.translate(x, y);
+    context.scale(rx, ry);
+    const gradient = context.createRadialGradient(0, 0, 0, 0, 0, 1);
+    for (const [offset, color] of stops) gradient.addColorStop(offset, color);
+    context.fillStyle = gradient;
+    context.fillRect(-1, -1, 2, 2);
+    context.restore();
+  }
+
+  function drawWall(context) {
+    context.fillStyle = "#140805";
+    context.fillRect(0, 0, W, H);
+
+    for (let row = -1; row < 9; row++) {
+      for (let col = -1; col < 7; col++) {
+        const x = col * 280 + (row % 2 ? -140 : 0);
+        const y = row * 104;
+        const shade = random() * 17;
+
+        const gradient = context.createLinearGradient(x, y, x, y + 99);
+        gradient.addColorStop(0, `rgb(${61 + shade},${20 + shade * .3},10)`);
+        gradient.addColorStop(.45, `rgb(${48 + shade},${14 + shade * .2},7)`);
+        gradient.addColorStop(1, "#260d07");
+
+        context.fillStyle = gradient;
+        context.beginPath();
+        context.moveTo(x + 5, y + 5);
+        context.lineTo(x + 273, y + 4 + random() * 2);
+        context.lineTo(x + 275, y + 97);
+        context.lineTo(x + 5, y + 99);
+        context.closePath();
+        context.fill();
+
+        context.strokeStyle = "#c9783020";
+        context.lineWidth = 1.2;
+        context.beginPath();
+        context.moveTo(x + 8, y + 7);
+        context.lineTo(x + 269, y + 7);
+        context.stroke();
+
+        for (let i = 0; i < 210; i++) {
+          context.fillStyle = random() > .48 ? "#ffba7608" : "#00000019";
+          context.fillRect(
+            x + 9 + random() * 255,
+            y + 10 + random() * 83,
+            .5 + random() * 8,
+            .5 + random() * 2
+          );
+        }
+      }
+    }
+
+    for (const right of [false, true]) {
+      context.save();
+      if (right) {
+        context.translate(W, 0);
+        context.scale(-1, 1);
+      }
+
+      context.beginPath();
+      context.moveTo(0, 0);
+      context.lineTo(150, 0);
+      context.lineTo(181, 715);
+      context.lineTo(0, H);
+      context.closePath();
+      context.clip();
+
+      const side = context.createLinearGradient(0, 0, 185, 0);
+      side.addColorStop(0, "#1b0804");
+      side.addColorStop(.7, "#57200d");
+      side.addColorStop(1, "#170704");
+      context.fillStyle = side;
+      context.fillRect(0, 0, 190, H);
+
+      for (let row = 0; row < 9; row++) {
+        context.strokeStyle = "#130703";
+        context.lineWidth = 6;
+        context.beginPath();
+        context.moveTo(0, row * 121 + 20);
+        context.lineTo(185, row * 102 - 15);
+        context.stroke();
+
+        const joint = row % 2 ? 63 : 116;
+        context.lineWidth = 3;
+        context.beginPath();
+        context.moveTo(joint, row * 112 + 6);
+        context.lineTo(joint + 4, row * 112 + 94);
+        context.stroke();
+      }
+
+      context.restore();
+    }
+
+    radial(context, 730, 610, 620, 530, [
+      [0, "#ff650043"], [.4, "#df41001a"], [1, "#df410000"]
+    ]);
+
+    for (let i = 0; i < 9; i++) {
+      radial(context, 200 + random() * 1100, random() * 320,
+        120 + random() * 180, 190 + random() * 180,
+        [[0, "#00000050"], [1, "#00000000"]]);
+    }
+
+    const floor = context.createLinearGradient(0, 630, 0, H);
+    floor.addColorStop(0, "#11060300");
+    floor.addColorStop(.45, "#130905");
+    floor.addColorStop(1, "#040302");
+    context.fillStyle = floor;
+    context.fillRect(0, 630, W, 180);
+
+    radial(context, 725, 737, 525, 100, [
+      [0, "#eb420061"], [.6, "#b52a0022"], [1, "#b52a0000"]
+    ]);
+
+    for (let i = 0; i < 290; i++) {
+      const x = 222 + random() * 1010;
+      const y = 685 + random() * 105;
+      const radius = 2 + random() * 15;
+
+      context.shadowColor = "#ff4000";
+      context.shadowBlur = 7;
+      context.fillStyle = ["#b92f07", "#f25a0d", "#792006", "#e84208"][i % 4];
+      context.beginPath();
+      context.ellipse(x, y, radius, 2 + random() * 4, random() * .4, 0, TAU);
+      context.fill();
+      context.shadowBlur = 0;
+
+      context.fillStyle = "#110b07";
+      context.beginPath();
+      context.ellipse(x, y - 2, radius * .82, 2 + random() * 3, 0, 0, TAU);
+      context.fill();
+    }
+  }
+
+  function drawLog(context, x, y, length, radius, angle) {
+    context.save();
+    context.translate(x, y);
+    context.rotate(angle);
+
+    context.beginPath();
+    context.moveTo(-length / 2, -radius * .76);
+    for (let i = 0; i <= 35; i++) {
+      context.lineTo(-length / 2 + i * length / 35, -radius + random() * 8);
+    }
+    context.quadraticCurveTo(length / 2 + 18, 0, length / 2 - 3, radius * .8);
+    for (let i = 35; i >= 0; i--) {
+      context.lineTo(-length / 2 + i * length / 35, radius - random() * 8);
+    }
+    context.closePath();
+
+    const bark = context.createLinearGradient(0, -radius, 0, radius);
+    bark.addColorStop(0, "#6c391c");
+    bark.addColorStop(.17, "#452514");
+    bark.addColorStop(.5, "#20140e");
+    bark.addColorStop(1, "#080605");
+
+    context.fillStyle = bark;
+    context.shadowColor = "#000a";
+    context.shadowBlur = 15;
+    context.shadowOffsetY = 9;
+    context.fill();
+    context.shadowBlur = 0;
+    context.shadowOffsetY = 0;
+
+    context.save();
+    context.clip();
+
+    // Small, longitudinal bark flakes rather than large outlined tiles.
+    for (let row = 0; row < 17; row++) {
+      const py = -radius + row * radius * 2 / 16;
+      const light = Math.max(0, 1 - row / 16);
+      let px = -length / 2 - random() * 35;
+
+      while (px < length / 2) {
+        const width = 13 + random() * 45;
+        const height = 3 + random() * 8;
+        const tone = Math.floor(14 + light * 34 + random() * 16);
+
+        context.fillStyle = `rgb(${tone},${Math.floor(tone * .56)},${Math.floor(tone * .31)})`;
+        context.beginPath();
+        context.moveTo(px, py + 2);
+        context.lineTo(px + width * .65, py - random() * 3);
+        context.lineTo(px + width, py + 2);
+        context.lineTo(px + width - 5, py + height);
+        context.lineTo(px + 3, py + height + 1);
+        context.closePath();
+        context.fill();
+
+        context.strokeStyle = "#05030288";
+        context.lineWidth = 1;
+        context.beginPath();
+        context.moveTo(px, py + height + 1);
+        context.lineTo(px + width - 4, py + height);
+        context.lineTo(px + width, py + 2);
+        context.stroke();
+
+        context.strokeStyle = `rgba(192,119,58,${.035 + light * .16})`;
+        context.lineWidth = .7;
+        context.beginPath();
+        context.moveTo(px + 2, py + 1);
+        context.lineTo(px + width * .65, py - 1);
+        context.stroke();
+
+        if (random() > .88) {
+          context.strokeStyle = row > 10 ? "#ed49115c" : "#af5f252b";
+          context.beginPath();
+          context.moveTo(px + width - 3, py + 3);
+          context.lineTo(px + width - 7, py + height + 1);
+          context.stroke();
+        }
+        px += width - 2;
+      }
+    }
+
+    for (let i = 0; i < 550; i++) {
+      context.fillStyle = random() > .65 ? "#d0b19114" : "#00000035";
+      context.fillRect(
+        -length / 2 + random() * length,
+        -radius + random() * radius * 2,
+        1 + random() * 8,
+        .4 + random() * 1.2
+      );
+    }
+
+    context.restore();
+
+    const endX = -length / 2 + 3;
+    const end = context.createLinearGradient(endX - 17, -radius, endX + 15, radius);
+    end.addColorStop(0, "#432414");
+    end.addColorStop(.4, "#23160e");
+    end.addColorStop(1, "#090705");
+
+    context.fillStyle = end;
+    context.beginPath();
+    context.ellipse(endX, 0, 17, radius * .88, -.06, 0, TAU);
+    context.fill();
+
+    for (let i = 1; i < 7; i++) {
+      context.strokeStyle = i % 2 ? "#a2612e20" : "#05030270";
+      context.lineWidth = .9;
+      context.beginPath();
+      context.ellipse(endX, 0, i * 2.25, radius * i / 7.5, -.06, 0, TAU);
+      context.stroke();
+    }
+
+    for (let i = 0; i < 5; i++) {
+      const a = random() * TAU;
+      context.strokeStyle = "#080503";
+      context.lineWidth = 1.2;
+      context.beginPath();
+      context.moveTo(endX + Math.cos(a) * 3, Math.sin(a) * 8);
+      context.lineTo(endX + Math.cos(a) * 16, Math.sin(a) * radius * .83);
+      context.stroke();
+    }
+
+    context.restore();
+  }
+
+  function buildScenery() {
+    seed = 91204;
+    const back = background.getContext("2d");
+    const front = foreground.getContext("2d");
+    const shade = overlay.getContext("2d");
+
+    drawWall(back);
+    drawLog(back, 465, 610, 375, 45, -.23);
+    drawLog(back, 766, 580, 416, 52, .55);
+    drawLog(back, 1030, 623, 315, 54, .34);
+
+    drawLog(front, 469, 692, 474, 55, .1);
+    drawLog(front, 852, 705, 488, 59, -.22);
+    drawLog(front, 594, 764, 423, 34, .12);
+    drawLog(front, 987, 768, 385, 35, -.07);
+    drawLog(front, 1195, 758, 185, 27, .17);
+
+    const vignette = shade.createRadialGradient(720, 485, 180, 720, 410, 825);
+    vignette.addColorStop(0, "#00000000");
+    vignette.addColorStop(.58, "#0000001a");
+    vignette.addColorStop(1, "#000000e0");
+    shade.fillStyle = vignette;
+    shade.fillRect(0, 0, W, H);
+
+    const edges = shade.createLinearGradient(0, 0, 0, H);
+    edges.addColorStop(0, "#00000048");
+    edges.addColorStop(.18, "#00000000");
+    edges.addColorStop(.8, "#00000000");
+    edges.addColorStop(1, "#000000d9");
+    shade.fillStyle = edges;
+    shade.fillRect(0, 0, W, H);
+  }
+
+  seed = 5081;
+
+  const tongues = Array.from({ length: 24 }, (_, i) => {
+    const x = 320 + i * 34.5 + (random() - .5) * 25;
+    const central = Math.exp(-Math.pow((x - 720) / 290, 2));
+    return {
+      x,
+      base: 689 + random() * 24,
+      height: 140 + random() * 165 + central * 165,
+      width: 14 + random() * 19,
+      phase: random() * 70,
+      rate: .65 + random() * .55,
+      opacity: .48 + random() * .25
+    };
+  });
+
+  // Draw rear sheets first; shorter, brighter sheets naturally overlap them.
+  tongues.sort((a, b) => b.height - a.height);
+
+  const particles = Array.from({ length: 65 }, () => ({
+    x: 320 + random() * 800,
+    phase: random(),
+    duration: 3.3 + random() * 4.5,
+    height: 140 + random() * 420,
+    drift: (random() - .5) * 90,
+    radius: .6 + random() * 1.25
+  }));
+
+  const coals = Array.from({ length: 65 }, () => ({
+    x: 250 + random() * 1000,
+    y: 733 + random() * 54,
+    radius: 1 + random() * 4,
+    phase: random() * TAU
+  }));
+
+  /*
+    Catmull–Rom to cubic Bézier interpolation. Every flame is filled as
+    one closed path, eliminating the horizontal slice seams in the image.
+  */
+  function smoothPath(context, points) {
+    context.beginPath();
+    context.moveTo(points[0].x, points[0].y);
+
+    for (let i = 0; i < points.length - 1; i++) {
+      const p0 = points[Math.max(0, i - 1)];
+      const p1 = points[i];
+      const p2 = points[i + 1];
+      const p3 = points[Math.min(points.length - 1, i + 2)];
+
+      context.bezierCurveTo(
+        p1.x + (p2.x - p0.x) / 6,
+        p1.y + (p2.y - p0.y) / 6,
+        p2.x - (p3.x - p1.x) / 6,
+        p2.y - (p3.y - p1.y) / 6,
+        p2.x,
+        p2.y
+      );
+    }
+
+    context.closePath();
+  }
+
+  function flameShape(tongue, time, height, widthScale, heightScale) {
+    const left = [];
+    const right = [];
+    const steps = 24;
+    const wind = state.wind / 100;
+    const phase = tongue.phase;
+    const travel = time * tongue.rate;
+
+    for (let i = 0; i <= steps; i++) {
+      const p = i / steps;
+      const q = p * heightScale;
+      const y = tongue.base - q * height;
+
+      // Continuous upward-moving, multi-scale turbulence.
+      const wave1 = noise(q * 3.4 - travel * 1.75 + phase) - .5;
+      const wave2 = noise(q * 7.1 - travel * 2.8 + phase + 90) - .5;
+      const wave3 = Math.sin(q * 13 - travel * 4.1 + phase);
+
+      const bend = wave1 * (18 + q * 95)
+        + wave2 * q * 31
+        + wave3 * q * 7;
+
+      const x = tongue.x + bend + wind * height * q * q * .26;
+
+      const taper = Math.pow(1 - p, .78);
+      const breath = .77 + .4 * noise(q * 5 - travel * 2.1 + phase + 180);
+      const width = tongue.width * widthScale * taper * breath;
+      const asymmetry = .15 * Math.sin(q * 11 - travel * 3 + phase);
+
+      left.push({ x: x - width * (1 + asymmetry), y });
+      right.push({ x: x + width * (1 - asymmetry), y });
+    }
+
+    // The tip occurs once, avoiding a duplicate-point cusp.
+    return left.concat(right.slice(0, -1).reverse());
+  }
+
+  function drawFlames(time) {
+    // Clear the whole backing surface in identity coordinates on every frame.
+    fireCtx.setTransform(1, 0, 0, 1, 0, 0);
+    fireCtx.clearRect(0, 0, flames.width, flames.height);
+    fireCtx.setTransform(flames.width / W, 0, 0, flames.height / H, 0, 0);
+    fireCtx.globalCompositeOperation = "source-over";
+    fireCtx.globalAlpha = 1;
+
+    const strength = .39 + state.intensity / 100 * .7;
+
+    for (const tongue of tongues) {
+      const pulse = .79 + .3 * noise(time * .8 + tongue.phase);
+      // Keep all tips comfortably inside the scene at every intensity.
+      const height = Math.min(585, tongue.height * strength * pulse);
+
+      const layers = [
+        { width: 1.4, height: 1, opacity: tongue.opacity * .62, kind: 0 },
+        { width: .91, height: .95, opacity: tongue.opacity, kind: 1 },
+        { width: .4, height: .73, opacity: tongue.opacity * .88, kind: 2 }
+      ];
+
+      for (const layer of layers) {
+        const top = tongue.base - height * layer.height;
+        const gradient = fireCtx.createLinearGradient(0, tongue.base, 0, top);
+
+        if (layer.kind === 0) {
+          gradient.addColorStop(0, "rgba(255,105,5,0)");
+          gradient.addColorStop(.1, "rgba(255,130,10,.85)");
+          gradient.addColorStop(.48, "rgba(255,89,0,.65)");
+          gradient.addColorStop(.82, "rgba(236,47,0,.29)");
+          gradient.addColorStop(1, "rgba(220,38,0,0)");
+        } else if (layer.kind === 1) {
+          gradient.addColorStop(0, "rgba(255,228,143,0)");
+          gradient.addColorStop(.1, "rgba(255,239,169,.98)");
+          gradient.addColorStop(.32, "rgba(255,202,70,.97)");
+          gradient.addColorStop(.65, "rgba(255,145,19,.8)");
+          gradient.addColorStop(.9, "rgba(255,86,0,.28)");
+          gradient.addColorStop(1, "rgba(255,70,0,0)");
+        } else {
+          gradient.addColorStop(0, "rgba(255,249,216,0)");
+          gradient.addColorStop(.12, "rgba(255,249,216,.98)");
+          gradient.addColorStop(.45, "rgba(255,240,167,.9)");
+          gradient.addColorStop(.77, "rgba(255,201,63,.42)");
+          gradient.addColorStop(1, "rgba(255,159,26,0)");
+        }
+
+        fireCtx.globalAlpha = layer.opacity;
+        fireCtx.fillStyle = gradient;
+        smoothPath(fireCtx, flameShape(tongue, time, height, layer.width, layer.height));
+        fireCtx.fill();
+      }
+    }
+
+    fireCtx.globalAlpha = 1;
+  }
+
+  function drawHeatAndSparks(time) {
+    ctx.save();
+    ctx.globalCompositeOperation = "lighter";
+
+    for (const coal of coals) {
+      const pulse = .23 + .24 * (.5 + .5 * Math.sin(time * 1.7 + coal.phase));
+      ctx.globalAlpha = pulse * (.35 + state.intensity / 100);
+      ctx.fillStyle = "#ef4d0b";
+      ctx.shadowColor = "#f43d00";
+      ctx.shadowBlur = 7;
+      ctx.beginPath();
+      ctx.ellipse(coal.x, coal.y, coal.radius * 1.8, coal.radius * .38, -.1, 0, TAU);
+      ctx.fill();
+    }
+
+    if (state.embers) {
+      const count = Math.round(12 + state.intensity * .48);
+      ctx.lineCap = "round";
+
+      for (let i = 0; i < count; i++) {
+        const p = particles[i];
+        const life = (time / p.duration + p.phase) % 1;
+        const envelope = Math.pow(Math.sin(life * Math.PI), 1.4);
+        const x = p.x + p.drift * life + state.wind * life * 1.4
+          + Math.sin(life * 8 + i) * (7 + life * 11);
+        const y = 704 - life * p.height;
+
+        ctx.globalAlpha = envelope * (.57 + .2 * Math.sin(time * 11 + i));
+        ctx.strokeStyle = i % 4 ? "#ff9d39" : "#ffdda0";
+        ctx.shadowColor = "#ff660c";
+        ctx.shadowBlur = 5;
+        ctx.lineWidth = p.radius * (1 - life * .55);
+
+        ctx.beginPath();
+        ctx.moveTo(x, y);
+        ctx.lineTo(x - state.wind * .012, y + 1 + p.radius * 1.5);
+        ctx.stroke();
+      }
+    }
+
+    ctx.restore();
+  }
+
+  function render(time) {
+    // Reset and redraw a complete frame: no stale pixels after rotation.
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.globalAlpha = 1;
+    ctx.globalCompositeOperation = "source-over";
+    ctx.filter = "none";
+    ctx.fillStyle = "#030201";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    // Uniform scaling preserves the scene's geometry in both orientations.
+    const scale = Math.min(canvas.width / W, canvas.height / H);
+    const offsetX = (canvas.width - W * scale) / 2;
+    const offsetY = (canvas.height - H * scale) / 2;
+    ctx.setTransform(scale, 0, 0, scale, offsetX, offsetY);
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = "high";
+
+    ctx.drawImage(background, 0, 0);
+
+    const flicker = .86
+      + .05 * Math.sin(time * 6.3)
+      + .03 * Math.sin(time * 10.7)
+      + .025 * Math.sin(time * 15.1);
+
+    ctx.save();
+    ctx.globalCompositeOperation = "screen";
+    ctx.globalAlpha = flicker * (.35 + state.intensity / 120);
+    radial(ctx, 725, 624, 630, 570, [
+      [0, "#ff7a003b"], [.42, "#e947001a"], [1, "#e9470000"]
+    ]);
+    ctx.restore();
+
+    drawFlames(time);
+
+    // One soft bloom pass over the complete flame surface, never slices.
+    ctx.save();
+    ctx.globalCompositeOperation = "lighter";
+    ctx.globalAlpha = .26;
+    if ("filter" in ctx) ctx.filter = `blur(${Math.max(2, scale * 10)}px)`;
+    ctx.drawImage(flames, 0, 0, W, H);
+    ctx.restore();
+
+    ctx.drawImage(flames, 0, 0, W, H);
+    ctx.drawImage(foreground, 0, 0);
+    drawHeatAndSparks(time);
+    ctx.drawImage(overlay, 0, 0);
+  }
+
+  function frame(now) {
+    raf = 0;
+    if (document.hidden) return;
+
+    const dt = Math.max(0, Math.min((now - lastTime) / 1000, .04));
+    lastTime = now;
+
+    if (!state.paused) simulationTime += dt * state.speed / 100;
+
+    if (!state.paused || dirty) {
+      render(simulationTime);
+      dirty = false;
+    }
+
+    // Pausing also stops rendering work until something changes.
+    if (!state.paused) raf = requestAnimationFrame(frame);
+  }
+
+  function fitScene() {
+    const stage = $("stage");
+    const width = stage.clientWidth;
+    const height = stage.clientHeight;
+
+    if (width <= 0 || height <= 0) return;
+
+    const sceneWidth = Math.min(width, height * W / H);
+    const sceneHeight = sceneWidth * H / W;
+
+    $("scene").style.width = `${sceneWidth}px`;
+    $("scene").style.height = `${sceneHeight}px`;
+
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    const targetWidth = Math.max(1, Math.min(1920, Math.round(sceneWidth * dpr)));
+    const targetHeight = Math.max(1, Math.round(targetWidth * H / W));
+
+    if (canvas.width !== targetWidth || canvas.height !== targetHeight) {
+      canvas.width = targetWidth;
+      canvas.height = targetHeight;
+    }
+
+    invalidate();
+  }
+
+  document.addEventListener("visibilitychange", () => {
+    if (document.hidden) {
+      if (raf) cancelAnimationFrame(raf);
+      raf = 0;
+    } else {
+      fitScene();
+      invalidate();
+    }
+  });
+
+  window.addEventListener("resize", fitScene, { passive: true });
+  window.visualViewport?.addEventListener("resize", fitScene, { passive: true });
+
+  if ("ResizeObserver" in window) {
+    new ResizeObserver(fitScene).observe($("stage"));
+  }
+
+  buildScenery();
+  updateUI();
+  save();
+  fitScene();
+
+  if (state.settingsOpen) {
+    dialog.showModal();
+    document.body.classList.add("modal-open");
+  }
+
+  invalidate();
+})();
+</script>
+</body>
+</html>
