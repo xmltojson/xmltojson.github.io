@@ -1,0 +1,1992 @@
+<!DOCTYPE html>
+<!-- MIT License
+Copyright (c) 2025 Yuliya Kolesnikova <0009-0000-6151-7415@orcid.org>
+-->
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <meta name="description" content="A little love, a little magic. Create and share a personalized Valentine filled with floating hearts.">
+    <meta name="theme-color" content="#fbf5f3">
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='18' fill='%23f9e4e9'/%3E%3Cpath d='M32 51 12 32C-1 18 19 5 32 20 45 5 65 18 52 32Z' fill='%23ce466e'/%3E%3C/svg%3E">
+    <title>Valentine Hearts — A little love, a little magic</title>
+
+    <style>
+        :root {
+            color-scheme: light;
+            --bg: #fbf5f3;
+            --paper: #fffdfb;
+            --ink: #432934;
+            --muted: #80666e;
+            --pink: #ce466e;
+            --pink-dark: #ad3156;
+            --pink-soft: #f9e4e9;
+            --line: #eadbde;
+            --shadow: 0 20px 60px -30px #85425735;
+            --radius: 26px;
+            --gap: clamp(8px, 1.8vh, 18px);
+        }
+
+        * { box-sizing: border-box; }
+
+        html {
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+        }
+
+        body {
+            margin: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background:
+                radial-gradient(ellipse at 8% 28%, #f9e2e777, transparent 40%),
+                radial-gradient(ellipse at 95% 80%, #f4e3d877, transparent 36%),
+                var(--bg);
+            color: var(--ink);
+            font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        button, input, textarea { font: inherit; }
+        button, a, input { -webkit-tap-highlight-color: transparent; }
+        button { cursor: pointer; color: inherit; }
+        button, a, input, textarea { touch-action: manipulation; }
+        button:disabled { cursor: not-allowed; opacity: .5; }
+        :focus-visible { outline: 3px solid #a94069; outline-offset: 3px; }
+        a { color: var(--pink-dark); }
+        svg { display: block; }
+        [hidden] { display: none !important; }
+
+        .icon {
+            width: 20px;
+            height: 20px;
+            fill: none;
+            stroke: currentColor;
+            stroke-width: 1.7;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+            flex-shrink: 0;
+        }
+
+        .svg-library {
+            position: absolute;
+            width: 0;
+            height: 0;
+            overflow: hidden;
+        }
+
+        /* The entire application fits inside the available viewport. */
+        .shell {
+            width: min(1120px, calc(100% - 56px));
+            height: 100vh;
+            height: 100dvh;
+            margin: auto;
+            padding-top: env(safe-area-inset-top, 0px);
+            padding-bottom: env(safe-area-inset-bottom, 0px);
+            display: grid;
+            grid-template-rows: auto minmax(0, 1fr) auto;
+            gap: var(--gap);
+        }
+
+        .topbar {
+            min-width: 0;
+            height: clamp(48px, 9vh, 82px);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 16px;
+            border-bottom: 1px solid var(--line);
+        }
+
+        .brand { display: flex; align-items: center; gap: 10px; min-width: 0; }
+
+        .brand-mark {
+            width: 36px;
+            height: 36px;
+            display: grid;
+            place-items: center;
+            color: var(--pink);
+            background: var(--pink-soft);
+            border-radius: 12px;
+            transform: rotate(-7deg);
+            flex-shrink: 0;
+        }
+
+        .brand-mark .icon { fill: currentColor; width: 20px; }
+        .brand-name { font: 600 20px Georgia, serif; letter-spacing: -.5px; white-space: nowrap; }
+        .brand-name span { color: var(--pink); }
+        .top-actions { display: flex; gap: 9px; align-items: center; }
+        .edition { color: var(--muted); font-size: 12px; margin-right: 12px; }
+
+        .icon-button {
+            width: 42px;
+            height: 42px;
+            border: 1px solid var(--line);
+            border-radius: 50%;
+            display: inline-grid;
+            place-items: center;
+            background: transparent;
+            transition: background .2s, transform .2s;
+            flex-shrink: 0;
+        }
+
+        .icon-button:hover { background: var(--pink-soft); transform: translateY(-2px); }
+
+        main {
+            min-width: 0;
+            min-height: 0;
+            display: grid;
+            grid-template-rows: auto minmax(0, 1fr) auto auto;
+            gap: var(--gap);
+        }
+
+        .hero {
+            text-align: center;
+            min-width: 0;
+            padding: clamp(0px, 1.2vh, 12px) 0;
+        }
+
+        .eyebrow {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            color: var(--pink-dark);
+            font-size: 10px;
+            font-weight: 700;
+            letter-spacing: 2.3px;
+            text-transform: uppercase;
+        }
+
+        .eyebrow .icon { width: 14px; height: 14px; }
+
+        h1 {
+            font: 400 clamp(28px, min(5.2vw, 6.5vh), 62px)/1.08 Georgia, "Times New Roman", serif;
+            letter-spacing: -2px;
+            margin: clamp(5px, 1.3vh, 13px) 0;
+        }
+
+        h1 em { color: var(--pink); font-weight: 400; }
+
+        .hero > p {
+            margin: 0;
+            color: var(--muted);
+            font-size: clamp(12px, 1.7vh, 14px);
+            line-height: 1.5;
+        }
+
+        .valentine-card {
+            min-width: 0;
+            min-height: 0;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            border: 1px solid #fff;
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            background: var(--paper);
+            overflow: hidden;
+        }
+
+        .letter {
+            padding: clamp(16px, 3.5vh, 36px) clamp(22px, 3.5vw, 43px);
+            display: flex;
+            flex-direction: column;
+            min-width: 0;
+            min-height: 0;
+            position: relative;
+        }
+
+        .letter-top {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            flex-shrink: 0;
+        }
+
+        .letter-label {
+            color: var(--muted);
+            font-size: 10px;
+            font-weight: 600;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+        }
+
+        .stamp {
+            height: clamp(27px, 5vh, 41px);
+            width: clamp(25px, 4.5vh, 35px);
+            display: grid;
+            place-items: center;
+            border: 1px dashed #dfacb8;
+            outline: 3px solid #fcf0f2;
+            color: var(--pink);
+            background: #fcf0f2;
+            transform: rotate(10deg);
+            flex-shrink: 0;
+        }
+
+        .stamp .icon { width: 17px; fill: #e9a2b5; }
+
+        .recipient {
+            font-size: 12px;
+            line-height: 1.3;
+            color: var(--muted);
+            margin: clamp(7px, 2vh, 21px) 0 6px;
+            overflow-wrap: anywhere;
+            flex-shrink: 0;
+        }
+
+        .message-wrap {
+            display: flex;
+            align-items: center;
+            flex: 1 1 auto;
+            min-width: 0;
+            min-height: 0;
+        }
+
+        .message {
+            font: 400 clamp(22px, min(3vw, 4.8vh), 36px)/1.25 Georgia, serif;
+            letter-spacing: -.5px;
+            margin: 0;
+            max-width: 100%;
+            overflow-wrap: anywhere;
+        }
+
+        .message.enter { animation: message-in .4s ease both; }
+
+        @keyframes message-in {
+            from { opacity: 0; transform: translateY(7px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .signature {
+            font: italic clamp(13px, 2vh, 17px)/1.3 Georgia, serif;
+            color: var(--pink-dark);
+            margin: clamp(6px, 1.5vh, 15px) 0 clamp(8px, 2vh, 20px);
+            overflow-wrap: anywhere;
+            flex-shrink: 0;
+        }
+
+        .letter-bottom {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-top: 1px solid var(--line);
+            padding-top: clamp(5px, 1.2vh, 12px);
+            gap: 10px;
+            flex-shrink: 0;
+        }
+
+        .note-count { color: var(--muted); font-size: 10px; }
+
+        .text-button {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 7px;
+            padding: 6px 0;
+            border: 0;
+            background: none;
+            color: var(--pink-dark);
+            font-size: 12px;
+            font-weight: 600;
+            min-height: 32px;
+        }
+
+        .text-button:hover { color: var(--ink); }
+        .text-button .icon { width: 16px; height: 16px; }
+
+        .garden {
+            position: relative;
+            isolation: isolate;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-width: 0;
+            min-height: 0;
+            background:
+                radial-gradient(circle at 50% 44%, #fff8f7 0%, #f9e1e6 48%, #f1ccd7 100%);
+            overflow: hidden;
+            container-type: size;
+        }
+
+        .garden::before, .garden::after {
+            content: "";
+            position: absolute;
+            border: 1px solid #ffffff73;
+            border-radius: 50%;
+            width: min(68%, 285px);
+            aspect-ratio: 1;
+            pointer-events: none;
+            z-index: -1;
+        }
+
+        .garden::after { width: min(92%, 390px); }
+
+        .garden-status {
+            position: absolute;
+            top: 20px;
+            left: 22px;
+            display: flex;
+            align-items: center;
+            gap: 7px;
+            color: #8c4a60;
+            font-size: 9px;
+            letter-spacing: 1.2px;
+            text-transform: uppercase;
+            z-index: 3;
+            pointer-events: none;
+        }
+
+        .status-dot { width: 5px; height: 5px; border-radius: 50%; background: var(--pink); }
+        .paused .status-dot { background: #967d85; }
+
+        .garden-pause {
+            position: absolute;
+            top: 10px;
+            right: 13px;
+            z-index: 4;
+            border-color: #ffffff99;
+            background: #ffffff50;
+            width: 36px;
+            height: 36px;
+        }
+
+        .heart-main {
+            border: 0;
+            padding: 0;
+            background: transparent;
+            width: clamp(64px, 22vh, 195px);
+            width: clamp(52px, 49cqh, 195px);
+            max-width: 48%;
+            aspect-ratio: 220 / 210;
+            flex: 0 0 auto;
+            position: relative;
+            z-index: 2;
+            margin-top: 16px;
+            transition: transform .3s;
+            border-radius: 45%;
+        }
+
+        .heart-main:hover { transform: scale(1.06) rotate(-4deg); }
+        .heart-main:active { transform: scale(.96); }
+
+        .heart-art {
+            width: 100%;
+            height: 100%;
+            filter: drop-shadow(0 15px 13px #a5335b35);
+            animation: heartbeat 3.6s ease-in-out infinite;
+        }
+
+        @keyframes heartbeat {
+            0%, 100% { transform: translateY(0) rotate(-5deg); }
+            50% { transform: translateY(-6px) rotate(3deg); }
+        }
+
+        .garden-hint {
+            z-index: 2;
+            text-align: center;
+            margin: clamp(4px, 1.6vh, 16px) 12px 0;
+            pointer-events: none;
+            flex-shrink: 0;
+        }
+
+        .garden-hint strong {
+            display: block;
+            color: #8b3e58;
+            font: italic clamp(14px, 2.4vh, 20px) Georgia, serif;
+        }
+
+        .garden-hint span {
+            display: block;
+            color: #935d6e;
+            font-size: 10px;
+            margin-top: 7px;
+        }
+
+        .sparkle { position: absolute; color: #c66d87; font-size: 22px; pointer-events: none; }
+        .sparkle.one { top: 25%; left: 20%; }
+        .sparkle.two { top: 45%; right: 17%; font-size: 17px; }
+        .sparkle.three { bottom: 23%; left: 19%; font-size: 12px; }
+
+        .floating-hearts, .particles {
+            position: absolute;
+            inset: 0;
+            pointer-events: none;
+            overflow: hidden;
+        }
+
+        .floating-hearts { z-index: 3; }
+        .particles { z-index: 5; }
+
+        .floating-heart {
+            position: absolute;
+            top: 0;
+            width: var(--size);
+            height: var(--size);
+            padding: 7px;
+            border: 0;
+            background: transparent;
+            color: var(--color);
+            pointer-events: auto;
+            animation: float-up var(--duration) linear forwards;
+            filter: drop-shadow(0 3px 4px #b4567420);
+            border-radius: 50%;
+        }
+
+        .floating-heart .icon {
+            width: 100%;
+            height: 100%;
+            fill: currentColor;
+            stroke-width: .5;
+            transition: transform .2s;
+        }
+
+        .floating-heart:hover .icon { transform: scale(1.2); }
+
+        @keyframes float-up {
+            0% { transform: translateY(var(--travel)) rotate(-18deg); opacity: 0; }
+            12%, 82% { opacity: .85; }
+            100% { transform: translateY(-70px) rotate(25deg); opacity: 0; }
+        }
+
+        .particle {
+            position: absolute;
+            color: var(--pink);
+            font-size: 20px;
+            animation: scatter .95s cubic-bezier(.12,.55,.35,1) forwards;
+        }
+
+        @keyframes scatter {
+            from { opacity: 1; transform: translate(-50%, -50%) scale(.5); }
+            to {
+                opacity: 0;
+                transform: translate(calc(-50% + var(--x)), calc(-50% + var(--y))) rotate(var(--r)) scale(1.1);
+            }
+        }
+
+        .paused .floating-heart,
+        .paused .heart-art,
+        .paused .particle { animation-play-state: paused; }
+
+        .action-row {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            min-width: 0;
+        }
+
+        .button {
+            border: 1px solid var(--line);
+            background: var(--paper);
+            color: var(--ink);
+            border-radius: 12px;
+            padding: 11px 20px;
+            min-height: 44px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            font-size: 13px;
+            font-weight: 600;
+            transition: transform .2s, background .2s, box-shadow .2s;
+            text-decoration: none;
+        }
+
+        .button:hover {
+            transform: translateY(-2px);
+            background: #fff;
+            box-shadow: 0 6px 18px #85425712;
+        }
+
+        .button.primary {
+            background: var(--pink);
+            border-color: var(--pink);
+            color: #fff;
+            box-shadow: 0 6px 16px #ce466e25;
+        }
+
+        .button.primary:hover { background: var(--pink-dark); border-color: var(--pink-dark); }
+        .button.soft { background: var(--pink-soft); border-color: transparent; color: var(--pink-dark); }
+        .button .icon { width: 17px; height: 17px; }
+
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            width: min(600px, 100%);
+            margin: 0 auto;
+        }
+
+        .stat { text-align: center; padding: 1px 12px; }
+        .stat + .stat { border-left: 1px solid var(--line); }
+
+        .stat strong {
+            display: block;
+            font: clamp(20px, 3.5vh, 28px)/1.1 Georgia, serif;
+            color: var(--pink-dark);
+            font-variant-numeric: tabular-nums;
+        }
+
+        .stat span {
+            display: block;
+            margin-top: 4px;
+            color: var(--muted);
+            font-size: 10px;
+        }
+
+        .footer {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 14px;
+            min-height: clamp(28px, 5.5vh, 48px);
+            border-top: 1px solid var(--line);
+            color: var(--muted);
+            font-size: 10px;
+        }
+
+        .footer .text-button { font-size: 10px; min-height: 28px; padding: 3px 0; }
+        .footer-heart { color: var(--pink); }
+
+        /*
+         * Dialogs stay within the viewport.
+         * Only their contents scroll when necessary, never the page.
+         */
+        dialog {
+            width: min(540px, calc(100% - 28px));
+            max-height: calc(100vh - 28px);
+            max-height: calc(100dvh - 28px);
+            padding: 0;
+            border: 1px solid #fff;
+            border-radius: 24px;
+            background: var(--paper);
+            color: var(--ink);
+            box-shadow: 0 35px 110px #43293440;
+            overflow: hidden;
+        }
+
+        dialog[open] {
+            display: flex;
+            flex-direction: column;
+        }
+
+        dialog::backdrop { background: #3c26384d; backdrop-filter: blur(7px); }
+
+        .dialog-header {
+            padding: 18px 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 15px;
+            border-bottom: 1px solid var(--line);
+            background: var(--paper);
+            flex-shrink: 0;
+        }
+
+        .dialog-header h2 { margin: 0; font: 26px Georgia, serif; letter-spacing: -.5px; }
+
+        .dialog-body {
+            min-height: 0;
+            padding: 24px;
+            overflow-y: auto;
+            overscroll-behavior: contain;
+            scrollbar-width: thin;
+            scrollbar-color: #ddb4c0 transparent;
+        }
+
+        .dialog-intro { color: var(--muted); font-size: 13px; line-height: 1.7; margin: 0 0 22px; }
+        .section + .section { border-top: 1px solid var(--line); padding-top: 22px; margin-top: 23px; }
+        .section h3 { font-size: 12px; margin: 0 0 16px; letter-spacing: .3px; }
+        .field-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+        .field label { display: block; font-size: 12px; color: var(--muted); margin-bottom: 7px; }
+
+        .input {
+            width: 100%;
+            border: 1px solid var(--line);
+            border-radius: 11px;
+            background: #fff;
+            padding: 12px;
+            color: var(--ink);
+            min-width: 0;
+            font-size: 16px;
+        }
+
+        .input::placeholder { color: #99848c; }
+
+        .setting {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 16px;
+            margin-top: 19px;
+            font-size: 13px;
+        }
+
+        .setting small { display: block; margin-top: 4px; color: var(--muted); font-size: 11px; }
+        .range-control { display: flex; align-items: center; gap: 9px; }
+        input[type="range"] { width: 125px; accent-color: var(--pink); }
+        output { width: 40px; text-align: right; color: var(--pink-dark); font-size: 12px; }
+
+        input[type="checkbox"] {
+            appearance: none;
+            width: 42px;
+            height: 25px;
+            border-radius: 20px;
+            background: #d9cbd0;
+            position: relative;
+            flex-shrink: 0;
+            cursor: pointer;
+            transition: background .2s;
+        }
+
+        input[type="checkbox"]::before {
+            content: "";
+            position: absolute;
+            width: 19px;
+            height: 19px;
+            border-radius: 50%;
+            background: white;
+            top: 3px;
+            left: 3px;
+            transition: transform .2s;
+        }
+
+        input[type="checkbox"]:checked { background: var(--pink); }
+        input[type="checkbox"]:checked::before { transform: translateX(17px); }
+
+        .compose { display: flex; gap: 8px; }
+        .compose .button { padding: 10px 15px; }
+        .helper { color: var(--muted); font-size: 11px; line-height: 1.6; margin: 10px 0; }
+
+        .message-list {
+            max-height: 190px;
+            overflow-y: auto;
+            margin-top: 14px;
+            overscroll-behavior: contain;
+            scrollbar-width: thin;
+            scrollbar-color: #ddb4c0 transparent;
+        }
+
+        .message-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            border-radius: 10px;
+            background: #f9f1f2;
+            padding: 8px 10px;
+            margin: 7px 0;
+        }
+
+        .message-item p { font-size: 12px; line-height: 1.5; margin: 0; flex: 1; overflow-wrap: anywhere; }
+        .message-item small { display: block; color: var(--pink-dark); font-size: 9px; margin-bottom: 2px; text-transform: uppercase; letter-spacing: 1px; }
+        .message-item .icon-button { width: 40px; height: 40px; border: 0; color: var(--muted); }
+        .reset-actions { display: flex; justify-content: space-between; gap: 14px; }
+        .danger { color: #a13c46; }
+
+        .share-illustration {
+            display: grid;
+            place-items: center;
+            background: var(--pink-soft);
+            width: 64px;
+            height: 64px;
+            border-radius: 20px;
+            margin: 0 auto 18px;
+            color: var(--pink);
+            transform: rotate(-7deg);
+        }
+
+        .share-illustration .icon { width: 30px; height: 30px; }
+        .share-intro { text-align: center; }
+        .share-url { resize: none; height: 86px; font-size: 12px; line-height: 1.5; background: #f8f0f2; }
+        .share-buttons { display: flex; gap: 9px; flex-wrap: wrap; margin-top: 14px; }
+        .share-buttons .button { flex: 1; }
+        .social-links { display: flex; flex-wrap: wrap; justify-content: center; gap: 22px; margin-top: 18px; }
+        .social-links a { font-size: 12px; padding: 8px 0; text-decoration: none; }
+        .social-links a:hover { text-decoration: underline; }
+
+        .toast {
+            position: fixed;
+            bottom: max(18px, env(safe-area-inset-bottom, 0px));
+            left: 50%;
+            transform: translate(-50%, 12px);
+            opacity: 0;
+            padding: 12px 20px;
+            background: var(--ink);
+            color: #fff;
+            border-radius: 12px;
+            box-shadow: 0 8px 30px #43293426;
+            font-size: 12px;
+            line-height: 1.5;
+            text-align: center;
+            max-width: calc(100% - 32px);
+            width: max-content;
+            pointer-events: none;
+            z-index: 100;
+            transition: opacity .2s, transform .2s;
+        }
+
+        .toast.show { opacity: 1; transform: translate(-50%, 0); }
+
+        .sr-only {
+            position: absolute;
+            width: 1px;
+            height: 1px;
+            padding: 0;
+            overflow: hidden;
+            clip: rect(0,0,0,0);
+            white-space: nowrap;
+            border: 0;
+        }
+
+        @media (max-width: 700px) {
+            :root { --gap: clamp(7px, 1.4vh, 12px); }
+            .shell { width: calc(100% - 28px); }
+            .topbar { height: clamp(46px, 7.5vh, 65px); }
+            .edition { display: none; }
+            .brand-name { font-size: 17px; }
+            .brand-mark { width: 31px; height: 31px; border-radius: 10px; }
+            .top-actions { gap: 6px; }
+            .top-actions .icon-button { width: 36px; height: 36px; }
+            .hero { padding: 1px 0; }
+            .eyebrow { font-size: 8px; letter-spacing: 1.7px; }
+            h1 { font-size: clamp(27px, 5.6vw, 38px); letter-spacing: -1.1px; margin: 7px 0; }
+            .hero > p { font-size: 11px; }
+            .hero > p br { display: none; }
+            .valentine-card { border-radius: 21px; }
+            .letter { padding: 16px 20px; }
+            .letter-label { font-size: 8px; letter-spacing: 1.5px; }
+            .note-count { display: none; }
+            .letter-bottom { justify-content: flex-end; }
+            .action-row { gap: 7px; }
+            .action-row .button { flex: 1; padding: 10px 8px; font-size: 11px; gap: 6px; min-height: 42px; border-radius: 10px; }
+            .action-row .button .icon { width: 15px; height: 15px; }
+            .desktop-label { display: none; }
+            .stat { padding: 0 7px; }
+            .stat span { font-size: 9px; }
+            .footer { min-height: 28px; justify-content: center; font-size: 9px; text-align: center; }
+            .footer .text-button { display: none; }
+        }
+
+        /* Portrait phones use a compact stacked card without page scrolling. */
+        @media (max-width: 700px) and (orientation: portrait) {
+            .valentine-card {
+                grid-template-columns: minmax(0, 1fr);
+                grid-template-rows: minmax(0, 1.18fr) minmax(0, 1fr);
+            }
+
+            .letter {
+                padding: clamp(10px, 1.8vh, 18px) 22px;
+            }
+
+            .stamp { width: 25px; height: 27px; }
+            .recipient { margin: 7px 0 4px; font-size: 11px; }
+            .message { font-size: clamp(21px, 3.5vh, 29px); }
+            .signature { font-size: 13px; margin: 5px 0 7px; }
+            .letter-bottom { padding-top: 3px; }
+            .letter-bottom .text-button { min-height: 27px; padding: 3px 0; font-size: 11px; }
+            .garden-status { top: 15px; left: 18px; font-size: 8px; }
+            .garden-pause { top: 6px; right: 10px; width: 32px; height: 32px; }
+            .heart-main { width: clamp(48px, 55cqh, 145px); max-width: 38%; margin-top: 14px; }
+            .garden-hint { margin-top: 1px; margin-bottom: 4px; }
+            .garden-hint strong { font-size: clamp(12px, 1.8vh, 16px); }
+            .garden-hint span { display: none; }
+            .garden::before { width: min(48%, 215px); }
+            .garden::after { width: min(72%, 320px); }
+        }
+
+        /* Short windows and landscape devices receive a tighter layout. */
+        @media (max-height: 620px) {
+            :root { --gap: 7px; }
+            .topbar { height: 45px; }
+            .hero { padding: 0; }
+            .eyebrow { display: none; }
+            h1 { font-size: clamp(25px, 5vh, 36px); margin: 1px 0 5px; letter-spacing: -1px; }
+            .hero > p { font-size: 11px; }
+            .hero > p br { display: none; }
+            .letter { padding: 12px 20px; }
+            .recipient { margin-top: 7px; font-size: 11px; }
+            .signature { margin: 5px 0 7px; font-size: 13px; }
+            .letter-bottom { padding-top: 3px; }
+            .letter-bottom .text-button { min-height: 27px; font-size: 11px; }
+            .stamp { height: 25px; width: 23px; }
+            .note-count { display: none; }
+            .letter-bottom { justify-content: flex-end; }
+            .garden-status { top: 15px; left: 15px; font-size: 8px; }
+            .garden-pause { top: 5px; right: 8px; width: 32px; height: 32px; }
+            .garden-hint span { display: none; }
+            .garden-hint strong { font-size: 14px; }
+            .button { min-height: 36px; padding: 8px 16px; font-size: 12px; }
+            .stat strong { font-size: 20px; }
+            .stat span { margin-top: 2px; font-size: 9px; }
+            .footer { min-height: 25px; font-size: 9px; }
+        }
+
+        @media (max-height: 460px) {
+            :root { --gap: 5px; }
+            .shell { width: min(1120px, calc(100% - 30px)); }
+            .topbar { height: 39px; }
+            .brand-mark { width: 27px; height: 27px; }
+            .brand-name { font-size: 16px; }
+            .top-actions .icon-button { width: 31px; height: 31px; }
+            .edition { font-size: 10px; }
+            .hero > p { display: none; }
+            h1 { font-size: 25px; margin: 0; }
+            .valentine-card { grid-template-columns: 1fr 1fr; grid-template-rows: minmax(0, 1fr); border-radius: 18px; }
+            .letter { padding: 10px 18px; }
+            .letter-label { font-size: 8px; }
+            .stamp { display: none; }
+            .recipient { font-size: 10px; margin-top: 5px; }
+            .signature { font-size: 12px; margin: 3px 0 5px; }
+            .letter-bottom .text-button { min-height: 23px; font-size: 10px; padding: 2px 0; }
+            .message { font-size: 22px; }
+            .heart-main { width: clamp(42px, 52cqh, 130px); margin-top: 13px; }
+            .garden-hint { margin-top: 0; }
+            .garden-hint strong { font-size: 12px; }
+            .garden-status { font-size: 7px; letter-spacing: .7px; }
+            .action-row .button { min-height: 32px; padding: 6px 12px; font-size: 11px; }
+            .stats { max-width: 540px; }
+            .stat { display: flex; justify-content: center; align-items: baseline; gap: 6px; }
+            .stat strong { font-size: 18px; }
+            .stat span { margin: 0; font-size: 9px; }
+            .footer { min-height: 20px; }
+            .footer .text-button { min-height: 20px; font-size: 9px; }
+            .dialog-header { padding: 10px 20px; }
+            .dialog-header h2 { font-size: 22px; }
+        }
+
+        @media (max-height: 340px) {
+            .hero, .footer { display: none; }
+            .shell { grid-template-rows: auto minmax(0, 1fr); padding-bottom: 5px; }
+            main { grid-template-rows: minmax(0, 1fr) auto auto; }
+            .garden-hint { display: none; }
+            .heart-main { margin-top: 0; }
+        }
+
+        @media (max-width: 380px) {
+            .shell { width: calc(100% - 20px); }
+            .brand { gap: 7px; }
+            .brand-name { font-size: 15px; }
+            .top-actions { gap: 4px; }
+            .hero > p { font-size: 10px; }
+            .eyebrow { letter-spacing: 1.2px; font-size: 7px; }
+            .action-row .button { font-size: 10px; padding-left: 5px; padding-right: 5px; }
+            .action-row .button .icon { display: none; }
+            .field-grid { grid-template-columns: 1fr; }
+            .range-control input { width: 85px; }
+            .dialog-body { padding: 18px; }
+            .dialog-header { padding: 14px 18px; }
+            .dialog-header h2 { font-size: 23px; }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            *, *::before, *::after {
+                scroll-behavior: auto !important;
+                transition: none !important;
+            }
+            .heart-art, .message.enter { animation: none; }
+            .floating-heart, .particle { display: none; }
+        }
+    </style>
+</head>
+
+<body>
+    <svg class="svg-library" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <symbol id="i-heart" viewBox="0 0 24 24">
+            <path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1.1-1.1a5.5 5.5 0 0 0-7.8 7.8L12 21l8.8-8.6a5.5 5.5 0 0 0 0-7.8Z"/>
+        </symbol>
+        <symbol id="i-sparkles" viewBox="0 0 24 24">
+            <path d="m12 3 2.5 6.5L21 12l-6.5 2.5L12 21l-2.5-6.5L3 12l6.5-2.5L12 3ZM20 2v4m-2-2h4"/>
+        </symbol>
+        <symbol id="i-settings" viewBox="0 0 24 24">
+            <path d="M4 7h6m4 0h6M4 17h10m4 0h2"/>
+            <circle cx="12" cy="7" r="2"/>
+            <circle cx="16" cy="17" r="2"/>
+        </symbol>
+        <symbol id="i-share" viewBox="0 0 24 24">
+            <path d="M12 16V3m-4 4 4-4 4 4M5 12v8a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-8"/>
+        </symbol>
+        <symbol id="i-arrow" viewBox="0 0 24 24">
+            <path d="M4 12h16m-6-6 6 6-6 6"/>
+        </symbol>
+        <symbol id="i-pause" viewBox="0 0 24 24">
+            <path d="M9 5v14M15 5v14"/>
+        </symbol>
+        <symbol id="i-play" viewBox="0 0 24 24">
+            <path d="m8 5 11 7-11 7V5Z"/>
+        </symbol>
+        <symbol id="i-close" viewBox="0 0 24 24">
+            <path d="m6 6 12 12M6 18 18 6"/>
+        </symbol>
+        <symbol id="i-mail" viewBox="0 0 24 24">
+            <rect x="3" y="5" width="18" height="14" rx="2"/>
+            <path d="m3 7 9 6 9-6"/>
+        </symbol>
+        <symbol id="i-copy" viewBox="0 0 24 24">
+            <rect x="8" y="8" width="12" height="13" rx="2"/>
+            <path d="M16 8V3H3v13h5"/>
+        </symbol>
+    </svg>
+
+    <div class="shell">
+        <header class="topbar">
+            <div class="brand">
+                <span class="brand-mark">
+                    <svg class="icon" aria-hidden="true"><use href="#i-heart"/></svg>
+                </span>
+                <span class="brand-name">valentine<span> hearts</span></span>
+            </div>
+            <div class="top-actions">
+                <span class="edition">Little gestures. Big feelings.</span>
+                <button class="icon-button" id="settingsBtn" aria-label="Open settings" title="Customize">
+                    <svg class="icon" aria-hidden="true"><use href="#i-settings"/></svg>
+                </button>
+                <button class="icon-button" id="headerShareBtn" aria-label="Share your Valentine" title="Share">
+                    <svg class="icon" aria-hidden="true"><use href="#i-share"/></svg>
+                </button>
+            </div>
+        </header>
+
+        <main>
+            <section class="hero" aria-labelledby="pageTitle">
+                <div class="eyebrow">
+                    <svg class="icon" aria-hidden="true"><use href="#i-sparkles"/></svg>
+                    A small celebration of love
+                </div>
+                <h1 id="pageTitle">A little love. <em>A little magic.</em></h1>
+                <p>For your favorite person, or just for you.<br> Let a little love float into your day.</p>
+            </section>
+
+            <section class="valentine-card" aria-label="Your interactive Valentine">
+                <div class="letter">
+                    <div class="letter-top">
+                        <span class="letter-label">A note from the heart</span>
+                        <span class="stamp" aria-hidden="true">
+                            <svg class="icon"><use href="#i-heart"/></svg>
+                        </span>
+                    </div>
+
+                    <p class="recipient" id="recipient">To my favorite person,</p>
+
+                    <div class="message-wrap" id="messageWrap">
+                        <p class="message" id="currentMessage" aria-live="polite" aria-atomic="true">
+                            Together is my favorite place to be.
+                        </p>
+                    </div>
+
+                    <p class="signature" id="signature">With love, always</p>
+
+                    <div class="letter-bottom">
+                        <span class="note-count" id="noteCount">A little reminder, just for you</span>
+                        <button class="text-button" id="newMessageBtn">
+                            Another little note
+                            <svg class="icon" aria-hidden="true"><use href="#i-arrow"/></svg>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="garden" id="garden" aria-label="Heart garden">
+                    <div class="garden-status">
+                        <span class="status-dot"></span>
+                        <span id="gardenStatus">Love is in the air</span>
+                    </div>
+
+                    <button class="icon-button garden-pause" id="pauseBtn"
+                        aria-label="Pause animation and automatic messages" aria-pressed="false">
+                        <svg class="icon" aria-hidden="true"><use id="pauseIcon" href="#i-pause"/></svg>
+                    </button>
+
+                    <span class="sparkle one" aria-hidden="true">✧</span>
+                    <span class="sparkle two" aria-hidden="true">✦</span>
+                    <span class="sparkle three" aria-hidden="true">✧</span>
+
+                    <div class="floating-hearts" id="heartsContainer" aria-label="Catch a floating heart"></div>
+
+                    <button class="heart-main" id="mainHeartBtn" aria-label="Send a little love and reveal a new note">
+                        <svg class="heart-art" viewBox="0 0 220 210" aria-hidden="true">
+                            <defs>
+                                <linearGradient id="heartGradient" x1=".15" y1="0" x2=".85" y2="1">
+                                    <stop offset="0" stop-color="#ffb6c8"/>
+                                    <stop offset=".36" stop-color="#ec7195"/>
+                                    <stop offset=".72" stop-color="#d74776"/>
+                                    <stop offset="1" stop-color="#b92e5b"/>
+                                </linearGradient>
+                                <radialGradient id="heartGlow" cx=".3" cy=".24" r=".67">
+                                    <stop offset="0" stop-color="#ffe5eb" stop-opacity=".8"/>
+                                    <stop offset=".6" stop-color="#ffd1de" stop-opacity="0"/>
+                                </radialGradient>
+                            </defs>
+                            <path d="M110 187C88 170 25 128 20 82 13 22 77 8 110 48 143 8 207 22 200 82c-5 46-68 88-90 105Z" fill="url(#heartGradient)"/>
+                            <path d="M110 187C88 170 25 128 20 82 13 22 77 8 110 48 143 8 207 22 200 82c-5 46-68 88-90 105Z" fill="url(#heartGlow)"/>
+                            <path d="M39 70c1-20 17-32 34-29" fill="none" stroke="#ffe3ec" stroke-opacity=".66" stroke-width="7" stroke-linecap="round"/>
+                        </svg>
+                    </button>
+
+                    <p class="garden-hint">
+                        <strong>Go on, send a little love.</strong>
+                        <span>Tap the big heart or catch a floating one</span>
+                    </p>
+
+                    <div class="particles" id="particles" aria-hidden="true"></div>
+                </div>
+            </section>
+
+            <div class="action-row">
+                <button class="button primary" id="shareBtn">
+                    <svg class="icon" aria-hidden="true"><use href="#i-share"/></svg>
+                    <span>Share<span class="desktop-label"> this Valentine</span></span>
+                </button>
+                <button class="button" id="customizeBtn">
+                    <svg class="icon" aria-hidden="true"><use href="#i-mail"/></svg>
+                    Make it yours
+                </button>
+                <button class="button soft" id="burstBtn">
+                    <svg class="icon" aria-hidden="true"><use href="#i-sparkles"/></svg>
+                    Heart burst
+                </button>
+            </div>
+
+            <section class="stats" aria-label="Your little moments of love">
+                <div class="stat">
+                    <strong id="heartsCreated">0</strong>
+                    <span>Hearts sent</span>
+                </div>
+                <div class="stat">
+                    <strong id="heartsClicked">0</strong>
+                    <span>Hearts caught</span>
+                </div>
+                <div class="stat">
+                    <strong id="messagesShown">0</strong>
+                    <span>Notes discovered</span>
+                </div>
+            </section>
+        </main>
+
+        <footer class="footer">
+            <span>Made with <span class="footer-heart">♡</span> · A little corner of the internet for love.</span>
+            <button class="text-button" id="footerSettingsBtn">
+                Make a little magic of your own <span aria-hidden="true">↗</span>
+            </button>
+        </footer>
+    </div>
+
+    <dialog id="settingsDialog" aria-labelledby="settingsTitle">
+        <div class="dialog-header">
+            <h2 id="settingsTitle">Make it yours.</h2>
+            <button class="icon-button" data-close aria-label="Close settings">
+                <svg class="icon" aria-hidden="true"><use href="#i-close"/></svg>
+            </button>
+        </div>
+
+        <div class="dialog-body">
+            <p class="dialog-intro">
+                A name, a little note, a personal touch. Your changes are saved automatically on this device.
+            </p>
+
+            <section class="section">
+                <h3>The personal touches</h3>
+                <div class="field-grid">
+                    <div class="field">
+                        <label for="toInput">To</label>
+                        <input class="input" id="toInput" maxlength="50" placeholder="My favorite person" autocomplete="off">
+                    </div>
+                    <div class="field">
+                        <label for="fromInput">From</label>
+                        <input class="input" id="fromInput" maxlength="50" placeholder="With love, always" autocomplete="off">
+                    </div>
+                </div>
+            </section>
+
+            <section class="section">
+                <h3>Your love notes</h3>
+                <form class="compose" id="messageForm">
+                    <label class="sr-only" for="customMessageInput">Write a love note</label>
+                    <input class="input" id="customMessageInput" placeholder="Something only you would say…" maxlength="160" required>
+                    <button class="button primary" type="submit">Add ♡</button>
+                </form>
+                <p class="helper">
+                    Up to 20 personal notes, 160 characters each. Personal notes appear first when your Valentine is opened.
+                </p>
+                <div class="message-list" id="messagesList"></div>
+            </section>
+
+            <section class="section">
+                <h3>A little atmosphere</h3>
+
+                <div class="setting">
+                    <label for="speedSlider">Float duration<small>Longer means a gentler drift</small></label>
+                    <div class="range-control">
+                        <input id="speedSlider" type="range" min="5" max="20" value="10">
+                        <output id="speedValue" for="speedSlider">10s</output>
+                    </div>
+                </div>
+
+                <div class="setting">
+                    <label for="frequencySlider">A new heart every</label>
+                    <div class="range-control">
+                        <input id="frequencySlider" type="range" min="500" max="3000" step="100" value="1500">
+                        <output id="frequencyValue" for="frequencySlider">1.5s</output>
+                    </div>
+                </div>
+
+                <div class="setting">
+                    <label for="sizeSlider">Heart size</label>
+                    <div class="range-control">
+                        <input id="sizeSlider" type="range" min="20" max="80" value="40">
+                        <output id="sizeValue" for="sizeSlider">40px</output>
+                    </div>
+                </div>
+
+                <label class="setting" for="autoMessagesToggle">
+                    <span>Automatic notes<small>A new little reminder every 8 seconds</small></span>
+                    <input id="autoMessagesToggle" type="checkbox" checked>
+                </label>
+
+                <label class="setting" for="soundToggle">
+                    <span>Soft chimes<small>A gentle sound when you tap a heart</small></span>
+                    <input id="soundToggle" type="checkbox">
+                </label>
+
+                <p class="helper" id="motionNotice" hidden>
+                    Your device prefers reduced motion, so drifting hearts and bursts are disabled.
+                    Notes and the big heart still work.
+                </p>
+            </section>
+
+            <section class="section reset-actions">
+                <button class="text-button" id="restoreBtn">Restore atmosphere</button>
+                <button class="text-button danger" id="clearBtn">Reset everything</button>
+            </section>
+        </div>
+    </dialog>
+
+    <dialog id="shareDialog" aria-labelledby="shareTitle">
+        <div class="dialog-header">
+            <h2 id="shareTitle">Love is better shared.</h2>
+            <button class="icon-button" data-close aria-label="Close sharing">
+                <svg class="icon" aria-hidden="true"><use href="#i-close"/></svg>
+            </button>
+        </div>
+
+        <div class="dialog-body">
+            <div class="share-illustration">
+                <svg class="icon" aria-hidden="true"><use href="#i-mail"/></svg>
+            </div>
+
+            <p class="dialog-intro share-intro">
+                A tiny surprise for someone special.<br>
+                This link includes your names, notes, and atmosphere.
+            </p>
+
+            <label class="sr-only" for="shareUrl">Your Valentine link</label>
+            <textarea class="input share-url" id="shareUrl" readonly spellcheck="false"></textarea>
+
+            <p class="helper">Anyone with the link can read the included notes. Your activity counts are not shared.</p>
+            <p class="helper" id="fileWarning" hidden>
+                To share with another device, first publish this HTML on a website.
+                A local file link only works on your own device.
+            </p>
+
+            <div class="share-buttons">
+                <button class="button primary" id="copyBtn">
+                    <svg class="icon" aria-hidden="true"><use href="#i-copy"/></svg>
+                    Copy link
+                </button>
+                <button class="button" id="nativeShareBtn" hidden>
+                    <svg class="icon" aria-hidden="true"><use href="#i-share"/></svg>
+                    Send it
+                </button>
+                <a class="button" id="previewLink" target="_blank" rel="noopener noreferrer">Preview ↗</a>
+            </div>
+
+            <div class="social-links">
+                <a id="whatsappLink" target="_blank" rel="noopener noreferrer">WhatsApp</a>
+                <a id="telegramLink" target="_blank" rel="noopener noreferrer">Telegram</a>
+                <a id="emailLink">Email</a>
+            </div>
+        </div>
+    </dialog>
+
+    <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+    <script>
+    (() => {
+        "use strict";
+
+        const $ = id => document.getElementById(id);
+        const STORAGE_KEY = "valentineHeartsState";
+
+        const DEFAULT_MESSAGES = [
+            "Together is my favorite place to be.",
+            "You make ordinary days feel a little more magical.",
+            "If I had to choose again, I would still choose you.",
+            "You are my favorite hello and my hardest goodbye.",
+            "Love you to the moon, and all the way back.",
+            "The best part of my day? You.",
+            "Some things just feel like home. You are one of them.",
+            "A thousand little moments, one very big love.",
+            "You make my heart smile.",
+            "There is a little more sunshine wherever you are."
+        ];
+
+        const DEFAULT_SETTINGS = {
+            speed: 10,
+            frequency: 1500,
+            size: 40,
+            autoMessages: true,
+            sound: false
+        };
+
+        const COLORS = ["#d85880", "#e48ca5", "#c74972", "#eca7b9", "#d77595"];
+        const motionQuery = matchMedia("(prefers-reduced-motion: reduce)");
+
+        let reducedMotion = motionQuery.matches;
+        let userPaused = false;
+        let heartTimer;
+        let messageTimer;
+        let saveTimer;
+        let toastTimer;
+        let audioContext;
+        let fitFrame;
+        let currentMessage = "";
+        let storageWarningShown = false;
+
+        function cleanMessages(value, max) {
+            return Array.isArray(value)
+                ? value
+                    .filter(item => typeof item === "string" && item.trim())
+                    .slice(0, max)
+                    .map(item => item.trim().slice(0, 160))
+                : null;
+        }
+
+        function bounded(value, min, max, fallback) {
+            const number = Number(value);
+            return value !== null && value !== "" && Number.isFinite(number)
+                ? Math.min(max, Math.max(min, number))
+                : fallback;
+        }
+
+        function freshState() {
+            return {
+                messages: [...DEFAULT_MESSAGES],
+                customMessages: [],
+                to: "",
+                from: "",
+                settings: { ...DEFAULT_SETTINGS },
+                stats: {
+                    heartsCreated: 0,
+                    heartsClicked: 0,
+                    messagesShown: 0
+                }
+            };
+        }
+
+        function validate(raw) {
+            const next = freshState();
+            if (!raw || typeof raw !== "object") return next;
+
+            const settings = raw.settings || {};
+            next.settings.speed = bounded(settings.speed, 5, 20, 10);
+            next.settings.frequency = bounded(settings.frequency, 500, 3000, 1500);
+            next.settings.size = bounded(settings.size, 20, 80, 40);
+
+            for (const key of ["autoMessages", "sound"]) {
+                if (typeof settings[key] === "boolean") next.settings[key] = settings[key];
+            }
+
+            next.messages = cleanMessages(raw.messages, 30) ?? next.messages;
+            next.customMessages = cleanMessages(raw.customMessages, 20) ?? [];
+            next.to = typeof raw.to === "string" ? raw.to.slice(0, 50) : "";
+            next.from = typeof raw.from === "string" ? raw.from.slice(0, 50) : "";
+
+            for (const key of Object.keys(next.stats)) {
+                next.stats[key] = Math.floor(
+                    bounded(raw.stats?.[key], 0, Number.MAX_SAFE_INTEGER, 0)
+                );
+            }
+
+            return next;
+        }
+
+        function parseMessages(value) {
+            if (!value || value.length > 30000) return null;
+            try {
+                return JSON.parse(value);
+            } catch {
+                // Compatibility with links generated by the original application.
+                try {
+                    return JSON.parse(decodeURIComponent(value));
+                } catch {
+                    return null;
+                }
+            }
+        }
+
+        function loadState() {
+            const params = new URLSearchParams(location.search);
+            const known = ["v", "speed", "freq", "size", "auto", "sound", "msgs", "notes", "to", "from"];
+
+            if (known.some(key => params.has(key))) {
+                const shared = freshState();
+
+                for (const [parameter, key] of [
+                    ["speed", "speed"],
+                    ["freq", "frequency"],
+                    ["size", "size"]
+                ]) {
+                    if (params.has(parameter)) shared.settings[key] = params.get(parameter);
+                }
+
+                if (params.has("auto")) shared.settings.autoMessages = params.get("auto") === "1";
+                if (params.has("sound")) shared.settings.sound = params.get("sound") === "1";
+                if (params.has("msgs")) shared.customMessages = parseMessages(params.get("msgs"));
+                if (params.has("notes")) shared.messages = parseMessages(params.get("notes"));
+
+                shared.to = params.get("to") || "";
+                shared.from = params.get("from") || "";
+
+                return validate(shared);
+            }
+
+            try {
+                return validate(JSON.parse(localStorage.getItem(STORAGE_KEY)));
+            } catch {
+                return freshState();
+            }
+        }
+
+        let state = loadState();
+
+        function persist() {
+            clearTimeout(saveTimer);
+
+            try {
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+            } catch {
+                if (!storageWarningShown) {
+                    storageWarningShown = true;
+                    toast("Device storage is unavailable. Your changes will last for this visit.");
+                }
+            }
+        }
+
+        function scheduleSave() {
+            clearTimeout(saveTimer);
+            saveTimer = setTimeout(persist, 500);
+        }
+
+        function toast(text) {
+            clearTimeout(toastTimer);
+            const element = $("toast");
+            (document.querySelector("dialog[open]") || document.body).append(element);
+            element.textContent = text;
+            element.classList.add("show");
+            toastTimer = setTimeout(() => element.classList.remove("show"), 3200);
+        }
+
+        function updateStats() {
+            for (const [key, value] of Object.entries(state.stats)) {
+                $(key).textContent = value.toLocaleString();
+            }
+            scheduleSave();
+        }
+
+        function allMessages() {
+            return [...state.customMessages, ...state.messages];
+        }
+
+        function pickMessage() {
+            const messages = allMessages();
+            const options = messages.filter(message => message !== currentMessage);
+            const pool = options.length ? options : messages;
+
+            return pool.length
+                ? pool[Math.floor(Math.random() * pool.length)]
+                : "A little love looks good on you.";
+        }
+
+        /*
+         * Fit long personal notes into the flexible letter area.
+         * Recalculate after viewport, orientation, and content changes.
+         */
+        function fitMessage() {
+            cancelAnimationFrame(fitFrame);
+
+            fitFrame = requestAnimationFrame(() => {
+                const message = $("currentMessage");
+                const wrap = $("messageWrap");
+                if (!wrap.clientWidth || !wrap.clientHeight) return;
+
+                message.style.fontSize = "";
+                let size = parseFloat(getComputedStyle(message).fontSize);
+
+                while (
+                    size > 11 &&
+                    (
+                        message.offsetHeight > wrap.clientHeight ||
+                        message.scrollWidth > wrap.clientWidth
+                    )
+                ) {
+                    size -= .5;
+                    message.style.fontSize = size + "px";
+                }
+            });
+        }
+
+        function showMessage(message, count = true) {
+            currentMessage = message;
+            const element = $("currentMessage");
+
+            element.textContent = message;
+            element.classList.remove("enter");
+            void element.offsetWidth;
+            element.classList.add("enter");
+
+            if (count) {
+                state.stats.messagesShown++;
+                updateStats();
+            }
+
+            $("noteCount").textContent = state.customMessages.includes(message)
+                ? "A note written just for you"
+                : "A little reminder, just for you";
+
+            fitMessage();
+        }
+
+        function renderPersonalization() {
+            $("recipient").textContent = `To ${state.to.trim() || "my favorite person"},`;
+            $("signature").textContent = state.from.trim()
+                ? `With love, ${state.from.trim()}`
+                : "With love, always";
+
+            fitMessage();
+        }
+
+        function renderSettings() {
+            $("toInput").value = state.to;
+            $("fromInput").value = state.from;
+            $("speedSlider").value = state.settings.speed;
+            $("frequencySlider").value = state.settings.frequency;
+            $("sizeSlider").value = state.settings.size;
+            $("speedValue").textContent = state.settings.speed + "s";
+            $("frequencyValue").textContent = (state.settings.frequency / 1000).toFixed(1) + "s";
+            $("sizeValue").textContent = state.settings.size + "px";
+            $("autoMessagesToggle").checked = state.settings.autoMessages;
+            $("soundToggle").checked = state.settings.sound;
+            $("motionNotice").hidden = !reducedMotion;
+            renderPersonalization();
+        }
+
+        function makeIcon(name) {
+            const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+            svg.classList.add("icon");
+            svg.setAttribute("aria-hidden", "true");
+
+            const use = document.createElementNS("http://www.w3.org/2000/svg", "use");
+            use.setAttribute("href", "#i-" + name);
+            svg.append(use);
+
+            return svg;
+        }
+
+        function renderMessages() {
+            const list = $("messagesList");
+            list.replaceChildren();
+
+            for (const [key, custom] of [
+                ["customMessages", true],
+                ["messages", false]
+            ]) {
+                state[key].forEach((message, index) => {
+                    const row = document.createElement("div");
+                    row.className = "message-item";
+
+                    const text = document.createElement("p");
+
+                    if (custom) {
+                        const badge = document.createElement("small");
+                        badge.textContent = "Your note";
+                        text.append(badge);
+                    }
+
+                    text.append(document.createTextNode(message));
+
+                    const button = document.createElement("button");
+                    button.className = "icon-button";
+                    button.setAttribute("aria-label", "Delete note: " + message);
+                    button.append(makeIcon("close"));
+
+                    button.addEventListener("click", () => {
+                        const buttons = [...list.querySelectorAll("button")];
+                        const position = buttons.indexOf(button);
+
+                        state[key].splice(index, 1);
+                        scheduleSave();
+                        renderMessages();
+                        toast("Note removed.");
+
+                        const remaining = list.querySelectorAll("button");
+                        (
+                            remaining[Math.min(position, remaining.length - 1)] ||
+                            $("customMessageInput")
+                        ).focus();
+                    });
+
+                    row.append(text, button);
+                    list.append(row);
+                });
+            }
+
+            if (!list.children.length) {
+                const empty = document.createElement("p");
+                empty.className = "helper";
+                empty.textContent = "A blank page, a lovely possibility. Add your first note above.";
+                list.append(empty);
+            }
+        }
+
+        function suspended() {
+            return userPaused || document.hidden || !!document.querySelector("dialog[open]");
+        }
+
+        function syncPlayback() {
+            clearInterval(heartTimer);
+            clearInterval(messageTimer);
+
+            const stopped = suspended();
+            $("garden").classList.toggle("paused", stopped);
+            $("pauseBtn").setAttribute("aria-pressed", String(userPaused));
+            $("pauseBtn").setAttribute(
+                "aria-label",
+                userPaused
+                    ? "Resume animation and automatic messages"
+                    : "Pause animation and automatic messages"
+            );
+
+            $("pauseIcon").setAttribute("href", userPaused ? "#i-play" : "#i-pause");
+            $("gardenStatus").textContent = userPaused
+                ? "A quiet little moment"
+                : reducedMotion
+                    ? "Love, at your pace"
+                    : "Love is in the air";
+
+            if (stopped) return;
+
+            if (!reducedMotion) {
+                heartTimer = setInterval(createHeart, state.settings.frequency);
+            }
+
+            if (state.settings.autoMessages) {
+                messageTimer = setInterval(() => showMessage(pickMessage()), 8000);
+            }
+        }
+
+        function createHeart() {
+            if (
+                suspended() ||
+                reducedMotion ||
+                $("heartsContainer").children.length >= 28
+            ) return;
+
+            const heart = document.createElement("button");
+            heart.className = "floating-heart";
+            heart.setAttribute("aria-label", "Catch this heart and discover a note");
+
+            const size = Math.max(44, state.settings.size + (Math.random() * 14 - 7));
+            const gardenWidth = $("garden").clientWidth;
+
+            heart.style.setProperty("--size", size + "px");
+            heart.style.setProperty("--color", COLORS[Math.floor(Math.random() * COLORS.length)]);
+            heart.style.setProperty("--duration", (state.settings.speed + Math.random() * 2) + "s");
+            heart.style.setProperty("--travel", $("garden").clientHeight + "px");
+            heart.style.left = Math.random() * Math.max(0, gardenWidth - size) + "px";
+            heart.append(makeIcon("heart"));
+
+            const message = pickMessage();
+
+            heart.addEventListener("click", () => {
+                const rect = heart.getBoundingClientRect();
+                const gardenRect = $("garden").getBoundingClientRect();
+
+                burstAt(
+                    rect.left - gardenRect.left + rect.width / 2,
+                    rect.top - gardenRect.top + rect.height / 2,
+                    9
+                );
+
+                state.stats.heartsClicked++;
+                showMessage(message);
+                playSound();
+
+                const hadFocus = document.activeElement === heart;
+                heart.remove();
+
+                if (hadFocus) $("mainHeartBtn").focus({ preventScroll: true });
+            });
+
+            heart.addEventListener("animationend", () => {
+                const hadFocus = document.activeElement === heart;
+                heart.remove();
+                if (hadFocus) $("mainHeartBtn").focus({ preventScroll: true });
+            });
+
+            heart.addEventListener("focus", () => heart.style.animationPlayState = "paused");
+            heart.addEventListener("blur", () => heart.style.animationPlayState = "");
+
+            $("heartsContainer").append(heart);
+            state.stats.heartsCreated++;
+            updateStats();
+        }
+
+        function burstAt(x, y, count = 18) {
+            if (reducedMotion || suspended()) return;
+
+            const container = $("particles");
+            if (container.children.length > 70) return;
+
+            for (let i = 0; i < count; i++) {
+                const particle = document.createElement("span");
+                particle.className = "particle";
+                particle.textContent = i % 3 === 0 ? "✦" : "♥";
+
+                const angle = Math.PI * 2 * i / count;
+                const distance = 55 + Math.random() * 100;
+
+                particle.style.left = x + "px";
+                particle.style.top = y + "px";
+                particle.style.color = COLORS[i % COLORS.length];
+                particle.style.setProperty("--x", Math.cos(angle) * distance + "px");
+                particle.style.setProperty("--y", Math.sin(angle) * distance + "px");
+                particle.style.setProperty("--r", (Math.random() * 100 - 50) + "deg");
+
+                particle.addEventListener("animationend", () => particle.remove());
+                container.append(particle);
+            }
+        }
+
+        function sendLove() {
+            const garden = $("garden");
+            burstAt(garden.clientWidth / 2, garden.clientHeight * .46);
+
+            state.stats.heartsCreated++;
+            showMessage(pickMessage());
+            playSound();
+
+            if (reducedMotion || userPaused) toast("A little love, sent your way. ♡");
+        }
+
+        async function playSound() {
+            if (!state.settings.sound) return;
+
+            try {
+                const Audio = window.AudioContext || window.webkitAudioContext;
+                if (!Audio) return;
+
+                audioContext ||= new Audio();
+                if (audioContext.state === "suspended") await audioContext.resume();
+
+                const now = audioContext.currentTime;
+
+                [523.25, 659.25, 783.99].forEach((frequency, index) => {
+                    const oscillator = audioContext.createOscillator();
+                    const gain = audioContext.createGain();
+
+                    oscillator.type = "sine";
+                    oscillator.frequency.value = frequency;
+
+                    gain.gain.setValueAtTime(0, now + index * .06);
+                    gain.gain.linearRampToValueAtTime(.045, now + index * .06 + .02);
+                    gain.gain.exponentialRampToValueAtTime(.001, now + .65);
+
+                    oscillator.connect(gain);
+                    gain.connect(audioContext.destination);
+                    oscillator.start(now + index * .06);
+                    oscillator.stop(now + .7);
+
+                    oscillator.onended = () => {
+                        oscillator.disconnect();
+                        gain.disconnect();
+                    };
+                });
+            } catch {
+                // Audio is optional.
+            }
+        }
+
+        function openDialog(id) {
+            $(id).showModal();
+            syncPlayback();
+        }
+
+        for (const dialog of document.querySelectorAll("dialog")) {
+            dialog.querySelector("[data-close]").addEventListener("click", () => dialog.close());
+
+            dialog.addEventListener("click", event => {
+                if (event.target !== dialog) return;
+
+                const rect = dialog.getBoundingClientRect();
+                if (
+                    event.clientX < rect.left ||
+                    event.clientX > rect.right ||
+                    event.clientY < rect.top ||
+                    event.clientY > rect.bottom
+                ) dialog.close();
+            });
+
+            dialog.addEventListener("close", () => {
+                document.body.append($("toast"));
+                syncPlayback();
+                fitMessage();
+            });
+        }
+
+        function shareUrl() {
+            const url = new URL(location.href);
+            url.search = "";
+            url.hash = "";
+
+            const params = url.searchParams;
+            params.set("v", "2");
+            params.set("speed", state.settings.speed);
+            params.set("freq", state.settings.frequency);
+            params.set("size", state.settings.size);
+            params.set("auto", state.settings.autoMessages ? "1" : "0");
+            params.set("sound", state.settings.sound ? "1" : "0");
+            params.set("msgs", JSON.stringify(state.customMessages));
+            params.set("notes", JSON.stringify(state.messages));
+
+            if (state.to) params.set("to", state.to);
+            if (state.from) params.set("from", state.from);
+
+            return url.href;
+        }
+
+        function openShare() {
+            const url = shareUrl();
+            const text = "A little love, a little magic. This Valentine is for you. ♡";
+
+            $("shareUrl").value = url;
+            $("previewLink").href = url;
+            $("whatsappLink").href = "https://wa.me/?text=" + encodeURIComponent(text + "\n" + url);
+            $("telegramLink").href = "https://t.me/share/url?url=" +
+                encodeURIComponent(url) + "&text=" + encodeURIComponent(text);
+            $("emailLink").href = "mailto:?subject=" +
+                encodeURIComponent("A little Valentine for you ♡") +
+                "&body=" + encodeURIComponent(text + "\n\n" + url);
+
+            $("fileWarning").hidden = location.protocol !== "file:";
+            $("nativeShareBtn").hidden = !navigator.share;
+
+            openDialog("shareDialog");
+        }
+
+        $("copyBtn").addEventListener("click", async () => {
+            const field = $("shareUrl");
+
+            try {
+                if (!navigator.clipboard?.writeText) throw new Error("Clipboard unavailable");
+                await navigator.clipboard.writeText(field.value);
+                toast("Link copied. Make someone’s day. ♡");
+            } catch {
+                field.focus();
+                field.select();
+
+                let copied = false;
+                try {
+                    copied = document.execCommand("copy");
+                } catch {}
+
+                toast(copied ? "Link copied. ♡" : "Select and copy the link above to share it.");
+            }
+        });
+
+        $("nativeShareBtn").addEventListener("click", async () => {
+            try {
+                await navigator.share({
+                    title: "A little Valentine for you",
+                    text: "A little love, a little magic. ♡",
+                    url: $("shareUrl").value
+                });
+            } catch (error) {
+                if (error.name !== "AbortError") {
+                    toast("Sharing is unavailable. Try copying the link.");
+                }
+            }
+        });
+
+        for (const id of ["settingsBtn", "customizeBtn", "footerSettingsBtn"]) {
+            $(id).addEventListener("click", () => openDialog("settingsDialog"));
+        }
+
+        for (const id of ["shareBtn", "headerShareBtn"]) {
+            $(id).addEventListener("click", openShare);
+        }
+
+        $("newMessageBtn").addEventListener("click", () => showMessage(pickMessage()));
+        $("mainHeartBtn").addEventListener("click", sendLove);
+
+        $("burstBtn").addEventListener("click", () => {
+            sendLove();
+
+            if (!suspended() && !reducedMotion) {
+                for (let i = 0; i < 9; i++) createHeart();
+            }
+        });
+
+        $("pauseBtn").addEventListener("click", () => {
+            userPaused = !userPaused;
+            syncPlayback();
+        });
+
+        for (const [id, key] of [["toInput", "to"], ["fromInput", "from"]]) {
+            $(id).addEventListener("input", event => {
+                state[key] = event.target.value.slice(0, 50);
+                renderPersonalization();
+                scheduleSave();
+            });
+        }
+
+        for (const [id, key, output] of [
+            ["speedSlider", "speed", "speedValue"],
+            ["frequencySlider", "frequency", "frequencyValue"],
+            ["sizeSlider", "size", "sizeValue"]
+        ]) {
+            $(id).addEventListener("input", event => {
+                state.settings[key] = Number(event.target.value);
+
+                $(output).textContent = key === "frequency"
+                    ? (state.settings[key] / 1000).toFixed(1) + "s"
+                    : state.settings[key] + (key === "size" ? "px" : "s");
+
+                scheduleSave();
+                syncPlayback();
+            });
+        }
+
+        $("autoMessagesToggle").addEventListener("change", event => {
+            state.settings.autoMessages = event.target.checked;
+            scheduleSave();
+            syncPlayback();
+        });
+
+        $("soundToggle").addEventListener("change", event => {
+            state.settings.sound = event.target.checked;
+            scheduleSave();
+            playSound();
+        });
+
+        $("messageForm").addEventListener("submit", event => {
+            event.preventDefault();
+
+            const input = $("customMessageInput");
+            const message = input.value.trim();
+
+            if (!message) {
+                input.focus();
+                return;
+            }
+
+            if (state.customMessages.length >= 20) {
+                toast("Your collection is full. Remove a note to add another.");
+                return;
+            }
+
+            if (allMessages().includes(message)) {
+                toast("That lovely note is already in your collection.");
+                return;
+            }
+
+            state.customMessages.push(message.slice(0, 160));
+            input.value = "";
+
+            renderMessages();
+            showMessage(message.slice(0, 160));
+            scheduleSave();
+            toast("A personal touch, added. ♡");
+            input.focus();
+        });
+
+        $("restoreBtn").addEventListener("click", () => {
+            state.settings = { ...DEFAULT_SETTINGS };
+            renderSettings();
+            scheduleSave();
+            syncPlayback();
+            toast("Atmosphere restored. Your personal touches are safe.");
+        });
+
+        $("clearBtn").addEventListener("click", () => {
+            if (!confirm("Reset all names, notes, settings, and activity counts on this device?")) return;
+
+            state = freshState();
+            $("heartsContainer").replaceChildren();
+            $("particles").replaceChildren();
+            $("customMessageInput").value = "";
+            userPaused = false;
+
+            try {
+                const cleanUrl = new URL(location.href);
+                cleanUrl.search = "";
+                cleanUrl.hash = "";
+                history.replaceState(null, "", cleanUrl.href);
+            } catch {}
+
+            renderSettings();
+            renderMessages();
+            showMessage(DEFAULT_MESSAGES[0], false);
+            updateStats();
+            persist();
+            syncPlayback();
+            toast("A fresh start, with love.");
+        });
+
+        document.addEventListener("visibilitychange", () => {
+            syncPlayback();
+            if (document.hidden) persist();
+        });
+
+        window.addEventListener("pagehide", persist);
+        window.addEventListener("resize", fitMessage);
+
+        if ("ResizeObserver" in window) {
+            const observer = new ResizeObserver(fitMessage);
+            observer.observe($("messageWrap"));
+        }
+
+        motionQuery.addEventListener("change", event => {
+            reducedMotion = event.matches;
+
+            if (reducedMotion) {
+                $("heartsContainer").replaceChildren();
+                $("particles").replaceChildren();
+            }
+
+            $("motionNotice").hidden = !reducedMotion;
+            syncPlayback();
+        });
+
+        renderSettings();
+        renderMessages();
+        showMessage(
+            state.customMessages[0] ||
+            state.messages[0] ||
+            "A little love looks good on you.",
+            false
+        );
+
+        updateStats();
+        syncPlayback();
+
+        if (!reducedMotion) {
+            for (let i = 0; i < 4; i++) {
+                createHeart();
+                const heart = $("heartsContainer").lastElementChild;
+                if (heart) heart.style.animationDelay = (-i * 2) + "s";
+            }
+        }
+    })();
+    </script>
+</body>
+</html>
