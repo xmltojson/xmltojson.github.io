@@ -1,0 +1,2351 @@
+<!DOCTYPE html>
+<!-- MIT License
+Copyright (c) 2025-2027 Yuliya Kolesnikova <0009-0000-6151-7415@orcid.org>
+-->
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/x-icon" href="favicon.ico"/>
+    <meta name="description" content="A beautifully textured woodland Snake game with 20 levels, realistic graphics, touch controls, and an AI explorer.">
+    <meta name="theme-color" content="#14241e">
+    <title>Snake — Woodland Trail</title>
+    <style>
+        :root {
+            color-scheme: dark;
+            --bg: #101c17;
+            --panel: #1a2a22;
+            --border: rgba(216, 233, 193, .12);
+            --text: #eef1e5;
+            --muted: #a7b5a6;
+            --accent: #c3dd87;
+            --gold: #e6c783;
+            --danger: #f0a292;
+            --radius: 18px;
+        }
+
+        * { box-sizing: border-box; }
+        html { min-width: 300px; }
+        body {
+            margin: 0;
+            min-height: 100vh;
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+            color: var(--text);
+            background:
+                radial-gradient(ellipse at 8% 0%, #2c4230 0, transparent 48%),
+                radial-gradient(ellipse at 100% 80%, #233a2e 0, transparent 40%),
+                var(--bg);
+        }
+        button, select, input { font: inherit; }
+        button, select { touch-action: manipulation; }
+        button {
+            min-height: 42px;
+            padding: 10px 15px;
+            border: 1px solid transparent;
+            border-radius: 10px;
+            background: var(--accent);
+            color: #23311a;
+            font-weight: 700;
+            cursor: pointer;
+            transition: background .2s, transform .2s, box-shadow .2s;
+        }
+        button:hover:not(:disabled) {
+            background: #d3e9a5;
+            box-shadow: 0 4px 18px #0003;
+            transform: translateY(-1px);
+        }
+        button:active:not(:disabled) { transform: translateY(1px); }
+        button:disabled { opacity: .4; cursor: not-allowed; }
+        button.secondary {
+            border-color: var(--border);
+            background: #ffffff08;
+            color: var(--text);
+        }
+        button.secondary:hover:not(:disabled) { background: #ffffff12; }
+        :focus-visible { outline: 3px solid var(--gold); outline-offset: 3px; }
+        select {
+            width: 100%;
+            min-height: 42px;
+            padding: 9px;
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            color: var(--text);
+            background: #122219;
+        }
+        select:disabled { opacity: .6; }
+        input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            margin: 0;
+            accent-color: var(--accent);
+            cursor: pointer;
+            flex: 0 0 auto;
+        }
+        [hidden] { display: none !important; }
+
+        .app {
+            max-width: 1500px;
+            margin: auto;
+            padding: 24px;
+        }
+        .header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 20px;
+            margin-bottom: 22px;
+        }
+        .brand { display: flex; gap: 12px; align-items: center; }
+        .brand-mark {
+            width: 48px;
+            height: 48px;
+            display: grid;
+            place-items: center;
+            flex: 0 0 auto;
+            border: 1px solid #c3dd873b;
+            border-radius: 15px;
+            background: #c3dd8710;
+        }
+        .brand-mark svg { width: 33px; height: 33px; }
+        h1 { margin: 0; font-size: 1.6rem; letter-spacing: -.06em; font-weight: 750; }
+        .subtitle { margin: 2px 0 0; color: var(--muted); font-size: .72rem; letter-spacing: .1em; }
+        .header-note { color: var(--muted); font-size: .78rem; text-align: right; line-height: 1.6; }
+        .header-note span { color: var(--accent); }
+
+        .layout {
+            display: grid;
+            grid-template-columns: 210px minmax(0, 1fr) 210px;
+            gap: 18px;
+            align-items: start;
+            min-width: 0;
+            min-height: 0;
+        }
+        .sidebar {
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+            min-width: 0;
+            min-height: 0;
+        }
+        .panel {
+            padding: 17px;
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            background: linear-gradient(140deg, #ffffff04, transparent), var(--panel);
+            box-shadow: 0 10px 25px #00000012;
+            min-width: 0;
+        }
+        .eyebrow {
+            margin: 0 0 13px;
+            color: var(--muted);
+            font-size: .65rem;
+            font-weight: 750;
+            letter-spacing: .15em;
+            text-transform: uppercase;
+        }
+        .field-label { display: block; margin-bottom: 7px; font-size: .8rem; }
+        .button-row { display: flex; gap: 7px; margin-top: 10px; }
+        .button-row button { flex: 1; padding-inline: 6px; font-size: .8rem; }
+        .toggle {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            min-height: 34px;
+            font-size: .78rem;
+            cursor: pointer;
+        }
+        .settings { margin-top: 12px; padding-top: 7px; border-top: 1px solid var(--border); }
+        .small-note { margin: 8px 0 0; color: var(--muted); font-size: .7rem; line-height: 1.6; }
+
+        .stats { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+        .stat {
+            padding: 11px;
+            background: #10201780;
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            min-width: 0;
+        }
+        .stat-label { color: var(--muted); font-size: .67rem; }
+        .stat-value {
+            margin-top: 3px;
+            font-size: 1.4rem;
+            font-weight: 650;
+            line-height: 1.15;
+            letter-spacing: -.035em;
+            font-variant-numeric: tabular-nums;
+        }
+        #score { color: var(--accent); }
+        #timer.warning { color: var(--danger); }
+        .level-heading { margin: 0 0 12px; font-size: .96rem; font-weight: 600; }
+        .detail-row {
+            display: flex;
+            justify-content: space-between;
+            gap: 8px;
+            margin: 9px 0;
+            font-size: .74rem;
+            color: var(--muted);
+        }
+        .detail-row strong { color: var(--text); font-weight: 500; text-align: right; }
+        .progress {
+            width: 100%;
+            height: 5px;
+            margin-top: 13px;
+            overflow: hidden;
+            background: #0d1c15;
+            border-radius: 10px;
+        }
+        .progress-fill {
+            width: 0;
+            height: 100%;
+            border-radius: inherit;
+            background: linear-gradient(90deg, #789953, var(--accent));
+            transition: width .25s;
+        }
+        .progress-caption { margin-top: 7px; color: var(--muted); font-size: .67rem; line-height: 1.4; }
+
+        .game-column {
+            min-width: 0;
+            min-height: 0;
+            display: flex;
+            flex-direction: column;
+        }
+        .board-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 10px;
+            margin: 0 3px 10px;
+            font-size: .73rem;
+            color: var(--muted);
+            flex: 0 0 auto;
+        }
+        .status { display: flex; gap: 7px; align-items: center; }
+        .status::before {
+            content: "";
+            width: 6px;
+            height: 6px;
+            flex: 0 0 auto;
+            border-radius: 50%;
+            background: var(--accent);
+            box-shadow: 0 0 9px #c3dd8740;
+        }
+
+        /*
+         * On desktop this stage receives the available viewport space.
+         * JavaScript fits the square frame to both its width and height.
+         */
+        .board-stage {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-width: 0;
+            min-height: 0;
+            width: 100%;
+        }
+        .canvas-frame {
+            width: 100%;
+            max-width: 820px;
+            aspect-ratio: 1;
+            flex: 0 0 auto;
+            padding: 8px;
+            border: 1px solid #8e9e6847;
+            border-radius: 23px;
+            background: linear-gradient(135deg, #596247, #273627 25%, #15271c 65%, #48583e);
+            box-shadow: 0 20px 50px #0005, inset 0 1px 1px #dce8bd26;
+        }
+        .canvas-wrapper {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            aspect-ratio: 1;
+            isolation: isolate;
+            overflow: hidden;
+            border-radius: 15px;
+            background: #29331d;
+            box-shadow: 0 0 0 1px #0a170c, inset 0 0 35px #0009;
+        }
+        canvas { display: block; width: 100%; height: 100%; touch-action: none; }
+        canvas:focus-visible { outline-offset: -5px; }
+        .board-badge {
+            position: absolute;
+            top: 11px;
+            right: 11px;
+            pointer-events: none;
+            padding: 5px 8px;
+            border: 1px solid #d7dfb330;
+            border-radius: 7px;
+            background: #142419d9;
+            color: var(--accent);
+            font-size: .6rem;
+            font-weight: 700;
+            letter-spacing: .08em;
+        }
+        .overlay {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 18px;
+            background: #0b170e70;
+            backdrop-filter: blur(3px);
+            z-index: 2;
+        }
+        .overlay-card {
+            width: min(100%, 340px);
+            max-height: 100%;
+            padding: clamp(18px, 2.5vw, 28px);
+            text-align: center;
+            border: 1px solid #d6e4af30;
+            border-radius: 19px;
+            background: linear-gradient(150deg, #293c2bf5, #15261cf5);
+            box-shadow: 0 18px 60px #0005;
+        }
+        .overlay-symbol {
+            display: inline-grid;
+            place-items: center;
+            width: 43px;
+            height: 43px;
+            margin-bottom: 10px;
+            border: 1px solid #c3dd8733;
+            border-radius: 50%;
+            color: var(--accent);
+            font-size: 1.5rem;
+        }
+        .overlay h2 { margin: 0 0 9px; font-size: clamp(1.2rem, 2.5vw, 1.65rem); letter-spacing: -.035em; }
+        .overlay p { margin: 0 0 17px; color: #c1cdb9; font-size: .82rem; line-height: 1.6; white-space: pre-line; }
+        .overlay button { min-width: 145px; }
+        .overlay.failure h2 { color: var(--danger); }
+        .overlay.success h2 { color: var(--accent); }
+        .overlay .overlay-hint { margin: 12px 0 0; font-size: .66rem; color: var(--muted); }
+
+        .board-bottom {
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 6px 16px;
+            margin: 12px 3px 0;
+            color: var(--muted);
+            font-size: .68rem;
+            flex: 0 0 auto;
+        }
+        kbd {
+            display: inline-block;
+            padding: 1px 4px;
+            border: 1px solid #ffffff20;
+            border-bottom-width: 2px;
+            border-radius: 4px;
+            font: inherit;
+            color: #dce3d5;
+            background: #ffffff05;
+        }
+
+        .records-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 7px;
+            margin-bottom: 14px;
+        }
+        .records-header .eyebrow { margin: 0; }
+        .record-count {
+            padding: 2px 6px;
+            border: 1px solid var(--border);
+            border-radius: 5px;
+            color: var(--accent);
+            font-size: .62rem;
+            font-variant-numeric: tabular-nums;
+        }
+        .scores-list { display: grid; gap: 12px; }
+        .score-item { display: grid; grid-template-columns: 20px 1fr auto; align-items: center; gap: 5px; }
+        .score-rank { color: #71826d; font-size: .69rem; }
+        .score-item.top-record .score-rank { color: var(--gold); }
+        .score-main { font-size: .73rem; }
+        .score-date { margin-top: 2px; color: #8b9d88; font-size: .62rem; }
+        .score-points { font-size: .74rem; color: var(--accent); white-space: nowrap; }
+        .empty-scores { text-align: center; padding: 9px 0; color: var(--muted); font-size: .74rem; line-height: 1.75; }
+        .empty-scores svg { width: 31px; height: 31px; display: block; margin: 0 auto 9px; color: #a8b786; }
+        .score-pagination {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 7px;
+            border-top: 1px solid var(--border);
+            padding-top: 10px;
+            margin-top: 12px;
+        }
+        .score-pagination button {
+            min-height: 30px;
+            width: 32px;
+            padding: 3px;
+            font-size: .9rem;
+            border-radius: 7px;
+        }
+        .page-label { font-size: .64rem; color: var(--muted); font-variant-numeric: tabular-nums; }
+
+        .legend { display: grid; gap: 13px; }
+        .legend-item { display: flex; gap: 9px; align-items: center; font-size: .74rem; color: var(--muted); line-height: 1.5; }
+        .legend-icon { flex: 0 0 24px; width: 24px; height: 24px; display: grid; place-items: center; }
+        .apple-icon {
+            width: 18px;
+            height: 18px;
+            border-radius: 45% 45% 47% 47%;
+            background: radial-gradient(circle at 30% 25%, #f6ad76, #c5412d 45%, #721e19);
+            box-shadow: 2px 3px 4px #0005;
+            position: relative;
+        }
+        .apple-icon::before {
+            content: "";
+            position: absolute;
+            width: 9px;
+            height: 5px;
+            background: #a9c775;
+            border-radius: 0 80% 0 80%;
+            top: -3px;
+            left: 9px;
+            transform: rotate(-20deg);
+        }
+        .rock-icon {
+            width: 21px;
+            height: 19px;
+            border-radius: 40% 60% 30% 35%;
+            background: linear-gradient(145deg, #aaa68b, #757865 50%, #3d4939);
+            box-shadow: 2px 3px 4px #0005;
+        }
+        .leaf-icon { width: 20px; height: 12px; border-radius: 0 90% 0 90%; background: linear-gradient(150deg, #bad47c, #567b38); transform: rotate(-30deg); }
+        .guide-note { margin-top: 16px; }
+
+        .virtual-keyboard { display: none; margin-top: 13px; flex: 0 0 auto; }
+        .vk-row { display: flex; justify-content: center; gap: 8px; margin: 6px 0; }
+        .vk-btn {
+            width: 56px;
+            height: 46px;
+            padding: 0;
+            background: #203326;
+            color: var(--accent);
+            border: 1px solid #c3dd8730;
+            border-radius: 11px;
+            font-size: 1.2rem;
+            user-select: none;
+            touch-action: none;
+        }
+        .footer {
+            margin: 20px 0 0;
+            color: #8a9a85;
+            font-size: .66rem;
+            text-align: center;
+            line-height: 1.5;
+        }
+        .sr-only {
+            position: absolute;
+            width: 1px;
+            height: 1px;
+            padding: 0;
+            margin: -1px;
+            overflow: hidden;
+            clip: rect(0,0,0,0);
+            white-space: nowrap;
+            border: 0;
+        }
+
+        /* Desktop: the complete application fits inside the viewport. */
+        @media (min-width: 901px) and (min-height: 461px) {
+            html, body { height: 100%; }
+            .app {
+                height: 100vh;
+                height: 100dvh;
+                padding: clamp(12px, 2vh, 24px) clamp(14px, 2vw, 28px);
+                display: grid;
+                grid-template-rows: auto minmax(0, 1fr) auto;
+                gap: clamp(10px, 1.8vh, 20px);
+            }
+            .header { margin: 0; }
+            .layout {
+                height: 100%;
+                align-items: stretch;
+                grid-template-columns:
+                    clamp(180px, 17vw, 232px)
+                    minmax(0, 1fr)
+                    clamp(180px, 17vw, 232px);
+                gap: clamp(12px, 1.6vw, 22px);
+            }
+            .sidebar { gap: clamp(8px, 1.5vh, 16px); }
+            .panel { padding: clamp(12px, 1.7vh, 18px); }
+            .game-column { height: 100%; }
+            .board-stage { flex: 1 1 0; }
+            .canvas-frame { max-width: none; }
+            .footer { margin: 0; }
+            .virtual-keyboard { display: none; }
+        }
+
+        /* Laptop-height screens: tighten spacing instead of shrinking the board off-screen. */
+        @media (min-width: 901px) and (min-height: 461px) and (max-height: 760px) {
+            .app { gap: 10px; padding-top: 12px; padding-bottom: 10px; }
+            .brand-mark { width: 40px; height: 40px; border-radius: 12px; }
+            .brand-mark svg { width: 29px; height: 29px; }
+            h1 { font-size: 1.4rem; }
+            .subtitle { font-size: .63rem; }
+            .header-note { font-size: .7rem; }
+            .sidebar { gap: 9px; }
+            .panel { padding: 12px; border-radius: 15px; }
+            .eyebrow { margin-bottom: 9px; font-size: .6rem; }
+            .settings { margin-top: 9px; padding-top: 5px; }
+            .toggle { min-height: 29px; font-size: .73rem; }
+            .controls-note { display: none; }
+            .stat { padding: 9px 10px; }
+            .stat-value { font-size: 1.25rem; }
+            .level-heading { margin-bottom: 9px; font-size: .88rem; }
+            .detail-row { margin: 7px 0; font-size: .71rem; }
+            .progress { margin-top: 10px; }
+            .progress-caption { font-size: .62rem; }
+            .records-header { margin-bottom: 11px; }
+            .scores-list { gap: 10px; }
+            .legend { gap: 11px; }
+            .legend-item { font-size: .7rem; }
+            .guide-note { margin-top: 12px; font-size: .66rem; }
+            .board-top { margin-bottom: 8px; }
+            .board-bottom { margin-top: 8px; font-size: .63rem; gap: 5px 12px; }
+            .footer { font-size: .6rem; }
+        }
+
+        /* Short desktop windows keep all essential controls available. */
+        @media (min-width: 901px) and (min-height: 461px) and (max-height: 620px) {
+            .app { padding-top: 9px; padding-bottom: 8px; gap: 8px; }
+            .brand-mark { width: 34px; height: 34px; border-radius: 10px; }
+            .brand-mark svg { width: 26px; height: 26px; }
+            h1 { font-size: 1.2rem; }
+            .subtitle { font-size: .56rem; }
+            .header-note br, .header-note .header-secondary { display: none; }
+            .sidebar { gap: 7px; }
+            .panel { padding: 10px; border-radius: 13px; }
+            .eyebrow { margin-bottom: 7px; font-size: .57rem; }
+            .field-label { margin-bottom: 5px; font-size: .71rem; }
+            select { min-height: 34px; padding: 6px 8px; font-size: .76rem; }
+            .button-row { margin-top: 7px; gap: 6px; }
+            .button-row button { min-height: 34px; padding: 6px; font-size: .74rem; }
+            .settings { margin-top: 7px; padding-top: 4px; }
+            .toggle { min-height: 25px; font-size: .69rem; }
+            input[type="checkbox"] { width: 16px; height: 16px; }
+            .stats { gap: 6px; }
+            .stat { padding: 7px 9px; }
+            .stat-label { font-size: .61rem; }
+            .stat-value { margin-top: 2px; font-size: 1.15rem; }
+            .objectives-panel > .eyebrow { display: none; }
+            .level-heading { font-size: .82rem; margin-bottom: 5px; }
+            .detail-row { font-size: .67rem; margin: 5px 0; }
+            .progress { margin-top: 7px; height: 4px; }
+            .progress-caption { margin-top: 5px; font-size: .6rem; }
+            .records-header { margin-bottom: 8px; }
+            .scores-list { gap: 8px; }
+            .score-main, .score-points { font-size: .69rem; }
+            .score-date { font-size: .57rem; }
+            .score-pagination { padding-top: 7px; margin-top: 8px; }
+            .records-note, .guide-note { display: none; }
+            .legend { gap: 9px; }
+            .legend-item { font-size: .67rem; }
+            .board-top { font-size: .64rem; margin-bottom: 6px; }
+            .board-bottom { margin-top: 6px; font-size: .58rem; }
+            .canvas-frame { padding: 6px; border-radius: 19px; }
+            .canvas-wrapper { border-radius: 12px; }
+            .overlay { padding: 13px; }
+            .overlay-card { padding: 17px; }
+            .overlay-symbol { width: 33px; height: 33px; font-size: 1.1rem; margin-bottom: 7px; }
+            .overlay h2 { font-size: 1.2rem; }
+            .overlay p { font-size: .74rem; line-height: 1.5; margin-bottom: 13px; }
+            .overlay button { min-height: 36px; padding: 8px 13px; font-size: .78rem; }
+            .overlay .overlay-hint { margin-top: 9px; font-size: .6rem; }
+        }
+
+        @media (min-width: 901px) and (min-height: 461px) and (max-height: 520px) {
+            .footer { display: none; }
+            .app { grid-template-rows: auto minmax(0, 1fr); }
+            .field-label { display: none; }
+            .controls-panel > .eyebrow { margin-bottom: 6px; }
+            .stat { padding: 6px 8px; }
+            .stat-value { font-size: 1rem; }
+            .progress-caption { display: none; }
+            .overlay-symbol, .overlay .overlay-hint { display: none; }
+            .overlay-card { padding: 15px; }
+            .overlay h2 { font-size: 1.1rem; }
+            .overlay p { font-size: .71rem; }
+        }
+
+        /* Tablet and mobile retain natural document scrolling. */
+        @media (max-width: 900px) {
+            .app { max-width: 760px; padding: 20px; }
+            .layout { grid-template-columns: minmax(0, 1fr); gap: 17px; }
+            .game-column { grid-row: 1; }
+            .left-sidebar { display: grid; grid-template-columns: 1fr 1fr; }
+            .left-sidebar .stats {
+                grid-column: 1 / -1;
+                grid-row: 1;
+                grid-template-columns: repeat(4, 1fr);
+            }
+            .right-sidebar { display: grid; grid-template-columns: 1fr 1fr; }
+            .controls-note { display: none; }
+            .canvas-frame { max-width: 650px; }
+            .virtual-keyboard { display: block; }
+        }
+        @media (max-width: 600px) {
+            .app { padding: 16px 13px; }
+            .header { margin-bottom: 18px; }
+            .header-note { display: none; }
+            .panel { padding: 14px; }
+            .stat { padding: 10px 8px; }
+            .stat-value { font-size: 1.22rem; }
+            .canvas-frame { padding: 6px; border-radius: 20px; }
+            .canvas-wrapper { border-radius: 13px; }
+            .board-bottom { gap: 5px 10px; font-size: .63rem; }
+        }
+        @media (max-width: 390px) {
+            .left-sidebar, .right-sidebar { grid-template-columns: 1fr; }
+            .stat { padding: 9px 6px; }
+            .overlay { padding: 11px; }
+            .overlay-card { padding: 16px; }
+            .overlay-symbol { width: 35px; height: 35px; margin-bottom: 8px; }
+            .overlay p { font-size: .75rem; }
+            .overlay .overlay-hint { font-size: .61rem; }
+        }
+
+        /*
+         * Very short or heavily zoomed windows return to natural flow,
+         * preventing inaccessible/clipped controls.
+         */
+        @media (min-width: 901px) and (max-height: 460px) {
+            .app { padding: 14px; }
+            .header { margin-bottom: 14px; }
+            .layout { grid-template-columns: 190px minmax(0, 1fr) 190px; gap: 14px; }
+            .canvas-frame { max-width: 620px; }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            *, *::before, *::after {
+                transition: none !important;
+                scroll-behavior: auto !important;
+            }
+        }
+    </style>
+</head>
+<body>
+<main class="app">
+    <header class="header">
+        <div class="brand">
+            <div class="brand-mark" aria-hidden="true">
+                <svg viewBox="0 0 40 40" fill="none">
+                    <path d="M11 31C2 31 4 20 13 20H26C36 20 36 9 27 9H20" stroke="#c3dd87" stroke-width="7" stroke-linecap="round"/>
+                    <path d="M12 30C6 30 7 22 14 22H26" stroke="#718d49" stroke-width="2" stroke-linecap="round"/>
+                    <ellipse cx="19" cy="9" rx="6" ry="4.8" fill="#d0e796"/>
+                    <circle cx="17" cy="7" r="1" fill="#172317"/>
+                    <path d="M13 9H8M8 9L6 7M8 9L6 11" stroke="#da927f" stroke-width="1.2" stroke-linecap="round"/>
+                </svg>
+            </div>
+            <div>
+                <h1>Snake</h1>
+                <p class="subtitle">WOODLAND TRAIL</p>
+            </div>
+        </div>
+        <div class="header-note">
+            <span>20 levels. One little adventure.</span><br>
+            <span class="header-secondary" style="color:var(--muted)">Slow down. Find your path. Keep growing.</span>
+        </div>
+    </header>
+
+    <div class="layout">
+        <aside class="sidebar left-sidebar" aria-label="Game settings and statistics">
+            <section class="panel controls-panel">
+                <h2 class="eyebrow">Your adventure</h2>
+                <label for="levelSelect" class="field-label">Starting level</label>
+                <select id="levelSelect" aria-label="Starting level"></select>
+
+                <div class="button-row">
+                    <button id="startBtn" type="button">Start</button>
+                    <button id="pauseBtn" class="secondary" type="button" disabled>Pause</button>
+                </div>
+
+                <div class="settings">
+                    <label class="toggle" for="aiMode">AI explorer <input type="checkbox" id="aiMode"></label>
+                    <label class="toggle" for="soundMode">Nature sounds <input type="checkbox" id="soundMode"></label>
+                    <label class="toggle" for="gridMode">Guide grid <input type="checkbox" id="gridMode"></label>
+                </div>
+
+                <p class="small-note controls-note">AI explores without a time limit. Only unassisted runs enter the leaderboard.</p>
+            </section>
+
+            <section class="stats" aria-label="Current game statistics">
+                <div class="stat">
+                    <div class="stat-label">Apples</div>
+                    <div class="stat-value" id="score">0</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-label">Level</div>
+                    <div class="stat-value" id="currentLevel">1</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-label">Time left</div>
+                    <div class="stat-value" id="timer">1:48</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-label">Target</div>
+                    <div class="stat-value" id="target">3</div>
+                </div>
+            </section>
+
+            <section class="panel objectives-panel">
+                <h2 class="eyebrow">Trail objectives</h2>
+                <h3 class="level-heading" id="levelName">The clearing</h3>
+                <div class="detail-row"><span>Gather</span><strong id="reqPoints">3 apples</strong></div>
+                <div class="detail-row"><span>Time limit</span><strong id="reqTime">108 seconds</strong></div>
+                <div class="detail-row"><span>Terrain</span><strong id="reqObstacles">Open meadow</strong></div>
+                <div class="progress" id="progress" role="progressbar" aria-label="Level progress" aria-valuemin="0" aria-valuemax="3" aria-valuenow="0">
+                    <div class="progress-fill" id="progressFill"></div>
+                </div>
+                <div class="progress-caption" id="progressCaption">3 apples to the next clearing</div>
+            </section>
+        </aside>
+
+        <section class="game-column" aria-label="Snake game">
+            <div class="board-top">
+                <span class="status" id="statusText">Ready to explore</span>
+                <span id="boardLevel">TRAIL 01 / 20</span>
+            </div>
+
+            <div class="board-stage" id="boardStage">
+                <div class="canvas-frame" id="canvasFrame">
+                    <div class="canvas-wrapper">
+                        <canvas id="gameCanvas" width="600" height="600" tabindex="0" aria-label="Snake game board. Use arrow keys or W A S D to move. Space pauses the game.">
+                            Your browser does not support canvas. Please use a modern browser to play.
+                        </canvas>
+                        <div class="board-badge" id="aiIndicator" hidden>AI EXPLORER</div>
+
+                        <div class="overlay" id="overlay">
+                            <div class="overlay-card">
+                                <div class="overlay-symbol" id="overlaySymbol" aria-hidden="true">❧</div>
+                                <h2 id="overlayTitle">A little wild adventure</h2>
+                                <p id="overlayText">Gather ripe apples and find your way through the woodland. Avoid the rocks, the edges, and your own tail.</p>
+                                <button type="button" id="overlayBtn">Enter the clearing</button>
+                                <p class="overlay-hint" id="overlayHint">Arrow keys / WASD · Swipe on touch screens</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="board-bottom">
+                <span><kbd>↑</kbd> <kbd>←</kbd> <kbd>↓</kbd> <kbd>→</kbd> or <kbd>WASD</kbd> to move</span>
+                <span><kbd>Space</kbd> pause · <kbd>Enter</kbd> continue</span>
+            </div>
+
+            <div class="virtual-keyboard" aria-label="Touch direction controls">
+                <div class="vk-row">
+                    <button class="vk-btn" type="button" data-dir="up" aria-label="Move up">↑</button>
+                </div>
+                <div class="vk-row">
+                    <button class="vk-btn" type="button" data-dir="left" aria-label="Move left">←</button>
+                    <button class="vk-btn" type="button" data-dir="down" aria-label="Move down">↓</button>
+                    <button class="vk-btn" type="button" data-dir="right" aria-label="Move right">→</button>
+                </div>
+            </div>
+        </section>
+
+        <aside class="sidebar right-sidebar">
+            <section class="panel records-panel">
+                <div class="records-header">
+                    <h2 class="eyebrow">Trail records</h2>
+                    <span class="record-count" id="recordCount">0</span>
+                </div>
+
+                <div class="scores-list" id="scoresList"></div>
+
+                <nav class="score-pagination" id="scorePagination" aria-label="Leaderboard pages" hidden>
+                    <button type="button" class="secondary" id="previousScores" aria-label="Previous records">←</button>
+                    <span class="page-label" id="scorePageLabel" aria-live="polite">1 / 1</span>
+                    <button type="button" class="secondary" id="nextScores" aria-label="Next records">→</button>
+                </nav>
+
+                <p class="small-note records-note">Best completed levels, saved on this device.</p>
+            </section>
+
+            <section class="panel guide-panel">
+                <h2 class="eyebrow">Field guide</h2>
+                <div class="legend">
+                    <div class="legend-item">
+                        <span class="legend-icon" aria-hidden="true"><span class="apple-icon"></span></span>
+                        <span>Ripe apples<br>One apple, one point.</span>
+                    </div>
+                    <div class="legend-item">
+                        <span class="legend-icon" aria-hidden="true"><span class="rock-icon"></span></span>
+                        <span>Woodland rocks<br>Find a route around them.</span>
+                    </div>
+                    <div class="legend-item">
+                        <span class="legend-icon" aria-hidden="true"><span class="leaf-icon"></span></span>
+                        <span>Leaves & grass<br>Scenery, safe to cross.</span>
+                    </div>
+                </div>
+                <p class="small-note guide-note">Your trail pauses when you leave the tab. Saved games wait for you to resume.</p>
+            </section>
+        </aside>
+    </div>
+
+    <footer class="footer" id="saveStatus">Procedurally illustrated woodland · No downloads or external assets · Progress saved locally</footer>
+    <div class="sr-only" id="announcement" role="status" aria-live="polite"></div>
+</main>
+
+<script>
+(() => {
+    "use strict";
+
+    const $ = id => document.getElementById(id);
+    const canvas = $("gameCanvas");
+    const ctx = canvas.getContext("2d");
+    const N = 20;
+    const SIZE = 600;
+    const CELL = SIZE / N;
+    const TAU = Math.PI * 2;
+    const STORAGE_KEY = "woodlandSnake.v2";
+    const reducedMotion = matchMedia("(prefers-reduced-motion: reduce)");
+    const desktopLayout = matchMedia("(min-width: 901px) and (min-height: 461px)");
+
+    const directions = {
+        up: {x: 0, y: -1},
+        right: {x: 1, y: 0},
+        down: {x: 0, y: 1},
+        left: {x: -1, y: 0}
+    };
+    const opposite = {up: "down", down: "up", left: "right", right: "left"};
+    const names = ["The clearing", "Fern hollow", "Mossy bend", "Sunlit grove", "The stone path"];
+
+    const levels = Array.from({length: 20}, (_, index) => {
+        const n = index + 1;
+        const target = Math.round(3 + index * 57 / 19);
+        const multiplier = n <= 6 ? 1.2 : 1.5 + (n - 7) * .5 / 13;
+        const time = Math.round(Math.max(30, 90 - index * 3) * multiplier);
+
+        const baseMoveInterval = Math.round(
+            Math.max(80, 200 - index * 6) * (1 + .2 * index / 19)
+        );
+        // Levels 11–20 run at 80% of their original movement speed.
+        // A speed of 80% requires a 25% longer interval between moves.
+        const speedMultiplier = n >= 11 ? 0.8 : 1;
+
+        return {
+            target,
+            time: n >= 7 ? Math.max(time, Math.round(target * 4.5)) : time,
+            speed: baseMoveInterval / speedMultiplier,
+            rocks: n >= 5 ? Math.min(15, (n - 4) * 2) : 0,
+            name: names[Math.min(4, Math.floor(index / 4))]
+        };
+    });
+
+    let state = "ready";
+    let level = 1;
+    let snake = [];
+    let previousSnake = [];
+    let rocks = [];
+    let food = null;
+    let direction = "right";
+    let turns = [];
+    let score = 0;
+    let elapsed = 0;
+    let accumulator = 0;
+    let ai = false;
+    let assisted = false;
+    let sound = false;
+    let grid = false;
+    let totalScore = 0;
+    let totalTime = 0;
+    let firstLevel = 1;
+    let records = [];
+    let particles = [];
+    let lastFrame = 0;
+    let lastSave = 0;
+    let transitionAt = 0;
+    let audio = null;
+    let storageAvailable = true;
+    let sceneSeed = 73519;
+    let scorePage = 0;
+    let scorePageSize = getScorePageSize();
+    let resizeQueued = false;
+
+    const terrain = document.createElement("canvas");
+
+    const same = (a, b) => a && b && a.x === b.x && a.y === b.y;
+    const key = p => p.y * N + p.x;
+    const inside = p => p.x >= 0 && p.y >= 0 && p.x < N && p.y < N;
+    const copy = list => list.map(p => ({...p}));
+    const current = () => levels[level - 1];
+
+    const timeText = seconds => {
+        const n = Math.max(0, Math.ceil(seconds));
+        return `${Math.floor(n / 60)}:${String(n % 60).padStart(2, "0")}`;
+    };
+
+    const announce = text => {
+        $("announcement").textContent = text;
+    };
+
+    for (let i = 1; i <= 20; i++) {
+        const option = document.createElement("option");
+        option.value = i;
+        option.textContent = `Level ${i}`;
+        $("levelSelect").append(option);
+    }
+
+    function randomGenerator(seed) {
+        return () => {
+            seed |= 0;
+            seed = seed + 0x6D2B79F5 | 0;
+            let t = Math.imul(seed ^ seed >>> 15, 1 | seed);
+            t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+            return ((t ^ t >>> 14) >>> 0) / 4294967296;
+        };
+    }
+
+    function ellipse(c, x, y, rx, ry, angle, color) {
+        c.beginPath();
+        c.ellipse(x, y, rx, ry, angle, 0, TAU);
+        c.fillStyle = color;
+        c.fill();
+    }
+
+    // Cache the detailed forest floor instead of rebuilding it every frame.
+    function buildTerrain() {
+        terrain.width = terrain.height = SIZE;
+        const c = terrain.getContext("2d");
+        const rand = randomGenerator(sceneSeed);
+
+        c.fillStyle = "#35432a";
+        c.fillRect(0, 0, SIZE, SIZE);
+
+        for (let i = 0; i < 160; i++) {
+            const x = rand() * SIZE;
+            const y = rand() * SIZE;
+            const r = 20 + rand() * 110;
+            const g = c.createRadialGradient(x, y, 0, x, y, r);
+            g.addColorStop(0, i % 3 ? "#75834a18" : "#18291538");
+            g.addColorStop(1, "#26382200");
+            c.fillStyle = g;
+            c.fillRect(x - r, y - r, r * 2, r * 2);
+        }
+
+        for (let i = 0; i < 20000; i++) {
+            const x = rand() * SIZE;
+            const y = rand() * SIZE;
+            c.fillStyle = rand() > .5
+                ? `rgba(172,164,103,${rand() * .15})`
+                : `rgba(12,23,12,${rand() * .25})`;
+            c.fillRect(x, y, .5 + rand() * 1.7, .5 + rand() * 1.7);
+        }
+
+        for (let i = 0; i < 1600; i++) {
+            const x = rand() * SIZE;
+            const y = rand() * SIZE;
+            const h = 2 + rand() * 9;
+            c.strokeStyle = ["#88945732", "#192f1a5c", "#afaf6333", "#5e7c3b55"][Math.floor(rand() * 4)];
+            c.lineWidth = .5 + rand() * .6;
+            c.beginPath();
+            c.moveTo(x, y);
+            c.quadraticCurveTo(x - 1, y - h * .6, x + rand() * 6 - 3, y - h);
+            c.stroke();
+        }
+
+        for (let i = 0; i < 55; i++) {
+            const x = rand() * SIZE;
+            const y = rand() * SIZE;
+            c.save();
+            c.translate(x, y);
+            c.rotate(rand() * TAU);
+
+            const length = 4 + rand() * 9;
+            c.shadowColor = "#0a160960";
+            c.shadowBlur = 3;
+            c.shadowOffsetY = 2;
+            c.fillStyle = ["#6d733c", "#5e6b34", "#807347", "#4a6531"][Math.floor(rand() * 4)];
+            c.beginPath();
+            c.moveTo(-length, 0);
+            c.quadraticCurveTo(0, -length * .7, length, 0);
+            c.quadraticCurveTo(0, length * .7, -length, 0);
+            c.fill();
+
+            c.shadowColor = "transparent";
+            c.strokeStyle = "#b3b57538";
+            c.lineWidth = .6;
+            c.beginPath();
+            c.moveTo(-length, 0);
+            c.lineTo(length, 0);
+            c.stroke();
+            c.restore();
+        }
+
+        const light = c.createLinearGradient(0, 0, SIZE, SIZE);
+        light.addColorStop(0, "#e9d68d13");
+        light.addColorStop(.6, "#e9d68d00");
+        light.addColorStop(1, "#071c152c");
+        c.fillStyle = light;
+        c.fillRect(0, 0, SIZE, SIZE);
+
+        const shade = c.createRadialGradient(300, 280, 170, 300, 300, 430);
+        shade.addColorStop(0, "#06130800");
+        shade.addColorStop(1, "#06130895");
+        c.fillStyle = shade;
+        c.fillRect(0, 0, SIZE, SIZE);
+
+        for (const rock of rocks) drawRock(c, rock);
+    }
+
+    function drawRock(c, rock) {
+        const rand = randomGenerator(key(rock) * 731 + sceneSeed);
+        const x = (rock.x + .5) * CELL;
+        const y = (rock.y + .5) * CELL;
+        const vertices = [];
+
+        for (let i = 0; i < 7; i++) {
+            const a = i / 7 * TAU;
+            const r = CELL * (.39 + rand() * .09);
+            vertices.push({
+                x: x + Math.cos(a) * r,
+                y: y + Math.sin(a) * r
+            });
+        }
+
+        const shape = () => {
+            c.beginPath();
+            vertices.forEach((p, i) => i ? c.lineTo(p.x, p.y) : c.moveTo(p.x, p.y));
+            c.closePath();
+        };
+
+        c.save();
+        c.shadowColor = "#07100699";
+        c.shadowBlur = 5;
+        c.shadowOffsetX = 3;
+        c.shadowOffsetY = 5;
+
+        const g = c.createLinearGradient(x - 10, y - 14, x + 12, y + 13);
+        g.addColorStop(0, "#b0ad91");
+        g.addColorStop(.38, "#818873");
+        g.addColorStop(.7, "#586451");
+        g.addColorStop(1, "#303f32");
+
+        shape();
+        c.fillStyle = g;
+        c.fill();
+        c.shadowColor = "transparent";
+
+        c.save();
+        shape();
+        c.clip();
+
+        for (let i = 0; i < 100; i++) {
+            c.fillStyle = rand() > .5 ? "#eff0c921" : "#18251f38";
+            c.fillRect(
+                x - 15 + rand() * 30,
+                y - 15 + rand() * 30,
+                rand() * 2,
+                rand() * 1.8
+            );
+        }
+        c.restore();
+
+        c.strokeStyle = "#d9d9b850";
+        c.lineWidth = .8;
+        c.beginPath();
+        c.moveTo(vertices[3].x, vertices[3].y);
+        c.lineTo(x - 3, y - 6);
+        c.lineTo(vertices[5].x, vertices[5].y);
+        c.stroke();
+
+        c.strokeStyle = "#23342d85";
+        c.beginPath();
+        c.moveTo(x - 3, y - 6);
+        c.lineTo(x + 1, y + 3);
+        c.lineTo(vertices[1].x, vertices[1].y);
+        c.stroke();
+
+        for (let i = 0; i < 7; i++) {
+            ellipse(
+                c,
+                x - 8 + rand() * 15,
+                y + 7 + rand() * 3,
+                1 + rand() * 3,
+                1 + rand() * 2,
+                rand(),
+                "#72874780"
+            );
+        }
+        c.restore();
+    }
+
+    function drawApple(now) {
+        if (!food) return;
+
+        const x = (food.x + .5) * CELL;
+        const y = (food.y + .5) * CELL;
+        const shimmer = reducedMotion.matches ? .15 : .12 + Math.sin(now / 600) * .05;
+        const halo = ctx.createRadialGradient(x, y, 5, x, y, 27);
+
+        halo.addColorStop(0, `rgba(235,185,95,${shimmer})`);
+        halo.addColorStop(1, "rgba(235,185,95,0)");
+        ctx.fillStyle = halo;
+        ctx.fillRect(x - 27, y - 27, 54, 54);
+
+        ctx.save();
+        ctx.translate(x, y);
+        ellipse(ctx, 2, 9, 10, 4, -.15, "#07130565");
+        ctx.shadowColor = "#07130565";
+        ctx.shadowBlur = 4;
+        ctx.shadowOffsetY = 3;
+
+        const g = ctx.createRadialGradient(-4, -5, 1, 1, 2, 14);
+        g.addColorStop(0, "#f6b575");
+        g.addColorStop(.25, "#e87949");
+        g.addColorStop(.58, "#c44229");
+        g.addColorStop(.85, "#93271c");
+        g.addColorStop(1, "#591d18");
+        ctx.fillStyle = g;
+
+        ctx.beginPath();
+        ctx.moveTo(0, -8);
+        ctx.bezierCurveTo(-12, -15, -15, -2, -8, 9);
+        ctx.bezierCurveTo(-5, 13, -2, 11, 0, 11);
+        ctx.bezierCurveTo(4, 12, 8, 11, 10, 5);
+        ctx.bezierCurveTo(16, -8, 7, -13, 0, -8);
+        ctx.fill();
+
+        ctx.shadowColor = "transparent";
+        ellipse(ctx, -5, -4, 2.3, 4, .5, "#ffe1aa5c");
+        ellipse(ctx, -6, -6, 1, 1.6, .4, "#fff1c885");
+
+        ctx.strokeStyle = "#58412a";
+        ctx.lineWidth = 2;
+        ctx.lineCap = "round";
+        ctx.beginPath();
+        ctx.moveTo(0, -8);
+        ctx.quadraticCurveTo(-1, -12, 2, -15);
+        ctx.stroke();
+
+        ctx.fillStyle = "#8eb65a";
+        ctx.beginPath();
+        ctx.moveTo(1, -11);
+        ctx.quadraticCurveTo(4, -18, 12, -14);
+        ctx.quadraticCurveTo(7, -8, 1, -11);
+        ctx.fill();
+
+        ctx.strokeStyle = "#d1da883b";
+        ctx.lineWidth = .7;
+        ctx.beginPath();
+        ctx.moveTo(2, -11);
+        ctx.lineTo(10, -14);
+        ctx.stroke();
+
+        const rand = randomGenerator(key(food) + 44);
+        for (let i = 0; i < 14; i++) {
+            ellipse(ctx, rand() * 14 - 7, rand() * 12 - 4, .35, .5, 0, "#ffc17b55");
+        }
+
+        ctx.restore();
+    }
+
+    function smoothBody(points) {
+        const samples = [];
+
+        for (let i = 0; i < points.length - 1; i++) {
+            const a = points[Math.max(0, i - 1)];
+            const b = points[i];
+            const c = points[i + 1];
+            const d = points[Math.min(points.length - 1, i + 2)];
+
+            for (let j = 0; j < 6; j++) {
+                const t = j / 6;
+                const t2 = t * t;
+                const t3 = t2 * t;
+                const coord = axis => .5 * (
+                    2 * b[axis] +
+                    (-a[axis] + c[axis]) * t +
+                    (2 * a[axis] - 5 * b[axis] + 4 * c[axis] - d[axis]) * t2 +
+                    (-a[axis] + 3 * b[axis] - 3 * c[axis] + d[axis]) * t3
+                );
+                samples.push({
+                    x: coord("x"),
+                    y: coord("y"),
+                    progress: i + t
+                });
+            }
+        }
+
+        samples.push({
+            ...points[points.length - 1],
+            progress: points.length - 1
+        });
+        return samples;
+    }
+
+    function drawSnake(now) {
+        if (!snake.length) return;
+
+        const t = reducedMotion.matches || state !== "playing"
+            ? 1
+            : Math.min(accumulator / current().speed, 1);
+
+        const points = snake.map((p, i) => {
+            const prev = previousSnake[i] || previousSnake[previousSnake.length - 1] || p;
+            return {
+                x: (prev.x + (p.x - prev.x) * t + .5) * CELL,
+                y: (prev.y + (p.y - prev.y) * t + .5) * CELL
+            };
+        }).reverse();
+
+        const samples = smoothBody(points);
+
+        ctx.save();
+        ctx.lineCap = ctx.lineJoin = "round";
+        ctx.beginPath();
+        samples.forEach((p, i) => {
+            if (i) ctx.lineTo(p.x + 2, p.y + 4);
+            else ctx.moveTo(p.x + 2, p.y + 4);
+        });
+        ctx.strokeStyle = "#091a0bb3";
+        ctx.lineWidth = CELL * .7;
+        ctx.shadowColor = "#071208aa";
+        ctx.shadowBlur = 7;
+        ctx.stroke();
+        ctx.shadowColor = "transparent";
+
+        for (const p of samples) {
+            const r = CELL * (.07 + .285 * Math.min(1, p.progress / 1.65));
+            const skin = ctx.createRadialGradient(
+                p.x - r * .3,
+                p.y - r * .45,
+                r * .08,
+                p.x,
+                p.y,
+                r
+            );
+            skin.addColorStop(0, "#c5d984");
+            skin.addColorStop(.3, "#9bbd5e");
+            skin.addColorStop(.63, "#749a43");
+            skin.addColorStop(.87, "#476e32");
+            skin.addColorStop(1, "#2b4a25");
+            ellipse(ctx, p.x, p.y, r, r, 0, skin);
+        }
+
+        // Overlapping scales and a darker dorsal pattern.
+        for (let i = 2; i < samples.length - 2; i += 2) {
+            const p = samples[i];
+            const ahead = samples[i + 1];
+            const behind = samples[i - 1];
+            const angle = Math.atan2(ahead.y - behind.y, ahead.x - behind.x);
+            const radius = CELL * (.07 + .285 * Math.min(1, p.progress / 1.65));
+
+            ctx.save();
+            ctx.translate(p.x, p.y);
+            ctx.rotate(angle);
+
+            for (let row = -1; row <= 1; row++) {
+                const offset = row * radius * .51;
+                const width = radius * .38;
+                const height = radius * .27;
+
+                ctx.beginPath();
+                ctx.moveTo(-width, offset);
+                ctx.quadraticCurveTo(0, offset - height, width, offset);
+                ctx.quadraticCurveTo(0, offset + height, -width, offset);
+                ctx.fillStyle = row === 0 && i % 8 < 4 ? "#36592765" : "#c4d87a15";
+                ctx.fill();
+                ctx.strokeStyle = "#294d2940";
+                ctx.lineWidth = .65;
+                ctx.stroke();
+
+                ctx.beginPath();
+                ctx.moveTo(-width * .7, offset - .2);
+                ctx.quadraticCurveTo(0, offset - height, width * .5, offset - .2);
+                ctx.strokeStyle = "#eff6aa35";
+                ctx.stroke();
+            }
+            ctx.restore();
+        }
+
+        const head = points[points.length - 1];
+        const neck = samples[Math.max(0, samples.length - 4)];
+        let angle = Math.atan2(head.y - neck.y, head.x - neck.x);
+
+        if (Math.hypot(head.x - neck.x, head.y - neck.y) < .01) {
+            angle = Math.atan2(directions[direction].y, directions[direction].x);
+        }
+
+        ctx.translate(head.x, head.y);
+        ctx.rotate(angle);
+
+        if (state === "playing" && !reducedMotion.matches && Math.sin(now / 230) > .82) {
+            ctx.strokeStyle = "#c47e69";
+            ctx.lineWidth = 1.1;
+            ctx.beginPath();
+            ctx.moveTo(10, 0);
+            ctx.lineTo(18, 0);
+            ctx.moveTo(18, 0);
+            ctx.lineTo(22, -2.5);
+            ctx.moveTo(18, 0);
+            ctx.lineTo(22, 2.5);
+            ctx.stroke();
+        }
+
+        const headSkin = ctx.createRadialGradient(-2, -4, 1, 0, 0, 15);
+        headSkin.addColorStop(0, "#d4e394");
+        headSkin.addColorStop(.45, "#a1bf65");
+        headSkin.addColorStop(.8, "#6a9243");
+        headSkin.addColorStop(1, "#35592d");
+        ellipse(ctx, 1, 0, 13, 10.2, 0, headSkin);
+
+        ctx.strokeStyle = "#4a72354d";
+        ctx.lineWidth = .8;
+        for (let i = -6; i < 5; i += 4) {
+            ctx.beginPath();
+            ctx.moveTo(i, -4);
+            ctx.lineTo(i + 3, 0);
+            ctx.lineTo(i, 4);
+            ctx.stroke();
+        }
+
+        for (const side of [-1, 1]) {
+            ellipse(ctx, 5, side * 6.6, 3.15, 2.7, side * -.18, "#3c5428");
+            ellipse(ctx, 5.4, side * 6.7, 2.3, 2.1, 0, "#d4b75e");
+            ellipse(ctx, 5.9, side * 6.7, .85, 1.85, 0, "#101d13");
+            ellipse(ctx, 5.2, side * 6.7 - .7, .65, .6, 0, "#fff9d6dc");
+            ellipse(ctx, 11, side * 3, .75, .55, 0, "#2c492b");
+        }
+
+        ctx.strokeStyle = "#3b5b2e80";
+        ctx.lineWidth = .7;
+        ctx.beginPath();
+        ctx.moveTo(11, -5);
+        ctx.quadraticCurveTo(14, 0, 11, 5);
+        ctx.stroke();
+
+        ctx.restore();
+    }
+
+    function draw(now) {
+        ctx.clearRect(0, 0, SIZE, SIZE);
+        ctx.drawImage(terrain, 0, 0);
+
+        if (grid) {
+            ctx.strokeStyle = "#e4eccc12";
+            ctx.lineWidth = .7;
+            ctx.beginPath();
+            for (let i = 1; i < N; i++) {
+                ctx.moveTo(i * CELL, 0);
+                ctx.lineTo(i * CELL, SIZE);
+                ctx.moveTo(0, i * CELL);
+                ctx.lineTo(SIZE, i * CELL);
+            }
+            ctx.stroke();
+        }
+
+        drawApple(now);
+        drawSnake(now);
+
+        if (!reducedMotion.matches) {
+            for (const p of particles) {
+                ctx.globalAlpha = Math.max(0, p.life / p.maxLife);
+                ellipse(ctx, p.x, p.y, p.r, p.r * .6, p.life * .01, p.color);
+            }
+            ctx.globalAlpha = 1;
+        }
+
+        ctx.strokeStyle = "#d1daa518";
+        ctx.lineWidth = 2;
+        ctx.strokeRect(1, 1, SIZE - 2, SIZE - 2);
+    }
+
+    /*
+     * Fit the square to the available stage in BOTH dimensions.
+     * This prevents the canvas from forcing desktop page scrolling.
+     */
+    function fitBoard() {
+        const stage = $("boardStage");
+        const frame = $("canvasFrame");
+
+        if (desktopLayout.matches) {
+            const rect = stage.getBoundingClientRect();
+            const size = Math.max(1, Math.floor(Math.min(rect.width, rect.height)));
+            frame.style.width = `${size}px`;
+            frame.style.height = `${size}px`;
+        } else {
+            frame.style.removeProperty("width");
+            frame.style.removeProperty("height");
+        }
+
+        resizeCanvas();
+
+        const nextPageSize = getScorePageSize();
+        if (nextPageSize !== scorePageSize) {
+            const firstVisibleRecord = scorePage * scorePageSize;
+            scorePageSize = nextPageSize;
+            scorePage = Math.floor(firstVisibleRecord / scorePageSize);
+            renderRecords();
+        }
+    }
+
+    function scheduleBoardFit() {
+        if (resizeQueued) return;
+        resizeQueued = true;
+        requestAnimationFrame(() => {
+            resizeQueued = false;
+            fitBoard();
+        });
+    }
+
+    function resizeCanvas() {
+        const dpr = Math.min(window.devicePixelRatio || 1, 2);
+        const width = Math.max(1, canvas.getBoundingClientRect().width);
+        const pixels = Math.max(1, Math.round(width * dpr));
+
+        if (canvas.width !== pixels || canvas.height !== pixels) {
+            canvas.width = canvas.height = pixels;
+        }
+        ctx.setTransform(canvas.width / SIZE, 0, 0, canvas.height / SIZE, 0, 0);
+        draw(performance.now());
+    }
+
+    // Breadth-first search: obstacle validation, food placement and AI navigation.
+    function search(start, blocked, target = null) {
+        const queue = [start];
+        const seen = new Set([key(start)]);
+        const parents = new Map();
+        let found = false;
+
+        for (let index = 0; index < queue.length; index++) {
+            const p = queue[index];
+            if (target && same(p, target)) {
+                found = true;
+                break;
+            }
+
+            for (const [dir, delta] of Object.entries(directions)) {
+                const next = {x: p.x + delta.x, y: p.y + delta.y};
+                const id = key(next);
+                if (!inside(next) || seen.has(id) || blocked.has(id)) continue;
+                seen.add(id);
+                parents.set(id, {point: p, dir});
+                queue.push(next);
+            }
+        }
+
+        let path = null;
+        if (found) {
+            path = [];
+            let p = target;
+            while (!same(p, start)) {
+                const parent = parents.get(key(p));
+                if (!parent) {
+                    path = null;
+                    break;
+                }
+                path.push(parent.dir);
+                p = parent.point;
+            }
+            if (path) path.reverse();
+        }
+
+        return {seen, path};
+    }
+
+    function generateRocks() {
+        rocks = [];
+
+        for (let attempts = 0; rocks.length < current().rocks && attempts < 600; attempts++) {
+            const p = {
+                x: 1 + Math.floor(Math.random() * 18),
+                y: 1 + Math.floor(Math.random() * 18)
+            };
+
+            if (p.x >= 2 && p.x <= 9 && p.y >= 8 && p.y <= 12) continue;
+            if (rocks.some(r => same(r, p))) continue;
+
+            const candidate = [...rocks, p];
+            const blocked = new Set(candidate.map(key));
+
+            // Avoid isolated pockets in the terrain.
+            if (search(snake[0], blocked).seen.size === N * N - candidate.length) {
+                rocks.push(p);
+            }
+        }
+    }
+
+    function spawnFood() {
+        const blocked = new Set([...rocks, ...snake.slice(1)].map(key));
+        const reachable = search(snake[0], blocked).seen;
+        const occupied = new Set([...rocks, ...snake].map(key));
+        const available = [];
+
+        for (let y = 0; y < N; y++) {
+            for (let x = 0; x < N; x++) {
+                const p = {x, y};
+                if (!occupied.has(key(p)) && reachable.has(key(p))) available.push(p);
+            }
+        }
+
+        // Cells temporarily enclosed by the moving tail may become reachable.
+        if (!available.length) {
+            for (let y = 0; y < N; y++) {
+                for (let x = 0; x < N; x++) {
+                    if (!occupied.has(y * N + x)) available.push({x, y});
+                }
+            }
+        }
+
+        food = available.length
+            ? available[Math.floor(Math.random() * available.length)]
+            : null;
+
+        return !!food;
+    }
+
+    function prepareLevel() {
+        score = 0;
+        elapsed = 0;
+        accumulator = 0;
+        direction = "right";
+        turns = [];
+        snake = [{x: 5, y: 10}, {x: 4, y: 10}, {x: 3, y: 10}];
+        previousSnake = copy(snake);
+        assisted = ai;
+        particles = [];
+        transitionAt = 0;
+        sceneSeed = Math.floor(Math.random() * 10000000);
+
+        generateRocks();
+        spawnFood();
+        buildTerrain();
+        updateUI();
+    }
+
+    function showOverlay(title, text, button, symbol = "❧", type = "", hint = "") {
+        $("overlay").hidden = false;
+        $("overlay").className = `overlay ${type}`;
+        $("overlayTitle").textContent = title;
+        $("overlayText").textContent = text;
+        $("overlayBtn").textContent = button;
+        $("overlaySymbol").textContent = symbol;
+        $("overlayHint").textContent = hint;
+        $("overlayHint").hidden = !hint;
+        announce(`${title}. ${text}`);
+    }
+
+    function readyOverlay() {
+        showOverlay(
+            "A little wild adventure",
+            "Gather ripe apples and find your way through the woodland. Avoid rocks, the edges, and your own tail.",
+            "Enter the clearing",
+            "❧",
+            "",
+            "Arrow keys / WASD · Swipe on touch screens"
+        );
+    }
+
+    function updateTimer() {
+        const remaining = current().time - elapsed;
+        const text = ai ? "∞" : timeText(remaining);
+        if ($("timer").textContent !== text) $("timer").textContent = text;
+        $("timer").classList.toggle("warning", !ai && remaining <= 15);
+    }
+
+    function updateUI() {
+        const config = current();
+
+        $("score").textContent = score;
+        $("currentLevel").textContent = level;
+        updateTimer();
+        $("target").textContent = config.target;
+        $("levelName").textContent = config.name;
+        $("reqPoints").textContent = `${config.target} apples`;
+        $("reqTime").textContent = ai ? "Unlimited" : `${config.time} seconds`;
+        $("reqObstacles").textContent = config.rocks ? `${config.rocks} rocks` : "Open meadow";
+        $("boardLevel").textContent = `TRAIL ${String(level).padStart(2, "0")} / 20`;
+
+        $("progressFill").style.width = `${Math.min(100, score / config.target * 100)}%`;
+        $("progress").setAttribute("aria-valuemax", config.target);
+        $("progress").setAttribute("aria-valuenow", score);
+
+        const remaining = Math.max(0, config.target - score);
+        $("progressCaption").textContent = remaining
+            ? `${remaining} apple${remaining === 1 ? "" : "s"} to the next clearing`
+            : "Trail objective complete";
+
+        $("aiIndicator").hidden = !ai;
+        $("aiMode").checked = ai;
+        $("soundMode").checked = sound;
+        $("gridMode").checked = grid;
+        $("levelSelect").value = level;
+
+        $("levelSelect").disabled =
+            state !== "ready" && state !== "over" && state !== "victory";
+
+        $("pauseBtn").disabled = state !== "playing" && state !== "paused";
+        $("pauseBtn").textContent = state === "paused" ? "Resume" : "Pause";
+        $("startBtn").disabled = state === "playing" || state === "complete";
+        $("startBtn").textContent = state === "paused"
+            ? "Resume"
+            : state === "over" ? "Retry" : "Start";
+
+        $("statusText").textContent = {
+            ready: "Ready to explore",
+            playing: ai ? "Exploring on autopilot" : "Follow your own path",
+            paused: "Resting in the clearing",
+            over: "A new path awaits",
+            complete: "A clearing well explored",
+            victory: "Trail complete"
+        }[state];
+    }
+
+    function startLevel() {
+        unlockAudio();
+        state = "playing";
+        $("overlay").hidden = true;
+        accumulator = 0;
+        lastFrame = performance.now();
+        transitionAt = 0;
+        updateUI();
+        save();
+        canvas.focus({preventScroll: true});
+    }
+
+    function pauseGame() {
+        if (state !== "playing") return;
+        state = "paused";
+        turns = [];
+        showOverlay(
+            "Take a breath",
+            "Your woodland trail is right where you left it.",
+            "Resume trail",
+            "Ⅱ",
+            "",
+            "Space or Enter to resume"
+        );
+        updateUI();
+        save();
+    }
+
+    function resumeGame() {
+        if (state !== "paused") return;
+        unlockAudio();
+        state = "playing";
+        lastFrame = performance.now();
+        $("overlay").hidden = true;
+        updateUI();
+        save();
+        canvas.focus({preventScroll: true});
+    }
+
+    function primaryAction() {
+        if (state === "paused") return resumeGame();
+
+        if (state === "complete") {
+            level++;
+            prepareLevel();
+            return startLevel();
+        }
+
+        if (state === "victory") {
+            level = 1;
+            totalScore = totalTime = 0;
+            firstLevel = 1;
+            prepareLevel();
+            return startLevel();
+        }
+
+        if (state === "over") prepareLevel();
+
+        if (state === "ready") {
+            totalScore = totalTime = 0;
+            firstLevel = level;
+        }
+
+        if (state === "ready" || state === "over") startLevel();
+    }
+
+    function enqueueTurn(dir) {
+        if (state !== "playing" || ai || !directions[dir] || turns.length >= 2) return;
+        const last = turns.length ? turns[turns.length - 1] : direction;
+        if (dir !== last && dir !== opposite[last]) turns.push(dir);
+    }
+
+    function simulate(body, dir, target) {
+        const delta = directions[dir];
+        const head = {
+            x: body[0].x + delta.x,
+            y: body[0].y + delta.y
+        };
+        const eating = same(head, target);
+
+        if (!inside(head) || rocks.some(r => same(r, head))) return null;
+
+        // The tail vacates its cell on a non-growing move.
+        const solid = eating ? body : body.slice(0, -1);
+        if (solid.some(p => same(p, head))) return null;
+
+        return [head, ...(eating ? body : body.slice(0, -1))];
+    }
+
+    function aiDirection() {
+        if (!food) return direction;
+
+        const blocked = new Set([...rocks, ...snake.slice(1, -1)].map(key));
+        const route = search(snake[0], blocked, food).path;
+
+        if (route && route.length && route[0] !== opposite[direction]) {
+            let future = copy(snake);
+
+            for (const dir of route) {
+                future = simulate(future, dir, food);
+                if (!future) break;
+            }
+
+            if (future) {
+                const futureBlocked = new Set([...rocks, ...future.slice(1, -1)].map(key));
+                const escape = search(future[0], futureBlocked, future[future.length - 1]);
+                if (escape.path) return route[0];
+            }
+        }
+
+        // Prefer open space and tail access when the direct food route is unsafe.
+        const options = [];
+
+        for (const dir of Object.keys(directions)) {
+            if (dir === opposite[direction]) continue;
+
+            const future = simulate(snake, dir, food);
+            if (!future) continue;
+
+            const futureBlocked = new Set([...rocks, ...future.slice(1, -1)].map(key));
+            const region = search(future[0], futureBlocked);
+            const tailAccessible = region.seen.has(key(future[future.length - 1]));
+            const foodRoute = search(future[0], futureBlocked, food).path;
+            const distance = foodRoute ? foodRoute.length : N * N;
+            const area = region.seen.size;
+            const enoughRoom = area >= future.length + 4;
+
+            options.push({
+                dir,
+                value:
+                    (tailAccessible ? 10000 : 0) +
+                    (enoughRoom ? 5000 : area * 20) -
+                    distance * 10 +
+                    Math.min(area, 100) +
+                    (same(future[0], food) && tailAccessible ? 1000 : 0)
+            });
+        }
+
+        options.sort((a, b) => b.value - a.value);
+        return options.length ? options[0].dir : direction;
+    }
+
+    function step() {
+        const nextDirection = ai ? aiDirection() : turns.shift() || direction;
+        const next = simulate(snake, nextDirection, food);
+
+        if (!next) {
+            finish(false, "The trail got a little too narrow.");
+            return;
+        }
+
+        direction = nextDirection;
+        previousSnake = copy(snake);
+        const ate = same(next[0], food);
+        snake = next;
+
+        if (ate) {
+            previousSnake.push({...previousSnake[previousSnake.length - 1]});
+            score++;
+            addParticles(food);
+            playTone("eat");
+
+            if (score >= current().target) return finish(true);
+            if (!spawnFood()) return finish(true);
+
+            updateUI();
+        }
+    }
+
+    function addParticles(p) {
+        if (reducedMotion.matches) return;
+
+        for (let i = 0; i < 12; i++) {
+            const a = Math.random() * TAU;
+            particles.push({
+                x: (p.x + .5) * CELL,
+                y: (p.y + .5) * CELL,
+                vx: Math.cos(a) * (15 + Math.random() * 40),
+                vy: Math.sin(a) * (15 + Math.random() * 40),
+                r: 1 + Math.random() * 2,
+                life: 600,
+                maxLife: 600,
+                color: ["#e8b46a", "#b6d581", "#d88352"][i % 3]
+            });
+        }
+    }
+
+    function finish(success, reason = "") {
+        previousSnake = copy(snake);
+        accumulator = 0;
+        turns = [];
+        transitionAt = 0;
+
+        if (!success) {
+            state = "over";
+            showOverlay(
+                "Another path awaits",
+                `${reason}\nYou gathered ${score} of ${current().target} apples.`,
+                "Try this trail again",
+                "↻",
+                "failure",
+                "Enter to try again"
+            );
+            playTone("lose");
+        } else {
+            totalScore += score;
+            totalTime += elapsed;
+
+            if (!assisted) {
+                records.push({
+                    level,
+                    score,
+                    time: Math.round(elapsed * 10) / 10,
+                    timestamp: Date.now()
+                });
+                records.sort((a, b) => b.score - a.score || a.time - b.time);
+                records = records.slice(0, 20);
+                scorePage = 0;
+                renderRecords();
+            }
+
+            playTone("win");
+
+            if (level === 20) {
+                state = "victory";
+                showOverlay(
+                    firstLevel === 1 ? "Master of the woodland" : "Trail complete!",
+                    `${firstLevel === 1 ? "All 20 clearings explored." : `Levels ${firstLevel}–20 explored.`}\n${totalScore} apples gathered in ${timeText(totalTime)}.${assisted ? "\nAn AI-assisted adventure." : ""}`,
+                    "Explore again",
+                    "✧",
+                    "success"
+                );
+            } else {
+                state = "complete";
+                showOverlay(
+                    "A lovely little harvest",
+                    `${score} apples gathered in ${timeText(elapsed)}.\nThe next clearing is waiting for you.`,
+                    "Next clearing",
+                    "✓",
+                    "success",
+                    ai ? "AI continues in 3 seconds" : "Take your time · Enter when you're ready"
+                );
+                if (ai) transitionAt = performance.now() + 3000;
+            }
+        }
+
+        updateUI();
+        save();
+    }
+
+    /*
+     * Pagination keeps all 20 records accessible without adding
+     * a scrollbar or allowing the sidebar to grow beyond the viewport.
+     */
+    function getScorePageSize() {
+        if (matchMedia("(min-width: 901px) and (max-height: 620px)").matches) return 3;
+        if (matchMedia("(min-width: 901px) and (max-height: 760px)").matches) return 4;
+        return 5;
+    }
+
+    function renderRecords() {
+        const container = $("scoresList");
+        container.replaceChildren();
+
+        $("recordCount").textContent = records.length;
+        const pages = Math.max(1, Math.ceil(records.length / scorePageSize));
+        scorePage = Math.max(0, Math.min(scorePage, pages - 1));
+
+        $("scorePagination").hidden = pages <= 1;
+        $("scorePageLabel").textContent = `${scorePage + 1} / ${pages}`;
+        $("previousScores").disabled = scorePage === 0;
+        $("nextScores").disabled = scorePage >= pages - 1;
+
+        if (!records.length) {
+            const empty = document.createElement("div");
+            empty.className = "empty-scores";
+            empty.innerHTML = '<svg viewBox="0 0 40 40" fill="none" aria-hidden="true"><path d="M12 7h16v11c0 6-4 10-8 10s-8-4-8-10V7ZM12 11H6v5c0 5 3 7 7 7m15-12h6v5c0 5-3 7-7 7M20 28v6m-7 0h14" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>Your first record is waiting.<br>Complete a trail to begin.';
+            container.append(empty);
+            return;
+        }
+
+        const offset = scorePage * scorePageSize;
+        records.slice(offset, offset + scorePageSize).forEach((entry, localIndex) => {
+            const index = offset + localIndex;
+            const item = document.createElement("div");
+            item.className = `score-item${index === 0 ? " top-record" : ""}`;
+
+            const rank = document.createElement("span");
+            rank.className = "score-rank";
+            rank.textContent = String(index + 1).padStart(2, "0");
+
+            const main = document.createElement("div");
+            main.className = "score-main";
+            main.textContent = `Level ${entry.level} · ${timeText(entry.time)}`;
+
+            const date = document.createElement("div");
+            date.className = "score-date";
+            date.textContent = new Date(entry.timestamp).toLocaleDateString(
+                undefined,
+                {month: "short", day: "numeric"}
+            );
+            main.append(date);
+
+            const points = document.createElement("span");
+            points.className = "score-points";
+            points.textContent = `${entry.score} pts`;
+
+            item.append(rank, main, points);
+            container.append(item);
+        });
+    }
+
+    function unlockAudio() {
+        if (!sound) return;
+
+        try {
+            const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+            if (!AudioContextClass) return;
+            if (!audio) audio = new AudioContextClass();
+            if (audio.state === "suspended") audio.resume().catch(() => {});
+        } catch (_) {
+            // Audio is optional.
+        }
+    }
+
+    function playTone(type) {
+        if (!sound || !audio || audio.state !== "running") return;
+
+        const notes = type === "eat"
+            ? [660, 990]
+            : type === "win"
+                ? [523, 659, 784, 1047]
+                : [220, 165];
+
+        notes.forEach((frequency, i) => {
+            const oscillator = audio.createOscillator();
+            const gain = audio.createGain();
+            const start = audio.currentTime + i * .09;
+
+            oscillator.type = "sine";
+            oscillator.frequency.setValueAtTime(frequency, start);
+            oscillator.frequency.exponentialRampToValueAtTime(frequency * .8, start + .15);
+
+            gain.gain.setValueAtTime(0, start);
+            gain.gain.linearRampToValueAtTime(.055, start + .015);
+            gain.gain.exponentialRampToValueAtTime(.001, start + .22);
+
+            oscillator.connect(gain);
+            gain.connect(audio.destination);
+            oscillator.start(start);
+            oscillator.stop(start + .24);
+            oscillator.onended = () => {
+                oscillator.disconnect();
+                gain.disconnect();
+            };
+        });
+    }
+
+    function save() {
+        if (!storageAvailable) return;
+
+        const active = state === "playing" || state === "paused";
+        const game = active ? {
+            level,
+            snake,
+            rocks,
+            food,
+            direction,
+            score,
+            elapsed,
+            assisted,
+            totalScore,
+            totalTime,
+            firstLevel,
+            sceneSeed
+        } : null;
+
+        try {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify({
+                version: 2,
+                records,
+                level: state === "complete" ? Math.min(20, level + 1) : level,
+                ai,
+                sound,
+                grid,
+                game
+            }));
+        } catch (_) {
+            storageAvailable = false;
+            $("saveStatus").textContent = "Local storage is unavailable. You can still play, but this session cannot be saved.";
+        }
+    }
+
+    function validPoint(p) {
+        return p && Number.isInteger(p.x) && Number.isInteger(p.y) && inside(p);
+    }
+
+    function validGame(g) {
+        if (!g || !Number.isInteger(g.level) || g.level < 1 || g.level > 20) return false;
+
+        if (
+            !Array.isArray(g.snake) ||
+            g.snake.length < 3 ||
+            g.snake.length > N * N ||
+            !g.snake.every(validPoint) ||
+            new Set(g.snake.map(key)).size !== g.snake.length
+        ) return false;
+
+        if (g.snake.some((p, i) => i > 0 &&
+            Math.abs(p.x - g.snake[i - 1].x) +
+            Math.abs(p.y - g.snake[i - 1].y) !== 1
+        )) return false;
+
+        if (
+            !Array.isArray(g.rocks) ||
+            g.rocks.length > 100 ||
+            !g.rocks.every(validPoint) ||
+            new Set(g.rocks.map(key)).size !== g.rocks.length
+        ) return false;
+
+        if (g.rocks.some(r => g.snake.some(p => same(r, p)))) return false;
+        if (!validPoint(g.food) || [...g.snake, ...g.rocks].some(p => same(p, g.food))) return false;
+        if (!Object.prototype.hasOwnProperty.call(directions, g.direction)) return false;
+
+        if (
+            !Number.isInteger(g.score) ||
+            g.score < 0 ||
+            g.score >= levels[g.level - 1].target ||
+            g.snake.length !== g.score + 3
+        ) return false;
+
+        if (!Number.isFinite(g.elapsed) || g.elapsed < 0 || g.elapsed > 1e8) return false;
+
+        return true;
+    }
+
+    function load() {
+        let saved = null;
+
+        try {
+            const raw = localStorage.getItem(STORAGE_KEY);
+            if (raw) saved = JSON.parse(raw);
+        } catch (_) {
+            return false;
+        }
+
+        if (!saved || saved.version !== 2) return false;
+
+        records = Array.isArray(saved.records)
+            ? saved.records.filter(r =>
+                r &&
+                Number.isInteger(r.level) && r.level >= 1 && r.level <= 20 &&
+                Number.isInteger(r.score) && r.score >= 0 && r.score <= 400 &&
+                Number.isFinite(r.time) && r.time >= 0 &&
+                Number.isFinite(r.timestamp) &&
+                !isNaN(new Date(r.timestamp).getTime())
+            ).sort((a, b) => b.score - a.score || a.time - b.time).slice(0, 20)
+            : [];
+
+        level = Number.isInteger(saved.level) && saved.level >= 1 && saved.level <= 20
+            ? saved.level
+            : 1;
+
+        ai = saved.ai === true;
+        sound = saved.sound === true;
+        grid = saved.grid === true;
+
+        if (!validGame(saved.game)) return false;
+
+        const g = saved.game;
+        level = g.level;
+        snake = copy(g.snake);
+        previousSnake = copy(snake);
+        rocks = copy(g.rocks);
+        food = {...g.food};
+        direction = g.direction;
+        score = g.score;
+        elapsed = g.elapsed;
+        assisted = g.assisted === true || ai;
+
+        totalScore = Number.isFinite(g.totalScore) && g.totalScore >= 0
+            ? g.totalScore
+            : 0;
+        totalTime = Number.isFinite(g.totalTime) && g.totalTime >= 0
+            ? g.totalTime
+            : 0;
+        firstLevel = Number.isInteger(g.firstLevel) && g.firstLevel >= 1 && g.firstLevel <= level
+            ? g.firstLevel
+            : level;
+        sceneSeed = Number.isInteger(g.sceneSeed) ? g.sceneSeed : 73519;
+
+        state = "paused";
+        buildTerrain();
+        showOverlay(
+            "Welcome back",
+            "Your saved trail is ready.\nContinue whenever you feel at home.",
+            "Resume trail",
+            "❧",
+            "",
+            "Your game stays paused until you resume"
+        );
+        return true;
+    }
+
+    function frame(now) {
+        const delta = lastFrame
+            ? Math.min(250, Math.max(0, now - lastFrame))
+            : 0;
+        lastFrame = now;
+
+        if (!document.hidden) {
+            if (state === "playing") {
+                elapsed += delta / 1000;
+
+                if (!ai && elapsed >= current().time) {
+                    elapsed = current().time;
+                    finish(false, "The sun has set on this trail.");
+                } else {
+                    accumulator += delta;
+                    while (accumulator >= current().speed && state === "playing") {
+                        accumulator -= current().speed;
+                        step();
+                    }
+                }
+
+                updateTimer();
+
+                if (now - lastSave > 4000) {
+                    save();
+                    lastSave = now;
+                }
+            }
+
+            if (state === "complete" && ai && transitionAt && now >= transitionAt) {
+                primaryAction();
+            }
+
+            if (state !== "paused") {
+                for (const p of particles) {
+                    p.life -= delta;
+                    p.x += p.vx * delta / 1000;
+                    p.y += p.vy * delta / 1000;
+                    p.vy += delta * .02;
+                }
+                particles = particles.filter(p => p.life > 0);
+            }
+
+            draw(now);
+        }
+
+        requestAnimationFrame(frame);
+    }
+
+    $("overlayBtn").addEventListener("click", primaryAction);
+    $("startBtn").addEventListener("click", primaryAction);
+
+    $("pauseBtn").addEventListener("click", () => {
+        if (state === "paused") resumeGame();
+        else pauseGame();
+    });
+
+    $("levelSelect").addEventListener("change", event => {
+        level = Number(event.target.value);
+        state = "ready";
+        totalScore = totalTime = 0;
+        firstLevel = level;
+        prepareLevel();
+        readyOverlay();
+        save();
+    });
+
+    $("aiMode").addEventListener("change", event => {
+        ai = event.target.checked;
+        turns = [];
+
+        if (ai && (state === "playing" || state === "paused")) assisted = true;
+
+        if (state === "complete") {
+            transitionAt = ai ? performance.now() + 3000 : 0;
+            $("overlayHint").textContent = ai
+                ? "AI continues in 3 seconds"
+                : "Take your time · Enter when you're ready";
+        }
+
+        updateUI();
+        save();
+    });
+
+    $("soundMode").addEventListener("change", event => {
+        sound = event.target.checked;
+        unlockAudio();
+        if (sound) playTone("eat");
+        save();
+    });
+
+    $("gridMode").addEventListener("change", event => {
+        grid = event.target.checked;
+        save();
+    });
+
+    $("previousScores").addEventListener("click", () => {
+        if (scorePage > 0) {
+            scorePage--;
+            renderRecords();
+        }
+    });
+
+    $("nextScores").addEventListener("click", () => {
+        if ((scorePage + 1) * scorePageSize < records.length) {
+            scorePage++;
+            renderRecords();
+        }
+    });
+
+    document.addEventListener("keydown", event => {
+        const target = event.target;
+        if (
+            target instanceof HTMLElement &&
+            target.closest("button, select, input, textarea, [contenteditable]")
+        ) return;
+
+        const input = event.key.toLowerCase();
+
+        if (input === " " || input === "enter" || input === "escape") {
+            event.preventDefault();
+            if (event.repeat) return;
+            if (input === "escape") return pauseGame();
+
+            if (input === " " && state === "playing") pauseGame();
+            else if (state !== "playing") primaryAction();
+
+            return;
+        }
+
+        const keyMap = {
+            arrowup: "up",
+            w: "up",
+            arrowdown: "down",
+            s: "down",
+            arrowleft: "left",
+            a: "left",
+            arrowright: "right",
+            d: "right"
+        };
+
+        if (keyMap[input]) {
+            event.preventDefault();
+            enqueueTurn(keyMap[input]);
+        }
+    });
+
+    document.querySelectorAll(".vk-btn").forEach(button => {
+        button.addEventListener("pointerdown", event => {
+            event.preventDefault();
+            enqueueTurn(button.dataset.dir);
+        });
+
+        // Preserve keyboard activation without duplicating pointer input.
+        button.addEventListener("click", event => {
+            if (event.detail === 0) enqueueTurn(button.dataset.dir);
+        });
+    });
+
+    let pointer = null;
+
+    canvas.addEventListener("pointerdown", event => {
+        if (!event.isPrimary) return;
+        pointer = {
+            id: event.pointerId,
+            x: event.clientX,
+            y: event.clientY
+        };
+        canvas.setPointerCapture(event.pointerId);
+        canvas.focus({preventScroll: true});
+    });
+
+    canvas.addEventListener("pointermove", event => {
+        if (!pointer || pointer.id !== event.pointerId) return;
+
+        const dx = event.clientX - pointer.x;
+        const dy = event.clientY - pointer.y;
+        if (Math.max(Math.abs(dx), Math.abs(dy)) < 18) return;
+
+        enqueueTurn(
+            Math.abs(dx) > Math.abs(dy)
+                ? (dx > 0 ? "right" : "left")
+                : (dy > 0 ? "down" : "up")
+        );
+
+        pointer.x = event.clientX;
+        pointer.y = event.clientY;
+    });
+
+    const endPointer = event => {
+        if (pointer && pointer.id === event.pointerId) pointer = null;
+    };
+
+    canvas.addEventListener("pointerup", endPointer);
+    canvas.addEventListener("pointercancel", endPointer);
+    canvas.addEventListener("lostpointercapture", endPointer);
+
+    document.addEventListener("visibilitychange", () => {
+        if (document.hidden) {
+            if (state === "playing") pauseGame();
+            transitionAt = 0;
+            save();
+        } else {
+            lastFrame = performance.now();
+            if (state === "complete" && ai) transitionAt = lastFrame + 3000;
+            scheduleBoardFit();
+        }
+    });
+
+    window.addEventListener("pagehide", save);
+    window.addEventListener("resize", scheduleBoardFit);
+
+    if (window.visualViewport) {
+        window.visualViewport.addEventListener("resize", scheduleBoardFit);
+    }
+
+    if (desktopLayout.addEventListener) {
+        desktopLayout.addEventListener("change", scheduleBoardFit);
+    }
+
+    const restored = load();
+
+    if (!restored) {
+        prepareLevel();
+        readyOverlay();
+    }
+
+    renderRecords();
+    updateUI();
+    fitBoard();
+
+    if ("ResizeObserver" in window) {
+        const observer = new ResizeObserver(scheduleBoardFit);
+        observer.observe($("boardStage"));
+        observer.observe(document.querySelector(".header"));
+        observer.observe(document.querySelector(".board-top"));
+        observer.observe(document.querySelector(".board-bottom"));
+    }
+
+    if (document.fonts && document.fonts.ready) {
+        document.fonts.ready.then(scheduleBoardFit);
+    }
+
+    requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>
