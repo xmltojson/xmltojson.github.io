@@ -1,0 +1,1806 @@
+<!DOCTYPE html>
+<!-- MIT License
+Copyright (c) 2025-2027 Yuliya Kolesnikova <0009-0000-6151-7415@orcid.org>
+-->
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Ein interaktiver Nachthimmel. Entdecke Sternbilder, beobachte Sternschnuppen und gestalte deine eigene himmlische Atmosphäre.">
+    <meta name="theme-color" content="#090d18">
+    <link rel="icon" type="image/x-icon" href="favicon.ico">
+    <title>Sternennacht — Dein persönliches Observatorium</title>
+
+    <style>
+        :root {
+            color-scheme: dark;
+            --bg: #090d18;
+            --panel: #111624;
+            --border: rgba(181, 194, 232, .12);
+            --text: #edf0fa;
+            --muted: #939eb9;
+            --accent: #bcb0ff;
+            --mint: #9ae3cd;
+            --radius: 22px;
+            --gap: 18px;
+        }
+
+        * { box-sizing: border-box; }
+        html, body { margin: 0; width: 100%; height: 100%; }
+        body {
+            background: var(--bg);
+            color: var(--text);
+            font-family: Inter, "Segoe UI", system-ui, sans-serif;
+            font-size: 14px;
+            -webkit-font-smoothing: antialiased;
+        }
+        button, input { font: inherit; }
+        button { color: inherit; cursor: pointer; touch-action: manipulation; }
+        button, input { -webkit-tap-highlight-color: transparent; }
+        button svg { pointer-events: none; }
+        button:focus-visible, input:focus-visible {
+            outline: 2px solid var(--mint);
+            outline-offset: 4px;
+        }
+        button:disabled { cursor: not-allowed; opacity: .45; }
+        [hidden] { display: none !important; }
+        .icon {
+            width: 20px;
+            height: 20px;
+            fill: none;
+            stroke: currentColor;
+            stroke-width: 1.6;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+            flex-shrink: 0;
+        }
+
+        /* Viewport-sized desktop layout. */
+        .app {
+            width: 100%;
+            height: 100vh;
+            height: 100dvh;
+            padding: 24px 30px 16px;
+            display: grid;
+            grid-template-rows: auto minmax(0, 1fr) auto;
+            gap: var(--gap);
+            overflow: hidden;
+            background:
+                radial-gradient(ellipse at 65% -40%, #28244570, transparent 65%),
+                var(--bg);
+        }
+
+        .topbar, .brand, .header-actions, .footer, .footer-note {
+            display: flex;
+            align-items: center;
+        }
+        .topbar { justify-content: space-between; gap: 20px; }
+        .brand { gap: 13px; min-width: 0; }
+        .brand-mark {
+            display: grid;
+            place-items: center;
+            width: 44px;
+            height: 44px;
+            flex-shrink: 0;
+            border-radius: 14px;
+            color: var(--accent);
+            background: #bcb0ff10;
+            border: 1px solid #bcb0ff25;
+        }
+        .brand-mark .icon { width: 26px; height: 26px; }
+        h1 {
+            font-size: 20px;
+            font-weight: 600;
+            letter-spacing: -.6px;
+            margin: 0;
+        }
+        .brand p {
+            font-size: 11px;
+            color: var(--muted);
+            margin: 4px 0 0;
+            letter-spacing: .2px;
+        }
+        .header-actions { gap: 10px; flex-shrink: 0; }
+        .live-tag, .eyebrow {
+            text-transform: uppercase;
+            font-size: 10px;
+            letter-spacing: 1.8px;
+            font-weight: 600;
+        }
+        .live-tag {
+            color: var(--mint);
+            margin-right: 8px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            white-space: nowrap;
+        }
+        .status-dot {
+            width: 6px;
+            height: 6px;
+            flex-shrink: 0;
+            border-radius: 50%;
+            background: var(--mint);
+            box-shadow: 0 0 10px #9ae3cd55;
+        }
+
+        /* Accessible, always-visible three-way language switch. */
+        .language-switch {
+            display: inline-flex;
+            align-items: center;
+            height: 39px;
+            padding: 4px;
+            border: 1px solid var(--border);
+            border-radius: 11px;
+            background: #ffffff04;
+            flex-shrink: 0;
+        }
+        .language-switch button {
+            position: relative;
+            min-width: 35px;
+            height: 29px;
+            padding: 0 8px;
+            border: 0;
+            border-radius: 7px;
+            background: transparent;
+            color: var(--muted);
+            font-size: 10px;
+            font-weight: 650;
+            letter-spacing: .5px;
+            transition: background .2s, color .2s, box-shadow .2s;
+        }
+        .language-switch button + button { margin-left: 3px; }
+        .language-switch button + button::before {
+            content: "";
+            position: absolute;
+            width: 1px;
+            height: 10px;
+            left: -2px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: var(--border);
+        }
+        .language-switch button:hover { color: var(--text); background: #ffffff08; }
+        .language-switch button[aria-pressed="true"] {
+            background: #bcb0ff22;
+            color: #e0d9ff;
+            box-shadow: inset 0 0 0 1px #bcb0ff25;
+        }
+
+        .icon-button, .text-button {
+            border: 1px solid var(--border);
+            background: #ffffff04;
+            border-radius: 11px;
+            transition: background .2s, border-color .2s;
+        }
+        .icon-button {
+            width: 39px;
+            height: 39px;
+            display: inline-grid;
+            place-items: center;
+            flex-shrink: 0;
+        }
+        .text-button {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            padding: 10px 14px;
+            font-size: 12px;
+        }
+        .icon-button:hover, .text-button:hover {
+            background: #ffffff0b;
+            border-color: #bcb0ff50;
+        }
+        .icon-button[aria-pressed="true"] { color: var(--accent); background: #bcb0ff15; }
+
+        .workspace {
+            min-height: 0;
+            min-width: 0;
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) 340px;
+            gap: var(--gap);
+        }
+
+        .sky-panel {
+            position: relative;
+            min-width: 0;
+            min-height: 0;
+            overflow: hidden;
+            isolation: isolate;
+            border: 1px solid #b3bfff26;
+            border-radius: var(--radius);
+            background:
+                radial-gradient(ellipse at 48% 35%, #26274940, transparent 65%),
+                radial-gradient(ellipse at 20% 90%, #3b1c4f50, transparent 60%),
+                linear-gradient(165deg, #070d1b, #0f1731 55%, #101020);
+        }
+        .sky-panel::before {
+            content: "";
+            position: absolute;
+            inset: 0;
+            background:
+                radial-gradient(ellipse at 60% 25%, #657acf0b, transparent 40%),
+                linear-gradient(120deg, transparent 30%, #9c90de0b 44%, #828fc413 50%, transparent 68%);
+            filter: blur(22px);
+            pointer-events: none;
+            z-index: -1;
+        }
+        .sky-panel::after {
+            content: "";
+            position: absolute;
+            inset: 0;
+            box-shadow: inset 0 0 100px 20px #03061160;
+            pointer-events: none;
+            z-index: 2;
+            border-radius: inherit;
+        }
+        #star-canvas {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 0;
+        }
+        .sky-heading {
+            position: absolute;
+            top: 24px;
+            left: 26px;
+            right: 24px;
+            z-index: 4;
+            pointer-events: none;
+        }
+        .sky-heading .eyebrow { color: var(--accent); font-size: 9px; }
+        .sky-heading h2 {
+            font-size: clamp(24px, 2.55vw, 36px);
+            letter-spacing: -1.1px;
+            font-weight: 400;
+            margin: 9px 0 7px;
+            text-wrap: balance;
+        }
+        .sky-heading p {
+            color: #9da9c7;
+            font-size: 12px;
+            margin: 0;
+            line-height: 1.4;
+        }
+        .sky-badge {
+            position: absolute;
+            top: 22px;
+            right: 24px;
+            z-index: 4;
+            font-size: 9px;
+            color: #b4bed5;
+            display: flex;
+            align-items: center;
+            gap: 7px;
+            background: #10172a85;
+            padding: 6px 9px;
+            border: 1px solid #b3bfff18;
+            border-radius: 30px;
+        }
+        .sky-badge .icon { width: 12px; height: 12px; }
+
+        #aurora {
+            position: absolute;
+            inset: -15% -25% 15%;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 1.2s;
+            z-index: -1;
+            filter: blur(35px);
+        }
+        #aurora.visible { opacity: .65; }
+        .aurora-wave {
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(165deg, transparent 30%, #3edea315 40%, #57e3b854 45%, #68b9c526 51%, #977af62a 59%, transparent 70%);
+            animation: aurora-drift 18s ease-in-out infinite alternate;
+        }
+        .aurora-wave:nth-child(2) {
+            transform: scaleX(-1);
+            animation-delay: -9s;
+            opacity: .6;
+        }
+        @keyframes aurora-drift {
+            from { translate: -5% -4%; rotate: -8deg; }
+            to { translate: 8% 7%; rotate: 8deg; }
+        }
+
+        #moon {
+            position: absolute;
+            width: clamp(34px, 5vw, 64px);
+            aspect-ratio: 1;
+            top: 19%;
+            right: 8%;
+            border-radius: 50%;
+            background:
+                radial-gradient(circle at 30% 32%, #9fa8b735 0 10%, transparent 11%),
+                radial-gradient(circle at 61% 62%, #9fa8b730 0 15%, transparent 16%),
+                radial-gradient(circle at 32% 74%, #9fa8b725 0 7%, transparent 8%),
+                radial-gradient(circle at 32% 28%, #fcf7de, #d9decf 62%, #929cad);
+            box-shadow: 0 0 35px #e1e8ce25, 0 0 90px #cad6fb15, inset -10px -5px 15px #232f5340;
+            z-index: 1;
+            opacity: 0;
+            transform: scale(.85);
+            transition: opacity .5s, transform .5s;
+            pointer-events: none;
+        }
+        #moon.visible { opacity: .95; transform: scale(1); }
+
+        #constellations {
+            position: absolute;
+            inset: 130px 5% 105px;
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            grid-template-rows: repeat(2, minmax(0, 1fr));
+            gap: 12px 5%;
+            z-index: 3;
+        }
+        .constellation {
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-width: 0;
+            min-height: 0;
+            border: 1px solid transparent;
+            border-radius: 18px;
+            padding: 8px;
+            background: transparent;
+            transition: background .25s, border-color .25s;
+        }
+        .constellation:hover { background: #bccaff05; }
+        .constellation[aria-pressed="true"] { background: #bcb0ff07; border-color: #bcb0ff18; }
+        .constellation svg {
+            width: 100%;
+            height: calc(100% - 26px);
+            max-height: 160px;
+            min-height: 0;
+            overflow: visible;
+        }
+        .constellation line {
+            stroke: #a6b8ed;
+            stroke-width: .65;
+            opacity: .23;
+            transition: opacity .3s, stroke .3s;
+        }
+        .constellation circle { fill: #e5edff; }
+        .constellation .star-halo { fill: #a1baff; opacity: .13; }
+        .constellation:hover line, .constellation[aria-pressed="true"] line {
+            opacity: .8;
+            stroke: #c6baff;
+        }
+        .constellation-label {
+            color: #aab7d5;
+            text-transform: uppercase;
+            font-size: 9px;
+            letter-spacing: 1px;
+            margin-top: 6px;
+            text-align: center;
+            line-height: 1.25;
+            transition: color .3s;
+        }
+        .constellation[aria-pressed="true"] .constellation-label { color: #d5caff; }
+
+        .horizon {
+            position: absolute;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            height: 17%;
+            min-height: 55px;
+            background: #070b15;
+            clip-path: polygon(0 40%, 5% 34%, 10% 47%, 17% 30%, 24% 52%, 30% 42%, 37% 60%, 44% 45%, 51% 57%, 60% 38%, 68% 52%, 77% 24%, 83% 36%, 88% 22%, 94% 35%, 100% 18%, 100% 100%, 0 100%);
+            pointer-events: none;
+            z-index: 1;
+        }
+        .horizon.far { background: #141b2a; opacity: .6; bottom: 15px; transform: scaleX(-1); }
+        .sky-bottom {
+            position: absolute;
+            left: 24px;
+            right: 24px;
+            bottom: 22px;
+            z-index: 4;
+            display: flex;
+            justify-content: space-between;
+            align-items: end;
+            gap: 12px;
+        }
+        .sky-stats { display: flex; gap: clamp(12px, 2.2vw, 30px); }
+        .stat { min-width: 0; }
+        .stat strong {
+            display: block;
+            font-weight: 500;
+            font-size: 21px;
+            letter-spacing: -.7px;
+            font-variant-numeric: tabular-nums;
+        }
+        .stat span {
+            display: block;
+            color: var(--muted);
+            font-size: 9px;
+            margin-top: 4px;
+            line-height: 1.35;
+        }
+        .meteor-button {
+            background: #171c3090;
+            backdrop-filter: blur(12px);
+            border-color: #bcb0ff30;
+            color: #d4cbff;
+            white-space: nowrap;
+            flex-shrink: 0;
+        }
+        .meteor-button .icon { width: 16px; height: 16px; }
+
+        .sidebar {
+            min-height: 0;
+            display: grid;
+            grid-template-rows: minmax(0, 1.1fr) minmax(0, 1fr);
+            gap: var(--gap);
+        }
+        .panel {
+            background: linear-gradient(145deg, #161c2b, #101521);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 20px;
+            min-width: 0;
+            min-height: 0;
+        }
+        .panel-heading {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+            margin-bottom: 12px;
+            flex-shrink: 0;
+        }
+        .panel-heading h2 { font-size: 14px; font-weight: 550; margin: 0; letter-spacing: -.2px; }
+        .panel-heading > .icon { color: var(--muted); width: 17px; height: 17px; }
+        .settings { display: flex; flex-direction: column; }
+        .layers {
+            display: grid;
+            grid-template-rows: repeat(5, minmax(0, 1fr));
+            flex: 1;
+            min-height: 0;
+        }
+        .layer-toggle {
+            display: flex;
+            align-items: center;
+            gap: 11px;
+            width: 100%;
+            min-height: 30px;
+            padding: 6px 0;
+            background: none;
+            border: 0;
+            text-align: left;
+            border-radius: 5px;
+        }
+        .layer-toggle > .icon {
+            width: 17px;
+            height: 17px;
+            color: var(--muted);
+            transition: color .2s;
+        }
+        .layer-toggle[aria-pressed="true"] > .icon { color: var(--accent); }
+        .layer-label { flex: 1; font-size: 12px; color: #c7cede; }
+        .switch {
+            position: relative;
+            width: 32px;
+            height: 18px;
+            border-radius: 20px;
+            background: #2c3345;
+            transition: background .2s;
+            flex-shrink: 0;
+        }
+        .switch::after {
+            content: "";
+            position: absolute;
+            top: 3px;
+            left: 3px;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #9ba4bb;
+            transition: transform .2s, background .2s;
+        }
+        [aria-pressed="true"] .switch { background: #b9adf8; }
+        [aria-pressed="true"] .switch::after { background: #211b38; transform: translateX(14px); }
+        .density {
+            margin-top: 10px;
+            border-top: 1px solid var(--border);
+            padding-top: 13px;
+            flex-shrink: 0;
+        }
+        .density-heading {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 11px;
+            color: var(--muted);
+        }
+        .density output { color: var(--accent); font-variant-numeric: tabular-nums; }
+        input[type="range"] {
+            width: 100%;
+            height: 17px;
+            margin: 9px 0 0;
+            accent-color: var(--accent);
+            cursor: pointer;
+        }
+        input:disabled { opacity: .45; cursor: not-allowed; }
+
+        .discovery { display: flex; flex-direction: column; position: relative; }
+        .discovery .eyebrow { color: var(--mint); font-size: 9px; letter-spacing: 1.4px; }
+        .discovery-top {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+            min-height: 24px;
+            flex-shrink: 0;
+        }
+        #close-info { width: 26px; height: 26px; border: 0; background: transparent; }
+        #close-info .icon { width: 15px; height: 15px; }
+        #info-title {
+            margin: 10px 0 7px;
+            font-size: 24px;
+            font-weight: 450;
+            letter-spacing: -.8px;
+        }
+        #info-text { margin: 0; color: var(--muted); font-size: 12px; line-height: 1.65; }
+        .detail-meta {
+            display: flex;
+            align-items: center;
+            gap: 7px;
+            margin-top: auto;
+            padding-top: 12px;
+            color: #bbc4d9;
+            font-size: 10px;
+            line-height: 1.4;
+        }
+        .detail-meta .icon { width: 14px; height: 14px; color: var(--accent); }
+        .discovery-nav { display: flex; gap: 6px; margin-top: 14px; flex-shrink: 0; }
+        .discovery-nav button {
+            flex: 1;
+            height: 5px;
+            border: 0;
+            border-radius: 4px;
+            padding: 0;
+            background: #30364a;
+            position: relative;
+        }
+        .discovery-nav button::before { content: ""; position: absolute; inset: -8px 0; }
+        .discovery-nav button[aria-pressed="true"] { background: var(--accent); }
+        .discovery-nav button:hover { background: #8b80bd; }
+
+        .footer {
+            justify-content: space-between;
+            gap: 16px;
+            color: #7d89a5;
+            font-size: 10px;
+            min-height: 18px;
+        }
+        .footer-note { gap: 7px; }
+        .footer .icon { width: 12px; height: 12px; }
+        .footer-right { color: #69758e; text-align: right; }
+        .paused .aurora-wave { animation-play-state: paused; }
+        .toast {
+            position: fixed;
+            left: 50%;
+            bottom: 45px;
+            transform: translate(-50%, 10px);
+            padding: 11px 18px;
+            background: #242c43;
+            border: 1px solid #bcb0ff35;
+            box-shadow: 0 10px 40px #0005;
+            color: #eef0ff;
+            border-radius: 12px;
+            font-size: 12px;
+            z-index: 20;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity .2s, transform .2s;
+            text-align: center;
+            max-width: calc(100% - 32px);
+        }
+        .toast.visible { opacity: 1; transform: translate(-50%, 0); }
+
+        @media (min-width: 1600px) {
+            .app { padding: 32px 40px 20px; --gap: 24px; }
+            .workspace { grid-template-columns: minmax(0, 1fr) 380px; }
+            .panel { padding: 24px; }
+            .layer-label { font-size: 13px; }
+            #info-text { font-size: 14px; }
+        }
+
+        @media (max-width: 1200px) {
+            .live-tag { display: none; }
+            .sky-badge { display: none; }
+            .meteor-button { width: 38px; height: 38px; padding: 0; }
+            .meteor-button span { display: none; }
+        }
+
+        @media (min-width: 901px) and (max-height: 760px) {
+            .app { padding: 18px 22px 12px; --gap: 14px; }
+            .panel { padding: 14px 18px; }
+            .panel-heading { margin-bottom: 6px; }
+            .density { padding-top: 8px; margin-top: 5px; }
+            .layer-toggle { padding-block: 3px; }
+            #info-title { font-size: 21px; margin-top: 6px; }
+            #info-text { line-height: 1.5; }
+            .detail-meta { padding-top: 8px; }
+            .discovery-nav { margin-top: 12px; }
+            .sky-heading { top: 22px; left: 22px; }
+        }
+
+        /* Short desktop windows: three columns instead of stacked side panels. */
+        @media (min-width: 901px) and (max-height: 660px) {
+            .workspace { grid-template-columns: minmax(0, 1fr) 225px 240px; }
+            .sidebar { display: contents; }
+            .panel { padding: 16px; }
+            .sky-heading h2 { font-size: 25px; }
+            .sky-heading p, .sky-badge { display: none; }
+            #constellations { inset: 100px 3% 85px; gap: 8px 3%; }
+            .sky-bottom { left: 18px; right: 18px; bottom: 18px; }
+            .sky-stats { gap: 12px; }
+            .stat strong { font-size: 17px; }
+            .stat span { font-size: 8px; }
+            .meteor-button { width: 34px; height: 34px; padding: 0; }
+            .meteor-button span { display: none; }
+        }
+
+        /* Natural scrolling on smaller screens and at high zoom. */
+        @media (max-width: 900px) {
+            .app {
+                height: auto;
+                min-height: 100vh;
+                min-height: 100dvh;
+                overflow: visible;
+                padding: 20px;
+                gap: 16px;
+            }
+            .workspace { grid-template-columns: 1fr; gap: 16px; }
+            .sky-panel { height: clamp(440px, 62vh, 650px); }
+            .sidebar { grid-template-columns: 1fr 1fr; grid-template-rows: auto; gap: 16px; }
+            .panel { padding: 20px; }
+            .settings { min-height: 330px; }
+            .discovery { min-height: 300px; }
+            .footer { flex-wrap: wrap; }
+        }
+
+        @media (max-width: 600px) {
+            .app { padding: 16px 12px 12px; gap: 16px; }
+            .topbar { flex-wrap: wrap; gap: 14px 10px; }
+            .brand { gap: 9px; }
+            .brand-mark { width: 38px; height: 38px; border-radius: 12px; }
+            h1 { font-size: 18px; }
+            .brand p { font-size: 10px; }
+            .header-actions { width: 100%; gap: 8px; }
+            .language-switch { margin-right: auto; }
+            .header-actions .icon-button { width: 39px; height: 39px; }
+            .header-actions .icon { width: 18px; height: 18px; }
+            .sky-panel { height: 550px; border-radius: 18px; }
+            .sky-heading { top: 22px; left: 20px; right: 20px; }
+            .sky-heading h2 { font-size: 27px; }
+            .sky-heading p { font-size: 11px; }
+            #constellations {
+                inset: 145px 5% 95px;
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+                grid-template-rows: repeat(3, minmax(0, 1fr));
+                gap: 8px 12%;
+            }
+            .constellation { padding: 4px; }
+            .constellation-label { font-size: 8px; letter-spacing: .7px; }
+            #moon { top: 23%; right: 10%; }
+            .sky-bottom { left: 20px; right: 20px; bottom: 20px; }
+            .sky-stats { gap: 16px; }
+            .stat strong { font-size: 19px; }
+            .stat span { font-size: 8px; }
+            .sidebar { grid-template-columns: 1fr; }
+            .settings { min-height: 330px; }
+            .discovery { min-height: 265px; }
+            .layer-label { font-size: 13px; }
+            .footer { font-size: 9px; justify-content: center; text-align: center; }
+            .footer-right { display: none; }
+        }
+
+        /* Accessibility fallback for exceptionally short desktop viewports. */
+        @media (min-width: 901px) and (max-height: 420px) {
+            .app { height: auto; min-height: 100dvh; overflow: visible; }
+            .workspace { min-height: 320px; }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            *, *::before, *::after { transition: none !important; }
+            .aurora-wave { animation: none; }
+        }
+    </style>
+</head>
+<body>
+    <svg xmlns="http://www.w3.org/2000/svg" width="0" height="0" style="position:absolute" aria-hidden="true">
+        <defs>
+            <symbol id="i-sparkle" viewBox="0 0 24 24">
+                <path d="m12 3 2.4 6.6L21 12l-6.6 2.4L12 21l-2.4-6.6L3 12l6.6-2.4L12 3Z"/>
+                <path d="M20 2v4M18 4h4"/>
+            </symbol>
+            <symbol id="i-star" viewBox="0 0 24 24">
+                <path d="m12 3 2.8 5.7 6.2.9-4.5 4.4 1.1 6.2-5.6-3-5.6 3 1.1-6.2L3 9.6l6.2-.9L12 3Z"/>
+            </symbol>
+            <symbol id="i-meteor" viewBox="0 0 24 24">
+                <path d="m21 3-8 8M15 3 8 10M21 9l-7 7"/>
+                <circle cx="7" cy="17" r="4"/><path d="m5.5 17 1.5 1.5"/>
+            </symbol>
+            <symbol id="i-constellation" viewBox="0 0 24 24">
+                <path d="m5 6 7 5 7-7M12 11l-3 9 11-4-1-12"/>
+                <circle cx="5" cy="6" r="1.5"/><circle cx="12" cy="11" r="1.5"/>
+                <circle cx="19" cy="4" r="1.5"/><circle cx="9" cy="20" r="1.5"/><circle cx="20" cy="16" r="1.5"/>
+            </symbol>
+            <symbol id="i-moon" viewBox="0 0 24 24">
+                <path d="M20.7 13.2A9 9 0 0 1 10.8 3.3a9 9 0 1 0 9.9 9.9Z"/>
+            </symbol>
+            <symbol id="i-aurora" viewBox="0 0 24 24">
+                <path d="M3 7c5-9 13 9 18 0M3 12c5-9 13 9 18 0M3 17c5-9 13 9 18 0"/>
+            </symbol>
+            <symbol id="i-reset" viewBox="0 0 24 24">
+                <path d="M3 10a9 9 0 1 1 1 7M3 4v6h6"/>
+            </symbol>
+            <symbol id="i-expand" viewBox="0 0 24 24">
+                <path d="M8 3H3v5M16 3h5v5M21 16v5h-5M8 21H3v-5"/>
+            </symbol>
+            <symbol id="i-pause" viewBox="0 0 24 24">
+                <path d="M8 5v14M16 5v14"/>
+            </symbol>
+            <symbol id="i-play" viewBox="0 0 24 24">
+                <path d="m8 4 12 8-12 8V4Z"/>
+            </symbol>
+            <symbol id="i-sliders" viewBox="0 0 24 24">
+                <path d="M4 7h7M15 7h5M4 17h3M11 17h9"/>
+                <circle cx="13" cy="7" r="2"/><circle cx="9" cy="17" r="2"/>
+            </symbol>
+            <symbol id="i-close" viewBox="0 0 24 24">
+                <path d="m6 6 12 12M18 6 6 18"/>
+            </symbol>
+            <symbol id="i-info" viewBox="0 0 24 24">
+                <circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7h.01"/>
+            </symbol>
+        </defs>
+    </svg>
+
+    <div class="app" id="app">
+        <header class="topbar">
+            <div class="brand">
+                <div class="brand-mark" aria-hidden="true">
+                    <svg class="icon"><use href="#i-sparkle"/></svg>
+                </div>
+                <div>
+                    <h1 data-i18n="appName">Sternennacht</h1>
+                    <p data-i18n="tagline">Dein persönliches Observatorium</p>
+                </div>
+            </div>
+
+            <div class="header-actions">
+                <div class="live-tag">
+                    <span class="status-dot"></span>
+                    <span data-i18n="liveTag">Ein Moment zum Staunen</span>
+                </div>
+
+                <div class="language-switch" role="group" aria-label="Sprache" data-i18n-aria="language">
+                    <button type="button" data-language="de" lang="de" aria-label="Deutsch" title="Deutsch" aria-pressed="true">DE</button>
+                    <button type="button" data-language="uk" lang="uk" aria-label="Українська" title="Українська" aria-pressed="false">UK</button>
+                    <button type="button" data-language="en" lang="en" aria-label="English" title="English" aria-pressed="false">EN</button>
+                </div>
+
+                <button type="button" class="icon-button" id="btn-pause" aria-label="Animation pausieren" aria-pressed="false" title="Animation pausieren">
+                    <svg class="icon" aria-hidden="true"><use id="pause-icon" href="#i-pause"/></svg>
+                </button>
+                <button type="button" class="icon-button" id="btn-reset"
+                        aria-label="Himmeleinstellungen zurücksetzen" title="Himmeleinstellungen zurücksetzen"
+                        data-i18n-aria="reset" data-i18n-title="reset">
+                    <svg class="icon" aria-hidden="true"><use href="#i-reset"/></svg>
+                </button>
+                <button type="button" class="icon-button" id="btn-fullscreen" aria-label="Vollbild öffnen" title="Vollbild öffnen">
+                    <svg class="icon" aria-hidden="true"><use href="#i-expand"/></svg>
+                </button>
+            </div>
+        </header>
+
+        <main class="workspace">
+            <section class="sky-panel" id="sky" aria-label="Interaktiver, illustrierter Nachthimmel" data-i18n-aria="skyLabel">
+                <div id="aurora" aria-hidden="true">
+                    <div class="aurora-wave"></div>
+                    <div class="aurora-wave"></div>
+                </div>
+                <canvas id="star-canvas" aria-hidden="true"></canvas>
+                <div id="moon" aria-hidden="true"></div>
+
+                <div class="sky-heading">
+                    <div class="eyebrow" data-i18n="skyEyebrow">Blick nach oben. Komm zur Ruhe.</div>
+                    <h2 data-i18n="skyHeading">Der Unendlichkeit ein Stück näher.</h2>
+                    <p data-i18n="skyHint">Wähle ein Sternbild und entdecke seine Geschichte.</p>
+                </div>
+                <div class="sky-badge">
+                    <svg class="icon" aria-hidden="true"><use href="#i-sparkle"/></svg>
+                    <span data-i18n="skyBadge">Fantasiehimmel</span>
+                </div>
+
+                <div id="constellations" role="group" aria-label="Sternbilder entdecken" data-i18n-aria="exploreGroup"></div>
+
+                <div class="horizon far" aria-hidden="true"></div>
+                <div class="horizon" aria-hidden="true"></div>
+
+                <div class="sky-bottom">
+                    <div class="sky-stats" aria-label="Himmelsstatistik" data-i18n-aria="statsLabel">
+                        <div class="stat">
+                            <strong id="star-count">0</strong>
+                            <span data-i18n="backgroundStars">Hintergrundsterne</span>
+                        </div>
+                        <div class="stat">
+                            <strong id="shooting-count">0</strong>
+                            <span data-i18n="meteorsSeen">Sternschnuppen</span>
+                        </div>
+                        <div class="stat">
+                            <strong id="constellation-count">6</strong>
+                            <span data-i18n="constellations">Sternbilder</span>
+                        </div>
+                    </div>
+                    <button type="button" class="text-button meteor-button" id="btn-meteor"
+                            aria-label="Wünsch dir etwas: Sende eine Sternschnuppe"
+                            data-i18n-aria="wishLabel" title="Eine Sternschnuppe senden">
+                        <svg class="icon" aria-hidden="true"><use href="#i-meteor"/></svg>
+                        <span data-i18n="makeWish">Wünsch dir etwas</span>
+                    </button>
+                </div>
+            </section>
+
+            <aside class="sidebar" aria-label="Himmeleinstellungen und Sternbildinformationen" data-i18n-aria="sidebarLabel">
+                <section class="panel settings" aria-labelledby="settings-heading">
+                    <div class="panel-heading">
+                        <h2 id="settings-heading" data-i18n="settingsHeading">Gestalte deinen Himmel</h2>
+                        <svg class="icon" aria-hidden="true"><use href="#i-sliders"/></svg>
+                    </div>
+
+                    <div class="layers">
+                        <button type="button" class="layer-toggle" data-setting="showStars" aria-pressed="true">
+                            <svg class="icon" aria-hidden="true"><use href="#i-star"/></svg>
+                            <span class="layer-label" data-i18n="starlight">Sternenlicht</span>
+                            <span class="switch" aria-hidden="true"></span>
+                        </button>
+                        <button type="button" class="layer-toggle" data-setting="showShootingStars" aria-pressed="true">
+                            <svg class="icon" aria-hidden="true"><use href="#i-meteor"/></svg>
+                            <span class="layer-label" data-i18n="shootingStars">Sternschnuppen</span>
+                            <span class="switch" aria-hidden="true"></span>
+                        </button>
+                        <button type="button" class="layer-toggle" data-setting="showConstellations" aria-pressed="true">
+                            <svg class="icon" aria-hidden="true"><use href="#i-constellation"/></svg>
+                            <span class="layer-label" data-i18n="constellations">Sternbilder</span>
+                            <span class="switch" aria-hidden="true"></span>
+                        </button>
+                        <button type="button" class="layer-toggle" data-setting="showMoon" aria-pressed="false">
+                            <svg class="icon" aria-hidden="true"><use href="#i-moon"/></svg>
+                            <span class="layer-label" data-i18n="moonlight">Mondlicht</span>
+                            <span class="switch" aria-hidden="true"></span>
+                        </button>
+                        <button type="button" class="layer-toggle" data-setting="showAurora" aria-pressed="false">
+                            <svg class="icon" aria-hidden="true"><use href="#i-aurora"/></svg>
+                            <span class="layer-label" data-i18n="northernLights">Polarlichter</span>
+                            <span class="switch" aria-hidden="true"></span>
+                        </button>
+                    </div>
+
+                    <div class="density">
+                        <div class="density-heading">
+                            <label for="star-density" data-i18n="starDensity">Sternendichte</label>
+                            <output id="density-value" for="star-density">350</output>
+                        </div>
+                        <input type="range" id="star-density" min="50" max="800" step="25" value="350">
+                    </div>
+                </section>
+
+                <section class="panel discovery" aria-labelledby="info-title">
+                    <div class="discovery-top">
+                        <span class="eyebrow" id="info-eyebrow">Ein Himmel voller Geschichten</span>
+                        <button type="button" class="icon-button" id="close-info"
+                                aria-label="Sternbildauswahl aufheben" title="Auswahl aufheben"
+                                data-i18n-aria="clearSelection" data-i18n-title="clearSelection" hidden>
+                            <svg class="icon" aria-hidden="true"><use href="#i-close"/></svg>
+                        </button>
+                    </div>
+                    <div aria-live="polite" aria-atomic="true">
+                        <h2 id="info-title">Entdecke das Staunen.</h2>
+                        <p id="info-text">Sechs bekannte Sternbilder, unzählige Geschichten. Wähle ein Muster am Himmel und entdecke die Mythen und Sterne dahinter.</p>
+                    </div>
+                    <div class="detail-meta">
+                        <svg class="icon" aria-hidden="true"><use href="#i-constellation"/></svg>
+                        <span id="info-meta">Wähle ein Sternbild zum Einstieg</span>
+                    </div>
+                    <div class="discovery-nav" id="discovery-nav" role="group"
+                         aria-label="Ein Sternbild auswählen" data-i18n-aria="chooseGroup"></div>
+                </section>
+            </aside>
+        </main>
+
+        <footer class="footer">
+            <div class="footer-note">
+                <svg class="icon" aria-hidden="true"><use href="#i-info"/></svg>
+                <span data-i18n="footerNote">Künstlerischer Himmel, keine aktuelle Sternkarte. Atme durch und entdecke.</span>
+            </div>
+            <span class="footer-right" id="save-status">Einstellungen auf diesem Gerät gespeichert</span>
+        </footer>
+    </div>
+
+    <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+    <script>
+        (() => {
+            "use strict";
+
+            const $ = id => document.getElementById(id);
+            const storageKey = "starryNightState";
+            const languageStorageKey = "starryNightLanguage";
+            const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
+
+            // German is the default. A previously chosen language is restored.
+            // "uk" is the correct language code for Ukrainian.
+            const translations = {
+                de: {
+                    documentTitle: "Sternennacht — Dein persönliches Observatorium",
+                    description: "Ein interaktiver Nachthimmel. Entdecke Sternbilder, beobachte Sternschnuppen und gestalte deine eigene himmlische Atmosphäre.",
+                    appName: "Sternennacht",
+                    tagline: "Dein persönliches Observatorium",
+                    liveTag: "Ein Moment zum Staunen",
+                    language: "Sprache",
+                    reset: "Himmeleinstellungen zurücksetzen",
+                    pause: "Animation pausieren",
+                    resume: "Animation fortsetzen",
+                    reducedMotion: "Animation durch die Einstellung für reduzierte Bewegung deaktiviert",
+                    enterFullscreen: "Vollbild öffnen",
+                    exitFullscreen: "Vollbild beenden",
+                    skyLabel: "Interaktiver, illustrierter Nachthimmel",
+                    skyEyebrow: "Blick nach oben. Komm zur Ruhe.",
+                    skyHeading: "Der Unendlichkeit ein Stück näher.",
+                    skyHint: "Wähle ein Sternbild und entdecke seine Geschichte.",
+                    skyBadge: "Fantasiehimmel",
+                    exploreGroup: "Sternbilder entdecken",
+                    statsLabel: "Himmelsstatistik",
+                    backgroundStars: "Hintergrundsterne",
+                    meteorsSeen: "Sternschnuppen",
+                    constellations: "Sternbilder",
+                    makeWish: "Wünsch dir etwas",
+                    wishLabel: "Wünsch dir etwas: Sende eine Sternschnuppe",
+                    sendMeteor: "Eine Sternschnuppe senden",
+                    meteorPaused: "Sternschnuppen sind bei pausierter Animation nicht verfügbar",
+                    sidebarLabel: "Himmeleinstellungen und Sternbildinformationen",
+                    settingsHeading: "Gestalte deinen Himmel",
+                    starlight: "Sternenlicht",
+                    shootingStars: "Sternschnuppen",
+                    moonlight: "Mondlicht",
+                    northernLights: "Polarlichter",
+                    starDensity: "Sternendichte",
+                    densityValue: "{count} Sterne",
+                    clearSelection: "Sternbildauswahl aufheben",
+                    chooseGroup: "Ein Sternbild auswählen",
+                    exploreConstellation: "Sternbild entdecken: {name}",
+                    welcomeEyebrow: "Ein Himmel voller Geschichten",
+                    welcomeTitle: "Entdecke das Staunen.",
+                    welcomeText: "Sechs bekannte Sternbilder, unzählige Geschichten. Wähle ein Muster am Himmel und entdecke die Mythen und Sterne dahinter.",
+                    welcomeMeta: "Wähle ein Sternbild zum Einstieg",
+                    footerNote: "Künstlerischer Himmel, keine aktuelle Sternkarte. Atme durch und entdecke.",
+                    saved: "Einstellungen auf diesem Gerät gespeichert",
+                    sessionOnly: "Einstellungen gelten für diese Sitzung",
+                    toastPaused: "Ein stiller Moment. Animation pausiert.",
+                    toastResumed: "Die Nacht bewegt sich wieder.",
+                    toastWish: "Ein kleiner Wunsch, zu den Sternen geschickt.",
+                    toastReset: "Ein neuer Himmel. Einstellungen zurückgesetzt.",
+                    toastFullscreen: "Vollbild ist in diesem Browser nicht verfügbar.",
+                    toastLanguage: "Sprache: Deutsch",
+                    constellationData: [
+                        {
+                            name: "Großer Bär",
+                            subtitle: "Ursa Major",
+                            description: "Dieses nördliche Sternbild enthält den Großen Wagen und weist Reisenden seit Jahrhunderten den Weg. Die beiden äußeren Kastensterne zeigen zum Polarstern.",
+                            fact: "Bekannt für den Großen Wagen"
+                        },
+                        {
+                            name: "Kassiopeia",
+                            subtitle: "Die Königin",
+                            description: "Fünf helle Sterne bilden ein markantes W und erinnern an eine Königin der griechischen Mythologie. Kassiopeia liegt dem Großen Wagen jenseits des Polarsterns gegenüber.",
+                            fact: "Erkennbar an der W-Form"
+                        },
+                        {
+                            name: "Orion",
+                            subtitle: "Der Jäger",
+                            description: "Drei Sterne bilden den berühmten Gürtel des Jägers. In der Nähe leuchten die rote Beteigeuze, der blauweiße Rigel und der Orionnebel, eine riesige Sternentstehungsregion.",
+                            fact: "Von beiden Erdhalbkugeln aus sichtbar"
+                        },
+                        {
+                            name: "Löwe",
+                            subtitle: "Leo",
+                            description: "Ein umgekehrtes Fragezeichen, die Sichel, zeichnet den Kopf des Löwen nach. Regulus leuchtet an ihrer Basis; ein Sternendreieck bildet den hinteren Körper.",
+                            fact: "Regulus markiert das Herz des Löwen"
+                        },
+                        {
+                            name: "Schwan",
+                            subtitle: "Cygnus",
+                            description: "Der Schwan fliegt entlang der Milchstraße und bildet das Kreuz des Nordens. Sein heller Schwanzstern Deneb ist zugleich eine Ecke des Sommerdreiecks.",
+                            fact: "Deneb gehört zum Sommerdreieck"
+                        },
+                        {
+                            name: "Skorpion",
+                            subtitle: "Scorpius",
+                            description: "Ein weit geschwungener, hakenförmiger Schwanz macht dieses Tierkreissternbild unverwechselbar. In seinem Herzen glüht Antares, ein roter Überriese: der „Rivale des Mars“.",
+                            fact: "Antares ist ein roter Überriese"
+                        }
+                    ]
+                },
+
+                uk: {
+                    documentTitle: "Зоряна ніч — Твоя особиста обсерваторія",
+                    description: "Інтерактивне нічне небо. Відкривай сузір’я, спостерігай за метеорами та створюй власну небесну атмосферу.",
+                    appName: "Зоряна ніч",
+                    tagline: "Твоя особиста обсерваторія",
+                    liveTag: "Мить для захоплення",
+                    language: "Мова",
+                    reset: "Скинути налаштування неба",
+                    pause: "Призупинити анімацію",
+                    resume: "Відновити анімацію",
+                    reducedMotion: "Анімацію вимкнено через налаштування зменшення руху",
+                    enterFullscreen: "Увімкнути повноекранний режим",
+                    exitFullscreen: "Вийти з повноекранного режиму",
+                    skyLabel: "Інтерактивне ілюстроване нічне небо",
+                    skyEyebrow: "Поглянь угору. Зупинись на мить.",
+                    skyHeading: "Трохи ближче до нескінченності.",
+                    skyHint: "Обери сузір’я та відкрий його історію.",
+                    skyBadge: "Уявне небо",
+                    exploreGroup: "Дослідження сузір’їв",
+                    statsLabel: "Статистика неба",
+                    backgroundStars: "Фонові зорі",
+                    meteorsSeen: "Побачені метеори",
+                    constellations: "Сузір’я",
+                    makeWish: "Загадай бажання",
+                    wishLabel: "Загадай бажання: запусти метеор",
+                    sendMeteor: "Запустити метеор",
+                    meteorPaused: "Метеори недоступні, поки анімацію призупинено",
+                    sidebarLabel: "Налаштування неба та відомості про сузір’я",
+                    settingsHeading: "Створи своє небо",
+                    starlight: "Зоряне світло",
+                    shootingStars: "Метеори",
+                    moonlight: "Місячне сяйво",
+                    northernLights: "Північне сяйво",
+                    starDensity: "Густота зір",
+                    densityValue: "Кількість зір: {count}",
+                    clearSelection: "Скасувати вибір сузір’я",
+                    chooseGroup: "Вибір сузір’я",
+                    exploreConstellation: "Дослідити сузір’я: {name}",
+                    welcomeEyebrow: "Небо, сповнене історій",
+                    welcomeTitle: "Відкрий дивовижне.",
+                    welcomeText: "Шість знайомих сузір’їв, безліч історій. Обери візерунок на небі та дізнайся про міфи й зорі, що за ним стоять.",
+                    welcomeMeta: "Обери сузір’я, щоб почати",
+                    footerNote: "Художнє небо, а не актуальна зоряна карта. Переведи подих і досліджуй.",
+                    saved: "Налаштування збережено на цьому пристрої",
+                    sessionOnly: "Нала��тування діють протягом цього сеансу",
+                    toastPaused: "Мить тиші. Анімацію призупинено.",
+                    toastResumed: "Ніч знову оживає.",
+                    toastWish: "Маленьке бажання вирушило до зір.",
+                    toastReset: "Нове небо. Налаштування відновлено.",
+                    toastFullscreen: "Повноекранний режим недоступний у цьому браузері.",
+                    toastLanguage: "Мова: українська",
+                    constellationData: [
+                        {
+                            name: "Велика Ведмедиця",
+                            subtitle: "Ursa Major",
+                            description: "У цьому північному сузір’ї розташований Великий Ківш, що століттями допомагав мандрівникам. Дві крайні зорі його чаші вказують на Полярну зорю.",
+                            fact: "Відоме завдяки Великому Ковшу"
+                        },
+                        {
+                            name: "Кассіопея",
+                            subtitle: "Цариця",
+                            description: "П’ять яскравих зір утворюють виразну літеру W. Сузір’я назване на честь цариці з грецьких міфів і лежить по інший бік Полярної зорі від Великого Ковша.",
+                            fact: "Легко впізнати за W-подібною формою"
+                        },
+                        {
+                            name: "Оріон",
+                            subtitle: "Мисливець",
+                            description: "Три зорі утворюють знаменитий пояс Мисливця. Поруч сяють червона Бетельгейзе, біло-блакитний Рігель і туманність Оріона — величезна область народження зір.",
+                            fact: "Видимий з обох півкуль Землі"
+                        },
+                        {
+                            name: "Лев",
+                            subtitle: "Leo",
+                            description: "Перевернутий знак питання, відомий як Серп, окреслює голову Лева. Біля його основи сяє Регул, а трикутник зір утворює задню частину тулуба.",
+                            fact: "Регул позначає серце Лева"
+                        },
+                        {
+                            name: "Лебідь",
+                            subtitle: "Cygnus",
+                            description: "Лебідь летить уздовж Чумацького Шляху й утворює Північний Хрест. Яскравий Денеб у його хвості також є однією з вершин Літнього трикутника.",
+                            fact: "Денеб входить до Літнього трикутника"
+                        },
+                        {
+                            name: "Скорпіон",
+                            subtitle: "Scorpius",
+                            description: "Довгий вигнутий хвіст із гачком робить це зодіакальне сузір’я впізнаваним. У його серці сяє червоний надгігант Антарес, чиє ім’я означає «суперник Марса».",
+                            fact: "Антарес — червоний надгігант"
+                        }
+                    ]
+                },
+
+                en: {
+                    documentTitle: "Starry Night — Your personal observatory",
+                    description: "An interactive night sky. Discover constellations, watch meteors, and create your own celestial atmosphere.",
+                    appName: "Starry Night",
+                    tagline: "Your personal observatory",
+                    liveTag: "A moment of wonder",
+                    language: "Language",
+                    reset: "Reset sky settings",
+                    pause: "Pause animation",
+                    resume: "Resume animation",
+                    reducedMotion: "Animation disabled by reduced-motion preference",
+                    enterFullscreen: "Enter fullscreen",
+                    exitFullscreen: "Exit fullscreen",
+                    skyLabel: "Interactive illustrated night sky",
+                    skyEyebrow: "Look up. Slow down.",
+                    skyHeading: "A little closer to infinity.",
+                    skyHint: "Select a constellation and follow its story.",
+                    skyBadge: "Imagined sky",
+                    exploreGroup: "Explore constellations",
+                    statsLabel: "Sky statistics",
+                    backgroundStars: "Background stars",
+                    meteorsSeen: "Meteors seen",
+                    constellations: "Constellations",
+                    makeWish: "Make a wish",
+                    wishLabel: "Make a wish: send a shooting star",
+                    sendMeteor: "Send a shooting star",
+                    meteorPaused: "Shooting stars are unavailable while animation is paused",
+                    sidebarLabel: "Sky settings and constellation details",
+                    settingsHeading: "Shape your sky",
+                    starlight: "Starlight",
+                    shootingStars: "Shooting stars",
+                    moonlight: "Moonlight",
+                    northernLights: "Northern lights",
+                    starDensity: "Star density",
+                    densityValue: "{count} stars",
+                    clearSelection: "Clear constellation selection",
+                    chooseGroup: "Choose a constellation",
+                    exploreConstellation: "Explore {name}",
+                    welcomeEyebrow: "A sky full of stories",
+                    welcomeTitle: "Find your wonder.",
+                    welcomeText: "Six familiar constellations, countless stories. Select a pattern in the sky to discover the mythology and stars behind it.",
+                    welcomeMeta: "Choose a constellation to begin",
+                    footerNote: "Artistic sky, not a live star map. Take a breath and explore.",
+                    saved: "Preferences saved on this device",
+                    sessionOnly: "Preferences available for this session",
+                    toastPaused: "A still moment. Animation paused.",
+                    toastResumed: "The night is moving again.",
+                    toastWish: "A little wish, sent to the stars.",
+                    toastReset: "A fresh sky. Settings restored.",
+                    toastFullscreen: "Fullscreen is not available in this browser.",
+                    toastLanguage: "Language: English",
+                    constellationData: [
+                        {
+                            name: "Ursa Major",
+                            subtitle: "The Great Bear",
+                            description: "Home to the Big Dipper, this northern constellation has guided travelers for centuries. The Dipper’s two outer bowl stars point toward Polaris, the North Star.",
+                            fact: "Best known for the Big Dipper"
+                        },
+                        {
+                            name: "Cassiopeia",
+                            subtitle: "The Queen",
+                            description: "A distinctive W of five bright stars traces a queen from Greek mythology. Cassiopeia lies opposite the Big Dipper across Polaris in the northern sky.",
+                            fact: "Recognizable by its W-shaped pattern"
+                        },
+                        {
+                            name: "Orion",
+                            subtitle: "The Hunter",
+                            description: "Three stars form the Hunter’s famous belt. Look beyond it to find red Betelgeuse, blue-white Rigel, and the Orion Nebula, a vast stellar nursery.",
+                            fact: "Visible from both hemispheres"
+                        },
+                        {
+                            name: "Leo",
+                            subtitle: "The Lion",
+                            description: "A backward question mark called the Sickle outlines the Lion’s head. Regulus shines at its base, while a triangle of stars forms the hindquarters.",
+                            fact: "Regulus marks the lion’s heart"
+                        },
+                        {
+                            name: "Cygnus",
+                            subtitle: "The Swan",
+                            description: "Flying along the Milky Way, Cygnus forms the Northern Cross. Its brilliant tail star, Deneb, is also one corner of the Summer Triangle.",
+                            fact: "Deneb is part of the Summer Triangle"
+                        },
+                        {
+                            name: "Scorpius",
+                            subtitle: "The Scorpion",
+                            description: "A sweeping, hooked tail makes this zodiac constellation easy to recognize. At its heart glows Antares, a red supergiant whose name means “rival of Mars.”",
+                            fact: "Antares is a red supergiant"
+                        }
+                    ]
+                }
+            };
+
+            const defaults = {
+                showStars: true,
+                showShootingStars: true,
+                showConstellations: true,
+                showMoon: false,
+                showAurora: false,
+                starCount: 350
+            };
+
+            let storageAvailable = true;
+
+            function loadState() {
+                const result = { ...defaults };
+                try {
+                    const saved = JSON.parse(localStorage.getItem(storageKey) || "null");
+                    if (saved && typeof saved === "object") {
+                        for (const key of Object.keys(defaults)) {
+                            if (typeof defaults[key] === "boolean" && typeof saved[key] === "boolean") {
+                                result[key] = saved[key];
+                            }
+                        }
+                        if (typeof saved.starCount === "number" && Number.isFinite(saved.starCount)) {
+                            result.starCount = Math.max(50, Math.min(800, Math.round(saved.starCount / 25) * 25));
+                        }
+                    }
+                } catch {
+                    storageAvailable = false;
+                }
+                return result;
+            }
+
+            function loadLanguage() {
+                try {
+                    const saved = localStorage.getItem(languageStorageKey);
+                    if (Object.prototype.hasOwnProperty.call(translations, saved)) return saved;
+                } catch {
+                    storageAvailable = false;
+                }
+                return "de";
+            }
+
+            let state = loadState();
+            let language = loadLanguage();
+            let numberFormat = new Intl.NumberFormat(language);
+            let paused = reducedMotion.matches;
+            let selectedIndex = -1;
+            let meteorCount = 0;
+
+            // Geometry is language-independent, so switching languages keeps
+            // the current sky, selection, animation, and statistics intact.
+            const constellationGeometry = [
+                {
+                    stars: [[0,5], [25,13], [48,8], [72,20], [100,24], [92,49], [66,46]],
+                    connections: [[0,1], [1,2], [2,3], [3,4], [4,5], [5,6], [6,3]]
+                },
+                {
+                    stars: [[0,12], [24,48], [49,8], [74,41], [100,0]],
+                    connections: [[0,1], [1,2], [2,3], [3,4]]
+                },
+                {
+                    stars: [[20,0], [70,8], [34,43], [48,47], [62,51], [15,91], [79,96]],
+                    connections: [[0,1], [0,2], [1,4], [2,3], [3,4], [2,5], [4,6], [5,6]]
+                },
+                {
+                    stars: [[38,0], [20,5], [12,21], [26,36], [27,58], [75,57], [100,42], [48,29]],
+                    connections: [[0,1], [1,2], [2,3], [3,4], [4,5], [5,6], [6,7], [7,3]]
+                },
+                {
+                    stars: [[50,0], [50,38], [8,47], [92,30], [50,70], [50,100]],
+                    connections: [[0,1], [1,2], [1,3], [1,4], [4,5]]
+                },
+                {
+                    stars: [[20,0], [30,20], [25,40], [35,60], [55,77], [78,80], [96,65], [92,48], [4,14], [40,5]],
+                    connections: [[0,1], [8,1], [9,1], [1,2], [2,3], [3,4], [4,5], [5,6], [6,7]]
+                }
+            ];
+
+            const sky = $("sky");
+            const canvas = $("star-canvas");
+            const ctx = canvas.getContext("2d");
+            const constellationContainer = $("constellations");
+            const nav = $("discovery-nav");
+            const toggles = [...document.querySelectorAll("[data-setting]")];
+            const languageButtons = [...document.querySelectorAll("[data-language]")];
+            const constellationButtons = [];
+            const navButtons = [];
+
+            let width = 1;
+            let height = 1;
+            let stars = [];
+            let meteors = [];
+            let raf = 0;
+            let lastFrame = 0;
+            let elapsed = 0;
+            let meteorWait = random(3, 7);
+            let toastTimer;
+            let saveTimer;
+            let currentToastKey = null;
+
+            function t(key, values = {}) {
+                const text = translations[language][key] ?? translations.de[key] ?? key;
+                return String(text).replace(/\{(\w+)\}/g, (match, name) =>
+                    Object.prototype.hasOwnProperty.call(values, name) ? values[name] : match
+                );
+            }
+
+            function random(min, max) {
+                return min + Math.random() * (max - min);
+            }
+
+            function savePreferences() {
+                clearTimeout(saveTimer);
+                saveTimer = null;
+                try {
+                    localStorage.setItem(storageKey, JSON.stringify(state));
+                    localStorage.setItem(languageStorageKey, language);
+                    storageAvailable = true;
+                } catch {
+                    storageAvailable = false;
+                }
+                updateSaveStatus();
+            }
+
+            function updateSaveStatus() {
+                $("save-status").textContent = t(storageAvailable ? "saved" : "sessionOnly");
+            }
+
+            function notify(key) {
+                clearTimeout(toastTimer);
+                currentToastKey = key;
+                $("toast").textContent = t(key);
+                $("toast").classList.add("visible");
+                toastTimer = setTimeout(() => {
+                    $("toast").classList.remove("visible");
+                    currentToastKey = null;
+                }, 2800);
+            }
+
+            function updateDynamicLabels() {
+                const isStatic = paused || reducedMotion.matches;
+                const pauseKey = reducedMotion.matches ? "reducedMotion" : paused ? "resume" : "pause";
+
+                $("btn-pause").setAttribute("aria-label", t(pauseKey));
+                $("btn-pause").title = t(pauseKey);
+                $("btn-meteor").title = t(isStatic ? "meteorPaused" : "sendMeteor");
+
+                const fullscreenKey = document.fullscreenElement ? "exitFullscreen" : "enterFullscreen";
+                $("btn-fullscreen").setAttribute("aria-label", t(fullscreenKey));
+                $("btn-fullscreen").title = t(fullscreenKey);
+            }
+
+            function applyLanguage() {
+                document.documentElement.lang = language;
+                document.title = t("documentTitle");
+                document.querySelector('meta[name="description"]').content = t("description");
+                numberFormat = new Intl.NumberFormat(language);
+
+                document.querySelectorAll("[data-i18n]").forEach(element => {
+                    element.textContent = t(element.dataset.i18n);
+                });
+                document.querySelectorAll("[data-i18n-aria]").forEach(element => {
+                    element.setAttribute("aria-label", t(element.dataset.i18nAria));
+                });
+                document.querySelectorAll("[data-i18n-title]").forEach(element => {
+                    element.title = t(element.dataset.i18nTitle);
+                });
+                languageButtons.forEach(button => {
+                    button.setAttribute("aria-pressed", String(button.dataset.language === language));
+                });
+
+                translations[language].constellationData.forEach((item, index) => {
+                    const label = t("exploreConstellation", { name: item.name });
+                    constellationButtons[index].setAttribute("aria-label", label);
+                    constellationButtons[index].title = label;
+                    constellationButtons[index].querySelector(".constellation-label").textContent = item.name;
+                    navButtons[index].setAttribute("aria-label", label);
+                    navButtons[index].title = item.name;
+                });
+
+                renderSelection();
+                updateDynamicLabels();
+                updateStats();
+                updateDensity();
+                updateSaveStatus();
+
+                if (currentToastKey) $("toast").textContent = t(currentToastKey);
+            }
+
+            function setLanguage(nextLanguage) {
+                if (!Object.prototype.hasOwnProperty.call(translations, nextLanguage) || nextLanguage === language) return;
+                language = nextLanguage;
+                applyLanguage();
+                savePreferences();
+                notify("toastLanguage");
+            }
+
+            function makeStars() {
+                stars = Array.from({ length: state.starCount }, () => ({
+                    x: Math.random(),
+                    y: Math.random(),
+                    radius: Math.random() < .88 ? random(.45, 1.1) : random(1.2, 1.9),
+                    opacity: random(.25, .8),
+                    phase: random(0, Math.PI * 2),
+                    speed: random(.5, 1.6),
+                    color: Math.random() < .16 ? "255,228,196" : "200,218,255"
+                }));
+            }
+
+            function resizeCanvas() {
+                const rect = sky.getBoundingClientRect();
+                width = Math.max(1, rect.width);
+                height = Math.max(1, rect.height);
+                const dpr = Math.min(window.devicePixelRatio || 1, 2);
+                canvas.width = Math.round(width * dpr);
+                canvas.height = Math.round(height * dpr);
+                if (ctx) ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+                draw();
+            }
+
+            function draw() {
+                if (!ctx) return;
+                ctx.clearRect(0, 0, width, height);
+
+                if (state.showStars) {
+                    for (const star of stars) {
+                        const x = star.x * width;
+                        const y = star.y * height;
+                        const twinkle = .73 + .27 * Math.sin(elapsed * star.speed + star.phase);
+                        const alpha = star.opacity * twinkle;
+
+                        if (star.radius > 1.2) {
+                            const glow = ctx.createRadialGradient(x, y, 0, x, y, star.radius * 5);
+                            glow.addColorStop(0, `rgba(${star.color},${alpha * .23})`);
+                            glow.addColorStop(1, `rgba(${star.color},0)`);
+                            ctx.fillStyle = glow;
+                            ctx.beginPath();
+                            ctx.arc(x, y, star.radius * 5, 0, Math.PI * 2);
+                            ctx.fill();
+                        }
+
+                        ctx.fillStyle = `rgba(${star.color},${alpha})`;
+                        ctx.beginPath();
+                        ctx.arc(x, y, star.radius, 0, Math.PI * 2);
+                        ctx.fill();
+                    }
+                }
+
+                for (const meteor of meteors) {
+                    const progress = meteor.age / meteor.life;
+                    const x = meteor.x * width + meteor.dx * width * progress;
+                    const y = meteor.y * height + meteor.dy * height * progress;
+                    const angle = Math.atan2(meteor.dy * height, meteor.dx * width);
+                    const tailLength = Math.min(135, width * .2);
+                    const tailX = x - Math.cos(angle) * tailLength;
+                    const tailY = y - Math.sin(angle) * tailLength;
+                    const alpha = Math.min(1, progress * 8) * (1 - progress);
+
+                    const gradient = ctx.createLinearGradient(tailX, tailY, x, y);
+                    gradient.addColorStop(0, "rgba(157,182,255,0)");
+                    gradient.addColorStop(.7, `rgba(173,195,255,${alpha * .5})`);
+                    gradient.addColorStop(1, `rgba(245,248,255,${alpha})`);
+
+                    ctx.strokeStyle = gradient;
+                    ctx.lineWidth = 1.6;
+                    ctx.beginPath();
+                    ctx.moveTo(tailX, tailY);
+                    ctx.lineTo(x, y);
+                    ctx.stroke();
+
+                    ctx.fillStyle = `rgba(255,255,255,${alpha})`;
+                    ctx.beginPath();
+                    ctx.arc(x, y, 1.7, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+            }
+
+            function addMeteor() {
+                if (!ctx || paused || reducedMotion.matches || document.hidden) return;
+                meteors.push({
+                    x: random(.05, .55),
+                    y: random(.05, .3),
+                    dx: random(.28, .5),
+                    dy: random(.22, .4),
+                    life: random(.9, 1.5),
+                    age: 0
+                });
+                meteorCount++;
+                updateStats();
+            }
+
+            function tick(time) {
+                raf = 0;
+                if (paused || document.hidden || reducedMotion.matches) return;
+                const delta = lastFrame ? Math.min((time - lastFrame) / 1000, .05) : 0;
+                lastFrame = time;
+                elapsed += delta;
+
+                if (state.showShootingStars) {
+                    meteorWait -= delta;
+                    if (meteorWait <= 0) {
+                        addMeteor();
+                        meteorWait = random(4, 10);
+                    }
+                }
+
+                for (const meteor of meteors) meteor.age += delta;
+                meteors = meteors.filter(meteor => meteor.age < meteor.life);
+                draw();
+                raf = requestAnimationFrame(tick);
+            }
+
+            function syncAnimation() {
+                if (raf) cancelAnimationFrame(raf);
+                raf = 0;
+                lastFrame = 0;
+
+                const isStatic = paused || reducedMotion.matches;
+                $("app").classList.toggle("paused", isStatic || document.hidden);
+                $("btn-pause").setAttribute("aria-pressed", String(isStatic));
+                $("pause-icon").setAttribute("href", isStatic ? "#i-play" : "#i-pause");
+                $("btn-pause").disabled = reducedMotion.matches;
+                $("btn-meteor").disabled = isStatic || !ctx;
+
+                updateDynamicLabels();
+                draw();
+
+                if (!isStatic && !document.hidden && ctx) {
+                    raf = requestAnimationFrame(tick);
+                }
+            }
+
+            function makeConstellationSVG(item) {
+                const xs = item.stars.map(point => point[0]);
+                const ys = item.stars.map(point => point[1]);
+                const minX = Math.min(...xs);
+                const minY = Math.min(...ys);
+                const boxWidth = Math.max(...xs) - minX + 24;
+                const boxHeight = Math.max(...ys) - minY + 24;
+
+                const lines = item.connections.map(([from, to]) => {
+                    const a = item.stars[from];
+                    const b = item.stars[to];
+                    return `<line x1="${a[0]}" y1="${a[1]}" x2="${b[0]}" y2="${b[1]}"/>`;
+                }).join("");
+
+                const points = item.stars.map(([x, y], index) =>
+                    `<circle class="star-halo" cx="${x}" cy="${y}" r="${index === 0 ? 6 : 4.5}"/>
+                     <circle cx="${x}" cy="${y}" r="${index === 0 ? 1.9 : 1.5}"/>`
+                ).join("");
+
+                return `<svg viewBox="${minX - 12} ${minY - 12} ${boxWidth} ${boxHeight}" aria-hidden="true">${lines}${points}</svg>`;
+            }
+
+            function buildConstellations() {
+                constellationGeometry.forEach((item, index) => {
+                    const button = document.createElement("button");
+                    button.className = "constellation";
+                    button.type = "button";
+                    button.setAttribute("aria-pressed", "false");
+                    button.setAttribute("aria-controls", "info-title info-text");
+                    button.innerHTML = `${makeConstellationSVG(item)}<span class="constellation-label"></span>`;
+                    button.addEventListener("click", () => selectConstellation(index));
+                    constellationContainer.appendChild(button);
+                    constellationButtons.push(button);
+
+                    const navButton = document.createElement("button");
+                    navButton.type = "button";
+                    navButton.setAttribute("aria-pressed", "false");
+                    navButton.setAttribute("aria-controls", "info-title info-text");
+                    navButton.addEventListener("click", () => {
+                        if (!state.showConstellations) {
+                            state.showConstellations = true;
+                            updateUI();
+                            savePreferences();
+                        }
+                        selectConstellation(index);
+                    });
+                    nav.appendChild(navButton);
+                    navButtons.push(navButton);
+                });
+            }
+
+            function renderSelection() {
+                const item = translations[language].constellationData[selectedIndex];
+
+                $("info-eyebrow").textContent = item ? item.subtitle : t("welcomeEyebrow");
+                $("info-title").textContent = item ? item.name : t("welcomeTitle");
+                $("info-text").textContent = item ? item.description : t("welcomeText");
+                $("info-meta").textContent = item ? item.fact : t("welcomeMeta");
+                $("close-info").hidden = !item;
+
+                constellationButtons.forEach((button, index) => {
+                    button.setAttribute("aria-pressed", String(index === selectedIndex));
+                });
+                navButtons.forEach((button, index) => {
+                    button.setAttribute("aria-pressed", String(index === selectedIndex));
+                });
+            }
+
+            function selectConstellation(index) {
+                selectedIndex = index;
+                renderSelection();
+            }
+
+            function updateStats() {
+                $("star-count").textContent = numberFormat.format(state.showStars ? state.starCount : 0);
+                $("shooting-count").textContent = numberFormat.format(meteorCount);
+                $("constellation-count").textContent = numberFormat.format(
+                    state.showConstellations ? constellationGeometry.length : 0
+                );
+            }
+
+            function updateDensity() {
+                $("star-density").value = state.starCount;
+                $("density-value").value = numberFormat.format(state.starCount);
+                $("star-density").setAttribute("aria-valuetext", t("densityValue", {
+                    count: numberFormat.format(state.starCount)
+                }));
+                $("star-density").disabled = !state.showStars;
+            }
+
+            function updateUI() {
+                toggles.forEach(button => {
+                    button.setAttribute("aria-pressed", String(state[button.dataset.setting]));
+                });
+                constellationContainer.hidden = !state.showConstellations;
+                $("moon").classList.toggle("visible", state.showMoon);
+                $("aurora").classList.toggle("visible", state.showAurora);
+
+                updateDensity();
+                updateStats();
+                updateSaveStatus();
+                draw();
+            }
+
+            languageButtons.forEach(button => {
+                button.addEventListener("click", () => setLanguage(button.dataset.language));
+
+                // Optional arrow-key navigation in addition to Tab and Enter/Space.
+                button.addEventListener("keydown", event => {
+                    if (!["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)) return;
+                    event.preventDefault();
+
+                    let index = languageButtons.indexOf(button);
+                    if (event.key === "ArrowLeft") index = (index + languageButtons.length - 1) % languageButtons.length;
+                    if (event.key === "ArrowRight") index = (index + 1) % languageButtons.length;
+                    if (event.key === "Home") index = 0;
+                    if (event.key === "End") index = languageButtons.length - 1;
+
+                    languageButtons[index].focus();
+                    setLanguage(languageButtons[index].dataset.language);
+                });
+            });
+
+            toggles.forEach(button => {
+                button.addEventListener("click", () => {
+                    const key = button.dataset.setting;
+                    state[key] = !state[key];
+
+                    if (key === "showShootingStars") {
+                        meteors = [];
+                        meteorWait = random(2, 5);
+                    }
+                    if (key === "showConstellations" && !state[key]) {
+                        selectConstellation(-1);
+                    }
+
+                    updateUI();
+                    savePreferences();
+                });
+            });
+
+            $("star-density").addEventListener("input", event => {
+                state.starCount = Number(event.target.value);
+                makeStars();
+                updateUI();
+                clearTimeout(saveTimer);
+                saveTimer = setTimeout(savePreferences, 180);
+            });
+
+            $("btn-pause").addEventListener("click", () => {
+                if (reducedMotion.matches) return;
+                paused = !paused;
+                syncAnimation();
+                notify(paused ? "toastPaused" : "toastResumed");
+            });
+
+            $("btn-meteor").addEventListener("click", () => {
+                if (paused || reducedMotion.matches || !ctx) return;
+                addMeteor();
+                notify("toastWish");
+            });
+
+            $("btn-reset").addEventListener("click", () => {
+                clearTimeout(saveTimer);
+                state = { ...defaults };
+                paused = reducedMotion.matches;
+                meteorCount = 0;
+                meteors = [];
+                elapsed = 0;
+                meteorWait = random(3, 7);
+                makeStars();
+                selectConstellation(-1);
+                updateUI();
+                syncAnimation();
+
+                // Reset the sky, but keep the user's chosen language.
+                savePreferences();
+                notify("toastReset");
+            });
+
+            $("close-info").addEventListener("click", () => {
+                const previous = selectedIndex;
+                selectConstellation(-1);
+                if (previous >= 0 && state.showConstellations) {
+                    constellationButtons[previous].focus();
+                }
+            });
+
+            sky.addEventListener("click", event => {
+                if (!event.target.closest("button")) selectConstellation(-1);
+            });
+
+            document.addEventListener("keydown", event => {
+                if (event.key === "Escape" && selectedIndex >= 0) {
+                    const previous = selectedIndex;
+                    const closingButtonFocused = document.activeElement === $("close-info");
+                    selectConstellation(-1);
+                    if (closingButtonFocused && state.showConstellations) {
+                        constellationButtons[previous].focus();
+                    }
+                }
+            });
+
+            const fullscreenButton = $("btn-fullscreen");
+            if (!document.fullscreenEnabled) fullscreenButton.hidden = true;
+
+            fullscreenButton.addEventListener("click", async () => {
+                try {
+                    if (document.fullscreenElement) {
+                        await document.exitFullscreen();
+                    } else {
+                        await document.documentElement.requestFullscreen();
+                    }
+                } catch {
+                    notify("toastFullscreen");
+                }
+            });
+
+            document.addEventListener("fullscreenchange", updateDynamicLabels);
+            document.addEventListener("visibilitychange", syncAnimation);
+
+            const handleMotionPreference = () => {
+                paused = reducedMotion.matches;
+                meteors = [];
+                syncAnimation();
+            };
+
+            if (reducedMotion.addEventListener) {
+                reducedMotion.addEventListener("change", handleMotionPreference);
+            } else {
+                reducedMotion.addListener(handleMotionPreference);
+            }
+
+            window.addEventListener("pagehide", () => {
+                if (saveTimer) savePreferences();
+            });
+
+            buildConstellations();
+            makeStars();
+            applyLanguage();
+            updateUI();
+            resizeCanvas();
+            syncAnimation();
+            savePreferences();
+
+            if ("ResizeObserver" in window) {
+                const observer = new ResizeObserver(resizeCanvas);
+                observer.observe(sky);
+            } else {
+                window.addEventListener("resize", resizeCanvas);
+            }
+        })();
+    </script>
+</body>
+</html>
