@@ -1,0 +1,1143 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="description" content="Гра «Життя» Конвея — інтерактивний клітинний автомат: малюйте клітини, обирайте шаблони (планер, гармата Госпера, пульсар), керуйте швидкістю. Стан зберігається автоматично.">
+<meta name="theme-color" content="#0a0e1a">
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230a0e1c'/%3E%3Cg fill='%233ee6d0'%3E%3Crect x='13' y='5' width='6' height='6' rx='1.5'/%3E%3Crect x='21' y='13' width='6' height='6' rx='1.5'/%3E%3C/g%3E%3Cg fill='%23a46bff'%3E%3Crect x='5' y='21' width='6' height='6' rx='1.5'/%3E%3Crect x='13' y='21' width='6' height='6' rx='1.5'/%3E%3Crect x='21' y='21' width='6' height='6' rx='1.5'/%3E%3C/g%3E%3C/svg%3E">
+<title>Гра «Життя» Конвея</title>
+<style>
+  :root{
+    --bg:#070a14;
+    --panel:rgba(20,26,46,.72);
+    --panel-border:rgba(130,150,255,.14);
+    --text:#e7eaf6;
+    --muted:#8b93b5;
+    --accent:#3ee6d0;
+    --accent2:#a46bff;
+    --danger:#ff5d7a;
+    --radius:16px;
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%;margin:0}
+  body{
+    display:flex;flex-direction:column;
+    height:100vh;height:100dvh;
+    background:
+      radial-gradient(1200px 600px at 10% -10%, rgba(62,230,208,.12), transparent 60%),
+      radial-gradient(1000px 700px at 110% 110%, rgba(164,107,255,.16), transparent 60%),
+      var(--bg);
+    color:var(--text);
+    font-family:system-ui,-apple-system,"Segoe UI",Roboto,Ubuntu,sans-serif;
+    overflow:hidden;
+    -webkit-tap-highlight-color:transparent;
+    padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+  }
+
+  /* ---------- Header ---------- */
+  header{
+    display:flex;align-items:center;justify-content:space-between;gap:12px;
+    padding:10px 16px;flex-shrink:0;
+  }
+  .brand{display:flex;align-items:center;gap:12px;min-width:0}
+  .logo{
+    width:38px;height:38px;flex-shrink:0;border-radius:11px;
+    display:grid;grid-template-columns:repeat(3,1fr);gap:3px;padding:7px;
+    background:linear-gradient(135deg,rgba(62,230,208,.18),rgba(164,107,255,.22));
+    border:1px solid var(--panel-border);
+  }
+  .logo i{border-radius:2px;background:transparent}
+  .logo i.on{background:var(--accent);box-shadow:0 0 6px var(--accent)}
+  .titles{min-width:0}
+  h1{
+    margin:0;font-size:1.15rem;font-weight:700;letter-spacing:.2px;
+    background:linear-gradient(90deg,var(--accent),var(--accent2));
+    -webkit-background-clip:text;background-clip:text;color:transparent;
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+  }
+  .subtitle{margin:0;font-size:.78rem;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .lang{display:flex;background:rgba(255,255,255,.05);border:1px solid var(--panel-border);border-radius:10px;padding:3px;flex-shrink:0}
+  .lang button{
+    border:0;background:transparent;color:var(--muted);font-weight:600;font-size:.78rem;
+    padding:6px 10px;border-radius:7px;cursor:pointer;
+  }
+  .lang button[aria-pressed="true"]{background:linear-gradient(135deg,var(--accent),var(--accent2));color:#0a0e1a}
+
+  /* ---------- Main layout ---------- */
+  main{
+    flex:1;min-height:0;
+    display:grid;gap:12px;padding:0 12px 12px;
+    grid-template-columns:minmax(0,1fr) 340px;
+  }
+  .stage{
+    position:relative;min-width:0;min-height:0;
+    display:flex;align-items:center;justify-content:center;
+    border-radius:var(--radius);
+    background:rgba(10,14,28,.6);
+    border:1px solid var(--panel-border);
+    box-shadow:inset 0 0 60px rgba(0,0,0,.5);
+    overflow:hidden;
+  }
+  canvas{
+    display:block;touch-action:none;cursor:crosshair;
+    border-radius:6px;
+    box-shadow:0 0 0 1px rgba(130,150,255,.12),0 10px 40px rgba(0,0,0,.5);
+  }
+  .stage-badge{
+    position:absolute;left:10px;top:10px;
+    display:flex;gap:6px;pointer-events:none;flex-wrap:wrap;
+  }
+  .badge{
+    font-size:.72rem;padding:4px 8px;border-radius:999px;
+    background:rgba(7,10,20,.75);border:1px solid var(--panel-border);color:var(--muted);
+    backdrop-filter:blur(6px);
+  }
+  .badge b{color:var(--text);font-variant-numeric:tabular-nums}
+
+  /* ---------- Panel ---------- */
+  .panel{
+    min-height:0;min-width:0;overflow:auto;
+    display:flex;flex-direction:column;gap:14px;
+    padding:14px;border-radius:var(--radius);
+    background:var(--panel);border:1px solid var(--panel-border);
+    backdrop-filter:blur(12px);
+    scrollbar-width:thin;scrollbar-color:rgba(255,255,255,.15) transparent;
+  }
+  .card{display:flex;flex-direction:column;gap:8px;min-width:0}
+  .card h2{
+    margin:0;font-size:.7rem;text-transform:uppercase;letter-spacing:1.2px;color:var(--muted);font-weight:600;
+  }
+  .stats{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  .stat{
+    padding:10px 12px;border-radius:12px;min-width:0;
+    background:rgba(255,255,255,.04);border:1px solid var(--panel-border);
+  }
+  .stat span{display:block;font-size:.7rem;color:var(--muted)}
+  .stat strong{font-size:1.3rem;font-variant-numeric:tabular-nums;display:block;overflow:hidden;text-overflow:ellipsis}
+  .stat:first-child strong{color:var(--accent)}
+  .stat:last-child strong{color:var(--accent2)}
+
+  .row{display:flex;gap:8px}
+  .row > *{flex:1 1 0;min-width:0}
+  button.btn{
+    display:inline-flex;align-items:center;justify-content:center;gap:6px;
+    min-height:40px;min-width:0;padding:8px 10px;border-radius:10px;cursor:pointer;
+    font:inherit;font-size:.85rem;font-weight:600;color:var(--text);
+    background:rgba(255,255,255,.06);border:1px solid var(--panel-border);
+    transition:transform .08s, background .2s, border-color .2s;
+    white-space:nowrap;overflow:hidden;
+  }
+  button.btn .lbl{overflow:hidden;text-overflow:ellipsis;min-width:0}
+  button.btn:hover{background:rgba(255,255,255,.1);border-color:rgba(130,150,255,.3)}
+  button.btn:active{transform:scale(.97)}
+  button.btn svg{width:16px;height:16px;flex-shrink:0}
+  button.primary{
+    background:linear-gradient(135deg,var(--accent),#2bb8e6);color:#06121a;border:0;
+    box-shadow:0 4px 20px rgba(62,230,208,.25);
+  }
+  button.primary:hover{background:linear-gradient(135deg,#5ff0dc,#47c6ef)}
+  button.primary.running{
+    background:linear-gradient(135deg,#ffb35d,var(--danger));box-shadow:0 4px 20px rgba(255,93,122,.25);
+  }
+
+  /* Main controls: big Play/Pause on its own row, 3 equal buttons below */
+  .main-controls{
+    display:grid;
+    grid-template-columns:repeat(3,minmax(0,1fr));
+    gap:8px;
+  }
+  .main-controls .primary{
+    grid-column:1 / -1;
+    min-height:48px;font-size:1rem;letter-spacing:.3px;
+  }
+  .main-controls .primary svg{width:18px;height:18px}
+  .main-controls .btn:not(.primary){flex-direction:row;padding:8px 6px;font-size:.8rem}
+
+  .segmented{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:4px;padding:4px;border-radius:12px;background:rgba(255,255,255,.04);border:1px solid var(--panel-border)}
+  .segmented button{
+    border:0;background:transparent;color:var(--muted);font:inherit;font-size:.8rem;font-weight:600;min-width:0;
+    padding:8px 4px;border-radius:8px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:5px;
+    white-space:nowrap;overflow:hidden;
+  }
+  .segmented button span{overflow:hidden;text-overflow:ellipsis}
+  .segmented button svg{width:15px;height:15px;flex-shrink:0}
+  .segmented button[aria-pressed="true"]{background:rgba(164,107,255,.25);color:#fff;box-shadow:inset 0 0 0 1px rgba(164,107,255,.5)}
+
+  .speed-line{display:flex;align-items:center;gap:10px}
+  .speed-val{min-width:74px;text-align:right;font-variant-numeric:tabular-nums;font-size:.85rem;color:var(--accent)}
+  input[type=range]{
+    flex:1;min-width:0;-webkit-appearance:none;appearance:none;height:6px;border-radius:6px;outline:none;
+    background:linear-gradient(90deg,var(--accent) var(--p,20%),rgba(255,255,255,.1) var(--p,20%));
+  }
+  input[type=range]::-webkit-slider-thumb{
+    -webkit-appearance:none;width:20px;height:20px;border-radius:50%;
+    background:#fff;border:3px solid var(--accent);box-shadow:0 0 10px rgba(62,230,208,.6);cursor:pointer;
+  }
+  input[type=range]::-moz-range-thumb{
+    width:16px;height:16px;border-radius:50%;background:#fff;border:3px solid var(--accent);cursor:pointer;
+  }
+
+  select{
+    width:100%;min-height:40px;padding:8px 32px 8px 10px;border-radius:10px;
+    font:inherit;font-size:.85rem;color:var(--text);
+    background:rgba(255,255,255,.06) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%238b93b5' stroke-width='3'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E") no-repeat right 10px center;
+    border:1px solid var(--panel-border);-webkit-appearance:none;appearance:none;cursor:pointer;
+  }
+  select option{background:#141a2e;color:var(--text)}
+
+  .toggle{display:flex;align-items:center;justify-content:space-between;gap:10px;font-size:.85rem;cursor:pointer;padding:4px 0}
+  .toggle input{display:none}
+  .switch{width:38px;height:22px;border-radius:22px;background:rgba(255,255,255,.12);position:relative;flex-shrink:0;transition:background .2s}
+  .switch::after{content:"";position:absolute;left:3px;top:3px;width:16px;height:16px;border-radius:50%;background:#fff;transition:transform .2s}
+  .toggle input:checked + .switch{background:linear-gradient(135deg,var(--accent),var(--accent2))}
+  .toggle input:checked + .switch::after{transform:translateX(16px)}
+
+  .hint{font-size:.75rem;color:var(--muted);line-height:1.45;margin:0}
+  .hint kbd{
+    font-family:ui-monospace,monospace;font-size:.7rem;padding:1px 5px;border-radius:4px;
+    background:rgba(255,255,255,.08);border:1px solid var(--panel-border);color:var(--text);
+  }
+
+  /* ---------- Portrait ---------- */
+  @media (orientation:portrait){
+    main{grid-template-columns:1fr;grid-template-rows:minmax(0,1fr) auto}
+    .panel{max-height:46vh;max-height:46dvh}
+  }
+  @media (orientation:portrait) and (min-width:640px){
+    .panel{display:grid;grid-template-columns:1fr 1fr;align-content:start}
+    .panel .card.wide{grid-column:1/-1}
+    .main-controls{grid-template-columns:1.6fr repeat(3,minmax(0,1fr))}
+    .main-controls .primary{grid-column:auto;min-height:42px}
+  }
+  /* ---------- Small screens ---------- */
+  @media (max-width:480px){
+    header{padding:8px 10px}
+    h1{font-size:1rem}
+    .subtitle{display:none}
+    .logo{width:32px;height:32px;padding:6px;gap:2px}
+    main{padding:0 8px 8px;gap:8px}
+    .panel{padding:10px;gap:10px}
+    .main-controls{grid-template-columns:1.6fr repeat(3,minmax(0,1fr))}
+    .main-controls .primary{grid-column:auto;min-height:42px;font-size:.9rem}
+    .main-controls .btn:not(.primary) .lbl{display:none}
+    .segmented button span{font-size:.75rem}
+    .stat{padding:6px 10px}
+    .stat strong{font-size:1.05rem}
+    .hint.keys{display:none}
+  }
+  /* ---------- Landscape phones (low height) ---------- */
+  @media (orientation:landscape) and (max-height:520px){
+    header{padding:4px 10px}
+    .subtitle{display:none}
+    .logo{width:28px;height:28px;padding:5px;gap:2px;border-radius:8px}
+    h1{font-size:.95rem}
+    main{grid-template-columns:minmax(0,1fr) 270px;padding:0 8px 8px;gap:8px}
+    .panel{padding:10px;gap:10px}
+    button.btn{min-height:34px;font-size:.78rem;padding:6px 8px}
+    .main-controls .primary{min-height:38px;font-size:.88rem}
+    .main-controls .btn:not(.primary) .lbl{display:none}
+    select{min-height:34px}
+    .stat strong{font-size:1rem}
+    .stat{padding:6px 10px}
+    .hint.keys{display:none}
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="brand">
+    <div class="logo" aria-hidden="true">
+      <i></i><i class="on"></i><i></i>
+      <i></i><i></i><i class="on"></i>
+      <i class="on"></i><i class="on"></i><i class="on"></i>
+    </div>
+    <div class="titles">
+      <h1 data-i18n="title">Гра «Життя»</h1>
+      <p class="subtitle" data-i18n="subtitle">Клітинний автомат Конвея</p>
+    </div>
+  </div>
+  <div class="lang" role="group" aria-label="Language">
+    <button data-lang="uk" aria-pressed="true">УКР</button>
+    <button data-lang="en" aria-pressed="false">ENG</button>
+  </div>
+</header>
+
+<main>
+  <section class="stage" id="stage">
+    <canvas id="canvas"></canvas>
+    <div class="stage-badge">
+      <div class="badge" id="sizeBadge"></div>
+      <div class="badge" id="toolBadge"></div>
+    </div>
+  </section>
+
+  <aside class="panel" id="panel">
+    <div class="card">
+      <div class="stats">
+        <div class="stat"><span data-i18n="generation">Покоління</span><strong id="gen">0</strong></div>
+        <div class="stat"><span data-i18n="population">Популяція</span><strong id="pop">0</strong></div>
+      </div>
+    </div>
+
+    <div class="card wide">
+      <div class="main-controls">
+        <button class="btn primary" id="playBtn">
+          <svg id="playIcon" viewBox="0 0 24 24" fill="currentColor"><path d="M7 4.5v15l13-7.5z"/></svg>
+          <span class="lbl" id="playLbl">Старт</span>
+        </button>
+        <button class="btn" id="stepBtn" data-i18n-title="step">
+          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M5 4.5v15l10-7.5zM17 4.5h2.5v15H17z"/></svg>
+          <span class="lbl" data-i18n="step">Крок</span>
+        </button>
+        <button class="btn" id="randomBtn" data-i18n-title="random">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="4"/><circle cx="8" cy="8" r="1.3" fill="currentColor"/><circle cx="16" cy="16" r="1.3" fill="currentColor"/><circle cx="12" cy="12" r="1.3" fill="currentColor"/><circle cx="16" cy="8" r="1.3" fill="currentColor"/><circle cx="8" cy="16" r="1.3" fill="currentColor"/></svg>
+          <span class="lbl" data-i18n="random">Випадково</span>
+        </button>
+        <button class="btn" id="clearBtn" data-i18n-title="clear">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/></svg>
+          <span class="lbl" data-i18n="clear">Очистити</span>
+        </button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2 data-i18n="speed">Швидкість</h2>
+      <div class="speed-line">
+        <input type="range" id="speed" min="1" max="60" step="1" value="10" aria-label="speed">
+        <span class="speed-val" id="speedVal">10</span>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2 data-i18n="tool">Інструмент</h2>
+      <div class="segmented" id="tools">
+        <button data-tool="draw" aria-pressed="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 20l4-1 11-11-3-3L5 16z"/></svg>
+          <span data-i18n="draw">Малювати</span>
+        </button>
+        <button data-tool="erase" aria-pressed="false">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 3l5 5-11 11H5l-2-2z"/><path d="M9 20h12"/></svg>
+          <span data-i18n="erase">Стирати</span>
+        </button>
+        <button data-tool="stamp" aria-pressed="false">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 3h6v6l3 4H6l3-4zM5 17h14v3H5z"/></svg>
+          <span data-i18n="stamp">Штамп</span>
+        </button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2 data-i18n="presets">Шаблони</h2>
+      <select id="pattern" aria-label="pattern"></select>
+      <div class="row">
+        <button class="btn" id="insertBtn">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="4" width="16" height="16" rx="3"/><path d="M12 8v8M8 12h8"/></svg>
+          <span class="lbl" data-i18n="insert">У центр</span>
+        </button>
+        <button class="btn" id="rotateBtn">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 11a8 8 0 1 0-2.3 5.7"/><path d="M20 4v7h-7"/></svg>
+          <span class="lbl" data-i18n="rotate">Повернути</span>
+        </button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2 data-i18n="settings">Налаштування</h2>
+      <select id="size" aria-label="grid size"></select>
+      <label class="toggle"><span data-i18n="wrap">Замкнуте поле (тор)</span><input type="checkbox" id="wrap"><span class="switch"></span></label>
+      <label class="toggle"><span data-i18n="showGrid">Показувати сітку</span><input type="checkbox" id="showGrid"><span class="switch"></span></label>
+      <label class="toggle"><span data-i18n="trails">Сліди клітин</span><input type="checkbox" id="trails"><span class="switch"></span></label>
+    </div>
+
+    <div class="card wide">
+      <p class="hint" data-i18n="rules"></p>
+      <p class="hint keys" data-i18n-html="keys"></p>
+    </div>
+  </aside>
+</main>
+
+<script>
+(() => {
+  "use strict";
+
+  /* ================== i18n ================== */
+  const I18N = {
+    uk: {
+      docTitle: "Гра «Життя» Конвея",
+      metaDesc: "Гра «Життя» Конвея — інтерактивний клітинний автомат: малюйте клітини, обирайте шаблони (планер, гармата Госпера, пульсар), керуйте швидкістю. Стан зберігається автоматично.",
+      title: "Гра «Життя»",
+      subtitle: "Клітинний автомат Конвея",
+      generation: "Покоління",
+      population: "Популяція",
+      play: "Старт",
+      pause: "Пауза",
+      step: "Крок",
+      random: "Випадково",
+      clear: "Очистити",
+      speed: "Швидкість",
+      gps: "пок/с",
+      tool: "Інструмент",
+      draw: "Малювати",
+      erase: "Стирати",
+      stamp: "Штамп",
+      presets: "Шаблони",
+      insert: "У центр",
+      rotate: "Повернути",
+      settings: "Налаштування",
+      wrap: "Замкнуте поле (тор)",
+      showGrid: "Показувати сітку",
+      trails: "Сліди клітин",
+      grid: "Поле",
+      sizes: { s: "Малий", m: "Середній", l: "Великий", xl: "Величезний", sq: "Квадратний" },
+      rules: "Правила: жива клітина з 2–3 живими сусідами виживає, інакше гине. Мертва клітина з рівно 3 сусідами оживає. Натисніть на живу клітину пензлем — і він стиратиме.",
+      keys: "<kbd>Пробіл</kbd> старт/пауза · <kbd>N</kbd> крок · <kbd>R</kbd> випадково · <kbd>C</kbd> очистити · <kbd>Q</kbd> повернути шаблон · <kbd>1</kbd><kbd>2</kbd><kbd>3</kbd> інструменти",
+      patterns: {
+        glider: "Планер",
+        lwss: "Легкий корабель (LWSS)",
+        gun: "Гармата Госпера",
+        pulsar: "Пульсар",
+        penta: "Пентадекатлон",
+        galaxy: "Галактика Кока",
+        blinker: "Мигалка",
+        toad: "Жаба",
+        beacon: "Маяк",
+        rpent: "R-пентаміно",
+        acorn: "Жолудь",
+        diehard: "Живучий (Diehard)",
+        infinite: "Нескінченне зростання"
+      }
+    },
+    en: {
+      docTitle: "Conway's Game of Life",
+      metaDesc: "Conway's Game of Life — an interactive cellular automaton: draw cells, pick presets (glider, Gosper glider gun, pulsar), control the speed. Progress is saved automatically.",
+      title: "Game of Life",
+      subtitle: "Conway's cellular automaton",
+      generation: "Generation",
+      population: "Population",
+      play: "Play",
+      pause: "Pause",
+      step: "Step",
+      random: "Random",
+      clear: "Clear",
+      speed: "Speed",
+      gps: "gen/s",
+      tool: "Tool",
+      draw: "Draw",
+      erase: "Erase",
+      stamp: "Stamp",
+      presets: "Presets",
+      insert: "To center",
+      rotate: "Rotate",
+      settings: "Settings",
+      wrap: "Wrap edges (torus)",
+      showGrid: "Show grid",
+      trails: "Cell trails",
+      grid: "Grid",
+      sizes: { s: "Small", m: "Medium", l: "Large", xl: "Huge", sq: "Square" },
+      rules: "Rules: a live cell with 2–3 live neighbours survives, otherwise it dies. A dead cell with exactly 3 neighbours becomes alive. Start drawing on a live cell to erase.",
+      keys: "<kbd>Space</kbd> play/pause · <kbd>N</kbd> step · <kbd>R</kbd> random · <kbd>C</kbd> clear · <kbd>Q</kbd> rotate pattern · <kbd>1</kbd><kbd>2</kbd><kbd>3</kbd> tools",
+      patterns: {
+        glider: "Glider",
+        lwss: "Lightweight spaceship",
+        gun: "Gosper glider gun",
+        pulsar: "Pulsar",
+        penta: "Pentadecathlon",
+        galaxy: "Kok's galaxy",
+        blinker: "Blinker",
+        toad: "Toad",
+        beacon: "Beacon",
+        rpent: "R-pentomino",
+        acorn: "Acorn",
+        diehard: "Diehard",
+        infinite: "Infinite growth"
+      }
+    }
+  };
+
+  /* ================== Patterns ================== */
+  const PATTERNS = {
+    glider: [".O.", "..O", "OOO"],
+    lwss: [".O..O", "O....", "O...O", "OOOO."],
+    gun: [
+      "........................O...........",
+      "......................O.O...........",
+      "............OO......OO............OO",
+      "...........O...O....OO............OO",
+      "OO........O.....O...OO..............",
+      "OO........O...O.OO....O.O...........",
+      "..........O.....O.......O...........",
+      "...........O...O....................",
+      "............OO......................"
+    ],
+    pulsar: [
+      "..OOO...OOO..",
+      ".............",
+      "O....O.O....O",
+      "O....O.O....O",
+      "O....O.O....O",
+      "..OOO...OOO..",
+      ".............",
+      "..OOO...OOO..",
+      "O....O.O....O",
+      "O....O.O....O",
+      "O....O.O....O",
+      ".............",
+      "..OOO...OOO.."
+    ],
+    penta: ["..O....O..", "OO.OOOO.OO", "..O....O.."],
+    galaxy: [
+      "OOOOOO.OO", "OOOOOO.OO", ".......OO",
+      "OO.....OO", "OO.....OO", "OO.....OO",
+      "OO.......", "OO.OOOOOO", "OO.OOOOOO"
+    ],
+    blinker: ["OOO"],
+    toad: [".OOO", "OOO."],
+    beacon: ["OO..", "OO..", "..OO", "..OO"],
+    rpent: [".OO", "OO.", ".O."],
+    acorn: [".O.....", "...O...", "OO..OOO"],
+    diehard: ["......O.", "OO......", ".O...OOO"],
+    infinite: ["OOOOOOOO.OOOOO...OOO......OOOOOOO.OOOOO"]
+  };
+
+  const SIZES = [
+    { id: "s",  w: 40,  h: 30 },
+    { id: "m",  w: 64,  h: 48 },
+    { id: "l",  w: 96,  h: 72 },
+    { id: "xl", w: 144, h: 108 },
+    { id: "sq", w: 64,  h: 64 }
+  ];
+
+  /* ================== State ================== */
+  const STORAGE_KEY = "conway-life-state-v1";
+  const state = {
+    lang: "uk",
+    speed: 10,
+    sizeId: "m",
+    cols: 64,
+    rows: 48,
+    wrap: true,
+    showGrid: true,
+    trails: true,
+    tool: "draw",
+    pattern: "glider",
+    rot: 0,
+    generation: 0,
+    running: false,
+    panelScroll: 0
+  };
+
+  let cells, next, age, trail;
+  let running = false;
+  let dirty = true;
+  let population = 0;
+  let restoring = true; // suppress saves while initialising
+
+  function allocate(c, r) {
+    cells = new Uint8Array(c * r);
+    next = new Uint8Array(c * r);
+    age = new Uint16Array(c * r);
+    trail = new Uint8Array(c * r);
+  }
+
+  /* ================== DOM ================== */
+  const $ = (id) => document.getElementById(id);
+  const canvas = $("canvas");
+  const ctx = canvas.getContext("2d", { alpha: false });
+  const stage = $("stage");
+  const panel = $("panel");
+  const playBtn = $("playBtn"), playLbl = $("playLbl"), playIcon = $("playIcon");
+  const speedEl = $("speed"), speedVal = $("speedVal");
+  const patternEl = $("pattern"), sizeEl = $("size");
+  const wrapEl = $("wrap"), gridEl = $("showGrid"), trailsEl = $("trails");
+  const genEl = $("gen"), popEl = $("pop");
+  const metaDescEl = document.querySelector('meta[name="description"]');
+
+  const t = (k) => I18N[state.lang][k] ?? k;
+
+  /* ================== Persistence ================== */
+  function bytesToB64(bytes) {
+    let s = "";
+    const CH = 0x8000;
+    for (let i = 0; i < bytes.length; i += CH) {
+      s += String.fromCharCode.apply(null, bytes.subarray(i, i + CH));
+    }
+    return btoa(s);
+  }
+  function b64ToBytes(str) {
+    const s = atob(str);
+    const out = new Uint8Array(s.length);
+    for (let i = 0; i < s.length; i++) out[i] = s.charCodeAt(i);
+    return out;
+  }
+  function encodeCells() {
+    const bytes = new Uint8Array(Math.ceil(cells.length / 8));
+    for (let i = 0; i < cells.length; i++) if (cells[i]) bytes[i >> 3] |= 1 << (i & 7);
+    return bytesToB64(bytes);
+  }
+  function decodeCells(str, n) {
+    const b = b64ToBytes(str);
+    const out = new Uint8Array(n);
+    for (let i = 0; i < n; i++) if (b[i >> 3] & (1 << (i & 7))) out[i] = 1;
+    return out;
+  }
+  function encodeAges() {
+    const b = new Uint8Array(age.length);
+    for (let i = 0; i < age.length; i++) b[i] = cells[i] ? Math.min(age[i], 255) : 0;
+    return bytesToB64(b);
+  }
+
+  let saveTimer = null;
+  function saveSoon() {
+    if (restoring) return;
+    clearTimeout(saveTimer);
+    saveTimer = setTimeout(saveNow, 300);
+  }
+  function saveNow() {
+    if (restoring) return;
+    clearTimeout(saveTimer);
+    try {
+      state.running = running;
+      state.panelScroll = panel.scrollTop;
+      const data = {
+        ...state,
+        cells: encodeCells(),
+        ages: encodeAges(),
+        trail: state.trails ? bytesToB64(trail) : null
+      };
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+    } catch (e) { /* storage full or unavailable */ }
+  }
+
+  function load() {
+    let d;
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (!raw) return false;
+      d = JSON.parse(raw);
+    } catch (e) { return false; }
+    if (!d || typeof d !== "object") return false;
+
+    for (const k of Object.keys(state)) if (k in d && typeof d[k] === typeof state[k]) state[k] = d[k];
+    if (!I18N[state.lang]) state.lang = "uk";
+    if (!PATTERNS[state.pattern]) state.pattern = "glider";
+    if (!SIZES.find(s => s.id === state.sizeId)) state.sizeId = "m";
+    if (!["draw", "erase", "stamp"].includes(state.tool)) state.tool = "draw";
+    state.speed = Math.max(1, Math.min(60, state.speed | 0));
+    state.rot &= 3;
+    state.generation = Math.max(0, state.generation | 0);
+    state.cols = Math.max(5, Math.min(400, state.cols | 0));
+    state.rows = Math.max(5, Math.min(400, state.rows | 0));
+    const n = state.cols * state.rows;
+    allocate(state.cols, state.rows);
+
+    try {
+      if (d.cells) cells.set(decodeCells(d.cells, n));
+      if (d.ages) {
+        const a = b64ToBytes(d.ages);
+        if (a.length === n) for (let i = 0; i < n; i++) age[i] = cells[i] ? a[i] : 0;
+      } else {
+        for (let i = 0; i < n; i++) if (cells[i]) age[i] = 10;
+      }
+      if (d.trail) {
+        const tr = b64ToBytes(d.trail);
+        if (tr.length === n) trail.set(tr);
+      }
+    } catch (e) {
+      allocate(state.cols, state.rows);
+    }
+    return true;
+  }
+
+  /* ================== Pattern utils ================== */
+  function getPattern(name = state.pattern, rot = state.rot) {
+    const rowsStr = PATTERNS[name];
+    let h = rowsStr.length, w = Math.max(...rowsStr.map(r => r.length));
+    let pts = [];
+    rowsStr.forEach((row, y) => { for (let x = 0; x < row.length; x++) if (row[x] === "O") pts.push([x, y]); });
+    for (let r = 0; r < (rot & 3); r++) {
+      pts = pts.map(([x, y]) => [h - 1 - y, x]);
+      [w, h] = [h, w];
+    }
+    return { pts, w, h };
+  }
+
+  function placePattern(cx, cy, name = state.pattern) {
+    const { pts, w, h } = getPattern(name);
+    const ox = cx - Math.floor(w / 2), oy = cy - Math.floor(h / 2);
+    const { cols, rows, wrap } = state;
+    for (const [px, py] of pts) {
+      let x = ox + px, y = oy + py;
+      if (wrap) { x = (x % cols + cols) % cols; y = (y % rows + rows) % rows; }
+      else if (x < 0 || y < 0 || x >= cols || y >= rows) continue;
+      const i = y * cols + x;
+      if (!cells[i]) { cells[i] = 1; age[i] = 0; }
+    }
+    recount(); dirty = true; saveSoon();
+  }
+
+  /* ================== Simulation ================== */
+  function recount() {
+    let p = 0;
+    for (let i = 0; i < cells.length; i++) p += cells[i];
+    population = p;
+    updateStats();
+  }
+
+  function step() {
+    const { cols, rows, wrap } = state;
+    let pop = 0;
+    for (let y = 0; y < rows; y++) {
+      const ym = y === 0 ? (wrap ? rows - 1 : -1) : y - 1;
+      const yp = y === rows - 1 ? (wrap ? 0 : -1) : y + 1;
+      for (let x = 0; x < cols; x++) {
+        const xm = x === 0 ? (wrap ? cols - 1 : -1) : x - 1;
+        const xp = x === cols - 1 ? (wrap ? 0 : -1) : x + 1;
+        let n = 0;
+        if (ym >= 0) {
+          const r = ym * cols;
+          if (xm >= 0) n += cells[r + xm];
+          n += cells[r + x];
+          if (xp >= 0) n += cells[r + xp];
+        }
+        const r0 = y * cols;
+        if (xm >= 0) n += cells[r0 + xm];
+        if (xp >= 0) n += cells[r0 + xp];
+        if (yp >= 0) {
+          const r = yp * cols;
+          if (xm >= 0) n += cells[r + xm];
+          n += cells[r + x];
+          if (xp >= 0) n += cells[r + xp];
+        }
+        const i = r0 + x;
+        const alive = cells[i];
+        const nv = (n === 3 || (alive && n === 2)) ? 1 : 0;
+        next[i] = nv;
+        if (nv) {
+          age[i] = alive ? Math.min(age[i] + 1, 65535) : 0;
+          pop++;
+        } else {
+          if (alive) trail[i] = 255;
+          else if (trail[i]) trail[i] = trail[i] > 34 ? trail[i] - 34 : 0;
+          age[i] = 0;
+        }
+      }
+    }
+    [cells, next] = [next, cells];
+    population = pop;
+    state.generation++;
+    dirty = true;
+    updateStats();
+    if (pop === 0 && running) setRunning(false);
+  }
+
+  function clearAll() {
+    cells.fill(0); age.fill(0); trail.fill(0);
+    state.generation = 0;
+    recount(); dirty = true; saveSoon();
+  }
+  function randomize() {
+    cells.fill(0); age.fill(0); trail.fill(0);
+    for (let i = 0; i < cells.length; i++) if (Math.random() < 0.28) cells[i] = 1;
+    state.generation = 0;
+    recount(); dirty = true; saveSoon();
+  }
+
+  function resizeGrid(nc, nr) {
+    const oc = state.cols, or = state.rows;
+    const oCells = cells, oAge = age, oTrail = trail;
+    allocate(nc, nr);
+    const dx = Math.floor((nc - oc) / 2), dy = Math.floor((nr - or) / 2);
+    for (let y = 0; y < or; y++) for (let x = 0; x < oc; x++) {
+      const X = x + dx, Y = y + dy;
+      if (X < 0 || Y < 0 || X >= nc || Y >= nr) continue;
+      const i = y * oc + x, j = Y * nc + X;
+      cells[j] = oCells[i]; age[j] = oAge[i]; trail[j] = oTrail[i];
+    }
+    state.cols = nc; state.rows = nr;
+    recount(); dirty = true;
+  }
+
+  // Life rules are symmetric — transposing the field keeps the simulation valid.
+  function transpose() {
+    const oc = state.cols, or = state.rows;
+    const oCells = cells, oAge = age, oTrail = trail;
+    allocate(or, oc);
+    for (let y = 0; y < or; y++) for (let x = 0; x < oc; x++) {
+      const i = y * oc + x, j = x * or + y;
+      cells[j] = oCells[i]; age[j] = oAge[i]; trail[j] = oTrail[i];
+    }
+    state.cols = or; state.rows = oc;
+    dirty = true;
+    saveSoon();
+  }
+
+  /* ================== Rendering ================== */
+  let px = 8; // device pixels per cell
+  const PALETTE = [];
+  for (let i = 0; i < 64; i++) {
+    const k = i / 63;
+    const hue = 168 + k * 120;       // cyan -> violet -> magenta
+    const light = 62 - k * 8;
+    PALETTE.push(`hsl(${hue.toFixed(0)},95%,${light.toFixed(0)}%)`);
+  }
+
+  function fit() {
+    const pad = 16;
+    const w = Math.max(50, stage.clientWidth - pad);
+    const h = Math.max(50, stage.clientHeight - pad);
+    const portrait = h > w * 1.05;
+    if ((portrait && state.cols > state.rows) || (!portrait && state.rows > state.cols && w > h * 1.05)) {
+      transpose();
+    }
+    const dpr = window.devicePixelRatio || 1;
+    const cs = Math.min(w / state.cols, h / state.rows);
+    px = Math.max(1, Math.floor(cs * dpr));
+    canvas.width = state.cols * px;
+    canvas.height = state.rows * px;
+    canvas.style.width = (canvas.width / dpr) + "px";
+    canvas.style.height = (canvas.height / dpr) + "px";
+    updateBadges();
+    dirty = true;
+  }
+
+  function render() {
+    const { cols, rows } = state;
+    const W = canvas.width, H = canvas.height;
+    ctx.globalAlpha = 1;
+    ctx.fillStyle = "#0a0e1c";
+    ctx.fillRect(0, 0, W, H);
+
+    // grid
+    if (state.showGrid && px >= 5) {
+      ctx.fillStyle = "rgba(140,160,255,0.07)";
+      for (let x = 1; x < cols; x++) ctx.fillRect(x * px, 0, 1, H);
+      for (let y = 1; y < rows; y++) ctx.fillRect(0, y * px, W, 1);
+      if (cols > 20 && rows > 20) {
+        ctx.fillStyle = "rgba(140,160,255,0.12)";
+        for (let x = 10; x < cols; x += 10) ctx.fillRect(x * px, 0, 1, H);
+        for (let y = 10; y < rows; y += 10) ctx.fillRect(0, y * px, W, 1);
+      }
+    }
+
+    const g = px >= 8 ? Math.max(1, Math.round(px * 0.1)) : 0;
+    const sz = px - g * 2;
+
+    // trails
+    if (state.trails) {
+      ctx.fillStyle = "#7a4dff";
+      for (let i = 0; i < trail.length; i++) {
+        const tv = trail[i];
+        if (!tv || cells[i]) continue;
+        ctx.globalAlpha = (tv / 255) * 0.32;
+        const x = i % cols, y = (i / cols) | 0;
+        ctx.fillRect(x * px + g, y * px + g, sz, sz);
+      }
+    }
+
+    // newborn glow
+    if (px >= 4) {
+      ctx.globalAlpha = 0.22;
+      ctx.fillStyle = "#3ee6d0";
+      const e = Math.max(1, Math.round(px * 0.25));
+      for (let i = 0; i < cells.length; i++) {
+        if (!cells[i] || age[i] > 1) continue;
+        const x = i % cols, y = (i / cols) | 0;
+        ctx.fillRect(x * px - e, y * px - e, px + e * 2, px + e * 2);
+      }
+    }
+
+    // live cells
+    ctx.globalAlpha = 1;
+    let lastColor = -1;
+    for (let i = 0; i < cells.length; i++) {
+      if (!cells[i]) continue;
+      const a = age[i];
+      const ci = a >= 63 ? 63 : a;
+      if (ci !== lastColor) { ctx.fillStyle = PALETTE[ci]; lastColor = ci; }
+      const x = i % cols, y = (i / cols) | 0;
+      ctx.fillRect(x * px + g, y * px + g, sz, sz);
+    }
+
+    // highlight newborn core
+    if (px >= 6) {
+      ctx.fillStyle = "rgba(255,255,255,0.55)";
+      const s2 = Math.max(1, Math.round(sz * 0.35));
+      const o = g + Math.round((sz - s2) / 2);
+      for (let i = 0; i < cells.length; i++) {
+        if (!cells[i] || age[i] !== 0) continue;
+        const x = i % cols, y = (i / cols) | 0;
+        ctx.fillRect(x * px + o, y * px + o, s2, s2);
+      }
+    }
+
+    // stamp ghost / hover
+    if (hover) {
+      if (state.tool === "stamp") {
+        const { pts, w, h } = getPattern();
+        const ox = hover.x - Math.floor(w / 2), oy = hover.y - Math.floor(h / 2);
+        ctx.fillStyle = "rgba(255,255,255,0.4)";
+        for (const [qx, qy] of pts) {
+          let x = ox + qx, y = oy + qy;
+          if (state.wrap) { x = (x % cols + cols) % cols; y = (y % rows + rows) % rows; }
+          else if (x < 0 || y < 0 || x >= cols || y >= rows) continue;
+          ctx.fillRect(x * px + g, y * px + g, sz, sz);
+        }
+        ctx.strokeStyle = "rgba(164,107,255,0.8)";
+        ctx.lineWidth = Math.max(1, px * 0.12);
+        ctx.strokeRect(ox * px, oy * px, w * px, h * px);
+      } else if (!pointerDown) {
+        ctx.strokeStyle = state.tool === "erase" ? "rgba(255,93,122,0.9)" : "rgba(62,230,208,0.9)";
+        ctx.lineWidth = Math.max(1, px * 0.12);
+        ctx.strokeRect(hover.x * px + 0.5, hover.y * px + 0.5, px - 1, px - 1);
+      }
+    }
+    dirty = false;
+  }
+
+  /* ================== Input ================== */
+  let hover = null;
+  let pointerDown = false;
+  let activePointer = null;
+  let paintValue = 1;
+  let lastCell = null;
+
+  function cellFromEvent(e) {
+    const r = canvas.getBoundingClientRect();
+    const x = Math.floor((e.clientX - r.left) / r.width * state.cols);
+    const y = Math.floor((e.clientY - r.top) / r.height * state.rows);
+    return { x: Math.max(0, Math.min(state.cols - 1, x)), y: Math.max(0, Math.min(state.rows - 1, y)) };
+  }
+  function setCell(x, y, v) {
+    const i = y * state.cols + x;
+    if (cells[i] === v) return;
+    cells[i] = v;
+    age[i] = 0;
+    if (!v) trail[i] = 160;
+    population += v ? 1 : -1;
+  }
+  function line(a, b, v) {
+    let x0 = a.x, y0 = a.y; const x1 = b.x, y1 = b.y;
+    const dx = Math.abs(x1 - x0), dy = -Math.abs(y1 - y0);
+    const sx = x0 < x1 ? 1 : -1, sy = y0 < y1 ? 1 : -1;
+    let err = dx + dy;
+    while (true) {
+      setCell(x0, y0, v);
+      if (x0 === x1 && y0 === y1) break;
+      const e2 = 2 * err;
+      if (e2 >= dy) { err += dy; x0 += sx; }
+      if (e2 <= dx) { err += dx; y0 += sy; }
+    }
+  }
+
+  canvas.addEventListener("pointerdown", (e) => {
+    if (activePointer !== null) return;
+    e.preventDefault();
+    const c = cellFromEvent(e);
+    hover = c;
+    if (state.tool === "stamp") {
+      placePattern(c.x, c.y);
+      return;
+    }
+    activePointer = e.pointerId;
+    canvas.setPointerCapture(e.pointerId);
+    pointerDown = true;
+    const alive = cells[c.y * state.cols + c.x];
+    paintValue = state.tool === "erase" ? 0 : (alive ? 0 : 1);
+    setCell(c.x, c.y, paintValue);
+    lastCell = c;
+    updateStats(); dirty = true;
+  });
+  canvas.addEventListener("pointermove", (e) => {
+    const c = cellFromEvent(e);
+    if (!hover || hover.x !== c.x || hover.y !== c.y) { hover = c; dirty = true; }
+    if (pointerDown && e.pointerId === activePointer) {
+      if (c.x !== lastCell.x || c.y !== lastCell.y) {
+        line(lastCell, c, paintValue);
+        lastCell = c;
+        updateStats(); dirty = true;
+      }
+    }
+  });
+  const endPointer = (e) => {
+    if (e.pointerId !== activePointer) return;
+    pointerDown = false; activePointer = null; lastCell = null;
+    if (e.pointerType !== "mouse") hover = null;
+    dirty = true;
+    saveSoon();
+  };
+  canvas.addEventListener("pointerup", endPointer);
+  canvas.addEventListener("pointercancel", endPointer);
+  canvas.addEventListener("pointerleave", () => {
+    if (!pointerDown) { hover = null; dirty = true; }
+  });
+
+  /* ================== UI ================== */
+  function setRunning(v) {
+    running = v;
+    state.running = v;
+    playBtn.classList.toggle("running", v);
+    playLbl.textContent = v ? t("pause") : t("play");
+    playBtn.title = v ? t("pause") : t("play");
+    playIcon.innerHTML = v
+      ? '<path d="M6 4.5h4.5v15H6zM13.5 4.5H18v15h-4.5z"/>'
+      : '<path d="M7 4.5v15l13-7.5z"/>';
+    saveSoon();
+  }
+
+  function updateStats() {
+    const loc = state.lang === "uk" ? "uk-UA" : "en-US";
+    genEl.textContent = state.generation.toLocaleString(loc);
+    popEl.textContent = population.toLocaleString(loc);
+  }
+  function updateSpeed() {
+    speedEl.value = state.speed;
+    speedVal.textContent = `${state.speed} ${t("gps")}`;
+    const p = ((state.speed - 1) / 59) * 100;
+    speedEl.style.setProperty("--p", p + "%");
+  }
+  function updateBadges() {
+    $("sizeBadge").innerHTML = `${t("grid")}: <b>${state.cols}×${state.rows}</b>`;
+    const tl = { draw: t("draw"), erase: t("erase"), stamp: `${t("stamp")}: ${I18N[state.lang].patterns[state.pattern]}` };
+    $("toolBadge").innerHTML = `<b>${tl[state.tool]}</b>`;
+  }
+  function setTool(tool) {
+    state.tool = tool;
+    document.querySelectorAll("#tools button").forEach(b => b.setAttribute("aria-pressed", b.dataset.tool === tool));
+    canvas.style.cursor = tool === "stamp" ? "copy" : "crosshair";
+    updateBadges(); dirty = true; saveSoon();
+  }
+
+  function buildSelects() {
+    const L = I18N[state.lang];
+    patternEl.innerHTML = Object.keys(PATTERNS)
+      .map(k => `<option value="${k}">${L.patterns[k]}</option>`).join("");
+    patternEl.value = state.pattern;
+    sizeEl.innerHTML = SIZES
+      .map(s => `<option value="${s.id}">${L.sizes[s.id]} — ${s.w}×${s.h}</option>`).join("");
+    sizeEl.value = state.sizeId;
+  }
+
+  function applyLang() {
+    const L = I18N[state.lang];
+    document.documentElement.lang = state.lang;
+    document.title = L.docTitle;
+    if (metaDescEl) metaDescEl.setAttribute("content", L.metaDesc);
+    document.querySelectorAll("[data-i18n]").forEach(el => {
+      const v = L[el.dataset.i18n];
+      if (typeof v === "string") el.textContent = v;
+    });
+    document.querySelectorAll("[data-i18n-html]").forEach(el => { el.innerHTML = L[el.dataset.i18nHtml]; });
+    document.querySelectorAll("[data-i18n-title]").forEach(el => {
+      el.title = L[el.dataset.i18nTitle]; el.setAttribute("aria-label", L[el.dataset.i18nTitle]);
+    });
+    document.querySelectorAll(".lang button").forEach(b => b.setAttribute("aria-pressed", b.dataset.lang === state.lang));
+    $("rotateBtn").title = L.rotate;
+    $("insertBtn").title = L.insert;
+    buildSelects();
+    setRunning(running);
+    updateSpeed(); updateStats(); updateBadges();
+  }
+
+  // Events
+  playBtn.addEventListener("click", () => setRunning(!running));
+  $("stepBtn").addEventListener("click", () => { setRunning(false); step(); saveSoon(); });
+  $("clearBtn").addEventListener("click", () => { setRunning(false); clearAll(); });
+  $("randomBtn").addEventListener("click", randomize);
+  $("insertBtn").addEventListener("click", () => {
+    clearAll();
+    placePattern(Math.floor(state.cols / 2), Math.floor(state.rows / 2));
+  });
+  $("rotateBtn").addEventListener("click", () => { state.rot = (state.rot + 1) & 3; dirty = true; saveSoon(); });
+
+  speedEl.addEventListener("input", () => { state.speed = +speedEl.value; updateSpeed(); saveSoon(); });
+  patternEl.addEventListener("change", () => {
+    state.pattern = patternEl.value; state.rot = 0;
+    if (state.tool !== "stamp") setTool("stamp"); else updateBadges();
+    dirty = true; saveSoon();
+  });
+  sizeEl.addEventListener("change", () => {
+    const s = SIZES.find(z => z.id === sizeEl.value);
+    state.sizeId = s.id;
+    const portrait = stage.clientHeight > stage.clientWidth * 1.05;
+    const big = Math.max(s.w, s.h), small = Math.min(s.w, s.h);
+    resizeGrid(portrait ? small : big, portrait ? big : small);
+    fit(); saveSoon();
+  });
+  wrapEl.addEventListener("change", () => { state.wrap = wrapEl.checked; saveSoon(); });
+  gridEl.addEventListener("change", () => { state.showGrid = gridEl.checked; dirty = true; saveSoon(); });
+  trailsEl.addEventListener("change", () => { state.trails = trailsEl.checked; if (!state.trails) trail.fill(0); dirty = true; saveSoon(); });
+  document.querySelectorAll("#tools button").forEach(b => b.addEventListener("click", () => setTool(b.dataset.tool)));
+  document.querySelectorAll(".lang button").forEach(b => b.addEventListener("click", () => {
+    state.lang = b.dataset.lang; applyLang(); saveSoon();
+  }));
+  panel.addEventListener("scroll", () => { state.panelScroll = panel.scrollTop; saveSoon(); }, { passive: true });
+
+  document.addEventListener("keydown", (e) => {
+    if (e.target.tagName === "SELECT" || e.target.tagName === "INPUT" || e.ctrlKey || e.metaKey || e.altKey) return;
+    if (e.code === "Space") { e.preventDefault(); setRunning(!running); }
+    else if (e.code === "KeyN" || e.key === "ArrowRight") { setRunning(false); step(); saveSoon(); }
+    else if (e.code === "KeyC") { setRunning(false); clearAll(); }
+    else if (e.code === "KeyR") randomize();
+    else if (e.code === "KeyQ") { state.rot = (state.rot + 1) & 3; dirty = true; saveSoon(); }
+    else if (e.key === "1") setTool("draw");
+    else if (e.key === "2") setTool("erase");
+    else if (e.key === "3") setTool("stamp");
+  });
+
+  new ResizeObserver(() => fit()).observe(stage);
+  window.addEventListener("orientationchange", () => setTimeout(fit, 200));
+  window.addEventListener("beforeunload", saveNow);
+  window.addEventListener("pagehide", saveNow);
+  document.addEventListener("visibilitychange", () => { if (document.hidden) saveNow(); });
+
+  /* ================== Loop ================== */
+  let lastT = performance.now(), acc = 0, lastSave = 0;
+  function frame(now) {
+    const dt = Math.min(250, now - lastT);
+    lastT = now;
+    if (running) {
+      acc += dt;
+      const interval = 1000 / state.speed;
+      let n = 0;
+      while (acc >= interval && n < 5 && running) { step(); acc -= interval; n++; }
+      if (n >= 5) acc = 0;
+      if (now - lastSave > 2000) { saveNow(); lastSave = now; }
+    } else acc = 0;
+    if (dirty) render();
+    requestAnimationFrame(frame);
+  }
+
+  /* ================== Init ================== */
+  const loaded = load();
+  if (!loaded) {
+    const s = SIZES.find(z => z.id === state.sizeId);
+    state.cols = s.w; state.rows = s.h;
+    allocate(state.cols, state.rows);
+    placePattern(Math.floor(state.cols / 2), Math.floor(state.rows / 2), "gun");
+  }
+  wrapEl.checked = state.wrap;
+  gridEl.checked = state.showGrid;
+  trailsEl.checked = state.trails;
+  running = !!state.running;
+  applyLang();
+  setTool(state.tool);
+  recount();
+  fit();
+  if (population === 0 && running) running = false;
+  setRunning(running);
+
+  // restore panel scroll after layout is ready
+  const savedScroll = state.panelScroll || 0;
+  requestAnimationFrame(() => {
+    panel.scrollTop = savedScroll;
+    restoring = false;
+    saveNow();
+    lastT = performance.now();
+    requestAnimationFrame(frame);
+  });
+})();
+</script>
+</body>
+</html>
