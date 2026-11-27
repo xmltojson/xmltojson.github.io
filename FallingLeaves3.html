@@ -1,0 +1,1682 @@
+<!DOCTYPE html>
+<!-- MIT License
+Copyright (c) 2025-2027 Yuliya Kolesnikova <0009-0000-6151-7415@orcid.org>
+-->
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="An atmospheric autumn woodland with realistic falling leaves, golden sunlight, and an interactive breeze.">
+    <meta name="theme-color" content="#302d22">
+    <link rel="icon" type="image/x-icon" href="favicon.ico"/>
+    <title>Falling Leaves — An Autumn Moment</title>
+    <style>
+        :root {
+            color-scheme: dark;
+            --text: #fbf2df;
+            --muted: #c5bba6;
+            --accent: #e5b76d;
+            --border: rgba(255, 235, 193, .16);
+            --panel: rgba(32, 34, 27, .82);
+        }
+
+        * { box-sizing: border-box; }
+
+        body {
+            margin: 0;
+            width: 100%;
+            height: 100vh;
+            height: 100dvh;
+            overflow: hidden;
+            background: #494d3a;
+            color: var(--text);
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        }
+
+        button, input { font: inherit; }
+        button { -webkit-tap-highlight-color: transparent; }
+
+        button:focus-visible, input:focus-visible {
+            outline: 2px solid #ffdb9b;
+            outline-offset: 5px;
+        }
+
+        #scene {
+            position: fixed;
+            inset: 0;
+            overflow: hidden;
+            cursor: crosshair;
+            touch-action: manipulation;
+            background: linear-gradient(#a5b6b0, #e2c799 50%, #55503a);
+        }
+
+        canvas {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+        }
+
+        #scene::after {
+            content: "";
+            position: absolute;
+            inset: 0;
+            pointer-events: none;
+            background: radial-gradient(ellipse at 57% 42%, transparent 30%, rgba(24, 27, 19, .27) 100%);
+        }
+
+        .controls {
+            position: fixed;
+            top: max(24px, env(safe-area-inset-top));
+            left: max(24px, env(safe-area-inset-left));
+            width: 292px;
+            max-height: calc(100dvh - 110px);
+            overflow-y: auto;
+            scrollbar-width: thin;
+            scrollbar-color: #8c8267 transparent;
+            z-index: 10;
+            background: var(--panel);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            box-shadow: 0 18px 70px rgba(13, 19, 13, .24), inset 0 1px rgba(255,255,255,.04);
+            backdrop-filter: blur(22px);
+            -webkit-backdrop-filter: blur(22px);
+        }
+
+        .panel-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 20px;
+        }
+
+        .mark {
+            width: 39px;
+            height: 39px;
+            display: grid;
+            place-items: center;
+            border: 1px solid rgba(229,183,109,.28);
+            border-radius: 12px;
+            color: var(--accent);
+            background: rgba(229,183,109,.07);
+            flex: none;
+        }
+
+        .mark svg { width: 25px; height: 25px; }
+
+        h1 {
+            margin: 0;
+            font-family: Georgia, "Times New Roman", serif;
+            font-weight: 400;
+            font-size: 23px;
+            letter-spacing: -.5px;
+        }
+
+        .eyebrow {
+            margin: 5px 0 0;
+            font-size: 9px;
+            text-transform: uppercase;
+            letter-spacing: 2.2px;
+            color: var(--muted);
+        }
+
+        .icon-button {
+            display: grid;
+            place-items: center;
+            width: 32px;
+            height: 32px;
+            margin-left: auto;
+            flex: none;
+            border-radius: 50%;
+            border: 1px solid var(--border);
+            color: var(--text);
+            background: rgba(255,255,255,.035);
+            cursor: pointer;
+        }
+
+        .icon-button svg {
+            width: 15px;
+            height: 15px;
+            transition: transform .2s;
+        }
+
+        .collapsed .icon-button svg { transform: rotate(180deg); }
+        [hidden] { display: none !important; }
+
+        .control-content { padding: 0 22px 22px; }
+
+        .intro {
+            margin: 0 0 21px;
+            padding-top: 15px;
+            border-top: 1px solid var(--border);
+            font-size: 12px;
+            line-height: 1.65;
+            color: var(--muted);
+        }
+
+        .control-group { margin-bottom: 17px; }
+
+        .range-label {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 9px;
+            font-size: 12px;
+            color: #e7dfcc;
+        }
+
+        output {
+            color: var(--accent);
+            font-size: 11px;
+            font-variant-numeric: tabular-nums;
+        }
+
+        input[type="range"] {
+            display: block;
+            width: 100%;
+            height: 5px;
+            margin: 12px 0;
+            appearance: none;
+            -webkit-appearance: none;
+            border-radius: 10px;
+            background: linear-gradient(to right, #cfaa70 var(--fill, 30%), rgba(255,255,255,.13) var(--fill, 30%));
+            cursor: pointer;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            appearance: none;
+            -webkit-appearance: none;
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            background: #f6d49a;
+            border: 2px solid #5d5139;
+            box-shadow: 0 0 0 3px rgba(230,190,126,.09);
+        }
+
+        input[type="range"]::-moz-range-thumb {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: #f6d49a;
+            border: 2px solid #5d5139;
+        }
+
+        .switches {
+            padding: 15px 0 12px;
+            margin-top: 21px;
+            border-top: 1px solid var(--border);
+        }
+
+        .switch-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            position: relative;
+            padding: 7px 0;
+            font-size: 12px;
+            color: #e7dfcc;
+            cursor: pointer;
+        }
+
+        .switch-row input {
+            appearance: none;
+            -webkit-appearance: none;
+            width: 30px;
+            height: 18px;
+            margin: 0;
+            border: 1px solid rgba(255,255,255,.18);
+            border-radius: 20px;
+            background: rgba(255,255,255,.09);
+            cursor: pointer;
+            transition: background .2s;
+        }
+
+        .switch-row input::before {
+            content: "";
+            display: block;
+            width: 10px;
+            height: 10px;
+            margin: 3px;
+            border-radius: 50%;
+            background: #c4bdab;
+            transition: transform .2s;
+        }
+
+        .switch-row input:checked { background: #947346; }
+
+        .switch-row input:checked::before {
+            transform: translateX(12px);
+            background: #fff0cf;
+        }
+
+        .actions {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+        }
+
+        .button {
+            min-height: 39px;
+            padding: 9px 12px;
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            color: var(--text);
+            background: rgba(255,255,255,.045);
+            cursor: pointer;
+            font-size: 12px;
+            transition: background .2s, border-color .2s;
+        }
+
+        .button:hover, .icon-button:hover {
+            background: rgba(255,255,255,.12);
+        }
+
+        .button.primary {
+            grid-column: 1 / -1;
+            background: #d5b17a;
+            border-color: #d5b17a;
+            color: #302a1e;
+            font-weight: 600;
+        }
+
+        .button.primary:hover { background: #ebc58d; }
+
+        .panel-note {
+            margin: 14px 0 0;
+            text-align: center;
+            font-size: 10px;
+            color: var(--muted);
+        }
+
+        .caption {
+            position: fixed;
+            left: max(28px, env(safe-area-inset-left));
+            bottom: max(25px, env(safe-area-inset-bottom));
+            z-index: 5;
+            pointer-events: none;
+            text-shadow: 0 2px 15px #24271e;
+        }
+
+        .caption strong {
+            display: block;
+            font-family: Georgia, "Times New Roman", serif;
+            font-size: clamp(20px, 2.4vw, 32px);
+            font-style: italic;
+            font-weight: 400;
+            color: #fff1d6;
+        }
+
+        .caption span {
+            display: block;
+            margin-top: 8px;
+            font-size: 10px;
+            letter-spacing: 2.7px;
+            text-transform: uppercase;
+            color: #e2d6bc;
+        }
+
+        .wind-indicator {
+            position: fixed;
+            right: max(25px, env(safe-area-inset-right));
+            bottom: max(25px, env(safe-area-inset-bottom));
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 17px;
+            z-index: 5;
+            border: 1px solid var(--border);
+            border-radius: 40px;
+            background: rgba(32,34,27,.65);
+            backdrop-filter: blur(16px);
+            color: #eedfc2;
+            pointer-events: none;
+        }
+
+        #windArrow {
+            font-size: 23px;
+            width: 26px;
+            text-align: center;
+        }
+
+        .wind-copy { font-size: 11px; }
+
+        .wind-copy small {
+            display: block;
+            margin-bottom: 3px;
+            font-size: 8px;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            color: var(--muted);
+        }
+
+        .sr-only {
+            position: absolute;
+            width: 1px;
+            height: 1px;
+            padding: 0;
+            margin: -1px;
+            overflow: hidden;
+            clip: rect(0,0,0,0);
+            white-space: nowrap;
+            border: 0;
+        }
+
+        noscript {
+            position: fixed;
+            left: 20px;
+            right: 20px;
+            bottom: 100px;
+            padding: 20px;
+            z-index: 20;
+            background: #302d22;
+        }
+
+        @media (max-width: 600px) {
+            .controls {
+                top: max(14px, env(safe-area-inset-top));
+                left: 14px;
+                width: min(292px, calc(100vw - 28px));
+                max-height: calc(100dvh - 105px);
+            }
+
+            .panel-header { padding: 15px 17px; }
+            .caption { left: 18px; bottom: 23px; }
+            .caption strong { font-size: 21px; }
+            .caption span { font-size: 8px; letter-spacing: 1.7px; }
+            .wind-indicator { right: 14px; bottom: 20px; padding: 10px 13px; }
+            .wind-copy { font-size: 10px; }
+        }
+
+        @media (max-height: 650px) {
+            .control-group { margin-bottom: 12px; }
+            .intro { margin-bottom: 15px; }
+            .controls { max-height: calc(100dvh - 95px); }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            *, *::before { transition: none !important; }
+        }
+    </style>
+</head>
+<body>
+    <main id="scene" aria-label="A sunlit autumn woodland with a winding path and falling leaves. Tap the woodland to scatter leaves.">
+        <canvas id="landscape" aria-hidden="true"></canvas>
+        <canvas id="leavesCanvas" aria-hidden="true"></canvas>
+    </main>
+
+    <!-- Collapsed in the HTML to prevent an expanded-panel flash on first load. -->
+    <aside class="controls collapsed" id="controls" aria-label="Scene settings">
+        <header class="panel-header">
+            <div class="mark" aria-hidden="true">
+                <svg viewBox="0 0 32 32" fill="none">
+                    <path d="M25 5C11 4 5 11 8 20c9 6 17-1 17-15Z" fill="currentColor" opacity=".22"/>
+                    <path d="M25 5C11 4 5 11 8 20c9 6 17-1 17-15ZM5 27 22 9M11 21l-1-8m5 4 7-1" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+            </div>
+            <div>
+                <h1>Falling leaves</h1>
+                <p class="eyebrow">A little autumn stillness</p>
+            </div>
+            <button class="icon-button" id="toggleControls" type="button"
+                    aria-label="Expand settings" aria-expanded="false" aria-controls="controlContent">
+                <svg viewBox="0 0 20 20" fill="none" aria-hidden="true">
+                    <path d="m5 12 5-5 5 5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                </svg>
+            </button>
+        </header>
+
+        <div class="control-content" id="controlContent" hidden>
+            <p class="intro">Golden light. A wandering breeze.<br>A quiet moment beneath the trees.</p>
+
+            <div class="control-group">
+                <label class="range-label" for="leafCount">
+                    Falling leaves
+                    <output id="leafCountValue" for="leafCount">70</output>
+                </label>
+                <input type="range" id="leafCount" min="10" max="200" step="1" value="70">
+            </div>
+
+            <div class="control-group">
+                <label class="range-label" for="windSpeed">
+                    Breeze
+                    <output id="windSpeedValue" for="windSpeed">2</output>
+                </label>
+                <input type="range" id="windSpeed" min="0" max="10" step=".5" value="2">
+            </div>
+
+            <div class="control-group">
+                <label class="range-label" for="fallSpeed">
+                    Fall speed
+                    <output id="fallSpeedValue" for="fallSpeed">1.5</output>
+                </label>
+                <input type="range" id="fallSpeed" min=".5" max="5" step=".5" value="1.5">
+            </div>
+
+            <div class="control-group">
+                <label class="range-label" for="spinSpeed">
+                    Tumble
+                    <output id="spinSpeedValue" for="spinSpeed">3</output>
+                </label>
+                <input type="range" id="spinSpeed" min="0" max="10" step="1" value="3">
+            </div>
+
+            <div class="control-group">
+                <label class="range-label" for="leafSize">
+                    Leaf size
+                    <output id="leafSizeValue" for="leafSize">28</output>
+                </label>
+                <input type="range" id="leafSize" min="15" max="60" step="1" value="28">
+            </div>
+
+            <div class="switches">
+                <label class="switch-row" for="showTrees">
+                    Woodland
+                    <input type="checkbox" id="showTrees" checked>
+                </label>
+                <label class="switch-row" for="showClouds">
+                    Soft clouds
+                    <input type="checkbox" id="showClouds" checked>
+                </label>
+                <label class="switch-row" for="windGusts">
+                    Natural gusts
+                    <input type="checkbox" id="windGusts" checked>
+                </label>
+            </div>
+
+            <div class="actions">
+                <button class="button primary" id="burstButton" type="button">Scatter some leaves</button>
+                <button class="button" id="pauseButton" type="button" aria-pressed="false">Pause</button>
+                <button class="button" id="resetButton" type="button">Reset settings</button>
+            </div>
+
+            <p class="panel-note" id="panelNote">Tap anywhere in the woodland to stir the leaves.</p>
+        </div>
+    </aside>
+
+    <div class="caption" aria-hidden="true">
+        <strong>Let the world slow down.</strong>
+        <span>Somewhere in October</span>
+    </div>
+
+    <div class="wind-indicator">
+        <span id="windArrow" aria-hidden="true">→</span>
+        <div class="wind-copy">
+            <small>The breeze</small>
+            <span id="windLabel">Gentle</span>
+        </div>
+    </div>
+
+    <p id="status" class="sr-only" role="status" aria-live="polite"></p>
+    <noscript>Please enable JavaScript to see and interact with the autumn woodland.</noscript>
+
+    <script>
+    (() => {
+        "use strict";
+
+        // No external images or libraries: the landscape and leaves are drawn locally.
+        const $ = id => document.getElementById(id);
+        const TAU = Math.PI * 2;
+        const clamp = (v, min, max) => Math.max(min, Math.min(max, v));
+        const random = (min, max) => min + Math.random() * (max - min);
+        const motionPreference = window.matchMedia("(prefers-reduced-motion: reduce)");
+
+        const DEFAULTS = Object.freeze({
+            leafCount: 70,
+            windSpeed: 2,
+            fallSpeed: 1.5,
+            spinSpeed: 3,
+            leafSize: 28,
+            showTrees: true,
+            showClouds: true,
+            windGusts: true
+        });
+
+        const LIMITS = {
+            leafCount: [10, 200, 1],
+            windSpeed: [0, 10, .5],
+            fallSpeed: [.5, 5, .5],
+            spinSpeed: [0, 10, 1],
+            leafSize: [15, 60, 1]
+        };
+
+        const STORAGE_KEY = "autumnWoodland.settings.v2";
+        const CONTROLS_STORAGE_KEY = "autumnWoodland.controlsCollapsed.v1";
+        const config = { ...DEFAULTS };
+
+        // Start minimized unless a valid saved preference says otherwise.
+        let controlsCollapsed = true;
+
+        try {
+            const saved = JSON.parse(localStorage.getItem(STORAGE_KEY));
+
+            if (saved && typeof saved === "object") {
+                for (const key of Object.keys(DEFAULTS)) {
+                    if (
+                        key in LIMITS &&
+                        typeof saved[key] === "number" &&
+                        Number.isFinite(saved[key])
+                    ) {
+                        const [min, max, step] = LIMITS[key];
+                        config[key] = clamp(Math.round(saved[key] / step) * step, min, max);
+                    } else if (
+                        typeof DEFAULTS[key] === "boolean" &&
+                        typeof saved[key] === "boolean"
+                    ) {
+                        config[key] = saved[key];
+                    }
+                }
+            }
+        } catch (_) {
+            // The scene also works with unavailable or disabled local storage.
+        }
+
+        try {
+            const savedCollapsed = JSON.parse(localStorage.getItem(CONTROLS_STORAGE_KEY));
+            if (typeof savedCollapsed === "boolean") {
+                controlsCollapsed = savedCollapsed;
+            }
+        } catch (_) {
+            // Keep the default minimized state if storage cannot be read.
+        }
+
+        function saveSettings() {
+            try {
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(config));
+            } catch (_) {}
+        }
+
+        function collapseControls(collapsed) {
+            controlsCollapsed = Boolean(collapsed);
+
+            $("controls").classList.toggle("collapsed", controlsCollapsed);
+            $("controlContent").hidden = controlsCollapsed;
+            $("toggleControls").setAttribute("aria-expanded", String(!controlsCollapsed));
+            $("toggleControls").setAttribute(
+                "aria-label",
+                controlsCollapsed ? "Expand settings" : "Collapse settings"
+            );
+
+            try {
+                localStorage.setItem(
+                    CONTROLS_STORAGE_KEY,
+                    JSON.stringify(controlsCollapsed)
+                );
+            } catch (_) {
+                // Toggling still works when local storage is unavailable.
+            }
+        }
+
+        // Restore the panel before generating the landscape.
+        collapseControls(controlsCollapsed);
+
+        $("toggleControls").addEventListener("click", () => {
+            collapseControls(!controlsCollapsed);
+        });
+
+        function seededRandom(seed) {
+            return () => {
+                seed |= 0;
+                seed = seed + 0x6D2B79F5 | 0;
+                let n = Math.imul(seed ^ seed >>> 15, 1 | seed);
+                n = n + Math.imul(n ^ n >>> 7, 61 | n) ^ n;
+                return ((n ^ n >>> 14) >>> 0) / 4294967296;
+            };
+        }
+
+        // Detailed, shaded leaf sprites with asymmetric outlines and branching veins.
+        const leafPaths = [
+            "M 0,-43 L 7,-24 17,-31 16,-15 33,-21 27,-5 40,-3 23,9 26,20 11,19 3,32 -2,35 -11,23 -28,26 -23,11 -39,4 -27,-6 -32,-19 -15,-14 -17,-30 -6,-25 Z",
+            "M 0,-43 C 10,-34 7,-29 15,-27 C 28,-25 22,-16 17,-13 C 35,-10 27,1 19,3 C 31,12 19,18 12,17 C 19,27 8,29 2,37 C -5,31 -17,27 -12,20 C -29,21 -29,10 -19,7 C -35,3 -28,-8 -18,-9 C -30,-19 -18,-26 -11,-23 C -15,-34 -4,-32 0,-43 Z",
+            "M 0,-43 C 13,-34 29,-19 25,0 C 24,16 10,26 0,36 C -12,26 -25,13 -24,-3 C -25,-21 -9,-35 0,-43 Z"
+        ];
+
+        const leafColors = [
+            ["#e6b34f", "#a76a20", "#60431c"],
+            ["#d8973d", "#a04e20", "#59321c"],
+            ["#c97035", "#8c3c23", "#4d2b1f"],
+            ["#d4bd64", "#978444", "#514c29"],
+            ["#b68943", "#78502b", "#443321"],
+            ["#bb5830", "#773522", "#40291e"]
+        ];
+
+        function createLeafSprite(type, colors, seed) {
+            const canvas = document.createElement("canvas");
+            canvas.width = canvas.height = 128;
+
+            const ctx = canvas.getContext("2d");
+            const rng = seededRandom(seed);
+
+            ctx.translate(64, 59);
+            ctx.scale(1.15, 1.15);
+
+            const path = new Path2D(leafPaths[type]);
+            const fill = ctx.createLinearGradient(-29, -31, 30, 28);
+
+            fill.addColorStop(0, colors[0]);
+            fill.addColorStop(.44, colors[1]);
+            fill.addColorStop(.5, colors[0]);
+            fill.addColorStop(1, colors[2]);
+
+            ctx.fillStyle = fill;
+            ctx.fill(path);
+            ctx.strokeStyle = colors[2];
+            ctx.lineWidth = .7;
+            ctx.stroke(path);
+
+            ctx.save();
+            ctx.clip(path);
+            ctx.fillStyle = "rgba(53,28,13,.17)";
+
+            for (let i = 0; i < 65; i++) {
+                ctx.beginPath();
+                ctx.ellipse(
+                    (rng() - .5) * 70,
+                    (rng() - .5) * 85,
+                    .3 + rng() * 1.4,
+                    .3 + rng(),
+                    rng() * TAU,
+                    0,
+                    TAU
+                );
+                ctx.fill();
+            }
+
+            ctx.strokeStyle = "rgba(255,226,148,.52)";
+            ctx.lineWidth = .65;
+
+            for (let side = -1; side <= 1; side += 2) {
+                for (let j = 0; j < 5; j++) {
+                    const y = -23 + j * 11;
+                    const endX = side * (j === 0 ? 12 : 23 - j);
+                    const endY = y - 12;
+
+                    ctx.beginPath();
+                    ctx.moveTo(0, y + 9);
+                    ctx.quadraticCurveTo(endX * .4, y, endX, endY);
+                    ctx.stroke();
+
+                    ctx.lineWidth = .35;
+                    ctx.beginPath();
+                    ctx.moveTo(endX * .56, y - 2);
+                    ctx.lineTo(endX * .75, endY - 7);
+                    ctx.stroke();
+                    ctx.lineWidth = .65;
+                }
+            }
+
+            ctx.restore();
+
+            ctx.beginPath();
+            ctx.moveTo(0, -38);
+            ctx.bezierCurveTo(-3, -8, 3, 21, 0, 35);
+            ctx.strokeStyle = "rgba(255,227,157,.65)";
+            ctx.lineWidth = 1;
+            ctx.stroke();
+
+            ctx.beginPath();
+            ctx.moveTo(0, 32);
+            ctx.quadraticCurveTo(0, 42, 6, 47);
+            ctx.strokeStyle = colors[2];
+            ctx.lineWidth = 1.5;
+            ctx.lineCap = "round";
+            ctx.stroke();
+
+            return canvas;
+        }
+
+        const sprites = [];
+
+        leafColors.forEach((colors, index) => {
+            for (let type = 0; type < 3; type++) {
+                sprites.push(
+                    createLeafSprite(type, colors, index * 127 + type * 39 + 1)
+                );
+            }
+        });
+
+        const background = $("landscape");
+        const canvas = $("leavesCanvas");
+        const bg = background.getContext("2d", { alpha: false });
+        const ctx = canvas.getContext("2d");
+
+        let width = 1;
+        let height = 1;
+        let dpr = 1;
+        let leaves = [];
+        let landed = [];
+        let time = 0;
+        let wind = 0;
+        let paused = motionPreference.matches;
+        let frameId = 0;
+        let lastFrame = 0;
+        let resizeTimer = 0;
+        let windReadoutTime = 0;
+
+        function ellipse(c, x, y, rx, ry, rotation = 0) {
+            c.beginPath();
+            c.ellipse(x, y, rx, ry, rotation, 0, TAU);
+            c.fill();
+        }
+
+        // Recursive tapered branches with fine foliage, rather than circular crowns.
+        function drawTree(c, x, y, treeHeight, rng, palette, opacity = 1) {
+            c.save();
+            c.globalAlpha = opacity;
+
+            const tips = [];
+
+            function branch(bx, by, length, angle, thickness, depth) {
+                const ex = bx + Math.sin(angle) * length;
+                const ey = by - Math.cos(angle) * length;
+                const bend = (rng() - .5) * length * .22;
+
+                c.beginPath();
+                c.moveTo(bx, by);
+                c.quadraticCurveTo(
+                    (bx + ex) / 2 + bend,
+                    (by + ey) / 2,
+                    ex,
+                    ey
+                );
+                c.strokeStyle = depth > 3 ? "#403b2c" : "#514331";
+                c.lineWidth = Math.max(.45, thickness);
+                c.lineCap = "round";
+                c.stroke();
+
+                if (thickness > 3) {
+                    c.beginPath();
+                    c.moveTo(bx + thickness * .24, by);
+                    c.quadraticCurveTo(
+                        (bx + ex) / 2 + bend + thickness * .15,
+                        (by + ey) / 2,
+                        ex + thickness * .1,
+                        ey
+                    );
+                    c.strokeStyle = "rgba(201,171,116,.25)";
+                    c.lineWidth = thickness * .17;
+                    c.stroke();
+
+                    for (let i = 0; i < 4; i++) {
+                        const f = rng();
+                        const px = bx + (ex - bx) * f + (rng() - .5) * thickness * .55;
+                        const py = by + (ey - by) * f;
+
+                        c.beginPath();
+                        c.moveTo(px, py);
+                        c.lineTo(
+                            px + (rng() - .5) * 3,
+                            py - length * (.03 + rng() * .1)
+                        );
+                        c.strokeStyle = "rgba(26,29,21,.28)";
+                        c.lineWidth = Math.max(.5, thickness * .045);
+                        c.stroke();
+                    }
+                }
+
+                if (depth <= 2) {
+                    tips.push({
+                        x: ex,
+                        y: ey,
+                        radius: treeHeight * (.045 + rng() * .033)
+                    });
+                }
+
+                if (depth <= 0) return;
+
+                const spread = .29 + rng() * .3;
+
+                branch(
+                    ex,
+                    ey,
+                    length * (.65 + rng() * .1),
+                    angle - spread,
+                    thickness * .63,
+                    depth - 1
+                );
+
+                branch(
+                    ex,
+                    ey,
+                    length * (.65 + rng() * .13),
+                    angle + spread,
+                    thickness * .59,
+                    depth - 1
+                );
+
+                if (depth === 4) {
+                    branch(
+                        bx + (ex - bx) * .66,
+                        by + (ey - by) * .66,
+                        length * .64,
+                        angle + (rng() > .5 ? 1 : -1) * .85,
+                        thickness * .42,
+                        depth - 2
+                    );
+                }
+            }
+
+            branch(
+                x,
+                y,
+                treeHeight * .32,
+                (rng() - .5) * .16,
+                treeHeight * .037,
+                5
+            );
+
+            // Clusters contain individual leaves with irregular gaps.
+            for (const tip of tips) {
+                for (let i = 0; i < 24; i++) {
+                    const angle = rng() * TAU;
+                    const radius = Math.sqrt(rng()) * tip.radius;
+                    const px = tip.x + Math.cos(angle) * radius * 1.3;
+                    const py = tip.y + Math.sin(angle) * radius * .8;
+                    const size = Math.max(.8, treeHeight * (.003 + rng() * .006));
+                    const lightSide = (px - tip.x - (py - tip.y)) / tip.radius;
+
+                    let colorIndex = Math.floor(rng() * palette.length);
+                    if (lightSide > .5 && rng() > .4) {
+                        colorIndex = palette.length - 1;
+                    }
+
+                    c.fillStyle = palette[colorIndex];
+                    ellipse(
+                        c,
+                        px,
+                        py,
+                        size,
+                        size * (.36 + rng() * .3),
+                        rng() * Math.PI
+                    );
+                }
+            }
+
+            c.restore();
+        }
+
+        function renderLandscape() {
+            if (!width || !height) return;
+
+            const rng = seededRandom(87329);
+            const W = width;
+            const H = height;
+
+            bg.setTransform(dpr, 0, 0, dpr, 0, 0);
+            bg.globalAlpha = 1;
+
+            const sky = bg.createLinearGradient(0, 0, 0, H * .76);
+            sky.addColorStop(0, "#8faaa9");
+            sky.addColorStop(.38, "#c7c8ac");
+            sky.addColorStop(.74, "#e6ce9e");
+            sky.addColorStop(1, "#c0b184");
+
+            bg.fillStyle = sky;
+            bg.fillRect(0, 0, W, H);
+
+            if (config.showClouds) {
+                bg.save();
+
+                for (let i = 0; i < 22; i++) {
+                    const x = rng() * W;
+                    const y = H * (.055 + rng() * .29);
+                    const size = W * (.035 + rng() * .08);
+                    const cloud = bg.createRadialGradient(x, y, 0, x, y, size);
+
+                    cloud.addColorStop(0, "rgba(255,244,215,.24)");
+                    cloud.addColorStop(1, "rgba(255,244,215,0)");
+
+                    bg.save();
+                    bg.translate(x, y);
+                    bg.scale(1, .28);
+                    bg.translate(-x, -y);
+                    bg.fillStyle = cloud;
+                    bg.fillRect(x - size, y - size, size * 2, size * 2);
+                    bg.restore();
+                }
+
+                bg.restore();
+            }
+
+            const sunX = W * .665;
+            const sunY = H * .23;
+
+            const glow = bg.createRadialGradient(
+                sunX, sunY, 1,
+                sunX, sunY, H * .4
+            );
+
+            glow.addColorStop(0, "rgba(255,250,213,.96)");
+            glow.addColorStop(.07, "rgba(255,239,183,.70)");
+            glow.addColorStop(.3, "rgba(255,230,166,.26)");
+            glow.addColorStop(1, "rgba(255,222,152,0)");
+
+            bg.fillStyle = glow;
+            bg.fillRect(0, 0, W, H);
+
+            // Soft distant hills.
+            for (let layer = 0; layer < 3; layer++) {
+                bg.beginPath();
+                bg.moveTo(0, H);
+
+                for (let x = 0; x <= W + 20; x += 20) {
+                    const y = H * (.44 + layer * .035)
+                        + Math.sin(x / W * 7 + layer * 1.7) * H * .025
+                        + Math.sin(x / W * 17 + layer) * H * .012;
+                    bg.lineTo(x, y);
+                }
+
+                bg.lineTo(W, H);
+                bg.closePath();
+                bg.fillStyle = ["#aaa98a", "#999e7d", "#878e6a"][layer];
+                bg.fill();
+            }
+
+            const ground = bg.createLinearGradient(0, H * .49, 0, H);
+            ground.addColorStop(0, "#97936a");
+            ground.addColorStop(.22, "#7d8057");
+            ground.addColorStop(.58, "#686545");
+            ground.addColorStop(1, "#444a32");
+
+            bg.fillStyle = ground;
+            bg.fillRect(0, H * .52, W, H * .48);
+
+            function pathCenter(t) {
+                return W * (.58 + .052 * Math.sin(t * 4.8) - .095 * t);
+            }
+
+            function pathHalfWidth(t) {
+                return W * (.004 + .22 * Math.pow(t, 1.5));
+            }
+
+            // A tapering, gently curved woodland trail.
+            bg.beginPath();
+
+            for (let i = 0; i <= 80; i++) {
+                const t = i / 80;
+                bg.lineTo(
+                    pathCenter(t) - pathHalfWidth(t),
+                    H * (.52 + .48 * t)
+                );
+            }
+
+            for (let i = 80; i >= 0; i--) {
+                const t = i / 80;
+                bg.lineTo(
+                    pathCenter(t) + pathHalfWidth(t),
+                    H * (.52 + .48 * t)
+                );
+            }
+
+            bg.closePath();
+
+            const pathGradient = bg.createLinearGradient(0, H * .52, 0, H);
+            pathGradient.addColorStop(0, "#c1b48a");
+            pathGradient.addColorStop(.35, "#a89970");
+            pathGradient.addColorStop(1, "#807053");
+
+            bg.fillStyle = pathGradient;
+            bg.fill();
+
+            // Ground texture follows perspective.
+            for (let i = 0; i < 6600; i++) {
+                const t = Math.pow(rng(), .7);
+                const x = rng() * W;
+                const y = H * (.525 + .475 * t);
+                const onPath = Math.abs(x - pathCenter(t)) < pathHalfWidth(t);
+                const size = .3 + t * t * 3.4;
+
+                bg.fillStyle = onPath
+                    ? ["#b2a17a", "#796b4b", "#c7b286", "#96825c"][Math.floor(rng() * 4)]
+                    : ["#74754a", "#92915d", "#4e5637", "#aaa065", "#625b37"][Math.floor(rng() * 5)];
+
+                bg.globalAlpha = .2 + rng() * .35;
+
+                ellipse(
+                    bg,
+                    x,
+                    y,
+                    size * (1 + rng()),
+                    size * .3,
+                    rng() * Math.PI
+                );
+            }
+
+            bg.globalAlpha = 1;
+
+            const palettes = [
+                ["#645b31", "#8b7636", "#a58a3e", "#b89a4c", "#d0ae5c"],
+                ["#69452a", "#8b592e", "#a36b32", "#bd8540", "#d19d52"],
+                ["#585d33", "#797b39", "#969547", "#b3a851", "#cfbd6d"],
+                ["#6c4430", "#8e5530", "#a96a37", "#be8145", "#d99e59"]
+            ];
+
+            if (config.showTrees) {
+                // Distant woodland, desaturated by atmospheric haze.
+                for (let i = 0; i < 34; i++) {
+                    const x = (i / 33) * W + (rng() - .5) * W * .035;
+                    const y = H * (.54 + rng() * .07);
+
+                    drawTree(
+                        bg,
+                        x,
+                        y,
+                        H * (.20 + rng() * .21),
+                        rng,
+                        palettes[i % 4],
+                        .55
+                    );
+                }
+
+                const mist = bg.createLinearGradient(0, H * .25, 0, H * .69);
+                mist.addColorStop(0, "rgba(222,215,176,0)");
+                mist.addColorStop(.55, "rgba(227,216,177,.34)");
+                mist.addColorStop(1, "rgba(219,209,169,0)");
+
+                bg.fillStyle = mist;
+                bg.fillRect(0, H * .25, W, H * .44);
+
+                // Middle-distance trees frame the clearing.
+                for (let i = 0; i < 16; i++) {
+                    const side = i % 2;
+                    const x = side
+                        ? W * (.72 + rng() * .34)
+                        : W * (-.06 + rng() * .46);
+                    const y = H * (.66 + rng() * .19);
+                    const h = H * (.43 + rng() * .28);
+
+                    bg.fillStyle = "rgba(38,43,28,.12)";
+                    ellipse(
+                        bg,
+                        x - h * .14,
+                        y + h * .025,
+                        h * .29,
+                        h * .035,
+                        -.16
+                    );
+
+                    drawTree(bg, x, y, h, rng, palettes[i % 4], .9);
+                }
+            }
+
+            // Fallen leaves become larger toward the viewer.
+            for (let i = 0; i < 2600; i++) {
+                const t = Math.pow(rng(), .68);
+                const x = rng() * W;
+                const y = H * (.56 + .44 * t);
+                const onPath = Math.abs(x - pathCenter(t)) < pathHalfWidth(t) * .82;
+
+                if (onPath && rng() < .82) continue;
+
+                const size = 2 + Math.pow(t, 1.8) * (9 + rng() * 13);
+
+                bg.save();
+                bg.translate(x, y);
+                bg.rotate(rng() * TAU);
+                bg.scale(1, .42 + rng() * .25);
+                bg.globalAlpha = .48 + rng() * .42;
+                bg.drawImage(
+                    sprites[Math.floor(rng() * sprites.length)],
+                    -size / 2,
+                    -size / 2,
+                    size,
+                    size
+                );
+                bg.restore();
+            }
+
+            // Thin, dry grass along the banks.
+            bg.lineWidth = .7;
+
+            for (let i = 0; i < 1100; i++) {
+                const t = rng();
+                const x = rng() * W;
+                const y = H * (.57 + .43 * t);
+
+                if (Math.abs(x - pathCenter(t)) < pathHalfWidth(t) * 1.07) continue;
+
+                const length = (2 + rng() * 13) * t;
+
+                bg.strokeStyle = rng() > .5
+                    ? "rgba(189,177,115,.35)"
+                    : "rgba(42,56,30,.48)";
+
+                bg.beginPath();
+                bg.moveTo(x, y);
+                bg.quadraticCurveTo(
+                    x + length * .2,
+                    y - length * .8,
+                    x + (rng() - .5) * length,
+                    y - length
+                );
+                bg.stroke();
+            }
+
+            if (config.showTrees) {
+                const frontTrees = [
+                    [-.035, 1.04, 1.22, 0],
+                    [.105, .94, 1.05, 1],
+                    [.265, .84, .89, 2],
+                    [.84, .88, 1.02, 1],
+                    [.985, 1.02, 1.24, 3]
+                ];
+
+                // Long shadows connect the trees to the forest floor.
+                bg.save();
+                bg.filter = "blur(5px)";
+
+                for (const [x, y, h] of frontTrees) {
+                    bg.fillStyle = "rgba(31,39,24,.19)";
+                    bg.beginPath();
+                    bg.moveTo(W * x - H * h * .014, H * y);
+                    bg.lineTo(W * x + H * h * .014, H * y);
+                    bg.lineTo(W * x - W * .3 + H * h * .1, H * 1.1);
+                    bg.lineTo(W * x - W * .3 - H * h * .1, H * 1.1);
+                    bg.closePath();
+                    bg.fill();
+                }
+
+                bg.restore();
+
+                for (const [x, y, h, palette] of frontTrees) {
+                    drawTree(
+                        bg,
+                        W * x,
+                        H * y,
+                        H * h,
+                        rng,
+                        palettes[palette]
+                    );
+                }
+            }
+
+            // Translucent shafts of warm light.
+            bg.save();
+            bg.globalCompositeOperation = "screen";
+            bg.filter = "blur(10px)";
+
+            for (let i = 0; i < 6; i++) {
+                const endX = W * (.08 + i * .145);
+                const ray = bg.createLinearGradient(sunX, sunY, endX, H);
+
+                ray.addColorStop(0, "rgba(255,225,151,.02)");
+                ray.addColorStop(.38, "rgba(255,218,147,.065)");
+                ray.addColorStop(1, "rgba(255,218,147,0)");
+
+                bg.fillStyle = ray;
+                bg.beginPath();
+                bg.moveTo(sunX - 5, sunY);
+                bg.lineTo(endX - W * .055, H);
+                bg.lineTo(endX + W * .04, H);
+                bg.lineTo(sunX + 5, sunY);
+                bg.closePath();
+                bg.fill();
+            }
+
+            bg.restore();
+
+            // Final golden haze near the opening.
+            const light = bg.createRadialGradient(
+                sunX, sunY, 0,
+                sunX, sunY, H * .38
+            );
+
+            light.addColorStop(0, "rgba(255,241,195,.51)");
+            light.addColorStop(.2, "rgba(255,226,166,.19)");
+            light.addColorStop(1, "rgba(255,226,166,0)");
+
+            bg.fillStyle = light;
+            bg.fillRect(0, 0, W, H);
+        }
+
+        class Leaf {
+            constructor(initial = false, burst = false, x = 0, y = 0) {
+                this.extra = burst;
+                this.reset(initial);
+
+                if (burst) {
+                    this.x = x + random(-18, 18);
+                    this.y = y + random(-12, 12);
+                    this.vx = random(-160, 160);
+                    this.vy = random(-155, -25);
+                    this.depth = random(.45, 1);
+                    this.floor = Math.max(
+                        this.y + 45,
+                        height * random(.87, 1.04)
+                    );
+                }
+            }
+
+            reset(initial = false) {
+                this.depth = Math.random();
+                this.x = random(-40, width + 40);
+                this.y = initial
+                    ? random(-60, height * .92)
+                    : random(-120, -35);
+
+                this.vx = random(-10, 10);
+                this.vy = random(3, 16);
+                this.phase = random(0, TAU);
+                this.rotation = random(0, TAU);
+                this.spin = random(-1, 1);
+                this.flutter = random(0, TAU);
+                this.mass = random(.7, 1.25);
+                this.sizeFactor = random(.7, 1.15);
+                this.sprite = sprites[Math.floor(Math.random() * sprites.length)];
+                this.floor = height * (.76 + this.depth * .27);
+                this.age = 0;
+            }
+
+            update(dt) {
+                this.age += dt;
+
+                const distance = .35 + this.depth * .8;
+
+                this.phase += dt * (1.1 + this.mass);
+                this.flutter += dt * config.spinSpeed * .65;
+                this.rotation += dt * config.spinSpeed * this.spin * .42;
+
+                const targetX = wind * 15 * distance
+                    + Math.sin(this.phase) * 16 * distance;
+                const targetY = config.fallSpeed
+                    * (15 + this.depth * 21) * this.mass;
+
+                this.vx += (targetX - this.vx) * (1 - Math.exp(-dt * 1.1));
+                this.vy += (targetY - this.vy) * (1 - Math.exp(-dt * .85));
+
+                this.x += this.vx * dt;
+                this.y += (this.vy + Math.sin(this.phase * 1.7) * 5) * dt;
+
+                if (this.y >= this.floor) {
+                    settleLeaf(this);
+
+                    if (this.extra) return false;
+                    this.reset();
+                } else if (
+                    this.x < -100 ||
+                    this.x > width + 100 ||
+                    this.age > 50
+                ) {
+                    if (this.extra) return false;
+                    this.reset();
+                }
+
+                return true;
+            }
+
+            draw() {
+                const size = config.leafSize
+                    * (.33 + this.depth * .9) * this.sizeFactor;
+                const roll = Math.cos(this.flutter);
+                const fold = Math.max(.13, Math.abs(roll));
+                const nearGround = clamp(
+                    1 - (this.floor - this.y) / 100,
+                    0,
+                    1
+                );
+
+                // Ground shadow tightens as the leaf approaches the floor.
+                if (nearGround > 0 && this.y > height * .65) {
+                    ctx.save();
+                    ctx.globalAlpha = nearGround * .15;
+                    ctx.fillStyle = "#272c1b";
+
+                    ellipse(
+                        ctx,
+                        this.x - 8,
+                        this.floor + 2,
+                        size * .36,
+                        size * .075
+                    );
+
+                    ctx.restore();
+                }
+
+                ctx.save();
+                ctx.translate(this.x, this.y);
+                ctx.rotate(this.rotation + Math.sin(this.phase) * .23);
+                ctx.scale(1, fold);
+                ctx.globalAlpha = .57 + this.depth * .43;
+
+                ctx.drawImage(
+                    this.sprite,
+                    -size / 2,
+                    -size / 2,
+                    size,
+                    size
+                );
+
+                if (roll < 0) {
+                    ctx.globalAlpha *= .16;
+                    ctx.drawImage(
+                        this.sprite,
+                        -size / 2 + .6,
+                        -size / 2,
+                        size,
+                        size
+                    );
+                }
+
+                ctx.restore();
+            }
+        }
+
+        function settleLeaf(leaf) {
+            landed.push({
+                x: leaf.x,
+                y: leaf.floor,
+                rotation: leaf.rotation,
+                size: config.leafSize
+                    * (.33 + leaf.depth * .9) * leaf.sizeFactor,
+                sprite: leaf.sprite,
+                life: 0
+            });
+
+            if (landed.length > 130) landed.shift();
+        }
+
+        function syncLeafCount() {
+            const regular = leaves.filter(leaf => !leaf.extra);
+            const extras = leaves.filter(leaf => leaf.extra);
+
+            while (regular.length < config.leafCount) {
+                regular.push(new Leaf(true));
+            }
+
+            regular.length = config.leafCount;
+            leaves = regular.concat(extras.slice(-100));
+        }
+
+        function scatter(x, y, count = 24) {
+            const extras = leaves.filter(leaf => leaf.extra).length;
+            const available = Math.min(count, 100 - extras);
+
+            for (let i = 0; i < available; i++) {
+                leaves.push(new Leaf(false, true, x, y));
+            }
+
+            if (paused) drawFrame();
+        }
+
+        function drawFrame() {
+            ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+            ctx.clearRect(0, 0, width, height);
+
+            for (const leaf of landed) {
+                ctx.save();
+                ctx.translate(leaf.x, leaf.y);
+                ctx.rotate(leaf.rotation);
+                ctx.scale(1, .35);
+                ctx.globalAlpha = .72 * clamp((22 - leaf.life) / 5, 0, 1);
+
+                ctx.drawImage(
+                    leaf.sprite,
+                    -leaf.size / 2,
+                    -leaf.size / 2,
+                    leaf.size,
+                    leaf.size
+                );
+
+                ctx.restore();
+            }
+
+            // Small distant leaves appear behind larger nearby leaves.
+            const sorted = leaves.slice().sort((a, b) => a.depth - b.depth);
+            for (const leaf of sorted) leaf.draw();
+
+            // Subtle dust and seed motes.
+            ctx.fillStyle = "#fff0c9";
+
+            for (let i = 0; i < 24; i++) {
+                const x = (
+                    (i * 173.73 + time * (3 + i % 4)) % (width + 20)
+                ) - 10;
+                const y = height * (.16 + ((i * .137) % .64))
+                    + Math.sin(time * .3 + i) * 12;
+
+                ctx.globalAlpha = .11 + Math.sin(time * .65 + i) * .06;
+
+                ellipse(
+                    ctx,
+                    x,
+                    y,
+                    .5 + (i % 3) * .3,
+                    .5 + (i % 3) * .3
+                );
+            }
+
+            ctx.globalAlpha = 1;
+        }
+
+        function updateWind(dt) {
+            let target = config.windSpeed;
+
+            if (config.windGusts) {
+                const gust = Math.pow(
+                    Math.max(0, Math.sin(time * .29)),
+                    4
+                );
+
+                target *= .7 + gust * 1.65;
+                target *= .8 + Math.sin(time * .095) * .35;
+            }
+
+            wind += (target - wind) * (1 - Math.exp(-dt * .8));
+            windReadoutTime += dt;
+
+            if (windReadoutTime > .25) {
+                windReadoutTime = 0;
+
+                $("windLabel").textContent = wind < .15
+                    ? "Still"
+                    : wind < 2.8
+                        ? "Gentle"
+                        : wind < 6
+                            ? "Steady"
+                            : "Gusty";
+
+                $("windArrow").style.transform =
+                    `rotate(${-Math.min(22, wind * 1.8)}deg)`;
+                $("windArrow").style.opacity = wind < .15 ? ".4" : "1";
+            }
+        }
+
+        function animate(timestamp) {
+            frameId = 0;
+
+            if (paused || document.hidden) return;
+
+            const dt = lastFrame
+                ? Math.min((timestamp - lastFrame) / 1000, .05)
+                : 0;
+
+            lastFrame = timestamp;
+            time += dt;
+
+            updateWind(dt);
+            leaves = leaves.filter(leaf => leaf.update(dt));
+
+            for (const leaf of landed) leaf.life += dt;
+            landed = landed.filter(leaf => leaf.life < 22);
+
+            drawFrame();
+            frameId = requestAnimationFrame(animate);
+        }
+
+        function startAnimation() {
+            if (!frameId && !paused && !document.hidden) {
+                lastFrame = 0;
+                frameId = requestAnimationFrame(animate);
+            }
+        }
+
+        function stopAnimation() {
+            cancelAnimationFrame(frameId);
+            frameId = 0;
+            lastFrame = 0;
+        }
+
+        function updatePauseButton() {
+            $("pauseButton").textContent = paused ? "Resume" : "Pause";
+            $("pauseButton").setAttribute("aria-pressed", String(paused));
+
+            $("panelNote").textContent = paused
+                ? "Motion paused. Resume whenever you’re ready."
+                : "Tap anywhere in the woodland to stir the leaves.";
+        }
+
+        function setPaused(value) {
+            paused = value;
+            updatePauseButton();
+
+            if (paused) stopAnimation();
+            else startAnimation();
+        }
+
+        function resize() {
+            const previousWidth = width;
+            const previousHeight = height;
+            const rect = $("scene").getBoundingClientRect();
+
+            width = Math.max(1, rect.width);
+            height = Math.max(1, rect.height);
+
+            // Bound backing-store size on high-density and large displays.
+            dpr = Math.min(
+                window.devicePixelRatio || 1,
+                2,
+                Math.sqrt(5000000 / (width * height))
+            );
+
+            for (const element of [background, canvas]) {
+                element.width = Math.round(width * dpr);
+                element.height = Math.round(height * dpr);
+            }
+
+            for (const leaf of leaves) {
+                leaf.x *= width / previousWidth;
+                leaf.y *= height / previousHeight;
+                leaf.floor *= height / previousHeight;
+            }
+
+            landed = [];
+            renderLandscape();
+            drawFrame();
+        }
+
+        function updateControls() {
+            for (const key of Object.keys(DEFAULTS)) {
+                const input = $(key);
+
+                if (typeof config[key] === "boolean") {
+                    input.checked = config[key];
+                } else {
+                    input.value = config[key];
+                    $(key + "Value").value = String(config[key]);
+
+                    const [min, max] = LIMITS[key];
+
+                    input.style.setProperty(
+                        "--fill",
+                        `${(config[key] - min) / (max - min) * 100}%`
+                    );
+                }
+            }
+        }
+
+        for (const key of Object.keys(DEFAULTS)) {
+            $(key).addEventListener("input", event => {
+                config[key] = event.target.type === "checkbox"
+                    ? event.target.checked
+                    : Number(event.target.value);
+
+                updateControls();
+
+                if (key === "leafCount") syncLeafCount();
+
+                if (key === "showTrees" || key === "showClouds") {
+                    renderLandscape();
+                }
+
+                if (paused) drawFrame();
+
+                saveSettings();
+            });
+        }
+
+        $("pauseButton").addEventListener("click", () => {
+            setPaused(!paused);
+
+            $("status").textContent = paused
+                ? "Animation paused."
+                : "Animation resumed.";
+        });
+
+        $("burstButton").addEventListener("click", () => {
+            scatter(width * .58, height * .34, 36);
+
+            $("status").textContent = paused
+                ? "Leaves added. Resume to watch them fall."
+                : "A handful of leaves catches the breeze.";
+        });
+
+        $("resetButton").addEventListener("click", () => {
+            Object.assign(config, DEFAULTS);
+
+            wind = 0;
+            time = 0;
+            leaves = [];
+            landed = [];
+
+            updateControls();
+            syncLeafCount();
+            renderLandscape();
+            drawFrame();
+            setPaused(motionPreference.matches);
+            saveSettings();
+
+            // Reset scene settings without changing the saved panel preference.
+            $("status").textContent = "Default scene settings restored.";
+        });
+
+        $("scene").addEventListener("pointerdown", event => {
+            if (!event.isPrimary || event.button !== 0) return;
+
+            const rect = $("scene").getBoundingClientRect();
+
+            scatter(
+                event.clientX - rect.left,
+                event.clientY - rect.top,
+                15
+            );
+        });
+
+        document.addEventListener("visibilitychange", () => {
+            if (document.hidden) stopAnimation();
+            else startAnimation();
+        });
+
+        window.addEventListener("resize", () => {
+            clearTimeout(resizeTimer);
+            resizeTimer = setTimeout(resize, 140);
+        });
+
+        const onMotionChange = event => setPaused(event.matches);
+
+        if (motionPreference.addEventListener) {
+            motionPreference.addEventListener("change", onMotionChange);
+        } else {
+            motionPreference.addListener(onMotionChange);
+        }
+
+        updateControls();
+        updatePauseButton();
+        resize();
+        syncLeafCount();
+        drawFrame();
+        startAnimation();
+    })();
+    </script>
+</body>
+</html>
